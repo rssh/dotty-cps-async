@@ -69,12 +69,7 @@ class ApplyTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
 
               }
         } else {
-              new CpsChunkBuilder[F,T] {
-                  override def create(): CpsChunk[F,T] = 
-                        fromFExpr('{ ${dm}.pure(${f}) })
-                   override def append[A:quoted.Type](e:CpsChunk[F,A]):CpsChunk[F,A] =
-                        e.insertPrev(f)
-              }
+              CpsChunkBuilder.sync(f,dm)
         }
         CpsExprResult(f,nextCpsBuilder,summon[quoted.Type[T]],cpsObjResult.haveAwait)
   }

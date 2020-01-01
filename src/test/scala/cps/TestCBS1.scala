@@ -55,7 +55,6 @@ class TestBS1
      val c1 = c.run()
      assert( c1 == Success(7) )
 
-/*
   @Test def tBlockVal2Async(): Unit = 
      val c = Async.async[ComputationBound]{
          val x1 = 3
@@ -65,6 +64,5 @@ class TestBS1
      }
      val c1 = c.run()
      assert( c1 == Success(7) )
-*/
 
 

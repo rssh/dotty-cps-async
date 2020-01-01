@@ -40,11 +40,7 @@ class ValDefTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
                  }
          CpsExprResult[F,T](f, cpsBuild.asInstanceOf[CpsChunkBuilder[F,T]], tType, true)
       else
-         val fTransformed = '{ ${dm}.pure(${f}) }
-         val cpsBuild = new CpsChunkBuilder[F,T] {
-             override def create() = fromFExpr(fTransformed)
-             override def append[A:quoted.Type](e: CpsChunk[F,A]) = e.insertPrev(f)
-         }
+         val cpsBuild = CpsChunkBuilder.sync(f,dm) 
          CpsExprResult[F,T](f,cpsBuild,tType,false)
      
 

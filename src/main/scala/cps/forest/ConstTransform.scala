@@ -13,11 +13,7 @@ object ConstTransform
   //(see rootTransform)
   def apply[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])(
                                            given qctx: QuoteContext): CpsExprResult[F,T] =
-     val fc = '{ ${dm}.pure(${f}) }
-     val cnBuild = new CpsChunkBuilder[F,T] {
-           override def create() = CpsChunk(Seq(),fc)
-           override def append[A:Type](e: CpsChunk[F,A]) = e.insertPrev(f)
-     }
+     val cnBuild = CpsChunkBuilder.sync(f,dm) 
      CpsExprResult(f, cnBuild , summon[Type[T]], false)
 
 

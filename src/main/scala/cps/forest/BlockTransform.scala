@@ -24,9 +24,10 @@ class BlockTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
                 println("!!!ValDef in block")
                 optRhs match {
                      case Some(rhs) =>
+                         val patternExpr = Block(List(v),Literal(Constant(()))).seal
+                         Async.rootTransform[F,Unit](patternExpr.asInstanceOf[Expr[Unit]],dm) 
                          //val vSym = new Sym[Any](v.symbol.name, v.symbol)
                          //ValDefTransform[F](f,dm,tType).run(vSymbol,vtt.tpe.seal,rhs.seal)
-                         ???
                      case None =>
                          val msg = "ValDef without right part: $v"
                          qctx.error(msg,f)

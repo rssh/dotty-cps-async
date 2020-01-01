@@ -16,12 +16,3 @@ case class CpsChunk[F[_],T](prev: Seq[Expr[_]], last:Expr[F[T]])
   
 
 
-trait CpsChunkBuilder[F[_],T]
-
-  def create(): CpsChunk[F,T]
-
-  def append[A:Type](chunk: CpsChunk[F,A]): CpsChunk[F,A]
-  
-  protected def fromFExpr(f: Expr[F[T]]): CpsChunk[F,T] =
-          CpsChunk(Seq(),f)
-
