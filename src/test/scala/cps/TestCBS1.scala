@@ -58,11 +58,10 @@ class TestBS1
   @Test def tBlockVal2Async(): Unit = 
      val c = Async.async[ComputationBound]{
          val x1 = 3
-         val x2 = await(T1.cbi(4))
+         val x2 = await(T1.cbi(5))
          x1 + x2
-         //7
      }
      val c1 = c.run()
-     assert( c1 == Success(7) )
+     assert( c1 == Success(8) )
 
 
