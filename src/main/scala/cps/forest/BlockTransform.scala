@@ -8,9 +8,9 @@ import scala.quoted.matching._
 import cps._
 
 
+class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
 
-class BlockTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
-
+  import cpsCtx._
 
   // case Block(prevs,last) 
   def run(given qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExprResult[F,T] =
@@ -25,12 +25,10 @@ class BlockTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
                 optRhs match {
                      case Some(rhs) =>
                          val patternExpr = Block(List(v),Literal(Constant(()))).seal
-                         Async.rootTransform[F,Unit](patternExpr.asInstanceOf[Expr[Unit]],dm) 
-                         //val vSym = new Sym[Any](v.symbol.name, v.symbol)
-                         //ValDefTransform[F](f,dm,tType).run(vSymbol,vtt.tpe.seal,rhs.seal)
+                         Async.rootTransform[F,Unit](patternExpr.asInstanceOf[Expr[Unit]],asyncMonad) 
                      case None =>
                          val msg = "ValDef without right part: $v"
-                         qctx.error(msg,f)
+                         qctx.error(msg,patternCode)
                          throw new IllegalStateException(msg)
                 }
               case _ =>
@@ -47,7 +45,7 @@ class BlockTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
                         qctx.error(msg)
                         throw new IllegalStateException(msg)
      }
-     val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],dm)
+     val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],asyncMonad)
      val lastChunk = rLast.cpsBuild.create()
      val blockResult = rPrevs.foldRight(lastChunk)((e,s) => e.cpsBuild.append(s))
      val haveAwait = rLast.haveAwait || rPrevs.exists(_.haveAwait)
@@ -55,15 +53,15 @@ class BlockTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
             override def create() = CpsChunk(Seq(),blockResult.toExpr)
             override def append[A:quoted.Type](e: CpsChunk[F,A]) = 
                         if (!haveAwait) 
-                          e.insertPrev(f)
+                          e.insertPrev(patternCode)
                         else
                           CpsChunk(Seq(), 
-                           '{ ${dm}.flatMap(${blockResult.toExpr})( _ => ${e.toExpr} )   }
+                           '{ ${asyncMonad}.flatMap(${blockResult.toExpr})( _ => ${e.toExpr} )   }
                           )
      }                                 
-     CpsExprResult[F,T](f,cpsBuild,tType,haveAwait)
+     CpsExprResult[F,T](patternCode,cpsBuild,patternType,haveAwait)
   
   def callRootTransform[P:Type](expr:Expr[P],pType:Type[P])(given QuoteContext): CpsExprResult[F,P] =
-                        Async.rootTransform[F,P](expr,dm)
+                        Async.rootTransform[F,P](expr,asyncMonad)
 
 

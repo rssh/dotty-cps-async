@@ -8,6 +8,8 @@ import cps.forest._
 
 erased def await[F[_],T](f:F[T]):T = ???
 
+inline def async[F[_]](given am:AsyncMonad[F]): Async.InferAsyncArg[F] =
+   new Async.InferAsyncArg[F]
 
 object Async {
 
@@ -42,21 +44,26 @@ object Async {
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._
+     val cpsCtx = TransformationContext[F,T](f,tType,dm)
      f match 
-         case Const(c) =>   ConstTransform[F,T](f, dm)
+         case Const(c) =>   ConstTransform(cpsCtx)
          case '{ _root_.cps.await[F,$fType]($ft) } => 
-                            AwaitTransform(fType,ft,f,dm,tType)
+                            AwaitTransform(cpsCtx, fType, ft)
          case '{ val $x:$tx = $y } => 
-                            ValDefTransform[F,T](f,dm).run(x,tx,y)
+                            ValDefTransform.run(cpsCtx, x, tx, y)
+         case '{ if ($cond)  $ifTrue  else $ifFalse } =>
+                            println("If detected!")
+                            println(s"cond=${cond.unseal}")
+                            ???
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
                 case Apply(fun,args) =>
-                   ApplyTransform[F,T](f,dm).run(fun,args)
+                   ApplyTransform(cpsCtx).run(fun,args)
                 case Block(prevs,last) =>
-                   BlockTransform[F,T](f,dm).run(prevs,last)
+                   BlockTransform(cpsCtx).run(prevs,last)
                 case Ident(name) =>
-                   IdentTransform[F,T](f,dm).run(name)
+                   IdentTransform(cpsCtx).run(name)
                 case _ =>
                    printf(f.show)
                    printf("fTree:"+fTree)

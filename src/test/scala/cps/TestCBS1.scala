@@ -16,6 +16,8 @@ object T1 {
 
   def cbi(n:Int): ComputationBound[Int] = Done(n)
 
+  def cbBool(b:Boolean): ComputationBound[Boolean] = Done(b)
+
 }
 
 class TestBS1
@@ -25,7 +27,7 @@ class TestBS1
      assert(c == Done(3))
   
   @Test def tConstantMetaTypeInference(): Unit = 
-     val c = Async.async[ComputationBound](3)
+     val c = async[ComputationBound](3)
      assert(c == Done(3))
 
   @Test def tAwaitErase(): Unit = 

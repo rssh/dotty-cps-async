@@ -4,13 +4,9 @@ import scala.quoted._
 import scala.quoted.matching._
 
 
-class TransformationContext[F[_],T](
-                 given qctx:QuoteContext  
-   )(
+case class TransformationContext[F[_],T](
    patternCode: Expr[T],  // code, for which we build pattern expression
-   originCode: qctx.tasty.Term,
-   unpattern: qctx.tasty.Term => qctx.tasty.Tree,
-   dm: AsyncMonad[F],
-   tType: Type[T]
+   patternType: Type[T],
+   asyncMonad: Expr[AsyncMonad[F]],
 )
 

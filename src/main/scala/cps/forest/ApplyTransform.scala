@@ -8,9 +8,9 @@ import scala.quoted.matching._
 import cps._
 
 
+class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
 
-class ApplyTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
-
+  import cpsCtx._
 
   // case Apply(fun,args) 
   def run(given qctx: QuoteContext)(fun: qctx.tasty.Term, args: List[qctx.tasty.Term]): CpsExprResult[F,T] =
@@ -42,9 +42,9 @@ class ApplyTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
         //  TODO: implement  
         import qctx.tasty.{_, given}
         val nextCpsBuilder = if (cpsObjResult.haveAwait) {
-              val ftype = f match {
+              val ftype = patternCode match {
                             case '{ $x:$ft } => ft
-                            case _ => qctx.error("Can't retrieve type for ${f.show}")
+                            case _ => qctx.error("Can't retrieve type for ${patternCode.show}")
                                       throw new IllegalStateException("msg")
                           }
               new CpsChunkBuilder[F,T] {
@@ -56,27 +56,30 @@ class ApplyTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
 
                 override def create(): CpsChunk[F,T] = 
                    val fc = '{ 
-                      ${dm}.map(${objChunk.toExpr})( x => ${createApply('x.unseal)} )
+                      ${asyncMonad}.map(
+                           ${objChunk.toExpr}
+                         )( x => ${createApply('x.unseal)} )
                    }
                    fromFExpr(fc)
 
                 override def append[A:quoted.Type](e:CpsChunk[F,A]): CpsChunk[F,A] = 
                     CpsChunk(Seq(),'{
-                        ${dm}.flatMap(
-                            ${dm}.map(${objChunk.toExpr})( x => ${createApply('x.unseal)} )
+                        ${asyncMonad}.flatMap(
+                            ${asyncMonad}.map(${objChunk.toExpr}
+                                             )( x => ${createApply('x.unseal)} )
                           )(_ => ${e.toExpr})
                        })
 
               }
         } else {
-              CpsChunkBuilder.sync(f,dm)
+              CpsChunkBuilder.sync(patternCode,asyncMonad)
         }
-        CpsExprResult(f,nextCpsBuilder,summon[quoted.Type[T]],cpsObjResult.haveAwait)
+        CpsExprResult(patternCode,nextCpsBuilder,patternType,cpsObjResult.haveAwait)
   }
      
   def callRootTransform[T:Type](q:Expr[T])(
                                    given qctx: QuoteContext):CpsExprResult[F,T] = 
-         Async.rootTransform[F,T](q, dm)
+         Async.rootTransform[F,T](q, asyncMonad)
      
 
 

@@ -6,33 +6,27 @@ import scala.quoted.matching._
 import cps._
 
 
-class ValDefTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
-                                     (given qctx: QuoteContext)
-
+object ValDefTransform
 
      //    case '{ val $x:$tx = $y } => 
-  def run[TX:Type](x:Sym[TX],tx:Type[TX],y:Expr[TX]) =
-      val tType = summon[Type[T]]
+  def run[F[_]:Type,T:Type,TX:Type](transformationContext: TransformationContext[F,T],
+                  x:Sym[TX],tx:Type[TX],y:Expr[TX])(given qctx: QuoteContext) =
+      import transformationContext._
       import qctx.tasty.{_, given}
       import util._
-      val tastyTType = tType.unseal.tpe
       println("!!! val detected")
-      println(s"f=${f.unseal}")
-      println(s"f.symbol=${f.unseal.symbol}")
-      val ry = Async.rootTransform[F,TX](y,dm)
-      println(s"ry=$ry")
-      println(s"x=$x, tx=$tx, y=$y")
+      val ry = Async.rootTransform[F,TX](y,asyncMonad)
       if (ry.haveAwait) 
          
          val py = ry.transformed
          val cpsBuild = new CpsChunkBuilder[F,Unit] {
 
             def buildValDef[T](a:Expr[T]):Expr[Unit] =
-                 val oldValDef = extractValDef(f.asInstanceOf[Expr[Unit]])
+                 val oldValDef = extractValDef(patternCode.asInstanceOf[Expr[Unit]])
                  println("oldValDef.symbol=${oldValDef.symbol}")
                  valDefBlock(newValDef(oldValDef,x.name, a.unseal))
 
-            def oldSymbol() = extractValDef(f.asInstanceOf[Expr[Unit]]).symbol
+            def oldSymbol() = extractValDef(patternCode.asInstanceOf[Expr[Unit]]).symbol
 
             def fixNewIdent[A](ident:Ident, expr:Expr[A]):Term =
                                 substituteIdent(expr.unseal, oldSymbol(), ident)
@@ -51,13 +45,13 @@ class ValDefTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
                  buildAppendBlock(oldValDef,rhs,expr.unseal).seal.asInstanceOf[Expr[A]]
 
             override def create() = 
-                fromFExpr('{ ${dm}.map($py)((a:$tx) => ${buildValDef('a)}) })
+                fromFExpr('{ ${asyncMonad}.map($py)((a:$tx) => ${buildValDef('a)}) })
 
             override def append[A:quoted.Type](e: CpsChunk[F,A]) = {
-                val oldValDef = extractValDef(f.asInstanceOf[Expr[Unit]])
+                val oldValDef = extractValDef(patternCode.asInstanceOf[Expr[Unit]])
                 CpsChunk[F,A](Seq(),
                  '{
-                    ${dm}.flatMap($py)((a:$tx) => 
+                    ${asyncMonad}.flatMap($py)((a:$tx) => 
                       ${buildAppendBlockExpr(oldValDef,'a.unseal ,e.toExpr)}
                      )
                  })
@@ -67,7 +61,7 @@ class ValDefTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
                 // TODO: inject vlaDef into e
                 CpsChunk[F,A](Seq(),
                  '{ 
-                    ${dm}.flatMap($py)((a:$tx) => 
+                    ${asyncMonad}.flatMap($py)((a:$tx) => 
                       {
                         ${(let(('a).unseal)(
                            ident => fixNewIdent(ident,e.toExpr)
@@ -78,10 +72,10 @@ class ValDefTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
          } // end cpsChunk
 
 
-         CpsExprResult[F,T](f, cpsBuild.asInstanceOf[CpsChunkBuilder[F,T]], tType, true)
+         CpsExprResult[F,T](patternCode, cpsBuild.asInstanceOf[CpsChunkBuilder[F,T]], patternType, true)
       else
-         val cpsBuild = CpsChunkBuilder.sync(f,dm) 
-         CpsExprResult[F,T](f,cpsBuild,tType,false)
+         val cpsBuild = CpsChunkBuilder.sync(patternCode,asyncMonad) 
+         CpsExprResult[F,T](patternCode,cpsBuild,patternType,false)
      
   def newValDef(given qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, name: String, newRhs: qctx.tasty.Term): qctx.tasty.ValDef = {
          import qctx.tasty.{_,given}

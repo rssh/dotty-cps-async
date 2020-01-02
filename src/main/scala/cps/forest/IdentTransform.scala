@@ -6,16 +6,15 @@ import scala.quoted.matching._
 import cps._
 
 
-class IdentTransform[F[_]:Type, T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])
+class IdentTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
 
 
   // case Ident(name) 
   def run(given qctx: QuoteContext)(name: String): CpsExprResult[F,T] =
-     val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
-     println(s"!!! ident detected : ${f}")
-     val cnBuild = CpsChunkBuilder.sync(f,dm) 
-     CpsExprResult(f, cnBuild , tType, false)
+     import cpsCtx._
+     val cnBuild = CpsChunkBuilder.sync(patternCode,asyncMonad) 
+     CpsExprResult(patternCode, cnBuild , patternType, false)
   
   
 

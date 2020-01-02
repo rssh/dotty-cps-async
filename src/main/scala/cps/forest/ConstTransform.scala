@@ -11,9 +11,10 @@ object ConstTransform
 
   // we know, that f is match to Const
   //(see rootTransform)
-  def apply[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])(
+  def apply[F[_]:Type,T:Type](transformationContext: TransformationContext[F,T])(
                                            given qctx: QuoteContext): CpsExprResult[F,T] =
-     val cnBuild = CpsChunkBuilder.sync(f,dm) 
-     CpsExprResult(f, cnBuild , summon[Type[T]], false)
+     import transformationContext._
+     val cnBuild = CpsChunkBuilder.sync(patternCode,asyncMonad) 
+     CpsExprResult(patternCode, cnBuild, patternType, false)
 
 
