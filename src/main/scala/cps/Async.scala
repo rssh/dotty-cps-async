@@ -33,6 +33,8 @@ object Async {
         case Some(dm) => 
              val r = rootTransform[F,T](f,dm).transformed
              println(s"transformed value: ${r.show}")
+             import qctx.tasty.{_,given}
+             println(s"transformed tree: ${r.unseal}")
              r
         case None => 
              val ft = summon[Type[F]]

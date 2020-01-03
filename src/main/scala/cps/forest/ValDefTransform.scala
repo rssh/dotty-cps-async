@@ -16,17 +16,18 @@ object ValDefTransform
       import util._
       println("!!! val detected")
       val ry = Async.rootTransform[F,TX](y,asyncMonad)
+      val unitPatternCode = patternCode.asInstanceOf[Expr[Unit]]
       if (ry.haveAwait) 
          
          val py = ry.transformed
          val cpsBuild = new CpsChunkBuilder[F,Unit] {
 
             def buildValDef[T](a:Expr[T]):Expr[Unit] =
-                 val oldValDef = extractValDef(patternCode.asInstanceOf[Expr[Unit]])
+                 val oldValDef = extractValDef(unitPatternCode)
                  println("oldValDef.symbol=${oldValDef.symbol}")
                  valDefBlock(newValDef(oldValDef,x.name, a.unseal))
 
-            def oldSymbol() = extractValDef(patternCode.asInstanceOf[Expr[Unit]]).symbol
+            def oldSymbol() = extractValDef(unitPatternCode).symbol
 
             def fixNewIdent[A](ident:Ident, expr:Expr[A]):Term =
                                 substituteIdent(expr.unseal, oldSymbol(), ident)
@@ -74,7 +75,22 @@ object ValDefTransform
 
          CpsExprResult[F,T](patternCode, cpsBuild.asInstanceOf[CpsChunkBuilder[F,T]], patternType, true)
       else
-         val cpsBuild = CpsChunkBuilder.sync(patternCode,asyncMonad) 
+         // Note, that we can't use CpsChunkBuilder.sync, because we need to
+         //  extract origin ValDef from his Block, to allow usage of one from
+         //  the enclosing block.
+         val cpsBuild = new CpsChunkBuilder[F,T] {
+                 override def create() = fromFExpr(
+                                 '{ ${asyncMonad}.pure(${patternCode}) })
+                 override def append[A:quoted.Type](e:CpsChunk[F,A]) = 
+                     val valDef = extractValDef(unitPatternCode)
+                     val eExpr = e.toExpr
+                     val tree = eExpr.unseal match 
+                        case Block(stats, expr) =>
+                               Block(valDef::stats, expr)
+                        case _ =>
+                               Block(valDef::Nil, eExpr.unseal) 
+                     CpsChunk[F,A](Seq(),tree.seal.asInstanceOf[Expr[F[A]]])
+         } 
          CpsExprResult[F,T](patternCode,cpsBuild,patternType,false)
      
   def newValDef(given qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, name: String, newRhs: qctx.tasty.Term): qctx.tasty.ValDef = {

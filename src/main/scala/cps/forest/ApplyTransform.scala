@@ -18,8 +18,16 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      println(s"!!! apply detected : ${fun} ${args}")
      // check, that rFun is a method-call, in such case, we can't transform tree to expr
      //  without eta-expansion.  So, wait
+     //val etaExpanded = fun match {
+     //  case Select(qual,name) => fun.etaExpand
+     //  case _ => fun
+     //}
+     //if (!(etaExpanded eq fun)) {
+     //  println(s"before eta-expand: ${fun.show}")
+     //  println(s"after eta-expand: ${etaExpanded.show}")
+     //} 
      fun match {
-       case Select(qual,name) => 
+       case Select(qual,name)  => 
          println("Select qual")
          val qualExpr = qual.seal
          qualExpr match 
@@ -27,7 +35,7 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
               val cpsObj = callRootTransform(q)
               adoptArgs(cpsObj,(x:Term) => Select(x,fun.symbol) ,args) 
        case _ =>
-         val funExpr = fun.seal
+         val funExpr = fun.seal //etaExpanded.seal
          funExpr match 
             case '{ $fun: $funType } =>
               val rFun = callRootTransform(fun)
