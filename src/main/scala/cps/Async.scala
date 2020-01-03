@@ -5,6 +5,7 @@ import scala.quoted.matching._
 import scala.compiletime._
 
 import cps.forest._
+import cps.misc._
 
 erased def await[F[_],T](f:F[T]):T = ???
 
@@ -27,16 +28,19 @@ object Async {
     ${ Async.transformImpl[F,T]('expr) } 
 
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[F[T]] = 
-    summonExpr[AsyncMonad[F]] match 
-      case Some(dm) => 
+    try
+      summonExpr[AsyncMonad[F]] match 
+        case Some(dm) => 
              val r = rootTransform[F,T](f,dm).transformed
              println(s"transformed value: ${r.show}")
              r
-      case None => 
+        case None => 
              val ft = summon[Type[F]]
-             val msg = s"Can't find async monad for ${ft.show}"
-             qctx.error(msg)
-             throw RuntimeException(msg)
+             throw MacroError(s"Can't find async monad for ${ft.show}", f)
+    catch
+      case ex: MacroError =>
+           qctx.error(ex.msg, ex.posExpr)
+           '{???}
 
 
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])(
@@ -53,8 +57,7 @@ object Async {
                             ValDefTransform.run(cpsCtx, x, tx, y)
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             println("If detected!")
-                            println(s"cond=${cond.unseal}")
-                            ???
+                            IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
@@ -65,10 +68,8 @@ object Async {
                 case Ident(name) =>
                    IdentTransform(cpsCtx).run(name)
                 case _ =>
-                   printf(f.show)
                    printf("fTree:"+fTree)
-                   qctx.error("language construction is not supported", f)
-                   throw new IllegalStateException("language construction is not supported")
+                   throw MacroError("language construction is not supported", f)
              }
      
 
