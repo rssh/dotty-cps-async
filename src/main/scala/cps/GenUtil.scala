@@ -11,6 +11,7 @@ object GenUtil {
     type V = T
   }
 
+
   inline def defaultValue[T:Type](given qctx: QuoteContext) = {
     inline erasedValue[T] match {
       case _: Byte => (0: Byte)

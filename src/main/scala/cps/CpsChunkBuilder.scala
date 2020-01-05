@@ -3,7 +3,7 @@ package cps
 import scala.quoted._
 
 
-trait CpsChunkBuilder[F[_],T]
+trait CpsChunkBuilder[F[_]:Type,T:Type]
 
   def create(): CpsChunk[F,T]
 
@@ -11,6 +11,23 @@ trait CpsChunkBuilder[F[_],T]
   
   protected def fromFExpr(f: Expr[F[T]]): CpsChunk[F,T] =
           CpsChunk(Seq(),f)
+
+  def pure[A:Type](monad: Expr[AsyncMonad[F]], t: Expr[A])(given QuoteContext): CpsChunk[F,A] = 
+                           CpsChunk[F,A](Seq(),'{ ${monad}.pure(${t}) })
+
+  def map[A:Type](monad: Expr[AsyncMonad[F]], t: Expr[T => A])(given QuoteContext): CpsChunk[F,A] =
+                           CpsChunk[F,A](Seq(),'{ ${monad}.map(${create().toExpr})(${t}) })
+
+
+  def flatMap[A:Type](monad: Expr[AsyncMonad[F]], t: Expr[T => F[A]])(given QuoteContext): CpsChunk[F,A] =
+                 CpsChunk[F,A](Seq(), 
+                      '{ ${monad}.flatMap(${create().toExpr})(${t}) }
+                 )
+
+  def flatMapIgnore[A:Type](monad: Expr[AsyncMonad[F]], t: Expr[F[A]])(given QuoteContext): CpsChunk[F,A] =
+           CpsChunk[F,A](Seq(), 
+                 '{ ${monad}.flatMap(${create().toExpr})(_ => ${t}) }
+           )
 
 
 

@@ -8,9 +8,13 @@ import scala.compiletime._
 case class CpsExprResult[F[_],T](
                 origin:Expr[T],
                 cpsBuild: CpsChunkBuilder[F,T],
-                internalType: Type[T],
+                originType: Type[T],
                 haveAwait:Boolean
 ) {
+
+    type MT[_] = F
+    type TT = T
+
     def transformed(given QuoteContext): Expr[F[T]] = cpsBuild.create().toExpr
 }
 

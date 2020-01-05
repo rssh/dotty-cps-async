@@ -18,9 +18,9 @@ object IfTransform
      import qctx.tasty.{_, given}
      import util._
      import cpsCtx._
-     val cR = Async.rootTransform(cond, asyncMonad)
-     val tR = Async.rootTransform(ifTrue, asyncMonad)
-     val fR = Async.rootTransform(ifFalse, asyncMonad)
+     val cR = Async.rootTransform(cond, asyncMonad, false)
+     val tR = Async.rootTransform(ifTrue, asyncMonad, false)
+     val fR = Async.rootTransform(ifFalse, asyncMonad, false)
      var isAsync = true
 
      val cnBuild = {

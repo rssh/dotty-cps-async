@@ -21,13 +21,14 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
           case d: Definition =>
             d match {
               case v@ValDef(vName,vtt,optRhs) =>
-                println("!!!ValDef in block")
+                println(s"!!!ValDef in block : ${v.show}")
                 optRhs match {
                      case Some(rhs) =>
                          val patternExpr = Block(List(v),Literal(Constant(()))).seal
-                         Async.rootTransform[F,Unit](patternExpr.asInstanceOf[Expr[Unit]],asyncMonad) 
+                         val patternExprUnit = patternExpr.asInstanceOf[Expr[Unit]]
+                         Async.rootTransform[F,Unit](patternExprUnit,asyncMonad,true)
                      case None =>
-                         val msg = "ValDef without right part: $v"
+                         val msg = "ValDef without right part in block: $v"
                          qctx.error(msg,patternCode)
                          throw new IllegalStateException(msg)
                 }
@@ -38,14 +39,14 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
           case t: Term =>
             t.seal match 
                 case '{ $p:$tp } =>
-                        callRootTransform(p,tp)
+                        callRootTransform(p,tp, true)
                 case other =>
                         printf(other.show)
                         val msg = s"can't handle statement in block: $other"
                         qctx.error(msg)
                         throw new IllegalStateException(msg)
      }
-     val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],asyncMonad)
+     val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],asyncMonad,true)
      val lastChunk = rLast.cpsBuild.create()
      val blockResult = rPrevs.foldRight(lastChunk)((e,s) => e.cpsBuild.append(s))
      val haveAwait = rLast.haveAwait || rPrevs.exists(_.haveAwait)
@@ -61,7 +62,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
      }                                 
      CpsExprResult[F,T](patternCode,cpsBuild,patternType,haveAwait)
   
-  def callRootTransform[P:Type](expr:Expr[P],pType:Type[P])(given QuoteContext): CpsExprResult[F,P] =
-                        Async.rootTransform[F,P](expr,asyncMonad)
+  def callRootTransform[P:Type](expr:Expr[P],pType:Type[P],inBlock:Boolean)(given QuoteContext): CpsExprResult[F,P] =
+                        Async.rootTransform[F,P](expr,asyncMonad,inBlock)
 
 

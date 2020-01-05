@@ -81,4 +81,12 @@ class TestBS1If
      }
      assert(c.run() == Success(5))
 
+  @Test def tIf_OneLeg_C00(): Unit = 
+     val c = async[ComputationBound]{
+       var x = 0
+       if (true)
+         x = 1
+       x+1
+     }
+     assert(c.run() == Success(2))
 

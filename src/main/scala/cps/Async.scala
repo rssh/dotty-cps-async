@@ -28,16 +28,18 @@ object Async {
     ${ Async.transformImpl[F,T]('expr) } 
 
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[F[T]] = 
+    import qctx.tasty.{_,given}
     try
       summonExpr[AsyncMonad[F]] match 
         case Some(dm) => 
-             val r = rootTransform[F,T](f,dm).transformed
+             println(s"before transformed: ${f.show}")
+             println(s"value: ${f.unseal}")
+             val r = rootTransform[F,T](f,dm,false).transformed
              println(s"transformed value: ${r.show}")
-             import qctx.tasty.{_,given}
              println(s"transformed tree: ${r.unseal}")
              r
         case None => 
-             val ft = summon[Type[F]]
+             val ft = summon[quoted.Type[F]]
              throw MacroError(s"Can't find async monad for ${ft.show}", f)
     catch
       case ex: MacroError =>
@@ -45,26 +47,30 @@ object Async {
            '{???}
 
 
-  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]])(
+  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], inBlock: Boolean)(
                                            given qctx: QuoteContext): CpsExprResult[F,T] =
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._
-     val cpsCtx = TransformationContext[F,T](f,tType,dm)
+     val cpsCtx = TransformationContext[F,T](f,tType,dm, inBlock)
      f match 
          case Const(c) =>   ConstTransform(cpsCtx)
          case '{ _root_.cps.await[F,$fType]($ft) } => 
                             AwaitTransform(cpsCtx, fType, ft)
-         case '{ val $x:$tx = $y } => 
+         case '{ val $x:$tx = $y } if inBlock => 
+                            ValDefTransform.run(cpsCtx, x, tx, y)
+         case '{ var $x:$tx = $y } if inBlock => 
                             ValDefTransform.run(cpsCtx, x, tx, y)
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
-                            println("If detected!")
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
                 case Apply(fun,args) =>
                    ApplyTransform(cpsCtx).run(fun,args)
+                case Assign(left,right) =>
+                   print(s"Assign detected, left=${left}, right=${right}")
+                   AssignTransform(cpsCtx).run(left,right)
                 case Block(prevs,last) =>
                    BlockTransform(cpsCtx).run(prevs,last)
                 case Ident(name) =>

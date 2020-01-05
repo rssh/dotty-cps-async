@@ -14,8 +14,9 @@ object ValDefTransform
       import transformationContext._
       import qctx.tasty.{_, given}
       import util._
-      println("!!! val detected")
-      val ry = Async.rootTransform[F,TX](y,asyncMonad)
+      println(s"!!!ValDefTransform.run:: val detected: x=$x, y=${y.show}")
+      val ry = Async.rootTransform[F,TX](y,asyncMonad,false)
+      println(s"!!!ValDefTransform.run:: ry=${ry}")
       val unitPatternCode = patternCode.asInstanceOf[Expr[Unit]]
       if (ry.haveAwait) 
          

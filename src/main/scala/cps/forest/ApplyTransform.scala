@@ -87,7 +87,7 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      
   def callRootTransform[T:Type](q:Expr[T])(
                                    given qctx: QuoteContext):CpsExprResult[F,T] = 
-         Async.rootTransform[F,T](q, asyncMonad)
+         Async.rootTransform[F,T](q, asyncMonad, false)
      
 
 
