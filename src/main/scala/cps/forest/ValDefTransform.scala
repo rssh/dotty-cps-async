@@ -21,7 +21,7 @@ object ValDefTransform
       if (ry.haveAwait) 
          
          val py = ry.transformed
-         val cpsBuild = new CpsChunkBuilder[F,Unit] {
+         val cpsBuild = new CpsChunkBuilder[F,Unit](asyncMonad) {
 
             def buildValDef[T](a:Expr[T]):Expr[Unit] =
                  val oldValDef = extractValDef(unitPatternCode)
@@ -79,9 +79,8 @@ object ValDefTransform
          // Note, that we can't use CpsChunkBuilder.sync, because we need to
          //  extract origin ValDef from his Block, to allow usage of one from
          //  the enclosing block.
-         val cpsBuild = new CpsChunkBuilder[F,T] {
-                 override def create() = fromFExpr(
-                                 '{ ${asyncMonad}.pure(${patternCode}) })
+         val cpsBuild = new CpsChunkBuilder[F,T](asyncMonad) {
+                 override def create() = pure(patternCode)
                  override def append[A:quoted.Type](e:CpsChunk[F,A]) = 
                      val valDef = extractValDef(unitPatternCode)
                      val eExpr = e.toExpr

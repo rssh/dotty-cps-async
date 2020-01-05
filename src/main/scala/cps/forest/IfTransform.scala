@@ -29,23 +29,19 @@ object IfTransform
             isAsync = false
             CpsChunkBuilder.sync(patternCode,asyncMonad)
          else
-            new CpsChunkBuilder[F,T] {
+            new CpsChunkBuilder[F,T](asyncMonad) {
                override def create() = fromFExpr(
                 '{ if ($cond) 
                      ${tR.cpsBuild.create().toExpr}
                    else 
                      ${fR.cpsBuild.create().toExpr} })
                override def append[A:quoted.Type](e:CpsChunk[F,A]) =
-                   CpsChunk[F,A](Seq(), '{
-                       ${asyncMonad}.flatMap(
-                          ${create().toExpr})( _ =>
-                                          ${e.toExpr})
-                    })
+                     flatMapIgnore(e.toExpr)
             }
        else // (cR.haveAwait) 
          def condAsyncExpr() = cR.cpsBuild.create().toExpr
          if (!tR.haveAwait && !fR.haveAwait) 
-           new CpsChunkBuilder[F,T] {
+           new CpsChunkBuilder[F,T](asyncMonad) {
              val mappedCond = '{ ${asyncMonad}.map(
                                  ${condAsyncExpr()}
                                 )( c =>
@@ -59,15 +55,11 @@ object IfTransform
               override def create() = fromFExpr(mappedCond)
 
               override def append[A:quoted.Type](e:CpsChunk[F,A]) =
-                       CpsChunk[F,A](Seq(),
-                          '{ ${asyncMonad}.flatMap(
-                                ${mappedCond}
-                               )(_ => ${e.toExpr})
-                           })
+                     flatMapIgnore(e.toExpr)
  
            }
          else
-           new CpsChunkBuilder[F,T]{
+           new CpsChunkBuilder[F,T](asyncMonad) {
               override def create() = fromFExpr(
                    '{ ${asyncMonad}.flatMap(
                          ${condAsyncExpr()}
@@ -80,10 +72,7 @@ object IfTransform
                         )
                     }) 
               override def append[A:quoted.Type](e:CpsChunk[F,A]) = 
-                   CpsChunk[F,A](Seq(),
-                        '{  ${asyncMonad}.flatMap(
-                               ${create().toExpr})(_ => ${e.toExpr}) 
-                        })
+                                  flatMapIgnore(e.toExpr)
            }
      }
      CpsExprResult[F,T](patternCode, cnBuild, patternType, isAsync)

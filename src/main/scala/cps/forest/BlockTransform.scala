@@ -50,15 +50,13 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
      val lastChunk = rLast.cpsBuild.create()
      val blockResult = rPrevs.foldRight(lastChunk)((e,s) => e.cpsBuild.append(s))
      val haveAwait = rLast.haveAwait || rPrevs.exists(_.haveAwait)
-     val cpsBuild = new CpsChunkBuilder[F,T] {
+     val cpsBuild = new CpsChunkBuilder[F,T](asyncMonad) {
             override def create() = CpsChunk(Seq(),blockResult.toExpr)
             override def append[A:quoted.Type](e: CpsChunk[F,A]) = 
                         if (!haveAwait) 
                           e.insertPrev(patternCode)
                         else
-                          CpsChunk(Seq(), 
-                           '{ ${asyncMonad}.flatMap(${blockResult.toExpr})( _ => ${e.toExpr} )   }
-                          )
+                          flatMapIgnore(e.toExpr)
      }                                 
      CpsExprResult[F,T](patternCode,cpsBuild,patternType,haveAwait)
   

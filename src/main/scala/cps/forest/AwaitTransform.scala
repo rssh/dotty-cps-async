@@ -20,14 +20,10 @@ object AwaitTransform
      import transformationContext._
      // TODO: think about situation, when ftType != tType.
      // [independend / translated ]
-     val awBuild = new CpsChunkBuilder[F,S] {
-           override def create() = CpsChunk(Seq(),ft)
+     val awBuild = new CpsChunkBuilder[F,S](asyncMonad) {
+           override def create() = fromFExpr(ft)
            override def append[A:quoted.Type](e:CpsChunk[F,A]) = 
-                           CpsChunk[F,A](Seq(),
-                             '{
-                               ${asyncMonad}.flatMap($ft)(_ => ${e.toExpr})
-                              }
-                           )
+                        flatMapIgnore(e.toExpr)
      }
      //TODO: get data about independence and rewrite.
      val awBuildCasted = awBuild.asInstanceOf[CpsChunkBuilder[F,T]]

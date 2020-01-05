@@ -55,7 +55,7 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                             case _ => qctx.error("Can't retrieve type for ${patternCode.show}")
                                       throw new IllegalStateException("msg")
                           }
-              new CpsChunkBuilder[F,T] {
+              new CpsChunkBuilder[F,T](asyncMonad) {
 
                 def createApply(x:Term):Expr[T] =
                      Apply(objFun(x),args).seal.asInstanceOf[Expr[T]]
