@@ -26,22 +26,33 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      //  println(s"before eta-expand: ${fun.show}")
      //  println(s"after eta-expand: ${etaExpanded.show}")
      //} 
-     fun match {
-       case Select(qual,name)  => 
-         println("Select qual")
-         val qualExpr = qual.seal
-         qualExpr match 
-            case '{ $q: $qt } =>
-              val cpsObj = callRootTransform(q)
-              adoptArgs(cpsObj,(x:Term) => Select(x,fun.symbol) ,args) 
+     fun.tpe.widen match {
+       case _ : MethodType | PolyType  =>
+          // term should be eta-expanded before,
+         fun match 
+           case Select(qual,name)  => 
+             println("Select qual")
+             val qualExpr = qual.seal
+             qualExpr match 
+                 case '{ $q: $qt } =>
+                    val cpsObj = callRootTransform(q)
+                    adoptArgs(cpsObj,(x:Term) => Select(x,fun.symbol) ,args) 
+           case Ident(sym) =>
+             val expanded = fun.etaExpand
+             val expandedExpr = expanded.seal
+             expandedExpr match {
+                case '{ $fe: $fte } =>
+                  val cpsFun = callRootTransform(fe)
+                  adoptArgs(cpsFun,(x:Term) => x ,args) 
+             }
        case _ =>
-         val funExpr = fun.seal //etaExpanded.seal
-         funExpr match 
-            case '{ $fun: $funType } =>
-              val rFun = callRootTransform(fun)
-              println(s"!!! rFun= : ${rFun}")
-              adoptArgs(rFun,  (x:Term) => x, args)
+           val funExpr = fun.seal
+           funExpr match 
+              case '{ $fun: $funType } =>
+                 val rFun = callRootTransform(fun)
+                 adoptArgs(rFun,  (x:Term) => x, args)
      }
+
   
   def adoptArgs[S:Type](given qctx: QuoteContext)(cpsObjResult: CpsExprResult[F,S], 
                   objFun: qctx.tasty.Term => qctx.tasty.Term,

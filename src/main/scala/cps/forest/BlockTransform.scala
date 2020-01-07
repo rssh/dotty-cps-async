@@ -6,6 +6,7 @@ import scala.quoted._
 import scala.quoted.matching._
 
 import cps._
+import cps.misc._
 
 
 class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
@@ -33,8 +34,8 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
                          throw new IllegalStateException(msg)
                 }
               case _ =>
-                qctx.error("definition is not supported inside block")
-                throw new IllegalStateException("definition inside block")
+                printf(d.show)
+                throw MacroError("definition is not supported inside block",patternCode)
             } 
           case t: Term =>
             t.seal match 
@@ -42,9 +43,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
                         callRootTransform(p,tp, true)
                 case other =>
                         printf(other.show)
-                        val msg = s"can't handle statement in block: $other"
-                        qctx.error(msg)
-                        throw new IllegalStateException(msg)
+                        throw MacroError(s"can't handle statement in block: $other",t.seal)
      }
      val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],asyncMonad,true)
      val lastChunk = rLast.cpsBuild.create()
