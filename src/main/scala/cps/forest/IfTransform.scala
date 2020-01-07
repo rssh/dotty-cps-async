@@ -9,7 +9,7 @@ object IfTransform
 
   /**
    *'''
-   * '{ _root_.cps.await[F,$ftType]($ft) } 
+   * '{ if ($cond)  $ifTrue  else $ifFalse } 
    *'''
    **/
   def run[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T], 

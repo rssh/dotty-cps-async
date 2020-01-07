@@ -67,6 +67,8 @@ object Async {
                             WhileTransform.run(cpsCtx, cond, repeat)
          //case '{ try $body catch $cases finally $finalizer   } =>
          //                  can't be determinated inside matching
+         case '{ throw $ex } =>
+                            ThrowTransform.run(cpsCtx, ex)
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
@@ -75,6 +77,9 @@ object Async {
                 case Assign(left,right) =>
                    print(s"Assign detected, left=${left}, right=${right}")
                    AssignTransform(cpsCtx).run(left,right)
+                case Lambda(params, body) =>
+                   print(s"Lambda detected, params=${params}, body=${body}")
+                   ???
                 case Block(prevs,last) =>
                    BlockTransform(cpsCtx).run(prevs,last)
                 case Ident(name) =>
@@ -83,6 +88,9 @@ object Async {
                    TypedTransform(cpsCtx).run(expr,tp)
                 case Try(body, cases, finalizer) =>
                    TryTransform(cpsCtx).run(body,cases,finalizer)
+                case New(typeTree) =>
+                   printf("new, typeTree:"+typeTree)
+                   NewTransform(cpsCtx).run(typeTree)
                 case _ =>
                    printf("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)
