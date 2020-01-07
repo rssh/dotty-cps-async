@@ -46,10 +46,10 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
                         throw MacroError(s"can't handle statement in block: $other",t.seal)
      }
      val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],asyncMonad,true)
-     val lastChunk = rLast.cpsBuild.create()
-     val blockResult = rPrevs.foldRight(lastChunk)((e,s) => e.cpsBuild.append(s))
+     val lastChunk = rLast.chunkBuilder.create()
+     val blockResult = rPrevs.foldRight(lastChunk)((e,s) => e.chunkBuilder.append(s))
      val haveAwait = rLast.haveAwait || rPrevs.exists(_.haveAwait)
-     val cpsBuild = new CpsChunkBuilder[F,T](asyncMonad) {
+     val builder = new CpsChunkBuilder[F,T](asyncMonad) {
             override def create() = CpsChunk(Seq(),blockResult.toExpr)
             override def append[A:quoted.Type](e: CpsChunk[F,A]) = 
                         if (!haveAwait) 
@@ -57,7 +57,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
                         else
                           flatMapIgnore(e.toExpr)
      }                                 
-     CpsExprResult[F,T](patternCode,cpsBuild,patternType,haveAwait)
+     CpsExprResult[F,T](patternCode,builder,patternType,haveAwait)
   
   def callRootTransform[P:Type](expr:Expr[P],pType:Type[P],inBlock:Boolean)(given QuoteContext): CpsExprResult[F,P] =
                         Async.rootTransform[F,P](expr,asyncMonad,inBlock)

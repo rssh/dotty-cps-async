@@ -44,17 +44,17 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                 cpsLeft: CpsExprResult[F,L], cpsRight: CpsExprResult[F,R]): CpsExprResult[F,T] =
      import qctx.tasty.{_, given}
      if (!cpsLeft.haveAwait) {
-        val cpsBuild = if (!cpsRight.haveAwait) 
+        val builder =  if (!cpsRight.haveAwait) 
                           CpsChunkBuilder.sync(patternCode,asyncMonad)
                        else    // !cpsLeft.haveAwait && cpsRight.haveAwait
                           new CpsChunkBuilder[F,T](asyncMonad) {
                             override def create() = 
-                              cpsRight.cpsBuild.map( 
+                              cpsRight.chunkBuilder.map( 
                                     '{ x => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]]} })
                             override def append[A:quoted.Type](e: CpsChunk[F,A])  = 
                               flatMapIgnore(e.toExpr)
                           }                       
-        CpsExprResult(patternCode, cpsBuild, patternType, cpsLeft.haveAwait || cpsRight.haveAwait)
+        CpsExprResult(patternCode, builder, patternType, cpsLeft.haveAwait || cpsRight.haveAwait)
      } else { // (cpsLeft.haveAwait && !cpsRight.haveAwait) {
         left match 
           case Select(obj,sym) => 
@@ -74,20 +74,20 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
              cpsLeft: CpsExprResult[F,L], cpsRight: CpsExprResult[F,R],
              cpsLu: CpsExprResult[F,LU]): CpsExprResult[F,T] =
      import qctx.tasty.{_, given}
-     val cpsBuild = if (!cpsRight.haveAwait) {
+     val builder = if (!cpsRight.haveAwait) {
                            new CpsChunkBuilder[F,T](asyncMonad) {
                              override def create() =
-                                 cpsLu.cpsBuild.map('{ x => 
+                                 cpsLu.chunkBuilder.map('{ x => 
                                         ${Assign('x.unseal.select(left.symbol), right).seal.
                                                   asInstanceOf[Expr[T]] } })
                              override def append[A:quoted.Type](e: CpsChunk[F,A])  = 
                                  flatMapIgnore(e.toExpr)
                            }
-                    } else {
+                   } else {
                            new CpsChunkBuilder[F,T](asyncMonad) {
                              override def create(): CpsChunk[F,T] =
-                                 cpsLu.cpsBuild.flatMap('{ l =>
-                                     ${cpsRight.cpsBuild.flatMap( 
+                                 cpsLu.chunkBuilder.flatMap('{ l =>
+                                     ${cpsRight.chunkBuilder.flatMap( 
                                         '{ r => ${
                                                Assign('l.unseal.select(left.symbol),
                                                       'r.unseal
@@ -98,7 +98,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                              override def append[A:quoted.Type](e: CpsChunk[F,A])  = 
                                  flatMapIgnore(e.toExpr)
                            }
-                    }
-     CpsExprResult(patternCode, cpsBuild, patternType, cpsLeft.haveAwait || cpsRight.haveAwait)
+                   }
+     CpsExprResult(patternCode, builder, patternType, cpsLeft.haveAwait || cpsRight.haveAwait)
 
 

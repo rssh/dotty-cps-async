@@ -71,12 +71,10 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                 def createApply(x:Term):Expr[T] =
                      Apply(objFun(x),args).seal.asInstanceOf[Expr[T]]
 
-                val objChunk = cpsObjResult.cpsBuild.create()
-
                 override def create(): CpsChunk[F,T] = 
                    val fc = '{ 
                       ${asyncMonad}.map(
-                           ${objChunk.toExpr}
+                           ${cpsObjResult.transformed}
                          )( x => ${createApply('x.unseal)} )
                    }
                    fromFExpr(fc)
@@ -84,7 +82,7 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                 override def append[A:quoted.Type](e:CpsChunk[F,A]): CpsChunk[F,A] = 
                     CpsChunk(Seq(),'{
                         ${asyncMonad}.flatMap(
-                            ${asyncMonad}.map(${objChunk.toExpr}
+                            ${asyncMonad}.map(${cpsObjResult.transformed}
                                              )( x => ${createApply('x.unseal)} )
                           )(_ => ${e.toExpr})
                        })

@@ -7,7 +7,7 @@ import scala.compiletime._
 
 case class CpsExprResult[F[_],T](
                 origin:Expr[T],
-                cpsBuild: CpsChunkBuilder[F,T],
+                chunkBuilder: CpsChunkBuilder[F,T],
                 originType: Type[T],
                 haveAwait:Boolean
 ) {
@@ -15,7 +15,7 @@ case class CpsExprResult[F[_],T](
     type MT[_] = F
     type TT = T
 
-    def transformed(given QuoteContext): Expr[F[T]] = cpsBuild.create().toExpr
+    def transformed(given QuoteContext): Expr[F[T]] = chunkBuilder.create().toExpr
 }
 
     

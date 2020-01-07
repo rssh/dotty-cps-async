@@ -33,7 +33,7 @@ object WhileTransform
                val createExpr = '{
                  def _whilefun(): F[T] = {
                    if (${cond}) 
-                     ${cpsRepeat.cpsBuild.flatMapIgnore('{ _whilefun() }).toExpr}
+                     ${cpsRepeat.chunkBuilder.flatMapIgnore('{ _whilefun() }).toExpr}
                    else
                      ${pure('{()}).toExpr.asInstanceOf[Expr[F[T]]]}
                  }
@@ -50,7 +50,7 @@ object WhileTransform
             new CpsChunkBuilder[F,T](asyncMonad) {
                val createExpr: Expr[F[T]] = '{
                  def _whilefun(): F[T] = {
-                   ${cpsCond.cpsBuild.flatMap[T]( '{ c =>
+                   ${cpsCond.chunkBuilder.flatMap[T]( '{ c =>
                        if (c) {
                          $repeat 
                          _whilefun()
@@ -72,9 +72,9 @@ object WhileTransform
             new CpsChunkBuilder[F,T](asyncMonad) {
                val createExpr = '{
                  def _whilefun(): F[T] = {
-                   ${cpsCond.cpsBuild.flatMap[T]( '{ c =>
+                   ${cpsCond.chunkBuilder.flatMap[T]( '{ c =>
                        if (c) {
-                         ${cpsRepeat.cpsBuild.flatMapIgnore(
+                         ${cpsRepeat.chunkBuilder.flatMapIgnore(
                              '{ _whilefun() }
                           ).toExpr}
                        } else {

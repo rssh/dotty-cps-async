@@ -32,14 +32,14 @@ object IfTransform
             new CpsChunkBuilder[F,T](asyncMonad) {
                override def create() = fromFExpr(
                 '{ if ($cond) 
-                     ${tR.cpsBuild.create().toExpr}
+                     ${tR.transformed}
                    else 
-                     ${fR.cpsBuild.create().toExpr} })
+                     ${fR.transformed} })
                override def append[A:quoted.Type](e:CpsChunk[F,A]) =
                      flatMapIgnore(e.toExpr)
             }
        else // (cR.haveAwait) 
-         def condAsyncExpr() = cR.cpsBuild.create().toExpr
+         def condAsyncExpr() = cR.transformed
          if (!tR.haveAwait && !fR.haveAwait) 
            new CpsChunkBuilder[F,T](asyncMonad) {
              val mappedCond = '{ ${asyncMonad}.map(
@@ -65,9 +65,9 @@ object IfTransform
                          ${condAsyncExpr()}
                        )( c =>
                            if (c) {
-                              ${tR.cpsBuild.create().toExpr}
+                              ${tR.transformed}
                            } else {
-                              ${fR.cpsBuild.create().toExpr} 
+                              ${fR.transformed} 
                            } 
                         )
                     }) 
