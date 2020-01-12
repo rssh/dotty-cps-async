@@ -1,4 +1,4 @@
-package cps.cbs2
+package direct
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
@@ -16,7 +16,7 @@ trait DM[F[_]] {
 sealed trait CB[T]
 case class Done[T](value:T) extends CB[T]
 
-implicit object dmCB extends DM[CB] {
+implicit val dmCB: DM[CB] = new DM[CB] {
 
   def pure[T:Type](t:Expr[T]):(given ctx:QuoteContext) => Expr[CB[T]] =
     '{ Done(${t}) }
@@ -26,9 +26,9 @@ implicit object dmCB extends DM[CB] {
 
 object A {
 
-  inline def transform[F[_],T](expr: =>T): F[T] =
+  inline def transform[F[_]:DM,T](expr: =>T): F[T] =
     ${ 
-       ??? // A.transformImpl('expr)
+       '{???} //A.transformImpl('expr)
      }
 
   def transformImpl[F[_]:DM,T:Type](f: Expr[T])(given QuoteContext):Expr[F[T]] = 
@@ -44,7 +44,7 @@ class TestBS2
 
   @Ignore
   @Test def tConstant(): Unit = {
-     val c = ??? // A.transform[CB,Int](3)
+     val c = A.transform[CB,Int](3)
      assert(c == Done(3))
   }
   

@@ -55,8 +55,11 @@ object Async {
      val cpsCtx = TransformationContext[F,T](f,tType,dm, inBlock)
      f match 
          case Const(c) =>   ConstTransform(cpsCtx)
-         case '{ _root_.cps.await[F,$fType]($ft) } => 
-                            AwaitTransform(cpsCtx, fType, ft)
+         case '{ _root_.cps.await[F,$sType]($fs) } => 
+                            AwaitTransform(cpsCtx, sType, fs)
+        // looks like matching error in dotty.
+        // case '{ _root_.cps.await[$mType,$sType]($mst) } => 
+        //                    AwaitTransformOtherMonad(cpsCtx, mType, sType, mst.asInstanceOf[Expr[Any]])
          case '{ val $x:$tx = $y } if inBlock => 
                             ValDefTransform.run(cpsCtx, x, tx, y)
          case '{ var $x:$tx = $y } if inBlock => 
@@ -89,8 +92,9 @@ object Async {
                 case Try(body, cases, finalizer) =>
                    TryTransform(cpsCtx).run(body,cases,finalizer)
                 case New(typeTree) =>
-                   printf("new, typeTree:"+typeTree)
                    NewTransform(cpsCtx).run(typeTree)
+                case selectTerm: Select =>
+                   SelectTreeTransform.run(cpsCtx, selectTerm)
                 case _ =>
                    printf("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)

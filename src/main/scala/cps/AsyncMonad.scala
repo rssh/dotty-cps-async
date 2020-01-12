@@ -15,8 +15,8 @@ trait AsyncMonad[F[_]] {
 
    def error[A](e: Throwable): F[A]
 
-   def suspend[A](thunk: =>F[A]): F[A]
+   def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A]
 
-   def delay[A](thunk: =>A): F[A]
+   def withAction[A](fa:F[A])(action: =>Unit):F[A]
 
 }

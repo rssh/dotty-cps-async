@@ -18,4 +18,3 @@ case class CpsExprResult[F[_],T](
     def transformed(given QuoteContext): Expr[F[T]] = chunkBuilder.create().toExpr
 }
 
-    

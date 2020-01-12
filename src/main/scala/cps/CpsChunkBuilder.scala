@@ -39,4 +39,13 @@ object CpsChunkBuilder
         override def append[A:Type](e: CpsChunk[F,A]) = e.insertPrev(f)
      }
          
+   def async[F[_]:Type,T:Type](dm: Expr[AsyncMonad[F]], f: Expr[F[T]])(given QuoteContext):
+                                                                               CpsChunkBuilder[F,T] = 
+     new CpsChunkBuilder[F,T](dm) {
+        override def create() = fromFExpr(f)
+        override def append[A:Type](e: CpsChunk[F,A]) = 
+                          flatMapIgnore(e.toExpr)
+     }
+
+
 

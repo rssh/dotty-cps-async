@@ -33,6 +33,21 @@ implicit object ComputationBoundAsyncMonad extends AsyncMonad[ComputationBound] 
 
    def error[T](e: Throwable):ComputationBound[T] = Error[T](e)
 
+   def restore[A](fa: ComputationBound[A])(fx:Throwable => ComputationBound[A]): ComputationBound[A] = Thunk(() => {
+         fa.run() match 
+            case Success(a) => Done(a)
+            case Failure(ex) => fx(ex)
+       })
+
+   def withAction[A](fa:ComputationBound[A])(action: =>Unit):ComputationBound[A] = Thunk(() => {
+         val r = fa.run()  
+         action
+         r match {
+           case Success(a) => Done(a)
+           case Failure(ex) => Error(ex)
+         }
+       })
+
    def suspend[A](thunk: => ComputationBound[A]): ComputationBound[A] = Thunk(() =>thunk)
 
    def delay[A](thunk: =>A): ComputationBound[A] = Thunk(() => Done(thunk))
