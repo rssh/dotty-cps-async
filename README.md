@@ -53,7 +53,7 @@ ComputationBounds (https://github.com/rssh/dotty-cps-async/blob/master/src/test/
 
 Currently, doty-cps-async is at an early stage and not ready for production use.  Not all language constructions are handled. There are many things, which not work yet.   You can help to develop but providing test cases and implementing missing parts.  
 
-# FAQ
+## FAQ
 
 - What are the current limitations?
 -- Only basic constructions can be inside an async block:  if, while, try/catch, val definition.  Submit patches if you want more.
@@ -67,7 +67,7 @@ Currently, doty-cps-async is at an early stage and not ready for production use.
 - Is exists a version for scala-2?
 -- No
 
-# Related works
+## Related works
 
 - Scala-continuations.  paper:  http://infoscience.epfl.ch/record/149136/files/icfp113-rompf.pdf
 - Scala-async:   https://github.com/scala/scala-async  
