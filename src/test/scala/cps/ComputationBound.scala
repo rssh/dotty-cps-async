@@ -87,31 +87,3 @@ case class Error[T](e: Throwable) extends ComputationBound[T]
      this.asInstanceOf[ComputationBound[S]]
 
 
-implicit object ComputationBoundMetaMonadDirect extends AsyncMetaMonad[ComputationBound] {
-
-   def pure[T:Type](t:Expr[T]):(given ctx:QuoteContext) => Expr[ComputationBound[T]] =
-    '{ ComputationBound.pure(${t}) }
-
-   def finalAwait[T:Type](t:Expr[ComputationBound[T]]):(given ctx:QuoteContext) => Expr[T] =
-     import scala.concurrent.duration._
-     '{ ${t}.run() match 
-         case Failure(e) => throw e
-         case Success(t) => t
-      }
-
-
-   type F = ComputationBound
-
-   def map[A,B](fa:F[A])(f: A=>B):F[B] = ???
-
-   def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B] = ???
-
-   def suspend[A](thunk: =>F[A]): F[A] = ???
-
-   def delay[A](thunk: =>A): F[A] = ???
-
-
-}
-
-
-final val computationBoundMetaMonadDirect = ComputationBoundMetaMonadDirect

@@ -101,19 +101,4 @@ object Async {
              }
      
 
-  inline def transformMeta[F[_], T](expr: =>T): F[T] = 
-           ${ Async.transformMetaImpl[F,T]('expr) }
-  
-    
-  def transformMetaImpl[F[_], T:Type](f: Expr[T])(
-                                      given qctx: QuoteContext):Expr[F[T]] = 
-    val dm: AsyncMetaMonad[F] = ???
-    f match 
-      case Const(t) => 
-           dm.pure(f) 
-      case _ => print(f)
-        throw new IllegalStateException("language construction is not supported")
-
-
-
 }
