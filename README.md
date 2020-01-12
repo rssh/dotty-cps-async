@@ -31,7 +31,7 @@ m.flatMap(openConnection())(a => {
          m.flatMap(readCommand(connection))((a: Command) => {
           val command: Command = a
           m.flatMap(handle(command))((a: Reply) => {
-            val reply: Handler.this.Reply = a
+            val reply: Reply = a
             m.flatMap(
              if (!reply.isMuted)
                connection.send(reply.toBytes) 
