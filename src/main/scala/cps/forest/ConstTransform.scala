@@ -14,7 +14,7 @@ object ConstTransform
   def apply[F[_]:Type,T:Type](transformationContext: TransformationContext[F,T])(
                                            given qctx: QuoteContext): CpsExprResult[F,T] =
      import transformationContext._
-     val cnBuild = CpsChunkBuilder.sync(patternCode,asyncMonad) 
+     val cnBuild = CpsChunkBuilder.sync(asyncMonad, patternCode) 
      CpsExprResult(patternCode, cnBuild, patternType, false)
 
 

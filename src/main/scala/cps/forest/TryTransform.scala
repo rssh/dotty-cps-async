@@ -29,7 +29,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      val isAsync = cpsBody.haveAwait || isCaseDefsAsync || isFinalizerAsync
 
      val builder = if (!isAsync) {
-                      CpsChunkBuilder.sync(patternCode,asyncMonad) 
+                      CpsChunkBuilder.sync(asyncMonad, patternCode) 
                    } else {
                       optCpsFinalizer match 
                         case None =>

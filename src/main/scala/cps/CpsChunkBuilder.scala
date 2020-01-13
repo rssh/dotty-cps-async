@@ -33,7 +33,7 @@ trait CpsChunkBuilder[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]])
 
 object CpsChunkBuilder 
 
-   def sync[F[_]:Type,T:Type](f:Expr[T], dm: Expr[AsyncMonad[F]])(given QuoteContext):CpsChunkBuilder[F,T] =
+   def sync[F[_]:Type,T:Type](dm: Expr[AsyncMonad[F]], f: Expr[T])(given QuoteContext):CpsChunkBuilder[F,T] =
      new CpsChunkBuilder[F,T](dm) {
         override def create() = fromFExpr('{ ${dm}.pure($f) })
         override def append[A:Type](e: CpsChunk[F,A]) = e.insertPrev(f)

@@ -45,15 +45,12 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      import qctx.tasty.{_, given}
      if (!cpsLeft.haveAwait) {
         val builder =  if (!cpsRight.haveAwait) 
-                          CpsChunkBuilder.sync(patternCode,asyncMonad)
+                          CpsChunkBuilder.sync(asyncMonad, patternCode)
                        else    // !cpsLeft.haveAwait && cpsRight.haveAwait
-                          new CpsChunkBuilder[F,T](asyncMonad) {
-                            override def create() = 
-                              cpsRight.chunkBuilder.map( 
-                                    '{ x => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]]} })
-                            override def append[A:quoted.Type](e: CpsChunk[F,A])  = 
-                              flatMapIgnore(e.toExpr)
-                          }                       
+                          CpsChunkBuilder.async(asyncMonad,
+                               cpsRight.chunkBuilder.map[T]( 
+                                 '{ (x:R) => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]] } 
+                                  }).toExpr  )
         CpsExprResult(patternCode, builder, patternType, cpsLeft.haveAwait || cpsRight.haveAwait)
      } else { // (cpsLeft.haveAwait && !cpsRight.haveAwait) {
         left match 

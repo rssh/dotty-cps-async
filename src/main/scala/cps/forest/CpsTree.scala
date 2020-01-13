@@ -31,14 +31,11 @@ trait CpsTreeScope[F[_]] {
        this match
          case syncTerm: PureCpsTree =>
              val code = origin
-             val builder = CpsChunkBuilder.sync(code, asyncMonad)
+             val builder = CpsChunkBuilder.sync(asyncMonad,code)
              CpsExprResult[F,T](code,builder,summon[quoted.Type[T]],false)
          case cpsTree: AsyncCpsTree =>
              val transformed = cpsTree.transformed.seal.asInstanceOf[Expr[F[T]]]
-             val builder = new CpsChunkBuilder[F,T](asyncMonad) {
-                 def create() = fromFExpr(transformed)
-                 def append[A: quoted.Type](e: CpsChunk[F,A]) = flatMapIgnore(e.toExpr)
-             }
+             val builder = CpsChunkBuilder.async[F,T](asyncMonad, transformed)
              CpsExprResult[F,T](origin,builder,summon[quoted.Type[T]],true)
 
   object CpsTree

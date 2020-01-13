@@ -25,7 +25,7 @@ object WhileTransform
      val builder = {
        if (!cpsCond.haveAwait)
          if (!cpsRepeat.haveAwait) 
-            CpsChunkBuilder.sync(patternCode,asyncMonad)
+            CpsChunkBuilder.sync(asyncMonad, patternCode)
          else
             new CpsChunkBuilder[F,T](asyncMonad) {
                

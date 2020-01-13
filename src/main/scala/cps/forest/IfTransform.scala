@@ -27,17 +27,13 @@ object IfTransform
        if (!cR.haveAwait)
          if (!tR.haveAwait && !fR.haveAwait) 
             isAsync = false
-            CpsChunkBuilder.sync(patternCode,asyncMonad)
+            CpsChunkBuilder.sync(asyncMonad, patternCode)
          else
-            new CpsChunkBuilder[F,T](asyncMonad) {
-               override def create() = fromFExpr(
+            CpsChunkBuilder.async[F,T](asyncMonad,
                 '{ if ($cond) 
                      ${tR.transformed}
                    else 
                      ${fR.transformed} })
-               override def append[A:quoted.Type](e:CpsChunk[F,A]) =
-                     flatMapIgnore(e.toExpr)
-            }
        else // (cR.haveAwait) 
          def condAsyncExpr() = cR.transformed
          if (!tR.haveAwait && !fR.haveAwait) 
