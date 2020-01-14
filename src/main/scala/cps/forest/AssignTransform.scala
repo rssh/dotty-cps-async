@@ -72,29 +72,23 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
              cpsLu: CpsExprResult[F,LU]): CpsExprResult[F,T] =
      import qctx.tasty.{_, given}
      val builder = if (!cpsRight.haveAwait) {
-                           new CpsChunkBuilder[F,T](asyncMonad) {
-                             override def create() =
-                                 cpsLu.chunkBuilder.map('{ x => 
+                           CpsChunkBuilder.async[F,T](asyncMonad,
+                                 cpsLu.chunkBuilder.map[T]('{ x => 
                                         ${Assign('x.unseal.select(left.symbol), right).seal.
-                                                  asInstanceOf[Expr[T]] } })
-                             override def append[A:quoted.Type](e: CpsChunk[F,A])  = 
-                                 flatMapIgnore(e.toExpr)
-                           }
+                                                  asInstanceOf[Expr[T]] } }).toExpr
+                           )
                    } else {
-                           new CpsChunkBuilder[F,T](asyncMonad) {
-                             override def create(): CpsChunk[F,T] =
-                                 cpsLu.chunkBuilder.flatMap('{ l =>
-                                     ${cpsRight.chunkBuilder.flatMap( 
+                           CpsChunkBuilder.async[F,T](asyncMonad,
+                                 cpsLu.chunkBuilder.flatMap[T]('{ l =>
+                                     ${cpsRight.chunkBuilder.flatMap[T]( 
                                         '{ r => ${
                                                Assign('l.unseal.select(left.symbol),
                                                       'r.unseal
-                                               ).asInstanceOf[Expr[F[Any]]]
+                                               ).seal.asInstanceOf[Expr[F[T]]]
                                          }}
-                                      ).toExpr.asInstanceOf[Expr[F[T]]]}
-                                 })
-                             override def append[A:quoted.Type](e: CpsChunk[F,A])  = 
-                                 flatMapIgnore(e.toExpr)
-                           }
+                                      ).toExpr }
+                                 }).toExpr
+                           )
                    }
      CpsExprResult(patternCode, builder, patternType, cpsLeft.haveAwait || cpsRight.haveAwait)
 

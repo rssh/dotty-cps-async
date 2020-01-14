@@ -22,78 +22,59 @@ object WhileTransform
      val cpsRepeat = Async.rootTransform(repeat, asyncMonad, false)
      val isAsync = cpsCond.haveAwait || cpsRepeat.haveAwait
 
-     val builder = {
+     val unitBuilder = {
        if (!cpsCond.haveAwait)
          if (!cpsRepeat.haveAwait) 
             CpsChunkBuilder.sync(asyncMonad, patternCode)
          else
-            new CpsChunkBuilder[F,T](asyncMonad) {
-               
+            CpsChunkBuilder.async[F,Unit](asyncMonad,
                // TODO: add name to whileFun ?
-               val createExpr = '{
-                 def _whilefun(): F[T] = {
+               '{
+                 def _whilefun(): F[Unit] = {
                    if (${cond}) 
                      ${cpsRepeat.chunkBuilder.flatMapIgnore('{ _whilefun() }).toExpr}
                    else
-                     ${pure('{()}).toExpr.asInstanceOf[Expr[F[T]]]}
+                     ${asyncMonad}.pure(())
                  }
                  _whilefun()
-               }
-
-               override def create() = 
-                            fromFExpr(createExpr)
-               override def append[A:quoted.Type](e:CpsChunk[F,A]) =
-                     flatMapIgnore(e.toExpr)
-            }
+               })
        else // (cpsCond.haveAwait) 
          if (!cpsRepeat.haveAwait) {
-            new CpsChunkBuilder[F,T](asyncMonad) {
-               val createExpr: Expr[F[T]] = '{
-                 def _whilefun(): F[T] = {
-                   ${cpsCond.chunkBuilder.flatMap[T]( '{ c =>
+            CpsChunkBuilder.async[F,Unit](asyncMonad,
+               '{
+                 def _whilefun(): F[Unit] = {
+                   ${cpsCond.chunkBuilder.flatMap[Unit]( '{ c =>
                        if (c) {
                          $repeat 
                          _whilefun()
                        } else {
-                         ${pure('{()}).toExpr.asInstanceOf[Expr[F[T]]]}
+                         ${asyncMonad}.pure(())
                        }
                     }
                    ).toExpr}
                  }
                  _whilefun()
-               }
-        
-               override def create() = fromFExpr(createExpr)
-
-               override def append[A:quoted.Type](e:CpsChunk[F,A]) =
-                     flatMapIgnore(e.toExpr)
-            }
+               })
          } else {
-            new CpsChunkBuilder[F,T](asyncMonad) {
-               val createExpr = '{
-                 def _whilefun(): F[T] = {
-                   ${cpsCond.chunkBuilder.flatMap[T]( '{ c =>
+            CpsChunkBuilder.async[F,Unit](asyncMonad,
+               '{
+                 def _whilefun(): F[Unit] = {
+                   ${cpsCond.chunkBuilder.flatMap[Unit]( '{ c =>
                        if (c) {
                          ${cpsRepeat.chunkBuilder.flatMapIgnore(
                              '{ _whilefun() }
                           ).toExpr}
                        } else {
-                         ${pure('{()} ).toExpr.asInstanceOf[Expr[F[T]]]}
+                         ${asyncMonad}.pure(())
                        }
                     }).toExpr
                    }
                  }
                  _whilefun()
-               }
-
-               override def create() = fromFExpr(createExpr) 
-
-               override def append[A:quoted.Type](e:CpsChunk[F,A]) =
-                     flatMapIgnore(e.toExpr)
-
-            }
+               })
          }
      }
+     val builder = unitBuilder.asInstanceOf[CpsChunkBuilder[F,T]]
      CpsExprResult[F,T](patternCode, builder, patternType, isAsync)
      
 
