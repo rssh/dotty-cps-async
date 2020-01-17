@@ -28,6 +28,13 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      val isFinalizerAsync = optCpsFinalizer.exists(_.haveAwait)
      val isAsync = cpsBody.haveAwait || isCaseDefsAsync || isFinalizerAsync
 
+     def makeRestoreExpr(): Expr[Throwable => F[T]]  =
+        val nCaseDefs = (cases lazyZip cpsCaseDefs) map { (frs,snd) =>
+           CaseDef(frs.pattern, frs.guard, snd.transformed.unseal)
+        }
+        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs.toList).seal} }
+        restoreExpr.asInstanceOf[Expr[Throwable => F[T]]]
+
      val builder = if (!isAsync) {
                       CpsChunkBuilder.sync(asyncMonad, patternCode) 
                    } else {
@@ -40,7 +47,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                                '{
                                  ${cpsCtx.asyncMonad}.restore(
                                    ${cpsBody.transformed}
-                                   )(${makeRestoreExpr(cpsCaseDefs)})
+                                   )(${makeRestoreExpr()})
                                })
                         case Some(cpsFinalizer) =>
                            if (cpsCaseDefs.isEmpty) 
@@ -56,16 +63,22 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                                    ${cpsCtx.asyncMonad}.withAction(
                                     ${cpsCtx.asyncMonad}.restore(
                                      ${cpsBody.transformed}
-                                    )(${makeRestoreExpr(cpsCaseDefs)})
+                                    )(${makeRestoreExpr()})
                                    )(${cpsFinalizer.transformed})
                                  })
                    }
      CpsExprResult(patternCode, builder, patternType, isAsync)
 
+/*
+  Compiler bug. Impossible to call (mismatch of qctx in param). TODO: minimize and submitt to dotty
   def makeRestoreExpr[F[_]:Type,T:Type](given qctx: QuoteContext)(
-                                        caseDefs: List[CpsExprResult[F,T]]):Expr[Throwable => F[T]] =
+                                        caseDefs: List[qctx.tasty.CaseDef],
+                                        cpsCaseDefs: List[CpsExprResult[F,T]]):Expr[Throwable => F[T]] =
      import qctx.tasty.{_, given}
-     ???
-
-
+     val nCaseDefs = (caseDefs,cpsCaseDefs).zipped map { (frs,snd) =>
+          CaseDef(frs.lhs, snd.transformed)
+     }
+     val restoreExpr = '{ ex: Throwable => ${Match('ex.unseal, nCaseDefs)} }
+     restoreExpr
+*/
 
