@@ -4,6 +4,17 @@ import scala.quoted._
 import scala.quoted.matching._
 import scala.compiletime._
 
+import scala.util.Try
+
+trait AsyncMonad[F[_]] {
+
+   def pure[T](t:T):F[T]
+
+   def map[A,B](fa:F[A])(f: A=>B):F[B]
+
+   def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B]
+
+}
 
 case class CpsChunk[F[_],T](prev: Seq[Expr[_]], last:Expr[F[T]]) 
 
@@ -17,6 +28,62 @@ case class CpsChunk[F[_],T](prev: Seq[Expr[_]], last:Expr[F[T]])
     def insertPrev[A](p: Expr[A]): CpsChunk[F,T] =
       CpsChunk(p +: prev, last) 
   
+
+trait CpsChunkBuilder[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]])
+
+  def create(): CpsChunk[F,T]
+
+  def append[A:Type](chunk: CpsChunk[F,A]): CpsChunk[F,A]
+  
+  protected def fromFExpr(f: Expr[F[T]]): CpsChunk[F,T] =
+          CpsChunk(Seq(),f)
+
+  def pure[A:Type](t: Expr[A])(given QuoteContext): CpsChunk[F,A] = 
+                           CpsChunk[F,A](Seq(),'{ ${monad}.pure(${t}) })
+
+  def map[A:Type](t: Expr[T => A])(given QuoteContext): CpsChunk[F,A] =
+                           CpsChunk[F,A](Seq(),'{ ${monad}.map(${create().toExpr})(${t}) })
+
+
+  def flatMap[A:Type](t: Expr[T => F[A]])(given QuoteContext): CpsChunk[F,A] =
+                 CpsChunk[F,A](Seq(), 
+                      '{ ${monad}.flatMap(${create().toExpr})(${t}) }
+                 )
+
+  def flatMapIgnore[A:Type](t: Expr[F[A]])(given QuoteContext): CpsChunk[F,A] =
+           CpsChunk[F,A](Seq(), 
+                 '{ ${monad}.flatMap(${create().toExpr})(_ => ${t}) }
+           )
+
+
+
+object CpsChunkBuilder 
+
+   def sync[F[_]:Type,T:Type](f:Expr[T], dm: Expr[AsyncMonad[F]])(given QuoteContext):CpsChunkBuilder[F,T] =
+     new CpsChunkBuilder[F,T](dm) {
+        override def create() = fromFExpr('{ ${dm}.pure($f) })
+        override def append[A:Type](e: CpsChunk[F,A]) = e.insertPrev(f)
+     }
+         
+   def async[F[_]:Type,T:Type](f:Expr[F[T]], dm: Expr[AsyncMonad[F]])(given QuoteContext):CpsChunkBuilder[F,T] =
+     new CpsChunkBuilder[F,T](dm) {
+        override def create() = fromFExpr(f)
+        override def append[A:Type](e: CpsChunk[F,A]) = flatMapIgnore(e.toExpr)
+     }
+
+
+case class CpsExprResult[F[_],T](
+                origin:Expr[T],
+                cpsBuild: CpsChunkBuilder[F,T],
+                originType: Type[T],
+                haveAwait:Boolean
+) {
+
+    type MT[_] = F
+    type TT = T
+
+    def transformed(given QuoteContext): Expr[F[T]] = cpsBuild.create().toExpr
+}
 
 
 
@@ -53,7 +120,6 @@ object Async {
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._
-     val cpsCtx = TransformationContext[F,T](f,tType,dm, inBlock)
      f match 
          case Const(c) =>   
                         val cnBuild = CpsChunkBuilder.sync(f,dm)
