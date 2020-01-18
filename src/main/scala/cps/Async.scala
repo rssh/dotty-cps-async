@@ -23,13 +23,14 @@ case class CpsChunk[T](prev: Seq[Expr[_]], last:Expr[CB[T]])
 
 trait CpsChunkBuilder[T:Type]
 
+  def isAsync: Boolean
+
   def create(): CpsChunk[T]
 
   def append[A:Type](chunk: CpsChunk[A]): CpsChunk[A]
   
   protected def fromFExpr(f: Expr[CB[T]]): CpsChunk[T] =
           CpsChunk(Seq(),f)
-
 
   def flatMap[A:Type](t: Expr[T => CB[A]])(given QuoteContext): CpsChunk[A] =
                  CpsChunk[A](Seq(), 
@@ -41,10 +42,13 @@ trait CpsChunkBuilder[T:Type]
                  '{ CBF.flatMap(${create().toExpr})(_ => ${t}) }
            )
 
+  def transformed(given QuoteContext): Expr[CB[T]] = create().toExpr
+
 object CpsChunkBuilder 
 
    def sync[T:Type](f:Expr[T])(given QuoteContext):CpsChunkBuilder[T] =
      new CpsChunkBuilder[T] {
+        override def isAsync = false
         override def create() = fromFExpr('{ CBF.pure($f) })
         override def append[A:Type](e: CpsChunk[A]) = 
             CpsChunk(f +: e.prev, e.last)
@@ -52,17 +56,10 @@ object CpsChunkBuilder
          
    def async[T:Type](f:Expr[CB[T]])(given QuoteContext):CpsChunkBuilder[T] =
      new CpsChunkBuilder[T] {
+        override def isAsync = true
         override def create() = fromFExpr(f)
         override def append[A:Type](e: CpsChunk[A]) = flatMapIgnore(e.toExpr)
      }
-
-
-case class CpsExprResult[T](
-                cpsBuild: CpsChunkBuilder[T],
-                haveAwait:Boolean
-) {
-    def transformed(given QuoteContext): Expr[CB[T]] = cpsBuild.create().toExpr
-}
 
 
 erased def await[T](f: CB[T]):T = ???
@@ -77,27 +74,25 @@ object Async {
     import qctx.tasty.{_,given}
     rootTransform[T](f).transformed
 
-  def rootTransform[T:Type](f: Expr[T])(given qctx: QuoteContext): CpsExprResult[T] =
+  def rootTransform[T:Type](f: Expr[T])(given qctx: QuoteContext): CpsChunkBuilder[T] =
      import qctx.tasty.{_, given}
      import util._
      f match 
          case Const(c) =>   
-                        val cnBuild = CpsChunkBuilder.sync(f)
-                        CpsExprResult(cnBuild, false)
+                        CpsChunkBuilder.sync(f)
          case '{ _root_.cps.await[$fType]($ft) } => 
                         val awBuild = CpsChunkBuilder.async(ft)
-                        val awBuildCasted = awBuild.asInstanceOf[CpsChunkBuilder[T]]
-                        CpsExprResult[T](awBuildCasted, true)
+                        awBuild.asInstanceOf[CpsChunkBuilder[T]]
          case '{ while ($cond) { $repeat }  } =>
                         val cpsCond = Async.rootTransform(cond)
                         val cpsRepeat = Async.rootTransform(repeat)
-                        val isAsync = cpsCond.haveAwait || cpsRepeat.haveAwait
-                        val builder = CpsChunkBuilder.async(
+                        val isAsync = cpsCond.isAsync || cpsRepeat.isAsync
+                        CpsChunkBuilder.async(
                           '{
                              def _whilefun(): CB[T] = {
-                               ${cpsCond.cpsBuild.flatMap[T]( '{ c =>
+                               ${cpsCond.flatMap[T]( '{ c =>
                                  if (c) {
-                                   ${cpsRepeat.cpsBuild.flatMapIgnore(
+                                   ${cpsRepeat.flatMapIgnore(
                                        '{ _whilefun() }
                                   ).toExpr}
                                  } else {
@@ -108,14 +103,11 @@ object Async {
                              }
                              _whilefun()
                           })
-                        CpsExprResult[T](builder, true)
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
                 case Apply(fun,args) =>
-                   val rFun = rootTransform(fun.seal)
-                   val builder = CpsChunkBuilder.sync(f)
-                   CpsExprResult(builder,rFun.haveAwait)
+                   CpsChunkBuilder.sync(f)
                 case Block(prevs,last) =>
                    val rPrevs = prevs.map{
                      case d: Definition =>
@@ -128,14 +120,12 @@ object Async {
                              ???
                    }
                    val rLast = Async.rootTransform[T](last.seal.asInstanceOf[Expr[T]])
-                   val lastChunk = rLast.cpsBuild.create()
-                   val blockResult = rPrevs.foldRight(lastChunk)((e,s) => e.cpsBuild.append(s))
-                   val haveAwait = rLast.haveAwait || rPrevs.exists(_.haveAwait)
-                   val cpsBuild =  CpsChunkBuilder.async[T](blockResult.toExpr)
-                   CpsExprResult[T](cpsBuild,haveAwait)
+                   val lastChunk = rLast.create()
+                   val blockResult = rPrevs.foldRight(lastChunk)((e,s) => e.append(s))
+                   val isAsync = rLast.isAsync || rPrevs.exists(_.isAsync)
+                   CpsChunkBuilder.async[T](blockResult.toExpr)
                 case Ident(name) =>
-                   val cnBuild = CpsChunkBuilder.sync(f)
-                   CpsExprResult(cnBuild , false)
+                   CpsChunkBuilder.sync(f)
                 case _ =>
                    printf("fTree:"+fTree)
                    ???
