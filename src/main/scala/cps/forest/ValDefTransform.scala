@@ -18,10 +18,12 @@ object ValDefTransform
       val ry = Async.rootTransform[F,TX](y,asyncMonad,false)
       println(s"!!!ValDefTransform.run:: ry=${ry}")
       val unitPatternCode = patternCode.asInstanceOf[Expr[Unit]]
-      if (ry.haveAwait) 
+      if (ry.isAsync) 
          
          val py = ry.transformed
          val cpsBuild = new CpsChunkBuilder[F,Unit](asyncMonad) {
+
+            def isAsync = true
 
             def buildValDef[T](a:Expr[T]):Expr[Unit] =
                  val oldValDef = extractValDef(unitPatternCode)
@@ -74,12 +76,13 @@ object ValDefTransform
          } // end cpsChunk
 
 
-         CpsExprResult[F,T](patternCode, cpsBuild.asInstanceOf[CpsChunkBuilder[F,T]], patternType, true)
+         CpsExprResult[F,T](patternCode, cpsBuild.asInstanceOf[CpsChunkBuilder[F,T]], patternType)
       else
          // Note, that we can't use CpsChunkBuilder.sync, because we need to
          //  extract origin ValDef from his Block, to allow usage of one from
          //  the enclosing block.
          val cpsBuild = new CpsChunkBuilder[F,T](asyncMonad) {
+                 override def isAsync = false
                  override def create() = pure(patternCode)
                  override def append[A:quoted.Type](e:CpsChunk[F,A]) = 
                      val valDef = extractValDef(unitPatternCode)
@@ -91,7 +94,7 @@ object ValDefTransform
                                Block(valDef::Nil, eExpr.unseal) 
                      CpsChunk[F,A](Seq(),tree.seal.asInstanceOf[Expr[F[A]]])
          } 
-         CpsExprResult[F,T](patternCode,cpsBuild,patternType,false)
+         CpsExprResult[F,T](patternCode,cpsBuild,patternType)
      
   def newValDef(given qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, name: String, newRhs: qctx.tasty.Term): qctx.tasty.ValDef = {
          import qctx.tasty.{_,given}

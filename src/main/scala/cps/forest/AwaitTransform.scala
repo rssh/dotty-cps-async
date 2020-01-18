@@ -23,6 +23,6 @@ object AwaitTransform
      val awBuild = CpsChunkBuilder.async[F,S](asyncMonad, ft)
      //TODO: get data about independence and rewrite.
      val awBuildCasted = awBuild.asInstanceOf[CpsChunkBuilder[F,T]]
-     CpsExprResult[F,T](patternCode, awBuildCasted, patternType, true)
+     CpsExprResult[F,T](patternCode, awBuildCasted, patternType)
      
 

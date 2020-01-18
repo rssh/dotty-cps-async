@@ -24,8 +24,8 @@ object IfTransform
      var isAsync = true
 
      val cnBuild = {
-       if (!cR.haveAwait)
-         if (!tR.haveAwait && !fR.haveAwait) 
+       if (!cR.isAsync)
+         if (!tR.isAsync && !fR.isAsync) 
             isAsync = false
             CpsChunkBuilder.sync(asyncMonad, patternCode)
          else
@@ -34,9 +34,9 @@ object IfTransform
                      ${tR.transformed}
                    else 
                      ${fR.transformed} })
-       else // (cR.haveAwait) 
+       else // (cR.isAsync) 
          def condAsyncExpr() = cR.transformed
-         if (!tR.haveAwait && !fR.haveAwait) 
+         if (!tR.isAsync && !fR.isAsync) 
            CpsChunkBuilder.async[F,T](asyncMonad,
                     '{ ${asyncMonad}.map(
                                  ${condAsyncExpr()}
@@ -60,6 +60,6 @@ object IfTransform
                         )
                     }) 
        }
-     CpsExprResult[F,T](patternCode, cnBuild, patternType, isAsync)
+     CpsExprResult[F,T](patternCode, cnBuild, patternType)
      
 

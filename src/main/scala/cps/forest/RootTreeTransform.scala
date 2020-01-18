@@ -26,7 +26,7 @@ trait RootTreeTransform[F[_]]
                 expr match {
                   case '{ $e: $et } =>
                      val r = Async.rootTransform(e, monad, false)
-                     if (r.haveAwait) 
+                     if (r.isAsync) 
                         val transformed = r.transformed.unseal
                         AwaitCpsTree(transformed, r.origin.unseal.tpe)
                      else

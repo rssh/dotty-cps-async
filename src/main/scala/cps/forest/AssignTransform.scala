@@ -43,16 +43,16 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
   def run1[L:Type,R:Type](given qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term,
                 cpsLeft: CpsExprResult[F,L], cpsRight: CpsExprResult[F,R]): CpsExprResult[F,T] =
      import qctx.tasty.{_, given}
-     if (!cpsLeft.haveAwait) {
-        val builder =  if (!cpsRight.haveAwait) 
+     if (!cpsLeft.isAsync) {
+        val builder =  if (!cpsRight.isAsync) 
                           CpsChunkBuilder.sync(asyncMonad, patternCode)
-                       else    // !cpsLeft.haveAwait && cpsRight.haveAwait
+                       else    // !cpsLeft.isAsync && cpsRight.isAsync
                           CpsChunkBuilder.async(asyncMonad,
                                cpsRight.chunkBuilder.map[T]( 
                                  '{ (x:R) => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]] } 
                                   }).toExpr  )
-        CpsExprResult(patternCode, builder, patternType, cpsLeft.haveAwait || cpsRight.haveAwait)
-     } else { // (cpsLeft.haveAwait && !cpsRight.haveAwait) {
+        CpsExprResult(patternCode, builder, patternType)
+     } else { // (cpsLeft.isAsync) {
         left match 
           case Select(obj,sym) => 
               obj.seal match 
@@ -71,7 +71,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
              cpsLeft: CpsExprResult[F,L], cpsRight: CpsExprResult[F,R],
              cpsLu: CpsExprResult[F,LU]): CpsExprResult[F,T] =
      import qctx.tasty.{_, given}
-     val builder = if (!cpsRight.haveAwait) {
+     val builder = if (!cpsRight.isAsync) {
                            CpsChunkBuilder.async[F,T](asyncMonad,
                                  cpsLu.chunkBuilder.map[T]('{ x => 
                                         ${Assign('x.unseal.select(left.symbol), right).seal.
@@ -90,6 +90,6 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                                  }).toExpr
                            )
                    }
-     CpsExprResult(patternCode, builder, patternType, cpsLeft.haveAwait || cpsRight.haveAwait)
+     CpsExprResult(patternCode, builder, patternType)
 
 

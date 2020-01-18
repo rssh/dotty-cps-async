@@ -17,7 +17,7 @@ class TestBS1Try
           //println(10)
           x = 2
         }catch{
-          case ex:Exception => ex.printStackTrace()
+          case ex:Exception => //ex.printStackTrace()
           x = 3
         }
         x
@@ -33,7 +33,7 @@ class TestBS1Try
           throw new RuntimeException("AAA")
           x = 2
         }catch{
-          case ex:Exception => ex.printStackTrace()
+          case ex:Exception => // ex.printStackTrace()
           x = 3
         }
         x

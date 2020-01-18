@@ -21,13 +21,13 @@ object ThrowTransform
      val cpsEx = Async.rootTransform(ex, asyncMonad, false)
 
      val cnBuild = {
-       if (!cpsEx.haveAwait)
+       if (!cpsEx.isAsync)
             CpsChunkBuilder.async[F,T](asyncMonad,
                                           '{  ${asyncMonad}.error(${ex}) })
        else  
             CpsChunkBuilder.async[F,T](asyncMonad,
                 cpsEx.chunkBuilder.flatMap[T]( '{ (ex:S) => ${asyncMonad}.error(ex) } ).toExpr )
      }
-     CpsExprResult[F,T](patternCode, cnBuild, patternType, true)
+     CpsExprResult[F,T](patternCode, cnBuild, patternType)
      
 

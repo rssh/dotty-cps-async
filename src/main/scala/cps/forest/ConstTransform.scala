@@ -15,6 +15,6 @@ object ConstTransform
                                            given qctx: QuoteContext): CpsExprResult[F,T] =
      import transformationContext._
      val cnBuild = CpsChunkBuilder.sync(asyncMonad, patternCode) 
-     CpsExprResult(patternCode, cnBuild, patternType, false)
+     CpsExprResult(patternCode, cnBuild, patternType)
 
 

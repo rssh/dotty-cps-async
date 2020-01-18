@@ -32,11 +32,11 @@ trait CpsTreeScope[F[_]] {
          case syncTerm: PureCpsTree =>
              val code = origin
              val builder = CpsChunkBuilder.sync(asyncMonad,code)
-             CpsExprResult[F,T](code,builder,summon[quoted.Type[T]],false)
+             CpsExprResult[F,T](code,builder,summon[quoted.Type[T]])
          case cpsTree: AsyncCpsTree =>
              val transformed = cpsTree.transformed.seal.asInstanceOf[Expr[F[T]]]
              val builder = CpsChunkBuilder.async[F,T](asyncMonad, transformed)
-             CpsExprResult[F,T](origin,builder,summon[quoted.Type[T]],true)
+             CpsExprResult[F,T](origin,builder,summon[quoted.Type[T]])
 
   object CpsTree
 

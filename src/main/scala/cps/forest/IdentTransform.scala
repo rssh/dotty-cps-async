@@ -14,7 +14,7 @@ class IdentTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
      import qctx.tasty.{_, given}
      import cpsCtx._
      val cnBuild = CpsChunkBuilder.sync(asyncMonad, patternCode) 
-     CpsExprResult(patternCode, cnBuild , patternType, false)
+     CpsExprResult(patternCode, cnBuild , patternType)
   
   
 

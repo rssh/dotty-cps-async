@@ -5,6 +5,8 @@ import scala.quoted._
 
 trait CpsChunkBuilder[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]])
 
+  def isAsync: Boolean
+
   def create(): CpsChunk[F,T]
 
   def append[A:Type](chunk: CpsChunk[F,A]): CpsChunk[F,A]
@@ -35,6 +37,7 @@ object CpsChunkBuilder
 
    def sync[F[_]:Type,T:Type](dm: Expr[AsyncMonad[F]], f: Expr[T])(given QuoteContext):CpsChunkBuilder[F,T] =
      new CpsChunkBuilder[F,T](dm) {
+        override def isAsync = false
         override def create() = fromFExpr('{ ${dm}.pure($f) })
         override def append[A:Type](e: CpsChunk[F,A]) = e.insertPrev(f)
      }
@@ -42,6 +45,7 @@ object CpsChunkBuilder
    def async[F[_]:Type,T:Type](dm: Expr[AsyncMonad[F]], f: Expr[F[T]])(given QuoteContext):
                                                                                CpsChunkBuilder[F,T] = 
      new CpsChunkBuilder[F,T](dm) {
+        override def isAsync = true
         override def create() = fromFExpr(f)
         override def append[A:Type](e: CpsChunk[F,A]) = 
                           flatMapIgnore(e.toExpr)

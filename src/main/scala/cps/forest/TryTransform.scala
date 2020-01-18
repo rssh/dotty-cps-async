@@ -22,11 +22,11 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      val cpsCaseDefs = cases.map(cd => Async.rootTransform[F,T](
                                        cd.rhs.seal.asInstanceOf[Expr[T]],
                                        asyncMonad, false))
-     val isCaseDefsAsync = cpsCaseDefs.exists(_.haveAwait)
+     val isCaseDefsAsync = cpsCaseDefs.exists(_.isAsync)
      val optCpsFinalizer = finalizer.map( x => Async.rootTransform[F,Unit](
                                         x.seal.asInstanceOf[Expr[Unit]], asyncMonad, false))
-     val isFinalizerAsync = optCpsFinalizer.exists(_.haveAwait)
-     val isAsync = cpsBody.haveAwait || isCaseDefsAsync || isFinalizerAsync
+     val isFinalizerAsync = optCpsFinalizer.exists(_.isAsync)
+     val isAsync = cpsBody.isAsync || isCaseDefsAsync || isFinalizerAsync
 
      def makeRestoreExpr(): Expr[Throwable => F[T]]  =
         val nCaseDefs = (cases lazyZip cpsCaseDefs) map { (frs,snd) =>
@@ -67,7 +67,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                                    )(${cpsFinalizer.transformed})
                                  })
                    }
-     CpsExprResult(patternCode, builder, patternType, isAsync)
+     CpsExprResult(patternCode, builder, patternType)
 
 /*
   Compiler bug. Impossible to call (mismatch of qctx in param). TODO: minimize and submitt to dotty

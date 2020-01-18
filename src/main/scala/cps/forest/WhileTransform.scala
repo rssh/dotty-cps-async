@@ -20,11 +20,11 @@ object WhileTransform
      import cpsCtx._
      val cpsCond = Async.rootTransform(cond, asyncMonad, false)
      val cpsRepeat = Async.rootTransform(repeat, asyncMonad, false)
-     val isAsync = cpsCond.haveAwait || cpsRepeat.haveAwait
+     val isAsync = cpsCond.isAsync || cpsRepeat.isAsync
 
      val unitBuilder = {
-       if (!cpsCond.haveAwait)
-         if (!cpsRepeat.haveAwait) 
+       if (!cpsCond.isAsync)
+         if (!cpsRepeat.isAsync) 
             CpsChunkBuilder.sync(asyncMonad, patternCode)
          else
             CpsChunkBuilder.async[F,Unit](asyncMonad,
@@ -38,8 +38,8 @@ object WhileTransform
                  }
                  _whilefun()
                })
-       else // (cpsCond.haveAwait) 
-         if (!cpsRepeat.haveAwait) {
+       else // (cpsCond.isAsync) 
+         if (!cpsRepeat.isAsync) {
             CpsChunkBuilder.async[F,Unit](asyncMonad,
                '{
                  def _whilefun(): F[Unit] = {
@@ -75,6 +75,6 @@ object WhileTransform
          }
      }
      val builder = unitBuilder.asInstanceOf[CpsChunkBuilder[F,T]]
-     CpsExprResult[F,T](patternCode, builder, patternType, isAsync)
+     CpsExprResult[F,T](patternCode, builder, patternType)
      
 
