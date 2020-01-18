@@ -53,8 +53,9 @@ class TestBS1While
 /*
  // Dotty crash.
  // TODO: minimize and submit bug.
- //  onlu this test : branch  dotty-break-while-00, if you want to minimize
- //  situation for bug submission - start there.
+ //  onlu this test : branch  dotty-break-while-00,
+ //  submitted to dotty 
+ //    https://github.com/lampepfl/dotty/issues/8029
  //
   @Test def tWhileC1_11(): Unit = 
      val c = Async.transform[ComputationBound,Int]{
