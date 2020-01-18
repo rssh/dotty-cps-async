@@ -1,15 +1,10 @@
-package cps
+package cps1
 
 import scala.compiletime._
 import scala.quoted._
 
-import cps.misc._
-
 object GenUtil {
 
-  class TypeHolder[T](tp:Type[T]) {
-    type V = T
-  }
 
 
   inline def defaultValue[T:Type](given qctx: QuoteContext) = {
@@ -31,7 +26,7 @@ object GenUtil {
   }
 
   def error(msg: String, posExpr:Expr[_])(given qctx: QuoteContext): Nothing = 
-      throw MacroError(msg, posExpr)
+      throw cps.MacroError(msg, posExpr)
 
 
 }
