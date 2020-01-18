@@ -28,9 +28,9 @@ trait RootTreeTransform[F[_]]
                      val r = Async.rootTransform(e, monad, false)
                      if (r.isAsync) 
                         val transformed = r.transformed.unseal
-                        AwaitCpsTree(transformed, r.origin.unseal.tpe)
+                        AwaitCpsTree(transformed, e.unseal.tpe)
                      else
-                        PureCpsTree(r.origin.unseal)
+                        PureCpsTree(e.unseal)
                      
                 }
      }

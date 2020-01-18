@@ -7,6 +7,8 @@ trait CpsChunkBuilder[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]])
 
   def isAsync: Boolean
 
+  def transformed(given QuoteContext): Expr[F[T]] = create().toExpr
+
   def create(): CpsChunk[F,T]
 
   def append[A:Type](chunk: CpsChunk[F,A]): CpsChunk[F,A]

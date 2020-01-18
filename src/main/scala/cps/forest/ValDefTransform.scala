@@ -74,9 +74,7 @@ object ValDefTransform
                   })
 
          } // end cpsChunk
-
-
-         CpsExprResult[F,T](patternCode, cpsBuild.asInstanceOf[CpsChunkBuilder[F,T]], patternType)
+         cpsBuild.asInstanceOf[CpsChunkBuilder[F,T]]
       else
          // Note, that we can't use CpsChunkBuilder.sync, because we need to
          //  extract origin ValDef from his Block, to allow usage of one from
@@ -94,7 +92,7 @@ object ValDefTransform
                                Block(valDef::Nil, eExpr.unseal) 
                      CpsChunk[F,A](Seq(),tree.seal.asInstanceOf[Expr[F[A]]])
          } 
-         CpsExprResult[F,T](patternCode,cpsBuild,patternType)
+         cpsBuild
      
   def newValDef(given qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, name: String, newRhs: qctx.tasty.Term): qctx.tasty.ValDef = {
          import qctx.tasty.{_,given}

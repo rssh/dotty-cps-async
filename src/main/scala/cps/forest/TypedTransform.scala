@@ -11,12 +11,11 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
   import cpsCtx._
 
   // case Apply(fun,args) 
-  def run(given qctx: QuoteContext)(t: qctx.tasty.Term, tp: qctx.tasty.TypeTree): CpsExprResult[F,T] =
+  def run(given qctx: QuoteContext)(t: qctx.tasty.Term, tp: qctx.tasty.TypeTree): CpsChunkBuilder[F,T] =
      import qctx.tasty.{_, given}
      val r = Async.rootTransform[F,T](t.seal.asInstanceOf[Expr[T]], asyncMonad, false)
      if (!r.isAsync) 
-       val build = CpsChunkBuilder.sync(asyncMonad, patternCode)
-       CpsExprResult[F,T](patternCode, build, patternType)
+       CpsChunkBuilder.sync(asyncMonad, patternCode)
      else
        // TODO:  create Typed with F[$tp] as type ?
        r

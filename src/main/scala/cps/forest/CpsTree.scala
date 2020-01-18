@@ -26,17 +26,15 @@ trait CpsTreeScope[F[_]] {
 
      def otpe: Type
 
-     def toResult[T: quoted.Type](origin: Expr[T]) : CpsExprResult[F,T] =
+     def toResult[T: quoted.Type](origin: Expr[T]) : CpsChunkBuilder[F,T] =
        import cpsCtx._
        this match
          case syncTerm: PureCpsTree =>
              val code = origin
-             val builder = CpsChunkBuilder.sync(asyncMonad,code)
-             CpsExprResult[F,T](code,builder,summon[quoted.Type[T]])
+             CpsChunkBuilder.sync(asyncMonad,code)
          case cpsTree: AsyncCpsTree =>
              val transformed = cpsTree.transformed.seal.asInstanceOf[Expr[F[T]]]
-             val builder = CpsChunkBuilder.async[F,T](asyncMonad, transformed)
-             CpsExprResult[F,T](origin,builder,summon[quoted.Type[T]])
+             CpsChunkBuilder.async[F,T](asyncMonad, transformed)
 
   object CpsTree
 

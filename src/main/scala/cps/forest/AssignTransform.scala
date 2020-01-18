@@ -12,7 +12,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
   import cpsCtx._
 
   // case Assign(left,right) 
-  def run(given qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsExprResult[F,T] = 
+  def run(given qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsChunkBuilder[F,T] = 
      import qctx.tasty.{_, given}
      println(s"!!! assign detected : ${left} ${right}")
      left.seal match 
@@ -26,7 +26,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
 
 
   def runWithLeft[L:Type](given qctx: QuoteContext)(
-       left: qctx.tasty.Term, right: qctx.tasty.Term, cpsLeft:CpsExprResult[F,L]): CpsExprResult[F,T] = {
+       left: qctx.tasty.Term, right: qctx.tasty.Term, cpsLeft:CpsChunkBuilder[F,L]): CpsChunkBuilder[F,T] = {
      import qctx.tasty.{_, given}
      right.seal match {
         case '{ $re: $rt } =>
@@ -41,17 +41,16 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
 
 
   def run1[L:Type,R:Type](given qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term,
-                cpsLeft: CpsExprResult[F,L], cpsRight: CpsExprResult[F,R]): CpsExprResult[F,T] =
+                cpsLeft: CpsChunkBuilder[F,L], cpsRight: CpsChunkBuilder[F,R]): CpsChunkBuilder[F,T] =
      import qctx.tasty.{_, given}
      if (!cpsLeft.isAsync) {
-        val builder =  if (!cpsRight.isAsync) 
-                          CpsChunkBuilder.sync(asyncMonad, patternCode)
-                       else    // !cpsLeft.isAsync && cpsRight.isAsync
-                          CpsChunkBuilder.async(asyncMonad,
-                               cpsRight.chunkBuilder.map[T]( 
-                                 '{ (x:R) => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]] } 
-                                  }).toExpr  )
-        CpsExprResult(patternCode, builder, patternType)
+        if (!cpsRight.isAsync) 
+            CpsChunkBuilder.sync(asyncMonad, patternCode)
+        else    // !cpsLeft.isAsync && cpsRight.isAsync
+            CpsChunkBuilder.async(asyncMonad,
+                   cpsRight.map[T]( 
+                         '{ (x:R) => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]] } 
+                          }).toExpr  )
      } else { // (cpsLeft.isAsync) {
         left match 
           case Select(obj,sym) => 
@@ -68,19 +67,19 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
 
   def run2[L:Type,R:Type,LU:Type](given qctx: QuoteContext)(
             left: qctx.tasty.Term, right: qctx.tasty.Term,
-             cpsLeft: CpsExprResult[F,L], cpsRight: CpsExprResult[F,R],
-             cpsLu: CpsExprResult[F,LU]): CpsExprResult[F,T] =
+             cpsLeft: CpsChunkBuilder[F,L], cpsRight: CpsChunkBuilder[F,R],
+             cpsLu: CpsChunkBuilder[F,LU]): CpsChunkBuilder[F,T] =
      import qctx.tasty.{_, given}
-     val builder = if (!cpsRight.isAsync) {
-                           CpsChunkBuilder.async[F,T](asyncMonad,
-                                 cpsLu.chunkBuilder.map[T]('{ x => 
-                                        ${Assign('x.unseal.select(left.symbol), right).seal.
+     if (!cpsRight.isAsync) {
+          CpsChunkBuilder.async[F,T](asyncMonad,
+               cpsLu.map[T]('{ x => 
+                    ${Assign('x.unseal.select(left.symbol), right).seal.
                                                   asInstanceOf[Expr[T]] } }).toExpr
-                           )
-                   } else {
-                           CpsChunkBuilder.async[F,T](asyncMonad,
-                                 cpsLu.chunkBuilder.flatMap[T]('{ l =>
-                                     ${cpsRight.chunkBuilder.flatMap[T]( 
+         )
+     } else {
+         CpsChunkBuilder.async[F,T](asyncMonad,
+               cpsLu.flatMap[T]('{ l =>
+                                     ${cpsRight.flatMap[T]( 
                                         '{ r => ${
                                                Assign('l.unseal.select(left.symbol),
                                                       'r.unseal
@@ -89,7 +88,6 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                                       ).toExpr }
                                  }).toExpr
                            )
-                   }
-     CpsExprResult(patternCode, builder, patternType)
+     }
 
 

@@ -14,7 +14,7 @@ object AwaitTransform
    **/
   def apply[F[_]:Type,T:Type,S:Type](transformationContext: TransformationContext[F,T], 
                                     fType:  Type[S], ft:Expr[F[S]])(
-                                        given qctx: QuoteContext): CpsExprResult[F,T] =
+                                        given qctx: QuoteContext): CpsChunkBuilder[F,T] =
      import qctx.tasty.{_, given}
      import util._
      import transformationContext._
@@ -22,7 +22,6 @@ object AwaitTransform
      // [independend / translated ]
      val awBuild = CpsChunkBuilder.async[F,S](asyncMonad, ft)
      //TODO: get data about independence and rewrite.
-     val awBuildCasted = awBuild.asInstanceOf[CpsChunkBuilder[F,T]]
-     CpsExprResult[F,T](patternCode, awBuildCasted, patternType)
+     awBuild.asInstanceOf[CpsChunkBuilder[F,T]]
      
 

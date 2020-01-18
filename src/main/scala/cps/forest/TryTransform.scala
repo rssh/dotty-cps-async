@@ -14,7 +14,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
   // case Try(body, cases, finalizer) 
   def run(given qctx: QuoteContext)(body: qctx.tasty.Term, 
                                     cases: List[qctx.tasty.CaseDef],
-                                    finalizer: Option[qctx.tasty.Term]): CpsExprResult[F,T] = 
+                                    finalizer: Option[qctx.tasty.Term]): CpsChunkBuilder[F,T] = 
      println("try/catch handling")
      import qctx.tasty.{_, given}
      val cpsBody = Async.rootTransform[F,T](body.seal.asInstanceOf[Expr[T]],
@@ -41,7 +41,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                       optCpsFinalizer match 
                         case None =>
                            if (cpsCaseDefs.isEmpty) 
-                             cpsBody.chunkBuilder
+                             cpsBody
                            else 
                              CpsChunkBuilder.async[F,T](cpsCtx.asyncMonad,
                                '{
@@ -67,7 +67,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                                    )(${cpsFinalizer.transformed})
                                  })
                    }
-     CpsExprResult(patternCode, builder, patternType)
+     builder
 
 /*
   Compiler bug. Impossible to call (mismatch of qctx in param). TODO: minimize and submitt to dotty

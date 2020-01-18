@@ -23,7 +23,7 @@ object SelectTreeTransform
 
 
   def run[F[_]:Type,T:Type](given qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
-                         selectTerm: qctx.tasty.Select): CpsExprResult[F,T] = {
+                         selectTerm: qctx.tasty.Select): CpsChunkBuilder[F,T] = {
                          
      val tmpFType = summon[Type[F]]
      class Bridge(tc:TransformationContext[F,T]) extends
@@ -32,9 +32,9 @@ object SelectTreeTransform
 
          implicit val fType: quoted.Type[F] = tmpFType
           
-         def bridge(): CpsExprResult[F,T] =
+         def bridge(): CpsChunkBuilder[F,T] =
             val origin = selectTerm.asInstanceOf[qctx.tasty.Select]
-            runSelect(origin).toResult(cpsCtx.patternCode).asInstanceOf[CpsExprResult[F,T]]
+            runSelect(origin).toResult(cpsCtx.patternCode).asInstanceOf[CpsChunkBuilder[F,T]]
                         
 
      } 

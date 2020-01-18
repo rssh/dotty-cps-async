@@ -14,7 +14,7 @@ object IfTransform
    **/
   def run[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T], 
                                cond: Expr[Boolean], ifTrue: Expr[T], ifFalse: Expr[T]
-                               )(given qctx: QuoteContext): CpsExprResult[F,T] =
+                               )(given qctx: QuoteContext): CpsChunkBuilder[F,T] =
      import qctx.tasty.{_, given}
      import util._
      import cpsCtx._
@@ -60,6 +60,6 @@ object IfTransform
                         )
                     }) 
        }
-     CpsExprResult[F,T](patternCode, cnBuild, patternType)
+     cnBuild
      
 

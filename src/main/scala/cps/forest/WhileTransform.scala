@@ -14,7 +14,7 @@ object WhileTransform
    **/
   def run[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T], 
                                cond: Expr[Boolean], repeat: Expr[Unit]
-                               )(given qctx: QuoteContext): CpsExprResult[F,T] =
+                               )(given qctx: QuoteContext): CpsChunkBuilder[F,T] =
      import qctx.tasty.{_, given}
      import util._
      import cpsCtx._
@@ -32,7 +32,7 @@ object WhileTransform
                '{
                  def _whilefun(): F[Unit] = {
                    if (${cond}) 
-                     ${cpsRepeat.chunkBuilder.flatMapIgnore('{ _whilefun() }).toExpr}
+                     ${cpsRepeat.flatMapIgnore('{ _whilefun() }).toExpr}
                    else
                      ${asyncMonad}.pure(())
                  }
@@ -43,7 +43,7 @@ object WhileTransform
             CpsChunkBuilder.async[F,Unit](asyncMonad,
                '{
                  def _whilefun(): F[Unit] = {
-                   ${cpsCond.chunkBuilder.flatMap[Unit]( '{ c =>
+                   ${cpsCond.flatMap[Unit]( '{ c =>
                        if (c) {
                          $repeat 
                          _whilefun()
@@ -59,9 +59,9 @@ object WhileTransform
             CpsChunkBuilder.async[F,Unit](asyncMonad,
                '{
                  def _whilefun(): F[Unit] = {
-                   ${cpsCond.chunkBuilder.flatMap[Unit]( '{ c =>
+                   ${cpsCond.flatMap[Unit]( '{ c =>
                        if (c) {
-                         ${cpsRepeat.chunkBuilder.flatMapIgnore(
+                         ${cpsRepeat.flatMapIgnore(
                              '{ _whilefun() }
                           ).toExpr}
                        } else {
@@ -74,7 +74,6 @@ object WhileTransform
                })
          }
      }
-     val builder = unitBuilder.asInstanceOf[CpsChunkBuilder[F,T]]
-     CpsExprResult[F,T](patternCode, builder, patternType)
+     unitBuilder.asInstanceOf[CpsChunkBuilder[F,T]]
      
 

@@ -48,7 +48,7 @@ object Async {
 
 
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], inBlock: Boolean)(
-                                           given qctx: QuoteContext): CpsExprResult[F,T] =
+                                           given qctx: QuoteContext): CpsChunkBuilder[F,T] =
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._
