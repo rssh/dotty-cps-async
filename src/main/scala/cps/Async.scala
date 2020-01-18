@@ -3,7 +3,6 @@ package cps
 import scala.quoted._
 import scala.quoted.matching._
 
-
 trait CB[T] 
 
 object CBF {
@@ -59,7 +58,6 @@ object CpsChunkBuilder
 
 
 case class CpsExprResult[T](
-                origin:Expr[T],
                 cpsBuild: CpsChunkBuilder[T],
                 haveAwait:Boolean
 ) {
@@ -85,11 +83,11 @@ object Async {
      f match 
          case Const(c) =>   
                         val cnBuild = CpsChunkBuilder.sync(f)
-                        CpsExprResult(f, cnBuild, false)
+                        CpsExprResult(cnBuild, false)
          case '{ _root_.cps.await[$fType]($ft) } => 
                         val awBuild = CpsChunkBuilder.async(ft)
                         val awBuildCasted = awBuild.asInstanceOf[CpsChunkBuilder[T]]
-                        CpsExprResult[T](f, awBuildCasted, true)
+                        CpsExprResult[T](awBuildCasted, true)
          case '{ while ($cond) { $repeat }  } =>
                         val cpsCond = Async.rootTransform(cond)
                         val cpsRepeat = Async.rootTransform(repeat)
@@ -110,14 +108,14 @@ object Async {
                              }
                              _whilefun()
                           })
-                        CpsExprResult[T](f, builder, true)
+                        CpsExprResult[T](builder, true)
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
                 case Apply(fun,args) =>
                    val rFun = rootTransform(fun.seal)
                    val builder = CpsChunkBuilder.sync(f)
-                   CpsExprResult(f,builder,rFun.haveAwait)
+                   CpsExprResult(builder,rFun.haveAwait)
                 case Block(prevs,last) =>
                    val rPrevs = prevs.map{
                      case d: Definition =>
@@ -134,10 +132,10 @@ object Async {
                    val blockResult = rPrevs.foldRight(lastChunk)((e,s) => e.cpsBuild.append(s))
                    val haveAwait = rLast.haveAwait || rPrevs.exists(_.haveAwait)
                    val cpsBuild =  CpsChunkBuilder.async[T](blockResult.toExpr)
-                   CpsExprResult[T](f,cpsBuild,haveAwait)
+                   CpsExprResult[T](cpsBuild,haveAwait)
                 case Ident(name) =>
                    val cnBuild = CpsChunkBuilder.sync(f)
-                   CpsExprResult(f, cnBuild , false)
+                   CpsExprResult(cnBuild , false)
                 case _ =>
                    printf("fTree:"+fTree)
                    ???
