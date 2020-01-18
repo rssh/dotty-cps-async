@@ -6,30 +6,21 @@ import scala.quoted.matching._
 
 trait CB[T] 
 
-
 object CBF {
-
    def pure[T](value:T): CB[T] = ???
-
    def map[A,B](fa:CB[A])(f: A=>B):CB[B] = ???
-
    def flatMap[A,B](fa:CB[A])(f: A=>CB[B]):CB[B] = ???
-
 }
 
 
 case class CpsChunk[T](prev: Seq[Expr[_]], last:Expr[CB[T]]) 
 
     def toExpr(given QuoteContext): Expr[CB[T]] =
-      val nLast = last
       if (prev.isEmpty)
-        nLast
+        last
       else
-        Expr.block(prev.toList,nLast)
+        Expr.block(prev.toList,last)
 
-    def insertPrev[A](p: Expr[A]): CpsChunk[T] =
-      CpsChunk(p +: prev, last) 
-  
 
 trait CpsChunkBuilder[T:Type]
 
@@ -58,7 +49,8 @@ object CpsChunkBuilder
    def sync[T:Type](f:Expr[T])(given QuoteContext):CpsChunkBuilder[T] =
      new CpsChunkBuilder[T] {
         override def create() = fromFExpr('{ CBF.pure($f) })
-        override def append[A:Type](e: CpsChunk[A]) = e.insertPrev(f)
+        override def append[A:Type](e: CpsChunk[A]) = 
+            CpsChunk(f +: e.prev, e.last)
      }
          
    def async[T:Type](f:Expr[CB[T]])(given QuoteContext):CpsChunkBuilder[T] =
@@ -71,7 +63,6 @@ object CpsChunkBuilder
 case class CpsExprResult[T](
                 origin:Expr[T],
                 cpsBuild: CpsChunkBuilder[T],
-                originType: Type[T],
                 haveAwait:Boolean
 ) {
 
@@ -79,8 +70,6 @@ case class CpsExprResult[T](
 }
 
 
-
-case class MacroError(msg: String, posExpr: Expr[_]) extends RuntimeException(msg)
 
 
 erased def await[T](f: CB[T]):T = ???
@@ -94,26 +83,20 @@ object Async {
 
   def transformImpl[T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[CB[T]] = 
     import qctx.tasty.{_,given}
-    try
-      rootTransform[T](f).transformed
-    catch
-      case ex: MacroError =>
-           qctx.error(ex.msg, ex.posExpr)
-           '{???}
+    rootTransform[T](f).transformed
 
 
   def rootTransform[T:Type](f: Expr[T])(given qctx: QuoteContext): CpsExprResult[T] =
-     val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._
      f match 
          case Const(c) =>   
                         val cnBuild = CpsChunkBuilder.sync(f)
-                        CpsExprResult(f, cnBuild, tType, false)
+                        CpsExprResult(f, cnBuild, false)
          case '{ _root_.cps.await[$fType]($ft) } => 
                         val awBuild = CpsChunkBuilder.async(ft)
                         val awBuildCasted = awBuild.asInstanceOf[CpsChunkBuilder[T]]
-                        CpsExprResult[T](f, awBuildCasted, tType, true)
+                        CpsExprResult[T](f, awBuildCasted, true)
          case '{ while ($cond) { $repeat }  } =>
                         val cpsCond = Async.rootTransform(cond)
                         val cpsRepeat = Async.rootTransform(repeat)
@@ -134,14 +117,14 @@ object Async {
                              }
                              _whilefun()
                           })
-                        CpsExprResult[T](f, builder, tType, true)
+                        CpsExprResult[T](f, builder, true)
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
                 case Apply(fun,args) =>
                    val rFun = rootTransform(fun.seal)
                    val builder = CpsChunkBuilder.sync(f)
-                   CpsExprResult(f,builder,tType,rFun.haveAwait)
+                   CpsExprResult(f,builder,rFun.haveAwait)
                 case Block(prevs,last) =>
                    val rPrevs = prevs.map{
                      case d: Definition =>
@@ -158,13 +141,13 @@ object Async {
                    val blockResult = rPrevs.foldRight(lastChunk)((e,s) => e.cpsBuild.append(s))
                    val haveAwait = rLast.haveAwait || rPrevs.exists(_.haveAwait)
                    val cpsBuild =  CpsChunkBuilder.async[T](blockResult.toExpr)
-                   CpsExprResult[T](f,cpsBuild,tType,haveAwait)
+                   CpsExprResult[T](f,cpsBuild,haveAwait)
                 case Ident(name) =>
                    val cnBuild = CpsChunkBuilder.sync(f)
-                   CpsExprResult(f, cnBuild , tType, false)
+                   CpsExprResult(f, cnBuild , false)
                 case _ =>
                    printf("fTree:"+fTree)
-                   throw MacroError(s"language construction is not supported: ${fTree}", f)
+                   ???
              }
      
 
