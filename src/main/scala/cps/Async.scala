@@ -42,8 +42,6 @@ trait CpsChunkBuilder[T:Type]
                  '{ CBF.flatMap(${create().toExpr})(_ => ${t}) }
            )
 
-
-
 object CpsChunkBuilder 
 
    def sync[T:Type](f:Expr[T])(given QuoteContext):CpsChunkBuilder[T] =
@@ -65,11 +63,8 @@ case class CpsExprResult[T](
                 cpsBuild: CpsChunkBuilder[T],
                 haveAwait:Boolean
 ) {
-
     def transformed(given QuoteContext): Expr[CB[T]] = cpsBuild.create().toExpr
 }
-
-
 
 
 erased def await[T](f: CB[T]):T = ???
@@ -77,14 +72,12 @@ erased def await[T](f: CB[T]):T = ???
 
 object Async {
 
-
   inline def transform[T](expr: =>T): CB[T] =
     ${ Async.transformImpl[T]('expr) } 
 
   def transformImpl[T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[CB[T]] = 
     import qctx.tasty.{_,given}
     rootTransform[T](f).transformed
-
 
   def rootTransform[T:Type](f: Expr[T])(given qctx: QuoteContext): CpsExprResult[T] =
      import qctx.tasty.{_, given}
@@ -149,7 +142,5 @@ object Async {
                    printf("fTree:"+fTree)
                    ???
              }
-     
-
 
 }
