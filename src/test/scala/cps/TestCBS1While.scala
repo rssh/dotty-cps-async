@@ -1,10 +1,7 @@
-package cps
+package c
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
-
-
-
 
 class TestBS1While
 

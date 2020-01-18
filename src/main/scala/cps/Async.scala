@@ -1,4 +1,4 @@
-package cps
+package c
 
 import scala.quoted._
 import scala.quoted.matching._
@@ -71,7 +71,6 @@ object Async {
     ${ Async.transformImpl[T]('expr) } 
 
   def transformImpl[T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[CB[T]] = 
-    import qctx.tasty.{_,given}
     rootTransform[T](f).transformed
 
   def rootTransform[T:Type](f: Expr[T])(given qctx: QuoteContext): CpsChunkBuilder[T] =
@@ -80,7 +79,7 @@ object Async {
      f match 
          case Const(c) =>   
                         CpsChunkBuilder.sync(f)
-         case '{ _root_.cps.await[$fType]($ft) } => 
+         case '{ _root_.c.await[$fType]($ft) } => 
                         val awBuild = CpsChunkBuilder.async(ft)
                         awBuild.asInstanceOf[CpsChunkBuilder[T]]
          case '{ while ($cond) { $repeat }  } =>
