@@ -2,9 +2,6 @@ package cps
 
 import scala.quoted._
 import scala.quoted.matching._
-import scala.compiletime._
-
-import scala.util.Try
 
 trait AsyncMonad[F[_]] {
 
@@ -15,6 +12,36 @@ trait AsyncMonad[F[_]] {
    def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B]
 
 }
+
+trait ComputationBound[T] {
+ 
+
+  def map[S](f:T=>S): ComputationBound[S] = ???
+
+  def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S]
+
+}
+
+object ComputationBound {
+   
+   def pure[T](value:T): ComputationBound[T] = ???
+
+}
+
+implicit object ComputationBoundAsyncMonad extends AsyncMonad[ComputationBound] {
+
+   def pure[T](value:T): ComputationBound[T] = ComputationBound.pure(value)
+
+   def map[A,B](fa:ComputationBound[A])(f: A=>B):ComputationBound[B] = fa.map(f)
+
+   def flatMap[A,B](fa:ComputationBound[A])(f: A=>ComputationBound[B]):ComputationBound[B] = 
+            fa.flatMap(f) 
+
+
+}
+
+
+
 
 case class CpsChunk[F[_],T](prev: Seq[Expr[_]], last:Expr[F[T]]) 
 
