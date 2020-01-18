@@ -79,8 +79,8 @@ We want to keep sequential parts to be left sequential, so the number of flatMap
 
 
 * Implementation notes:
-** We don't do ANF transform, but transform code as is, by providing implementation along with some micoroptimization, as the same way, as human will transform those expressions 'by hands'.
-** For chunks of code, which can be deconstructed with help of dotty 'quote' expressions, we use representation of block as 'CpsChunk'. Other expressions, deconstructed as tasty trees and represented as CpsTree.
-
+   * We don't do ANF transform, but transform code as is, by providing implementation along with some micoroptimization, as the same way, as human will transform those expressions 'by hands'.
+   * For chunks of code, which can be deconstructed with help of dotty 'quote' expressions, we use representation of block as 'CpsChunk'. Other expressions, deconstructed as tasty trees and represented as CpsTree.
+ 
 
 
