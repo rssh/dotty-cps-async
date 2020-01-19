@@ -33,10 +33,10 @@ object Async {
       summonExpr[AsyncMonad[F]] match 
         case Some(dm) => 
              println(s"before transformed: ${f.show}")
-             println(s"value: ${f.unseal}")
+             //println(s"value: ${f.unseal}")
              val r = rootTransform[F,T](f,dm,false).transformed
              println(s"transformed value: ${r.show}")
-             println(s"transformed tree: ${r.unseal}")
+             //println(s"transformed tree: ${r.unseal}")
              r
         case None => 
              val ft = summon[quoted.Type[F]]
@@ -48,7 +48,7 @@ object Async {
 
 
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], inBlock: Boolean)(
-                                           given qctx: QuoteContext): CpsChunkBuilder[F,T] =
+                                           given qctx: QuoteContext): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._

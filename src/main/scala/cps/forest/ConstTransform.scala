@@ -12,7 +12,7 @@ object ConstTransform
   // we know, that f is match to Const
   //(see rootTransform)
   def apply[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])(
-                                           given qctx: QuoteContext): CpsChunkBuilder[F,T] =
-     CpsChunkBuilder.sync(cpsCtx.asyncMonad, cpsCtx.patternCode) 
+                                           given qctx: QuoteContext): CpsExpr[F,T] =
+     CpsExpr.sync(cpsCtx.asyncMonad, cpsCtx.patternCode) 
 
 

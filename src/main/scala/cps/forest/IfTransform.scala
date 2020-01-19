@@ -14,7 +14,7 @@ object IfTransform
    **/
   def run[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T], 
                                cond: Expr[Boolean], ifTrue: Expr[T], ifFalse: Expr[T]
-                               )(given qctx: QuoteContext): CpsChunkBuilder[F,T] =
+                               )(given qctx: QuoteContext): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      import util._
      import cpsCtx._
@@ -27,9 +27,9 @@ object IfTransform
        if (!cR.isAsync)
          if (!tR.isAsync && !fR.isAsync) 
             isAsync = false
-            CpsChunkBuilder.sync(asyncMonad, patternCode)
+            CpsExpr.sync(asyncMonad, patternCode)
          else
-            CpsChunkBuilder.async[F,T](asyncMonad,
+            CpsExpr.async[F,T](asyncMonad,
                 '{ if ($cond) 
                      ${tR.transformed}
                    else 
@@ -37,7 +37,7 @@ object IfTransform
        else // (cR.isAsync) 
          def condAsyncExpr() = cR.transformed
          if (!tR.isAsync && !fR.isAsync) 
-           CpsChunkBuilder.async[F,T](asyncMonad,
+           CpsExpr.async[F,T](asyncMonad,
                     '{ ${asyncMonad}.map(
                                  ${condAsyncExpr()}
                         )( c =>
@@ -48,7 +48,7 @@ object IfTransform
                                    } 
                      )})
          else
-           CpsChunkBuilder.async[F,T](asyncMonad,
+           CpsExpr.async[F,T](asyncMonad,
                    '{ ${asyncMonad}.flatMap(
                          ${condAsyncExpr()}
                        )( c =>

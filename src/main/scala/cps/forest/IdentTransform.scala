@@ -10,10 +10,10 @@ class IdentTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
 
 
   // case Ident(name) 
-  def run(given qctx: QuoteContext)(name: String): CpsChunkBuilder[F,T] =
+  def run(given qctx: QuoteContext)(name: String): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      import cpsCtx._
-     CpsChunkBuilder.sync(asyncMonad, patternCode) 
+     CpsExpr.sync(asyncMonad, patternCode) 
   
   
 

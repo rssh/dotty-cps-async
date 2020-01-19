@@ -17,7 +17,7 @@ object AwaitTransformOtherMonad
                                     gType:  Type[G],
                                     sType:  Type[S], 
                                     gs:Expr[Any])  // should be G[S], but dotty bug.
-                                      ( given qctx: QuoteContext): CpsChunkBuilder[F,T] =
+                                      ( given qctx: QuoteContext): CpsExpr[F,T] =
                                        
      import qctx.tasty.{_, given}
      import util._

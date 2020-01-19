@@ -14,7 +14,7 @@ object WhileTransform
    **/
   def run[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T], 
                                cond: Expr[Boolean], repeat: Expr[Unit]
-                               )(given qctx: QuoteContext): CpsChunkBuilder[F,T] =
+                               )(given qctx: QuoteContext): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      import util._
      import cpsCtx._
@@ -25,14 +25,14 @@ object WhileTransform
      val unitBuilder = {
        if (!cpsCond.isAsync)
          if (!cpsRepeat.isAsync) 
-            CpsChunkBuilder.sync(asyncMonad, patternCode)
+            CpsExpr.sync(asyncMonad, patternCode)
          else
-            CpsChunkBuilder.async[F,Unit](asyncMonad,
+            CpsExpr.async[F,Unit](asyncMonad,
                // TODO: add name to whileFun ?
                '{
                  def _whilefun(): F[Unit] = {
                    if (${cond}) 
-                     ${cpsRepeat.flatMapIgnore('{ _whilefun() }).toExpr}
+                     ${cpsRepeat.flatMapIgnore('{ _whilefun() }).transformed}
                    else
                      ${asyncMonad}.pure(())
                  }
@@ -40,7 +40,7 @@ object WhileTransform
                })
        else // (cpsCond.isAsync) 
          if (!cpsRepeat.isAsync) {
-            CpsChunkBuilder.async[F,Unit](asyncMonad,
+            CpsExpr.async[F,Unit](asyncMonad,
                '{
                  def _whilefun(): F[Unit] = {
                    ${cpsCond.flatMap[Unit]( '{ c =>
@@ -51,29 +51,29 @@ object WhileTransform
                          ${asyncMonad}.pure(())
                        }
                     }
-                   ).toExpr}
+                   ).transformed}
                  }
                  _whilefun()
                })
          } else {
-            CpsChunkBuilder.async[F,Unit](asyncMonad,
+            CpsExpr.async[F,Unit](asyncMonad,
                '{
                  def _whilefun(): F[Unit] = {
                    ${cpsCond.flatMap[Unit]( '{ c =>
                        if (c) {
                          ${cpsRepeat.flatMapIgnore(
                              '{ _whilefun() }
-                          ).toExpr}
+                          ).transformed}
                        } else {
                          ${asyncMonad}.pure(())
                        }
-                    }).toExpr
+                    }).transformed
                    }
                  }
                  _whilefun()
                })
          }
      }
-     unitBuilder.asInstanceOf[CpsChunkBuilder[F,T]]
+     unitBuilder.asInstanceOf[CpsExpr[F,T]]
      
 

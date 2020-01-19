@@ -11,8 +11,8 @@ class NewTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
   import cpsCtx._
 
   // case Apply(fun,args) 
-  def run(given qctx: QuoteContext)(tp: qctx.tasty.TypeTree): CpsChunkBuilder[F,T] =
-     CpsChunkBuilder.sync(asyncMonad, patternCode)
+  def run(given qctx: QuoteContext)(tp: qctx.tasty.TypeTree): CpsExpr[F,T] =
+     CpsExpr.sync(asyncMonad, patternCode)
 
   
 

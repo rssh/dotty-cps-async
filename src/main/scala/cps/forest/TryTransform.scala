@@ -14,7 +14,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
   // case Try(body, cases, finalizer) 
   def run(given qctx: QuoteContext)(body: qctx.tasty.Term, 
                                     cases: List[qctx.tasty.CaseDef],
-                                    finalizer: Option[qctx.tasty.Term]): CpsChunkBuilder[F,T] = 
+                                    finalizer: Option[qctx.tasty.Term]): CpsExpr[F,T] = 
      println("try/catch handling")
      import qctx.tasty.{_, given}
      val cpsBody = Async.rootTransform[F,T](body.seal.asInstanceOf[Expr[T]],
@@ -36,14 +36,14 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
         restoreExpr.asInstanceOf[Expr[Throwable => F[T]]]
 
      val builder = if (!isAsync) {
-                      CpsChunkBuilder.sync(asyncMonad, patternCode) 
+                      CpsExpr.sync(asyncMonad, patternCode) 
                    } else {
                       optCpsFinalizer match 
                         case None =>
                            if (cpsCaseDefs.isEmpty) 
                              cpsBody
                            else 
-                             CpsChunkBuilder.async[F,T](cpsCtx.asyncMonad,
+                             CpsExpr.async[F,T](cpsCtx.asyncMonad,
                                '{
                                  ${cpsCtx.asyncMonad}.restore(
                                    ${cpsBody.transformed}
@@ -51,14 +51,14 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                                })
                         case Some(cpsFinalizer) =>
                            if (cpsCaseDefs.isEmpty) 
-                             CpsChunkBuilder.async[F,T](cpsCtx.asyncMonad,
+                             CpsExpr.async[F,T](cpsCtx.asyncMonad,
                                '{
                                   ${cpsCtx.asyncMonad}.withAction(
                                     ${cpsBody.transformed}
                                   )(${cpsFinalizer.transformed})
                                })
                            else
-                             CpsChunkBuilder.async[F,T](cpsCtx.asyncMonad,
+                             CpsExpr.async[F,T](cpsCtx.asyncMonad,
                                  '{
                                    ${cpsCtx.asyncMonad}.withAction(
                                     ${cpsCtx.asyncMonad}.restore(

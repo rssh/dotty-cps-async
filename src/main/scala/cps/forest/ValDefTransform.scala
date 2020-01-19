@@ -15,84 +15,96 @@ object ValDefTransform
       import qctx.tasty.{_, given}
       import util._
       println(s"!!!ValDefTransform.run:: val detected: x=$x, y=${y.show}")
-      val ry = Async.rootTransform[F,TX](y,asyncMonad,false)
-      println(s"!!!ValDefTransform.run:: ry=${ry}")
+      val cpsRight = Async.rootTransform[F,TX](y,asyncMonad,false)
+      println(s"!!!ValDefTransform.run:: cpsRight=${cpsRight.transformed.show}")
       val unitPatternCode = patternCode.asInstanceOf[Expr[Unit]]
-      if (ry.isAsync) 
-         
-         val py = ry.transformed
-         val cpsBuild = new CpsChunkBuilder[F,Unit](asyncMonad) {
+      val oldValDef = extractValDef(unitPatternCode)
+      if (cpsRight.isAsync) 
+         println(s"!!!ValDefTransform.run: isAsync")
+         val cpsBuild = RhsFlatMappedCpsExpr[F,Unit,TX](given qctx)(asyncMonad, Seq(),
+                                                   oldValDef, cpsRight, CpsExpr.unit(asyncMonad) )
+         cpsBuild.asInstanceOf[CpsExpr[F,T]]
+      else
+         println(s"!!!ValDefTransform.run: notAsync")
+         val cpsBuild = ValWrappedCpsExpr[F,Unit,TX](given qctx)(asyncMonad, Seq(), oldValDef, 
+                                                     CpsExpr.unit(asyncMonad) )
+         cpsBuild.asInstanceOf[CpsExpr[F,T]]
 
-            def isAsync = true
 
-            def buildValDef[T](a:Expr[T]):Expr[Unit] =
-                 val oldValDef = extractValDef(unitPatternCode)
-                 println("oldValDef.symbol=${oldValDef.symbol}")
-                 valDefBlock(newValDef(oldValDef,x.name, a.unseal))
+  class RhsFlatMappedCpsExpr[F[_]:Type, T:Type, V:Type](given qctx:QuoteContext)
+                                     (monad: Expr[AsyncMonad[F]],
+                                      prev: Seq[Expr[_]],
+                                      oldValDef: qctx.tasty.ValDef,
+                                      cpsRhs: CpsExpr[F,V],
+                                      next: CpsExpr[F,T]
+                                     )
+                                    extends AsyncCpsExpr[F,T](monad, prev) {
 
-            def oldSymbol() = extractValDef(unitPatternCode).symbol
+       import qctx.tasty.{_, given}
 
-            def fixNewIdent[A](ident:Ident, expr:Expr[A]):Term =
-                                substituteIdent(expr.unseal, oldSymbol(), ident)
+       override def fLast(given qctx: QuoteContext) = 
+          next.syncOrigin match 
+            case Some(nextOrigin) =>
+             '{
+               ${monad}.map(${cpsRhs.transformed})((v:V) => 
+                          ${buildAppendBlockExpr(oldValDef, 'v.unseal, nextOrigin)}) 
+              }
+            case  None =>
+             '{
+               ${monad}.flatMap(${cpsRhs.transformed})((v:V)=>
+                          ${buildAppendBlockExpr(oldValDef, 'v.unseal, next.transformed)}) 
+             }
 
-            def buildAppendBlock(oldValDef: ValDef, rhs:Term, exprTerm:Term):Term = {
-                val valDef = ValDef(oldValDef.symbol, Some(rhs))
-                exprTerm match {
-                  case Block(stats,last) =>
-                         Block(valDef::stats, last)
-                  case other =>
-                         Block(valDef::Nil,other)
-                }
-            }
+       override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
+          RhsFlatMappedCpsExpr(given qctx)(monad, exprs ++: prev,oldValDef,cpsRhs,next)
 
-            def buildAppendBlockExpr[A](oldValDef: ValDef, rhs:Term, expr:Expr[A]):Expr[A] = 
+
+       override def append[A:quoted.Type](e: CpsExpr[F,A])(given qtcx: QuoteContext) = 
+          RhsFlatMappedCpsExpr(given qctx)(monad,prev,oldValDef,cpsRhs,next.append(e))
+                                                          
+             
+       private def buildAppendBlock(oldValDef: ValDef, rhs:Term, exprTerm:Term):Term = 
+          val valDef = ValDef(oldValDef.symbol, Some(rhs))
+          exprTerm match 
+              case Block(stats,last) =>
+                     Block(valDef::stats, last)
+              case other =>
+                    Block(valDef::Nil,other)
+
+       private def buildAppendBlockExpr[A](oldValDef: ValDef, rhs:Term, expr:Expr[A]):Expr[A] = 
                  buildAppendBlock(oldValDef,rhs,expr.unseal).seal.asInstanceOf[Expr[A]]
 
-            override def create() = 
-                fromFExpr('{ ${asyncMonad}.map($py)((a:$tx) => ${buildValDef('a)}) })
+  }
 
-            override def append[A:quoted.Type](e: CpsChunk[F,A]) = {
-                val oldValDef = extractValDef(patternCode.asInstanceOf[Expr[Unit]])
-                CpsChunk[F,A](Seq(),
-                 '{
-                    ${asyncMonad}.flatMap($py)((a:$tx) => 
-                      ${buildAppendBlockExpr(oldValDef,'a.unseal ,e.toExpr)}
-                     )
-                 })
-            }
+  class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](given qctx: QuoteContext)(
+                                      monad: Expr[AsyncMonad[F]],
+                                      prev: Seq[Expr[_]],
+                                      oldValDef: qctx.tasty.ValDef,
+				      next: CpsExpr[F,T] ) extends AsyncCpsExpr[F,T](monad,prev)
 
-            def appendOld[A:quoted.Type](e: CpsChunk[F,A]) =
-                // TODO: inject vlaDef into e
-                CpsChunk[F,A](Seq(),
-                 '{ 
-                    ${asyncMonad}.flatMap($py)((a:$tx) => 
-                      {
-                        ${(let(('a).unseal)(
-                           ident => fixNewIdent(ident,e.toExpr)
-                         )).seal.asInstanceOf[Expr[F[A]]]}
-                       })
-                  })
+       import qctx.tasty.{_, given}
 
-         } // end cpsChunk
-         cpsBuild.asInstanceOf[CpsChunkBuilder[F,T]]
-      else
-         // Note, that we can't use CpsChunkBuilder.sync, because we need to
-         //  extract origin ValDef from his Block, to allow usage of one from
-         //  the enclosing block.
-         val cpsBuild = new CpsChunkBuilder[F,T](asyncMonad) {
-                 override def isAsync = false
-                 override def create() = pure(patternCode)
-                 override def append[A:quoted.Type](e:CpsChunk[F,A]) = 
-                     val valDef = extractValDef(unitPatternCode)
-                     val eExpr = e.toExpr
-                     val tree = eExpr.unseal match 
-                        case Block(stats, expr) =>
-                               Block(valDef::stats, expr)
-                        case _ =>
-                               Block(valDef::Nil, eExpr.unseal) 
-                     CpsChunk[F,A](Seq(),tree.seal.asInstanceOf[Expr[F[A]]])
-         } 
-         cpsBuild
+       override def isAsync = next.isAsync
+
+       override def fLast(given qctx: QuoteContext) = next.fLast
+              
+       override def transformed(given qctx: QuoteContext) = 
+           val block = next.transformed.unseal match 
+             case Block(stats, e) =>
+                 Block( prev.map(_.unseal) ++: oldValDef +: stats, e)
+             case other =>
+                 Block( prev.map(_.unseal) ++: List(oldValDef), other) 
+           block.seal.asInstanceOf[Expr[F[T]]]
+
+       override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
+           ValWrappedCpsExpr[F,T,V](given qctx)(monad, exprs ++: prev, oldValDef, next)
+
+       override def append[A:quoted.Type](e:CpsExpr[F,A])(given qctx: QuoteContext) = 
+           ValWrappedCpsExpr(given qctx)(monad, prev, 
+                                         oldValDef.asInstanceOf[qctx.tasty.ValDef], 
+                                         next.append(e))
+
+
      
   def newValDef(given qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, name: String, newRhs: qctx.tasty.Term): qctx.tasty.ValDef = {
          import qctx.tasty.{_,given}

@@ -2,7 +2,7 @@ package cps
 
 import scala.quoted._
 
-case class CpsChunk[F[_],T](prev: Seq[Expr[_]], last:Expr[F[T]]) 
+case class CpsChunk1[F[_],T](prev: Seq[Expr[_]], last:Expr[F[T]]) 
 
     def toExpr(given QuoteContext): Expr[F[T]] =
       val nLast = last
@@ -11,8 +11,8 @@ case class CpsChunk[F[_],T](prev: Seq[Expr[_]], last:Expr[F[T]])
       else
         Expr.block(prev.toList,nLast)
 
-    def insertPrev[A](p: Expr[A]): CpsChunk[F,T] =
-      CpsChunk(p +: prev, last) 
+    def insertPrev[A](p: Expr[A]): CpsChunk1[F,T] =
+      CpsChunk1(p +: prev, last) 
   
 
 

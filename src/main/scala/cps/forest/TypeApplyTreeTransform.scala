@@ -26,7 +26,7 @@ object TypeApplyTreeTransform
   def run[F[_]:Type,T:Type](given qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
                          applyTerm: qctx.tasty.Term, 
                          fun: qctx.tasty.Term, 
-                         targs: List[qctx.tasty.TypeTree]): CpsChunkBuilder[F,T] = {
+                         targs: List[qctx.tasty.TypeTree]): CpsExpr[F,T] = {
      val tmpFType = summon[Type[F]]
      class Bridge(tc:TransformationContext[F,T]) extends
                                                     TreeTransformScope[F]
@@ -34,11 +34,11 @@ object TypeApplyTreeTransform
 
          implicit val fType: quoted.Type[F] = tmpFType
           
-         def bridge(): CpsChunkBuilder[F,T] =
+         def bridge(): CpsExpr[F,T] =
             runTypeApply(applyTerm.asInstanceOf[qctx.tasty.Term],
                          fun.asInstanceOf[qctx.tasty.Term],
                          targs.asInstanceOf[List[qctx.tasty.TypeTree]]
-                        ).toResult(cpsCtx.patternCode).asInstanceOf[CpsChunkBuilder[F,T]]
+                        ).toResult(cpsCtx.patternCode).asInstanceOf[CpsExpr[F,T]]
 
      } 
      (new Bridge(cpsCtx)).bridge()

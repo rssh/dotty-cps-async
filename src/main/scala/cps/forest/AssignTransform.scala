@@ -12,7 +12,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
   import cpsCtx._
 
   // case Assign(left,right) 
-  def run(given qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsChunkBuilder[F,T] = 
+  def run(given qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsExpr[F,T] = 
      import qctx.tasty.{_, given}
      println(s"!!! assign detected : ${left} ${right}")
      left.seal match 
@@ -26,7 +26,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
 
 
   def runWithLeft[L:Type](given qctx: QuoteContext)(
-       left: qctx.tasty.Term, right: qctx.tasty.Term, cpsLeft:CpsChunkBuilder[F,L]): CpsChunkBuilder[F,T] = {
+       left: qctx.tasty.Term, right: qctx.tasty.Term, cpsLeft:CpsExpr[F,L]): CpsExpr[F,T] = {
      import qctx.tasty.{_, given}
      right.seal match {
         case '{ $re: $rt } =>
@@ -41,16 +41,16 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
 
 
   def run1[L:Type,R:Type](given qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term,
-                cpsLeft: CpsChunkBuilder[F,L], cpsRight: CpsChunkBuilder[F,R]): CpsChunkBuilder[F,T] =
+                cpsLeft: CpsExpr[F,L], cpsRight: CpsExpr[F,R]): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      if (!cpsLeft.isAsync) {
         if (!cpsRight.isAsync) 
-            CpsChunkBuilder.sync(asyncMonad, patternCode)
+            CpsExpr.sync(asyncMonad, patternCode)
         else    // !cpsLeft.isAsync && cpsRight.isAsync
-            CpsChunkBuilder.async(asyncMonad,
+            CpsExpr.async(asyncMonad,
                    cpsRight.map[T]( 
                          '{ (x:R) => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]] } 
-                          }).toExpr  )
+                          }).transformed )
      } else { // (cpsLeft.isAsync) {
         left match 
           case Select(obj,sym) => 
@@ -67,17 +67,17 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
 
   def run2[L:Type,R:Type,LU:Type](given qctx: QuoteContext)(
             left: qctx.tasty.Term, right: qctx.tasty.Term,
-             cpsLeft: CpsChunkBuilder[F,L], cpsRight: CpsChunkBuilder[F,R],
-             cpsLu: CpsChunkBuilder[F,LU]): CpsChunkBuilder[F,T] =
+             cpsLeft: CpsExpr[F,L], cpsRight: CpsExpr[F,R],
+             cpsLu: CpsExpr[F,LU]): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      if (!cpsRight.isAsync) {
-          CpsChunkBuilder.async[F,T](asyncMonad,
+          CpsExpr.async[F,T](asyncMonad,
                cpsLu.map[T]('{ x => 
                     ${Assign('x.unseal.select(left.symbol), right).seal.
-                                                  asInstanceOf[Expr[T]] } }).toExpr
+                                          asInstanceOf[Expr[T]] } }).transformed
          )
      } else {
-         CpsChunkBuilder.async[F,T](asyncMonad,
+         CpsExpr.async[F,T](asyncMonad,
                cpsLu.flatMap[T]('{ l =>
                                      ${cpsRight.flatMap[T]( 
                                         '{ r => ${
@@ -85,8 +85,8 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                                                       'r.unseal
                                                ).seal.asInstanceOf[Expr[F[T]]]
                                          }}
-                                      ).toExpr }
-                                 }).toExpr
+                                      ).transformed }
+                                 }).transformed
                            )
      }
 
