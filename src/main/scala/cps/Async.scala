@@ -7,7 +7,10 @@ import scala.compiletime._
 import cps.forest._
 import cps.misc._
 
-erased def await[F[_],T](f:F[T]):T = ???
+// erased disabled in current version
+// erased def await[F[_],T](f:F[T]):T = ???
+
+def await[F[_],T](f:F[T]):T = ???
 
 inline def async[F[_]](given am:AsyncMonad[F]): Async.InferAsyncArg[F] =
    new Async.InferAsyncArg[F]
