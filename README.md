@@ -73,5 +73,6 @@ Currently, doty-cps-async is at an early stage and not ready for production use.
 - Storm-enroute coroutines:  https://drops.dagstuhl.de/opus/volltexte/2018/9208/pdf/LIPIcs-ECOOP-2018-3.pdf
 - Thoughtworks DSL.scala:  https://github.com/ThoughtWorksInc/Dsl.scala
 - Monadless.io: http://monadless.io/
+- Effectfull: https://github.com/pelotom/effectful
 
    
