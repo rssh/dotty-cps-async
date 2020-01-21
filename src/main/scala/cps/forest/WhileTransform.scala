@@ -22,6 +22,9 @@ object WhileTransform
      val cpsRepeat = Async.rootTransform(repeat, asyncMonad, false)
      val isAsync = cpsCond.isAsync || cpsRepeat.isAsync
 
+     def uninline[X](x:Expr[X]):Expr[X] = 
+              TransformUtil.skipInlined(x.unseal).seal.asInstanceOf[Expr[X]]
+
      val unitBuilder = {
        if (!cpsCond.isAsync)
          if (!cpsRepeat.isAsync) 
@@ -32,7 +35,9 @@ object WhileTransform
                '{
                  def _whilefun(): F[Unit] = {
                    if (${cond}) 
-                     ${cpsRepeat.flatMapIgnore('{ _whilefun() }).transformed}
+                     ${cpsRepeat.flatMapIgnore(
+                          '{ _whilefun() }
+                      ).transformed}
                    else
                      ${asyncMonad}.pure(())
                  }
@@ -59,7 +64,7 @@ object WhileTransform
             CpsExpr.async[F,Unit](asyncMonad,
                '{
                  def _whilefun(): F[Unit] = {
-                   ${cpsCond.flatMap[Unit]( '{ c =>
+                   ${cpsCond.flatMap[Unit]('{ (c: Boolean) =>
                        if (c) {
                          ${cpsRepeat.flatMapIgnore(
                              '{ _whilefun() }
@@ -67,7 +72,7 @@ object WhileTransform
                        } else {
                          ${asyncMonad}.pure(())
                        }
-                    }).transformed
+                    }).transformed 
                    }
                  }
                  _whilefun()

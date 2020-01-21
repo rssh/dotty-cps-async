@@ -17,12 +17,10 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
   def run(given qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
      val tType = implicitly[Type[T]]
      import qctx.tasty.{_, given}
-     println("!!! block detected:1:")
      val rPrevs = prevs.map{ 
           case d: Definition =>
             d match {
               case v@ValDef(vName,vtt,optRhs) =>
-                println(s"!!!ValDef in block : ${v.show}")
                 optRhs match {
                      case Some(rhs) =>
                          val patternExpr = Block(List(v),Literal(Constant(()))).seal

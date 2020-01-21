@@ -56,6 +56,8 @@ class TestBS1While
  //  onlu this test : branch  dotty-break-while-00,
  //  submitted to dotty 
  //    https://github.com/lampepfl/dotty/issues/8029
+ //   pull request with fix also submitted:
+ //    https://github.com/lampepfl/dotty/pull/8057
  //
   @Test def tWhileC1_11(): Unit = 
      val c = Async.transform[ComputationBound,Int]{
@@ -70,7 +72,7 @@ class TestBS1While
         s
      }
      assert(c.run() == Success(45))
-
 */
+
 
 

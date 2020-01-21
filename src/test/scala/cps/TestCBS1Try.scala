@@ -41,4 +41,71 @@ class TestBS1Try
      assert(c.run() == Success(3))
 
 
+  @Test def try_10n_p(): Unit = 
+     val c = async{
+        var x = 1
+        try {
+          x = await(T1.cbi(2))
+        }catch{
+          case ex:Exception => // ex.printStackTrace()
+                    x = 3
+        }
+        x
+     }
+     assert(c.run() == Success(2))
+
+  @Test def try_10n_f(): Unit = 
+     val c = async{
+        var x = 1
+        try {
+          x = await(T1.cbi(2))
+          throw new RuntimeException("AAA")
+        }catch{
+          case ex:Exception => // ex.printStackTrace()
+                    x = 3
+        }
+        x
+     }
+     assert(c.run() == Success(3))
+
+
+  @Test def try_01n_p(): Unit = 
+     val c = async{
+        var x = 1
+        try {
+          x = 2
+        } catch {
+          case ex:Exception => 
+                    x = await( T1.cbi(3) )
+        }
+        x
+     }
+     assert(c.run() == Success(2))
+
+  @Test def try_01n_f(): Unit = 
+     val c = async{
+        var x = 1
+        try {
+          x = 2
+          throw new RuntimeException("AAA")
+        } catch {
+          case ex:Exception => 
+                    x = await( T1.cbi(3) )
+        }
+        x
+     }
+     assert(c.run() == Success(3))
+
+  @Test def try_11n_p(): Unit = 
+     val c = async{
+        var x = 1
+        try {
+          x = await(T1.cbi(2))
+        } catch {
+          case ex:Exception => 
+                    x = await( T1.cbi(3) )
+        }
+        x
+     }
+     assert(c.run() == Success(2))
 

@@ -14,18 +14,14 @@ object ValDefTransform
       import transformationContext._
       import qctx.tasty.{_, given}
       import util._
-      println(s"!!!ValDefTransform.run:: val detected: x=$x, y=${y.show}")
       val cpsRight = Async.rootTransform[F,TX](y,asyncMonad,false)
-      println(s"!!!ValDefTransform.run:: cpsRight=${cpsRight.transformed.show}")
       val unitPatternCode = patternCode.asInstanceOf[Expr[Unit]]
       val oldValDef = extractValDef(unitPatternCode)
       if (cpsRight.isAsync) 
-         println(s"!!!ValDefTransform.run: isAsync")
          val cpsBuild = RhsFlatMappedCpsExpr[F,Unit,TX](given qctx)(asyncMonad, Seq(),
                                                    oldValDef, cpsRight, CpsExpr.unit(asyncMonad) )
          cpsBuild.asInstanceOf[CpsExpr[F,T]]
       else
-         println(s"!!!ValDefTransform.run: notAsync")
          val cpsBuild = ValWrappedCpsExpr[F,Unit,TX](given qctx)(asyncMonad, Seq(), oldValDef, 
                                                      CpsExpr.unit(asyncMonad) )
          cpsBuild.asInstanceOf[CpsExpr[F,T]]

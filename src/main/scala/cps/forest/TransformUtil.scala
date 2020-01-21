@@ -36,7 +36,6 @@ object TransformUtil
            if (x.isDefined) 
              x
            else 
-             println(s"search, tree=${tree}")
              cond(tree) orElse super.foldOverTree(x,tree)
         }
      }
@@ -64,4 +63,16 @@ object TransformUtil
      }
      changes.transformTerm(tree)
 
+
+  def eraseInline(given qctx:QuoteContext)(tree: qctx.tasty.Term): qctx.tasty.Term = 
+     import qctx.tasty.{_,given}
+     import util._
+     val changes = new TreeMap() {
+        override def transformTerm(tree:Term)(given ctx: Context):Term =
+          tree match 
+            case Inlined(x,y,z) => z
+            case _ => super.transformTerm(tree)
+     }
+     ???
+   
 
