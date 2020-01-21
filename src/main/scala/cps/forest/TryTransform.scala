@@ -69,16 +69,4 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
                    }
      builder
 
-/*
-  Compiler bug. Impossible to call (mismatch of qctx in param). TODO: minimize and submitt to dotty
-  def makeRestoreExpr[F[_]:Type,T:Type](given qctx: QuoteContext)(
-                                        caseDefs: List[qctx.tasty.CaseDef],
-                                        cpsCaseDefs: List[CpsExprResult[F,T]]):Expr[Throwable => F[T]] =
-     import qctx.tasty.{_, given}
-     val nCaseDefs = (caseDefs,cpsCaseDefs).zipped map { (frs,snd) =>
-          CaseDef(frs.lhs, snd.transformed)
-     }
-     val restoreExpr = '{ ex: Throwable => ${Match('ex.unseal, nCaseDefs)} }
-     restoreExpr
-*/
 
