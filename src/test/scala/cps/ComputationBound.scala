@@ -2,10 +2,24 @@ package cps
 
 import scala.quoted._
 import scala.util.{Try,Success,Failure}
+import scala.concurrent.duration._
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicReference
 
 trait ComputationBound[T] {
  
-  def run(): Try[T]
+  def run(timeout: Duration = Duration.Inf): Try[T] =
+    fulfill(timeout) match 
+      case Some(v) => v
+      case None => Failure(new TimeoutException())
+
+  def fulfill(timeout: Duration): Option[Try[T]] = 
+        progress(timeout) match 
+           case Done(t) => Some(Success(t))
+           case Error(e) => Some(Failure(e))
+           case _ => None
+
+  def progress(timeout: Duration): ComputationBound[T]
 
   def map[S](f:T=>S): ComputationBound[S] =
      flatMap( x => Done(f(x)) )
@@ -15,8 +29,69 @@ trait ComputationBound[T] {
 }
 
 object ComputationBound {
+
+   import scala.collection._
    
    def pure[T](value:T): ComputationBound[T] = Done(value)
+
+   def asyncCallback[A](source: (Try[A]=>Unit)=>Unit): ComputationBound[A] = {
+        val ref = new AtomicReference[Option[Try[A]]]()
+        source( r => {
+          ref.set(Some(r))
+          externalAsyncNotifier.notify()
+        } )
+        Wait(ref, fromTry[A] _ )
+   }
+
+   def spawn[A](op: =>ComputationBound[A]):ComputationBound[A] = {
+        val ref = new AtomicReference[Option[Try[A]]]()
+        val waiter = Wait[A,A](ref, fromTry[A] _ )
+        deferredQueue.enqueue(Deferred(ref, Some(Thunk( () => op )) ))
+        waiter
+   }
+
+   def fromTry[A](t: Try[A]):ComputationBound[A] =
+      t match 
+        case Success(a) => Done(a)
+        case Failure(e) => Error(e)
+        
+
+   case class Deferred[A](ref: AtomicReference[Option[Try[A]]],
+                     optComputations: Option[ComputationBound[A]])
+   
+   val externalAsyncNotifier = new { }
+   val deferredQueue: mutable.Queue[Deferred[?]] = new mutable.Queue()
+   val waitQuant = (100 millis).toNanos
+
+   def  advanceDeferredQueue(endNanos: Long): Boolean = {
+      var traverseDone = false
+      var nFinished = 0
+      val secondDeferred: mutable.Queue[Deferred[_]] = new mutable.Queue()
+      while(!deferredQueue.isEmpty && System.nanoTime < endNanos) 
+        val c = deferredQueue.dequeue()
+        c.ref.get() match 
+          case Some(r) => nFinished += 1
+          case None =>
+               c.optComputations match
+                  case Some(r) =>     
+                    val nextR = r.progress((endNanos - System.nanoTime) nanos)
+                    nextR.fulfill((endNanos - System.nanoTime) nanos) match
+                      case Some(x) =>
+                        c.ref.set(Some(x))
+                        nFinished += 1
+                      case None =>
+                        secondDeferred.enqueue(Deferred(c.ref,Some(nextR)))
+                  case None =>
+                    secondDeferred.enqueue(c) 
+      deferredQueue.enqueueAll(secondDeferred)
+      if (nFinished == 0)
+         val timeToWait = math.min(waitQuant, endNanos - System.nanoTime)
+         if (timeToWait > 0) 
+           externalAsyncNotifier.synchronized {
+              externalAsyncNotifier.wait(timeToWait/1000000)
+           }
+      nFinished > 0
+   }
 
 }
 
@@ -48,42 +123,83 @@ implicit object ComputationBoundAsyncMonad extends AsyncMonad[ComputationBound] 
          }
        })
 
-   def suspend[A](thunk: => ComputationBound[A]): ComputationBound[A] = Thunk(() =>thunk)
+   def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit):ComputationBound[A] = 
+         ComputationBound.asyncCallback(source)
 
-   def delay[A](thunk: =>A): ComputationBound[A] = Thunk(() => Done(thunk))
+   def spawn[A](op: =>ComputationBound[A]): ComputationBound[A] =
+          ComputationBound.spawn(op)
+
+   def fulfill[T](t: ComputationBound[T], timeout: Duration): Option[Try[T]] =
+          t.fulfill(timeout)
+
 
 }
 
 case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] {
 
-  def run(): Try[T] = 
+
+  def progress(timeout: Duration): ComputationBound[T] = 
         thunk() match 
-           case Done(t) => Success(t)
-           case Thunk(f1) => f1().run()
-           case Error(e) => Failure(e)
-        
+           case r@Done(t) => r
+           case r@Error(e) => r
+           case w@Wait(ref, f) => w.progress(timeout)
+           case Thunk(f1) => f1().progress(timeout)
+
 
   def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] =
-     Thunk[S]{ () => run() match 
-                         case Success(t) => f(t)
-                         case Failure(e) => Error(e)
+     Thunk[S]{ () => thunk() match 
+                 case Done(t) =>  f(t)
+                 case Error(e) => Error(e)
+                 case Thunk(f1) => f1().flatMap(f)
+                 case Wait(ref,f1) => Wait(ref, x => f1(x).flatMap(f))
              }
      
 }
 
 case class Done[T](value:T) extends ComputationBound[T] 
 
-  def run(): Try[T] = Success(value)
+  override def fulfill(timeout: Duration): Option[Try[T]] = Some(Success(value))
 
-  def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] =
+  override def progress(timeout: Duration): ComputationBound[T] = this
+
+  override def flatMap[S](f: T=>ComputationBound[S]): ComputationBound[S] =
      Thunk( () => f(value) )
 
 
 case class Error[T](e: Throwable) extends ComputationBound[T] 
 
-  def run(): Try[T] = Failure(e)
+  override def fulfill(timeout: Duration): Option[Try[T]] = Some(Failure(e))
 
-  def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] =
+  override def progress(timeout: Duration): ComputationBound[T] = this
+
+  override def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] =
      this.asInstanceOf[ComputationBound[S]]
 
+
+case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => ComputationBound[T]) extends ComputationBound[T] {
+
+  def progress(timeout: Duration): ComputationBound[T] = 
+     ref.get match
+       case Some(r) => op(r).progress(timeout)
+       case None =>
+         val beforeWait = Duration(System.nanoTime, NANOSECONDS)
+         val endTime = (beforeWait + timeout).toNanos
+         if (timeout.isFinite) 
+            while(ref.get().isEmpty && ( System.nanoTime < endTime ) )
+               ComputationBound.advanceDeferredQueue(endTime)
+         else
+            while(ref.get().isEmpty)
+               ComputationBound.advanceDeferredQueue(endTime)
+         ref.get.map{ r => 
+             val afterWait = Duration(System.nanoTime, NANOSECONDS)
+             op(r).progress(timeout - (afterWait - beforeWait)) 
+         }.getOrElse(this)
+      
+  override def flatMap[S](f: T => ComputationBound[S]): ComputationBound[S] =
+        Wait(ref, x => op(x) flatMap f)
+
+  override def map[S](f: T=>S): ComputationBound[S] =
+        Wait(ref, x => op(x).map(f) )
+
+}
 
