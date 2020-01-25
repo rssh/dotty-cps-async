@@ -30,7 +30,7 @@ trait ComputationBound[T] {
 
 object ComputationBound {
 
-   import scala.collection._
+   import scala.collection.immutable.Queue
    
    def pure[T](value:T): ComputationBound[T] = Done(value)
 
@@ -46,7 +46,7 @@ object ComputationBound {
    def spawn[A](op: =>ComputationBound[A]):ComputationBound[A] = {
         val ref = new AtomicReference[Option[Try[A]]]()
         val waiter = Wait[A,A](ref, fromTry[A] _ )
-        deferredQueue.enqueue(Deferred(ref, Some(Thunk( () => op )) ))
+        deferredQueue = deferredQueue.enqueue(Deferred(ref, Some(Thunk( () => op )) ))
         waiter
    }
 
@@ -59,16 +59,16 @@ object ComputationBound {
    case class Deferred[A](ref: AtomicReference[Option[Try[A]]],
                      optComputations: Option[ComputationBound[A]])
    
-   val externalAsyncNotifier = new { }
-   val deferredQueue: mutable.Queue[Deferred[?]] = new mutable.Queue()
-   val waitQuant = (100 millis).toNanos
+   private val externalAsyncNotifier = new { }
+   private var deferredQueue: Queue[Deferred[?]] = Queue()
+   private val waitQuant = (100 millis).toNanos
 
    def  advanceDeferredQueue(endNanos: Long): Boolean = {
-      var traverseDone = false
       var nFinished = 0
-      val secondDeferred: mutable.Queue[Deferred[_]] = new mutable.Queue()
+      var secondDeferred: Queue[Deferred[_]] = Queue()
       while(!deferredQueue.isEmpty && System.nanoTime < endNanos) 
-        val c = deferredQueue.dequeue()
+        val (c, q) = deferredQueue.dequeue
+        deferredQueue = q
         c.ref.get() match 
           case Some(r) => nFinished += 1
           case None =>
@@ -80,15 +80,18 @@ object ComputationBound {
                         c.ref.set(Some(x))
                         nFinished += 1
                       case None =>
-                        secondDeferred.enqueue(Deferred(c.ref,Some(nextR)))
+                        secondDeferred = secondDeferred.enqueue(Deferred(c.ref,Some(nextR)))
                   case None =>
-                    secondDeferred.enqueue(c) 
-      deferredQueue.enqueueAll(secondDeferred)
+                    secondDeferred = secondDeferred.enqueue(c) 
+      if (deferredQueue.isEmpty)
+         deferredQueue = secondDeferred
+      else
+         deferredQueue = deferredQueue.enqueueAll(secondDeferred)
       if (nFinished == 0)
          val timeToWait = math.min(waitQuant, endNanos - System.nanoTime)
          if (timeToWait > 0) 
            externalAsyncNotifier.synchronized {
-              externalAsyncNotifier.wait(timeToWait/1000000)
+              externalAsyncNotifier.wait((timeToWait nanos).toMillis)
            }
       nFinished > 0
    }
