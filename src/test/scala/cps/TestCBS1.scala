@@ -13,7 +13,7 @@ class TestBS1
 //     val c = Async.testm()
 
   @Test def tBlockNoAsync(): Unit = 
-     val c = Async.transform[ComputationBound,Int]{
+     val c = Async.transform[Int]{
          val x1 = 3
          val x2 = 4 
          x1 + x2

@@ -5,71 +5,59 @@ import scala.quoted.matching._
 import scala.compiletime._
 
 
-trait AsyncMonad[F[_]] {
-
-   def pure[T](t:T):F[T]
-
-   def map[A,B](fa:F[A])(f: A=>B):F[B]
-
-   def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B]
-
-}
-
-trait ComputationBound[T] {
+trait CB[T] {
 
 }
 
 
-implicit object ComputationBoundAsyncMonad extends AsyncMonad[ComputationBound] {
+object CBM {
 
-   def pure[T](value:T): ComputationBound[T] = ??? 
+   def pure[T](value:T): CB[T] = ??? 
 
-   def map[A,B](fa:ComputationBound[A])(f: A=>B):ComputationBound[B] = ??? 
+   def map[A,B](fa:CB[A])(f: A=>B):CB[B] = ??? 
 
-   def flatMap[A,B](fa:ComputationBound[A])(f: A=>ComputationBound[B]):ComputationBound[B] = ??? 
+   def flatMap[A,B](fa:CB[A])(f: A=>CB[B]):CB[B] = ??? 
 
 }
 
 
 
-trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[Expr[_]])
+trait CpsExpr[T:Type](prev: Seq[Expr[_]])
 
   def isAsync: Boolean
 
-  def fLast(given QuoteContext): Expr[F[T]]
+  def fLast(given QuoteContext): Expr[CB[T]]
 
-  def transformed(given QuoteContext): Expr[F[T]] =
+  def transformed(given QuoteContext): Expr[CB[T]] =
      if (prev.isEmpty)
          fLast
      else
          Expr.block(prev.toList,fLast)
 
-  def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T]
+  def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T]
 
-  def append[A:Type](chunk: CpsExpr[F,A])(given QuoteContext): CpsExpr[F,A]
+  def append[A:Type](chunk: CpsExpr[A])(given QuoteContext): CpsExpr[A]
 
   def syncOrigin(given QuoteContext): Option[Expr[T]]  
   
-  def asyncMonad: Expr[AsyncMonad[F]] = monad
+  def map[A:Type](f: Expr[T => A])(given QuoteContext): CpsExpr[A] = ???
 
-  def map[A:Type](f: Expr[T => A])(given QuoteContext): CpsExpr[F,A] = ???
+  def flatMap[A:Type](f: Expr[T => CB[A]])(given QuoteContext): CpsExpr[A] = ???
 
-  def flatMap[A:Type](f: Expr[T => F[A]])(given QuoteContext): CpsExpr[F,A] = ???
-
-  def flatMapIgnore[A:Type](t: Expr[F[A]])(given QuoteContext): CpsExpr[F,A] =
+  def flatMapIgnore[A:Type](t: Expr[CB[A]])(given QuoteContext): CpsExpr[A] =
          flatMap( '{ _ => $t } )
 
 
 
-abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[AsyncMonad[F]],
-                                      prev: Seq[Expr[_]]) extends CpsExpr[F,T](dm, prev) 
+abstract class SyncCpsExpr[T: Type](
+                                      prev: Seq[Expr[_]]) extends CpsExpr[T](prev) 
  
      override def isAsync = false
 
      def last(given QuoteContext): Expr[T]
 
-     override def fLast(given QuoteContext): Expr[F[T]] =
-          '{  ${dm}.pure(${last}) }
+     override def fLast(given QuoteContext): Expr[CB[T]] =
+          '{  CBM.pure(${last}) }
 
      override def syncOrigin(given QuoteContext): Option[Expr[T]] = Some(
          if prev.isEmpty then
@@ -80,70 +68,66 @@ abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[AsyncMonad[F]],
 
                   
 
-case class GenericSyncCpsExpr[F[_]:Type,T:Type](
-                             dm: Expr[AsyncMonad[F]],
+case class GenericSyncCpsExpr[T:Type](
                              prev: Seq[Expr[_]],
-                             lastExpr: Expr[T]) extends SyncCpsExpr[F,T](dm, prev)
+                             lastExpr: Expr[T]) extends SyncCpsExpr[T](prev)
 
        
        def last(given QuoteContext): Expr[T] = lastExpr
 
-       override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
+       override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T] =
            copy(prev = exprs ++: prev)
 
-       override def append[A:Type](e: CpsExpr[F,A])(given QuoteContext) = 
+       override def append[A:Type](e: CpsExpr[A])(given QuoteContext) = 
            e.prependExprs(Seq(last)).prependExprs(prev)
 
-       override def map[A:Type](f: Expr[T => A])(given QuoteContext): CpsExpr[F,A] =
+       override def map[A:Type](f: Expr[T => A])(given QuoteContext): CpsExpr[A] =
            copy(lastExpr = Expr.betaReduce(f)(lastExpr) )
 
-       override def flatMap[A:Type](f: Expr[T => F[A]])(given QuoteContext): CpsExpr[F,A] =
-            GenericAsyncCpsExpr[F,A](dm, prev, '{ $dm.flatMap($dm.pure($last))($f) } ) 
+       override def flatMap[A:Type](f: Expr[T => CB[A]])(given QuoteContext): CpsExpr[A] =
+            GenericAsyncCpsExpr[A](prev, '{ CBM.flatMap(CBM.pure($last))($f) } ) 
                            
 
-       override def flatMapIgnore[A:Type](t: Expr[F[A]])(given QuoteContext): CpsExpr[F,A] =
-            GenericAsyncCpsExpr(dm, prev, '{ ${dm}.flatMap($dm.pure($last))(_ => $t) } )
+       override def flatMapIgnore[A:Type](t: Expr[CB[A]])(given QuoteContext): CpsExpr[A] =
+            GenericAsyncCpsExpr(prev, '{ CBM.flatMap(CBM.pure($last))(_ => $t) } )
                          
            
 
-abstract class AsyncCpsExpr[F[_]:Type,T:Type](
-                              dm: Expr[AsyncMonad[F]],
+abstract class AsyncCpsExpr[T:Type](
                               prev: Seq[Expr[_]]
-                            ) extends CpsExpr[F,T](dm, prev)
+                            ) extends CpsExpr[T](prev)
 
        override def isAsync = true
 
-       override def append[A:Type](e: CpsExpr[F,A])(given QuoteContext): CpsExpr[F,A] = 
+       override def append[A:Type](e: CpsExpr[A])(given QuoteContext): CpsExpr[A] = 
            flatMapIgnore(e.transformed)
 
        override def syncOrigin(given QuoteContext): Option[Expr[T]] = None
 
 
 
-case class GenericAsyncCpsExpr[F[_]:Type,T:Type](
-                            dm: Expr[AsyncMonad[F]],
+case class GenericAsyncCpsExpr[T:Type](
                             prev: Seq[Expr[_]],
-                            fLastExpr: Expr[F[T]]) extends AsyncCpsExpr[F,T](dm, prev) {
+                            fLastExpr: Expr[CB[T]]) extends AsyncCpsExpr[T](prev) {
 
-    override def fLast(given QuoteContext): Expr[F[T]] = fLastExpr
+    override def fLast(given QuoteContext): Expr[CB[T]] = fLastExpr
 
-    override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
+    override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T] =
            copy(prev = exprs ++: prev)
 
-    override def map[A:Type](f: Expr[T => A])(given QuoteContext): CpsExpr[F,A] = ???
+    override def map[A:Type](f: Expr[T => A])(given QuoteContext): CpsExpr[A] = ???
 
-    override def flatMap[A:Type](f: Expr[T => F[A]])(given QuoteContext): CpsExpr[F,A] = ???
+    override def flatMap[A:Type](f: Expr[T => CB[A]])(given QuoteContext): CpsExpr[A] = ???
 
-    override def flatMapIgnore[A:Type](t: Expr[F[A]])(given QuoteContext): CpsExpr[F,A] = ???
+    override def flatMapIgnore[A:Type](t: Expr[CB[A]])(given QuoteContext): CpsExpr[A] = ???
 
 }
 
 
-class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](
-                                      monad: Expr[AsyncMonad[F]],
+class ValWrappedCpsExpr[T:Type, V:Type](
                                       prev: Seq[Expr[_]],
                                       oldValDefBlock: Expr[Unit],
-				      next: CpsExpr[F,T] ) extends AsyncCpsExpr[F,T](monad,prev)
+				      next: CpsExpr[T] ) extends AsyncCpsExpr[T](prev)
 
 
        override def isAsync = next.isAsync
@@ -158,13 +142,13 @@ class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](
              //    Block( prev.map(_.unseal) ++: oldValDef +: stats, e)
              case other =>
                  Block( prev.map(_.unseal) ++: List(oldValDef), other) 
-           block.seal.asInstanceOf[Expr[F[T]]]
+           block.seal.asInstanceOf[Expr[CB[T]]]
 
-       override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
-           ValWrappedCpsExpr[F,T,V](monad, exprs ++: prev, oldValDefBlock, next)
+       override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T] =
+           ValWrappedCpsExpr[T,V](exprs ++: prev, oldValDefBlock, next)
 
-       override def append[A:quoted.Type](e:CpsExpr[F,A])(given qctx: QuoteContext) = 
-           ValWrappedCpsExpr(monad, prev, 
+       override def append[A:quoted.Type](e:CpsExpr[A])(given qctx: QuoteContext) = 
+           ValWrappedCpsExpr(prev, 
                                          oldValDefBlock,
                                          next.append(e))
 
@@ -189,60 +173,52 @@ class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](
 object CpsExpr
 
 
-   def sync[F[_]:Type,T:Type](dm: Expr[AsyncMonad[F]], f: Expr[T]): CpsExpr[F,T] =
-     GenericSyncCpsExpr[F,T](dm, Seq(), f) 
+   def sync[T:Type](f: Expr[T]): CpsExpr[T] =
+     GenericSyncCpsExpr[T](Seq(), f) 
          
-   def async[F[_]:Type,T:Type](dm: Expr[AsyncMonad[F]], f: Expr[F[T]]): CpsExpr[F,T] = 
-     GenericAsyncCpsExpr[F,T](dm, Seq(), f) 
+   def async[T:Type](f: Expr[CB[T]]): CpsExpr[T] = 
+     GenericAsyncCpsExpr[T](Seq(), f) 
 
-   def unit[F[_]:Type](dm: Expr[AsyncMonad[F]])(given QuoteContext) =
-     GenericSyncCpsExpr[F,Unit](dm, Seq(), '{}) 
+   def unit()(given QuoteContext) =
+     GenericSyncCpsExpr[Unit](Seq(), '{}) 
 
-   def wrap[F[_]:Type, T:Type](internal:CpsExpr[F,T])(given QuoteContext): CpsExpr[F,T] =
+   def wrap[T:Type](internal:CpsExpr[T])(given QuoteContext): CpsExpr[T] =
       internal.syncOrigin match 
-         case Some(origin) => sync(internal.asyncMonad, origin)
-         case None => async(internal.asyncMonad, internal.transformed)
+         case Some(origin) => sync(origin)
+         case None => async(internal.transformed)
 
 
 object Async {
 
-  inline def transform[F[_], T](expr: =>T): F[T] =
-    ${ Async.transformImpl[F,T]('expr) } 
+  inline def transform[T](expr: =>T): CB[T] =
+    ${ Async.transformImpl[T]('expr) } 
 
-  def transformImpl[F[_]:Type,T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[F[T]] = 
+  def transformImpl[T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[CB[T]] = 
     import qctx.tasty.{_,given}
-    summonExpr[AsyncMonad[F]] match 
-        case Some(dm) => 
-             println(s"before transformed: ${f.show}")
-             //println(s"value: ${f.unseal}")
-             val r = rootTransform[F,T](f,dm,false).transformed
-             println(s"transformed value: ${r.show}")
-             //println(s"transformed tree: ${r.unseal}")
-             r
-        case None => 
-             val ft = summon[quoted.Type[F]]
-             throw new IllegalStateException(s"Can't find async monad for ${ft.show}")
+    val r = rootTransform[T](f,false).transformed
+    println(s"transformed value: ${r.show}")
+    r
 
 
-  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], inBlock: Boolean)(
-                                           given qctx: QuoteContext): CpsExpr[F,T] =
+  def rootTransform[T:Type](f: Expr[T], inBlock: Boolean)(
+                                           given qctx: QuoteContext): CpsExpr[T] =
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._
      f match 
          case Const(c) =>  
-              CpsExpr.sync(dm, f)
+              CpsExpr.sync(f)
          case '{ val $x:$tx = $y } if inBlock => 
-              val cpsRight = Async.rootTransform(y,dm,false)
+              val cpsRight = Async.rootTransform(y,false)
               val unitPatternCode = f.asInstanceOf[Expr[Unit]]
-              val cpsBuild = ValWrappedCpsExpr(dm, Seq(), unitPatternCode,
-                                                     CpsExpr.unit(dm) )
-              cpsBuild.asInstanceOf[CpsExpr[F,T]]
+              val cpsBuild = ValWrappedCpsExpr(Seq(), unitPatternCode,
+                                                     CpsExpr.unit() )
+              cpsBuild.asInstanceOf[CpsExpr[T]]
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
                 case Apply(fun,args) =>
-                   CpsExpr.sync(dm, f)
+                   CpsExpr.sync(f)
                 case Block(prevs,last) =>
                    val rPrevs = prevs.map{
                          case d: Definition =>
@@ -252,32 +228,32 @@ object Async {
                                    case Some(rhs) =>
                                      val patternExpr = Block(List(v),Literal(Constant(()))).seal
                                      val patternExprUnit = patternExpr.asInstanceOf[Expr[Unit]]
-                                     ValWrappedCpsExpr(dm, Seq(), patternExprUnit, CpsExpr.unit(dm) )
+                                     ValWrappedCpsExpr(Seq(), patternExprUnit, CpsExpr.unit() )
                                 }
                             }
                          case t: Term =>
                             t.seal match
                               case '{ $p:$tp } =>
-                                Async.rootTransform(p, dm, true)
+                                Async.rootTransform(p, true)
                               case other =>
                                 printf(other.show)
                                 throw IllegalStateException(s"can't handle statement in block: $other")
                    }
-                   val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],dm,true)
+                   val rLast = Async.rootTransform[T](last.seal.asInstanceOf[Expr[T]],true)
                    val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
                    CpsExpr.wrap(blockResult)
                 case Ident(name) =>
-                   CpsExpr.sync(dm, f)
+                   CpsExpr.sync(f)
                 case _ =>
                    printf("fTree:"+fTree)
                    throw IllegalStateException(s"language construction is not supported: ${fTree}")
              }
    
-   inline def testm():ComputationBound[Int] =
+   inline def testm():CB[Int] =
      ${ testImpl }
      
    def testImpl(given qctx: QuoteContext) = {
-     Async.transformImpl[ComputationBound,Int]('{
+     Async.transformImpl[Int]('{
          val x1 = 3
          val x2 = 4
          x1 + x2
