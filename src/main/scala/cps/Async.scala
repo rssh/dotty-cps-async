@@ -4,8 +4,6 @@ import scala.quoted._
 import scala.quoted.matching._
 import scala.compiletime._
 
-import cps.misc._
-
 
 trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[Expr[_]])
 
@@ -189,8 +187,7 @@ object Async {
 
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[F[T]] = 
     import qctx.tasty.{_,given}
-    try
-      summonExpr[AsyncMonad[F]] match 
+    summonExpr[AsyncMonad[F]] match 
         case Some(dm) => 
              println(s"before transformed: ${f.show}")
              //println(s"value: ${f.unseal}")
@@ -200,11 +197,7 @@ object Async {
              r
         case None => 
              val ft = summon[quoted.Type[F]]
-             throw MacroError(s"Can't find async monad for ${ft.show}", f)
-    catch
-      case ex: MacroError =>
-           qctx.error(ex.msg, ex.posExpr)
-           '{???}
+             throw new IllegalStateException(s"Can't find async monad for ${ft.show}")
 
 
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], inBlock: Boolean)(
@@ -244,7 +237,7 @@ object Async {
                                 Async.rootTransform(p, dm, true)
                               case other =>
                                 printf(other.show)
-                                throw MacroError(s"can't handle statement in block: $other",t.seal)
+                                throw IllegalStateException(s"can't handle statement in block: $other")
                    }
                    val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],dm,true)
                    val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
@@ -253,7 +246,7 @@ object Async {
                    CpsExpr.sync(dm, f)
                 case _ =>
                    printf("fTree:"+fTree)
-                   throw MacroError(s"language construction is not supported: ${fTree}", f)
+                   throw IllegalStateException(s"language construction is not supported: ${fTree}")
              }
      
 
