@@ -25,27 +25,8 @@ trait ApplyTreeTransform[F[_]]
           // check - maybe this is await
           obj match {
             case Ident(name) if (name=="await") =>
-                   println(s"await detected, obj.tpe=${obj.tpe}")
-                   println(s"obj.symbol=${obj.symbol}")
-                   println(s"targs = ${targs}")
-                   println(s"targs.length = ${targs.length}")
-                   if ( obj.symbol == awaitSymbol ) 
-                     if (targs.head.tpe =:= monadTypeTree.tpe) 
-                         // TODO: check, that args have one element
-                        val awaitArg = args.head
-                        runAwait(applyTerm, awaitArg)
-                     else
-                        // ??  TODO: apply conversion if exists or touch unchanged
-                        handleFunTypeApply(applyTerm,fun,args,obj,targs)
-                   else
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
             case Select(obj1, name) if (name=="await") =>
-                   if ( obj1.symbol == awaitSymbol ) 
-                     if (targs.head.tpe =:= monadTypeTree.tpe) 
-                        runAwait(applyTerm, args.head)
-                     else
-                        handleFunTypeApply(applyTerm,fun,args,obj,targs)
-                   else
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
             case _ => handleFunTypeApply(applyTerm, fun, args, obj, targs)
           }

@@ -20,16 +20,6 @@ trait AsyncMonad[F[_]] {
 
    def withAction[A](fa:F[A])(action: =>Unit):F[A]
 
-   // TODO: not all interesting monads can adopt callback
 
-   /**
-    * return a future, which will be completed after callback will-be
-    * called by the source.
-    **/
-   def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit):F[A]
-
-   def spawn[A](op: =>F[A]): F[A]
-
-   def fulfill[T](t:F[T], timeout: Duration): Option[Try[T]]
 
 }

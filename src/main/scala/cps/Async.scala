@@ -58,30 +58,15 @@ object Async {
      val cpsCtx = TransformationContext[F,T](f,tType,dm, inBlock)
      f match 
          case Const(c) =>   ConstTransform(cpsCtx)
-         case '{ _root_.cps.await[F,$sType]($fs) } => 
-                            AwaitTransform(cpsCtx, sType, fs)
-        // looks like matching error in dotty.
-        // case '{ _root_.cps.await[$mType,$sType]($mst) } => 
-        //                    AwaitTransformOtherMonad(cpsCtx, mType, sType, mst.asInstanceOf[Expr[Any]])
          case '{ val $x:$tx = $y } if inBlock => 
                             ValDefTransform.run(cpsCtx, x, tx, y)
-         case '{ var $x:$tx = $y } if inBlock => 
-                            ValDefTransform.run(cpsCtx, x, tx, y)
-         case '{ if ($cond)  $ifTrue  else $ifFalse } =>
-                            IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
-         case '{ while ($cond) { $repeat }  } =>
-                            WhileTransform.run(cpsCtx, cond, repeat)
-         //case '{ try $body catch $cases finally $finalizer   } =>
-         //                  can't be determinated inside matching
-         case '{ throw $ex } =>
-                            ThrowTransform.run(cpsCtx, ex)
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
                 case Apply(fun,args) =>
                    ApplyTransform(cpsCtx).run(fun,args)
-                case TypeApply(fun,args) =>
-                   TypeApplyTransform(cpsCtx).run(fun,args)
+                //case TypeApply(fun,args) =>
+                //   TypeApplyTransform(cpsCtx).run(fun,args)
                 case Assign(left,right) =>
                    print(s"Assign detected, left=${left}, right=${right}")
                    AssignTransform(cpsCtx).run(left,right)
@@ -94,8 +79,6 @@ object Async {
                    IdentTransform(cpsCtx).run(name)
                 case Typed(expr, tp) =>
                    TypedTransform(cpsCtx).run(expr,tp)
-                case Try(body, cases, finalizer) =>
-                   TryTransform(cpsCtx).run(body,cases,finalizer)
                 case New(typeTree) =>
                    NewTransform(cpsCtx).run(typeTree)
                 case thisTerm@This(qual) =>
