@@ -34,7 +34,8 @@ trait CpsTreeScope[F[_]] {
              CpsExpr.sync(asyncMonad,code)
          case cpsTree: AsyncCpsTree =>
              val transformed = cpsTree.transformed.seal.asInstanceOf[Expr[F[T]]]
-             CpsExpr.async[F,T](asyncMonad, transformed)
+             //  ///CpsExpr.async[F,T](asyncMonad, transformed)
+             ???
 
   object CpsTree
 

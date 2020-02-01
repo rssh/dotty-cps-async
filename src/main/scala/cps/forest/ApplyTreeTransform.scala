@@ -21,15 +21,15 @@ trait ApplyTreeTransform[F[_]]
      val monad = cpsCtx.asyncMonad
      // try to omit things, which should be eta-expanded,
      fun match 
-       case TypeApply(obj,targs) =>
+      // case TypeApply(obj,targs) =>
           // check - maybe this is await
-          obj match {
-            case Ident(name) if (name=="await") =>
-                     handleFunTypeApply(applyTerm,fun,args,obj,targs)
-            case Select(obj1, name) if (name=="await") =>
-                     handleFunTypeApply(applyTerm,fun,args,obj,targs)
-            case _ => handleFunTypeApply(applyTerm, fun, args, obj, targs)
-          }
+      //    obj match {
+      //      case Ident(name) if (name=="await") =>
+      //               handleFunTypeApply(applyTerm,fun,args,obj,targs)
+      //      case Select(obj1, name) if (name=="await") =>
+      ////               handleFunTypeApply(applyTerm,fun,args,obj,targs)
+      //      case _ => handleFunTypeApply(applyTerm, fun, args, obj, targs)
+      //    }
        case Select(obj,method) =>
             handleFunSelect(applyTerm, fun, args, obj, method)
        case Ident(name) =>
@@ -70,8 +70,8 @@ trait ApplyTreeTransform[F[_]]
         handleArgs(applyTerm, CpsTree.pure(fun), args)
 
   def handleFun(applyTerm: Term, fun:Term, args:List[Term]):CpsTree =
-     val cpsFun = runRoot(fun)
-     handleArgs(applyTerm,cpsFun,args)
+      val cpsFun = runRoot(fun)
+      handleArgs(applyTerm,cpsFun,args)
 
 
   def handleArgs(applyTerm: Term, cpsFun: CpsTree, args: List[Term]): CpsTree = 
