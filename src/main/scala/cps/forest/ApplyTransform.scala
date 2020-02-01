@@ -17,7 +17,33 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
   def run(given qctx: QuoteContext)(fun: qctx.tasty.Term, args: List[qctx.tasty.Term]): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      println(s"!!! apply detected : ${fun} ${args}")
-     ApplyTreeTransform.run(cpsCtx, patternCode.unseal, fun, args)
+     fun match 
+       case Select(obj,method) =>
+         obj match
+           case '{ $e: $et } =>
+                     val r = Async.rootTransform(e, monad, false)
+                     if (r.isAsync)
+                         handleArgs(applyTerm, ???  , args)
+                     else
+                         handleArgs(applyTerm, r, args)
+
+  def handleArgs[X](applyTerm: Term, cpsFun: CpsExpr[F,X], args: List[Term]): CpsTree = 
+        val cpsArgs = args.map{ x =>
+                x match 
+                 case '{ $e: $et } =>
+                     Async.rootTransform(e, monad, false)
+             }
+        val isAsync = cpsFun.isAsync || isArgsAsync
+        val isArgsAsync = cpsArgs.exists(_.isAsync)
+        if (!isAsync) 
+           CpsTree.pure(applyTerm)
+        else if (cpsFun.isAsync && !isArgsAsync) 
+           cpsFun.monadMap(x => Apply(x,args), applyTerm.tpe)
+        else 
+           throw MacroError("await inside args is not supported yet",cpsCtx.patternCode)
+
+
+     //ApplyTreeTransform.run(cpsCtx, patternCode.unseal, fun, args)
      
 
 
@@ -52,25 +78,6 @@ trait ApplyTreeTransform[F[_]]
             handleFun(applyTerm, fun, args)
 
       
-  def handleFunTypeApply(applyTerm: Term, 
-                         fun:Term, 
-                         args: List[Term], 
-                         obj:Term, targs:List[TypeTree]): CpsTree =
-     obj match {
-        case Select(obj1,method) =>
-          val cpsObj1 = runRoot(obj1)
-          if (cpsObj1.isAsync) 
-              val cpsObj = cpsObj1.applyTerm(x => TypeApply(Select(x,obj1.symbol),targs), fun.tpe)
-              handleArgs(applyTerm, cpsObj, args)
-          else 
-              handleArgs(applyTerm, CpsTree.pure(fun), args)
-        case Ident(name) =>
-          handleArgs(applyTerm, CpsTree.pure(fun), args)
-        case _ =>
-          val cpsObj = runRoot(obj)  
-          handleArgs(applyTerm, cpsObj, args)
-     }
-
 
   def handleFunSelect(applyTerm:Term, fun:Term, args:List[Term], obj:Term, method: String): CpsTree = 
      val cpsObj = runRoot(obj)
