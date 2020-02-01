@@ -94,6 +94,7 @@ trait ApplyTreeTransform[F[_]]
 
 
   def handleArgs(applyTerm: Term, cpsFun: CpsTree, args: List[Term]): CpsTree = 
+        // TODO: maybe handle repeated separately ??
         val cpsArgs = args.map(x => runRoot(x))
         val isArgsAsync = cpsArgs.exists(_.isAsync)
         val isAsync = cpsFun.isAsync || isArgsAsync

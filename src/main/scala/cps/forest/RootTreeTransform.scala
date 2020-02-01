@@ -15,10 +15,12 @@ trait RootTreeTransform[F[_]]
 
   def runRoot(term: qctx.tasty.Term): CpsTree =
      term.tpe.widen match {
-       case _ : MethodType | PolyType  =>
+       case _ : MethodType =>
                //  in such case, we can't transform tree to expr
                //  without eta-expansion.  
                //    from other side - we don't want do eta-expand now, it can be performed early.
+                runRootUneta(term)
+       case _ : PolyType =>
                 runRootUneta(term)
        case _ =>
                 val expr = term.seal

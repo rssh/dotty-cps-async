@@ -80,12 +80,14 @@ object Async {
              fTree match {
                 case Apply(fun,args) =>
                    ApplyTransform(cpsCtx).run(fun,args)
+                case TypeApply(fun,args) =>
+                   TypeApplyTransform(cpsCtx).run(fun,args)
                 case Assign(left,right) =>
                    print(s"Assign detected, left=${left}, right=${right}")
                    AssignTransform(cpsCtx).run(left,right)
-                case Lambda(params, body) =>
+                case lambda@Lambda(params, body) =>
                    print(s"Lambda detected, params=${params}, body=${body}")
-                   ???
+                   LambdaTreeTransform.run(cpsCtx,lambda,params,body)
                 case Block(prevs,last) =>
                    BlockTransform(cpsCtx).run(prevs,last)
                 case Ident(name) =>
@@ -96,8 +98,12 @@ object Async {
                    TryTransform(cpsCtx).run(body,cases,finalizer)
                 case New(typeTree) =>
                    NewTransform(cpsCtx).run(typeTree)
+                case thisTerm@This(qual) =>
+                   ThisTransform(cpsCtx).run(thisTerm)
                 case selectTerm: Select =>
                    SelectTreeTransform.run(cpsCtx, selectTerm)
+                case repeatedTerm: Repeated =>
+                   RepeatedTreeTransform.run(cpsCtx, repeatedTerm)
                 case _ =>
                    printf("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)
