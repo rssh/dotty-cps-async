@@ -18,11 +18,11 @@ class TestCBS1Repeated
   //   }
   //   assert(c.run() == Success("a 2 4"))
 
-  @Test def repeated_0c(): Unit = 
-     val c = async[ComputationBound]{
-       f("x",1,2,3,4)
-     }
-     assert(c.run() == Success("a 2 4"))
+  //@Test def repeated_0c(): Unit = 
+  //   val c = async[ComputationBound]{
+  //     f("x",1,2,3,4)
+  //   }
+  //   assert(c.run() == Success("a 2 4"))
 
   def f(x:String, y: Int*):String =
       x + y.mkString

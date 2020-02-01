@@ -89,7 +89,7 @@ object ValDefTransform
              case Block(stats, e) =>
                  Block( prev.map(_.unseal) ++: oldValDef +: stats, e)
              case other =>
-                 Block( prev.map(_.unseal) ++: List(oldValDef), other) 
+                 Block( prev.map(_.unseal) ++: oldValDef +: Nil , other) 
            block.seal.asInstanceOf[Expr[F[T]]]
 
        override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
