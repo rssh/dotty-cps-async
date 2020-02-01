@@ -15,6 +15,23 @@ trait AsyncMonad[F[_]] {
 
 }
 
+trait ComputationBound[T] {
+
+}
+
+
+implicit object ComputationBoundAsyncMonad extends AsyncMonad[ComputationBound] {
+
+   def pure[T](value:T): ComputationBound[T] = ??? 
+
+   def map[A,B](fa:ComputationBound[A])(f: A=>B):ComputationBound[B] = ??? 
+
+   def flatMap[A,B](fa:ComputationBound[A])(f: A=>ComputationBound[B]):ComputationBound[B] = ??? 
+
+}
+
+
+
 trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[Expr[_]])
 
   def isAsync: Boolean
@@ -255,6 +272,16 @@ object Async {
                    printf("fTree:"+fTree)
                    throw IllegalStateException(s"language construction is not supported: ${fTree}")
              }
+   
+   inline def testm():ComputationBound[Int] =
+     ${ testImpl }
      
+   def testImpl(given qctx: QuoteContext) = {
+     Async.transformImpl[ComputationBound,Int]('{
+         val x1 = 3
+         val x2 = 4
+         x1 + x2
+     })
+   }
 
 }

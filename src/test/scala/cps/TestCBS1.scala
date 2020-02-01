@@ -9,6 +9,8 @@ import scala.util.Success
 
 class TestBS1
 
+//  @Test def tN(): Unit = 
+//     val c = Async.testm()
 
   @Test def tBlockNoAsync(): Unit = 
      val c = Async.transform[ComputationBound,Int]{
