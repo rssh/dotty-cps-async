@@ -38,7 +38,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
           case t: Term =>
             t.seal match 
                 case '{ $p:$tp } =>
-                        callRootTransform(p,tp, true)
+                        Async.rootTransform(p, asyncMonad, true)
                 case other =>
                         printf(other.show)
                         throw MacroError(s"can't handle statement in block: $other",t.seal)
@@ -48,7 +48,5 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
      // wrap yet in one Expr, to 'seal' (not unroll during append in enclosing block).
      CpsExpr.wrap(blockResult)
   
-  def callRootTransform[P:Type](expr:Expr[P],pType:Type[P],inBlock:Boolean)(given QuoteContext): CpsExpr[F,P] =
-                        Async.rootTransform[F,P](expr,asyncMonad,inBlock)
 
 
