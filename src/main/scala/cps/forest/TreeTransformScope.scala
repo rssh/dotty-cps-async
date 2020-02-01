@@ -6,7 +6,6 @@ import scala.tasty._
 
 trait TreeTransformScope[F[_]:Type]
                extends CpsTreeScope[F]
-                  with KnownTreeFragments[F]
                   with RootTreeTransform[F]
                   with ApplyTreeTransform[F]
 {

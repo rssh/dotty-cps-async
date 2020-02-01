@@ -101,25 +101,7 @@ trait CpsTreeScope[F[_]] {
           // this.flatMap(f) = prev.map(op).flatMap(f) = prev.flatMap(op*f)
           FlatMappedCpsTree(prev, t => f(op(t)), ntpe)
 
-    def transformed: Term = {
-          // ${cpsCtx.asyncMonad}.map(${prev.transformed})((x:${prev.it}) => ${op('x)})
-          val prevType = prev.otpe
-          Apply(
-             Apply(
-                Select(cpsCtx.asyncMonad.unseal, mapSymbol), // Guess compiler will deduce TypeApply
-                List(prev.transformed)
-             ),
-             List(
-               Lambda(
-                 MethodType(List("x"))(mt => List(prev.otpe), mt => otpe),
-                 opArgs => op(opArgs.head.asInstanceOf[Term])
-               )
-              //'{ 
-              //   (x:${prevType.seal}) => ${op('x.unseal).seal}
-              // }.unseal 
-             )
-          )
-    }
+    def transformed: Term = ???
 
       
   case class FlatMappedCpsTree(
@@ -138,22 +120,7 @@ trait CpsTreeScope[F[_]] {
           // this.flatMap(f) = prev.flatMap(opm).flatMap(f) 
           FlatMappedCpsTree(this,f,ntpe)
 
-    def transformed: Term = {
-        // ${cpsCtx.asyncMonad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
-        val monad = cpsCtx.asyncMonad.unseal
-        Apply(
-          Apply(
-             Select(monad, flatMapSymbol), 
-             List(prev.transformed)
-          ),
-          List(
-            Lambda(
-               MethodType(List("x"))(mt => List(prev.otpe), mt => AppliedType(monad.tpe,List(otpe))),
-               opArgs => opm(opArgs.head.asInstanceOf[Term])
-            )
-          )
-        )
-    }
+    def transformed: Term = ???
 
 
   }

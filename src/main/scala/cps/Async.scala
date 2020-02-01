@@ -7,25 +7,8 @@ import scala.compiletime._
 import cps.forest._
 import cps.misc._
 
-// erased disabled in current version
-// erased def await[F[_],T](f:F[T]):T = ???
-
-def await[F[_],T](f:F[T]):T = ???
-
-inline def async[F[_]](given am:AsyncMonad[F]): Async.InferAsyncArg[F] =
-   new Async.InferAsyncArg[F]
 
 object Async {
-
-  class InferAsyncArg[F[_]](given am:AsyncMonad[F]) {
-
-       inline def apply[T](expr: =>T):F[T] =
-            transform[F,T](expr)
-
-  }
-
-  inline def async[F[_]](given am:AsyncMonad[F]): InferAsyncArg[F] =
-          new InferAsyncArg[F]
 
   inline def transform[F[_], T](expr: =>T): F[T] =
     ${ Async.transformImpl[F,T]('expr) } 
