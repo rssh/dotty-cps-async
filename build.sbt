@@ -1,5 +1,5 @@
-val dottyVersion = "0.21.0-RC1"
-//val dottyVersion = dottyLatestNightlyBuild.get
+//val dottyVersion = "0.21.0-RC1"
+val dottyVersion = dottyLatestNightlyBuild.get
 
 lazy val root = project
   .in(file("."))
