@@ -182,7 +182,6 @@ object Async {
                    BlockTransform(cpsCtx).run(prevs,last)
                 case Ident(name) =>
                    CpsExpr.sync(cpsCtx.asyncMonad, cpsCtx.patternCode)
-                   //IdentTransform(cpsCtx).run(name)
                 case _ =>
                    printf("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)
