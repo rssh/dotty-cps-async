@@ -5,6 +5,16 @@ import scala.quoted.matching._
 import scala.compiletime._
 
 
+trait AsyncMonad[F[_]] {
+
+   def pure[T](t:T):F[T]
+
+   def map[A,B](fa:F[A])(f: A=>B):F[B]
+
+   def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B]
+
+}
+
 trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[Expr[_]])
 
   def isAsync: Boolean
@@ -24,9 +34,6 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[Expr[_]])
   def syncOrigin(given QuoteContext): Option[Expr[T]]  
   
   def asyncMonad: Expr[AsyncMonad[F]] = monad
-
-  //def pure[A:Type](t: Expr[A])(given QuoteContext): CpsExpr[F,A] = 
-  //                     CpsExpr.sync(monad, t)
 
   def map[A:Type](f: Expr[T => A])(given QuoteContext): CpsExpr[F,A] = ???
 
