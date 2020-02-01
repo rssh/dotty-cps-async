@@ -21,16 +21,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
           case d: Definition =>
             d match {
               case v@ValDef(vName,vtt,optRhs) =>
-                optRhs match {
-                     case Some(rhs) =>
-                         val patternExpr = Block(List(v),Literal(Constant(()))).seal
-                         val patternExprUnit = patternExpr.asInstanceOf[Expr[Unit]]
-                         Async.rootTransform[F,Unit](patternExprUnit,asyncMonad,true)
-                     case None =>
-                         val msg = "ValDef without right part in block: $v"
-                         qctx.error(msg,patternCode)
-                         throw new IllegalStateException(msg)
-                }
+                ValDefTransform.fromBlock[F](given qctx)(cpsCtx, v)
               case _ =>
                 printf(d.show)
                 throw MacroError("definition is not supported inside block",patternCode)

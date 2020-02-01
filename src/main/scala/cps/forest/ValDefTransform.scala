@@ -4,6 +4,7 @@ import scala.quoted._
 import scala.quoted.matching._
 
 import cps._
+import cps.misc._
 
 
 object ValDefTransform
@@ -25,6 +26,32 @@ object ValDefTransform
          val cpsBuild = ValWrappedCpsExpr[F,Unit,TX](given qctx)(asyncMonad, Seq(), oldValDef, 
                                                      CpsExpr.unit(asyncMonad) )
          cpsBuild.asInstanceOf[CpsExpr[F,T]]
+
+
+  def fromBlock[F[_]:Type](given qctx:QuoteContext)(cpsCtx: TransformationContext[F,_],
+                           valDef: qctx.tasty.ValDef): CpsExpr[F,Unit] = {
+     import qctx.tasty.{_, given}
+     import cpsCtx._
+     val posExpr = Block(List(valDef),Literal(Constant(()))).seal
+     val rhs = valDef.rhs.getOrElse(
+                  throw MacroError(s"val $valDef without right part in block ", posExpr)
+               )
+     rhs.seal match {
+        case '{ $e: $et } =>
+            val cpsRight = Async.rootTransform(e,asyncMonad,false)
+            if (cpsRight.isAsync) {
+               RhsFlatMappedCpsExpr(given qctx)(asyncMonad, Seq(),
+                                                valDef, cpsRight, CpsExpr.unit(asyncMonad) )
+            } else {
+               ValWrappedCpsExpr(given qctx)(asyncMonad, Seq(), valDef, 
+                                                CpsExpr.unit(asyncMonad) )
+            }
+        case other =>
+            throw MacroError(s"Can't concretize type of right-part $rhs ", posExpr)
+     }
+
+     
+  }
 
 
   class RhsFlatMappedCpsExpr[F[_]:Type, T:Type, V:Type](given qctx:QuoteContext)
