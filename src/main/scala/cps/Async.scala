@@ -4,7 +4,6 @@ import scala.quoted._
 import scala.quoted.matching._
 import scala.compiletime._
 
-import cps.forest._
 import cps.misc._
 
 
@@ -118,6 +117,52 @@ case class GenericAsyncCpsExpr[F[_]:Type,T:Type](
 }
 
 
+class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](
+                                      monad: Expr[AsyncMonad[F]],
+                                      prev: Seq[Expr[_]],
+                                      oldValDefBlock: Expr[Unit],
+				      next: CpsExpr[F,T] ) extends AsyncCpsExpr[F,T](monad,prev)
+
+
+       override def isAsync = next.isAsync
+
+       override def fLast(given qctx: QuoteContext) = next.fLast
+              
+       override def transformed(given qctx: QuoteContext) = 
+           import qctx.tasty.{_,given}
+           val oldValDef = extractValDef(oldValDefBlock)
+           val block = next.transformed.unseal match 
+             //case Block(stats, e) =>
+             //    Block( prev.map(_.unseal) ++: oldValDef +: stats, e)
+             case other =>
+                 Block( prev.map(_.unseal) ++: List(oldValDef), other) 
+           block.seal.asInstanceOf[Expr[F[T]]]
+
+       override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
+           ValWrappedCpsExpr[F,T,V](monad, exprs ++: prev, oldValDefBlock, next)
+
+       override def append[A:quoted.Type](e:CpsExpr[F,A])(given qctx: QuoteContext) = 
+           ValWrappedCpsExpr(monad, prev, 
+                                         oldValDefBlock,
+                                         next.append(e))
+
+
+       def extractValDef(given qctx:QuoteContext)(blockExpr:Expr[Unit]): qctx.tasty.ValDef = {
+         import qctx.tasty.{_,given}
+         blockExpr.unseal match {
+           case Block(stats,last) =>
+             stats.head match {
+                case v: ValDef => v
+                case _ => qctx.error("Block with ValDef as first statement expected",blockExpr)
+                  ???
+             }
+           case Inlined(call,binding,body) => extractValDef(body.seal.asInstanceOf[Expr[Unit]])
+           case _ => qctx.error("Block expected",blockExpr)
+                ??? 
+         }
+       }
+ 
+
 
 object CpsExpr
 
@@ -167,21 +212,45 @@ object Async {
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._
-     val cpsCtx = TransformationContext[F,T](f,tType,dm, inBlock)
      f match 
          case Const(c) =>  
-              CpsExpr.sync(cpsCtx.asyncMonad, cpsCtx.patternCode)
+              CpsExpr.sync(dm, f)
          case '{ val $x:$tx = $y } if inBlock => 
-                            ValDefTransform.run(cpsCtx, x, tx, y)
+              val cpsRight = Async.rootTransform(y,dm,false)
+              val unitPatternCode = f.asInstanceOf[Expr[Unit]]
+              val cpsBuild = ValWrappedCpsExpr(dm, Seq(), unitPatternCode,
+                                                     CpsExpr.unit(dm) )
+              cpsBuild.asInstanceOf[CpsExpr[F,T]]
          case _ => 
              val fTree = f.unseal.underlyingArgument
              fTree match {
                 case Apply(fun,args) =>
-                   CpsExpr.sync(cpsCtx.asyncMonad, cpsCtx.patternCode)
+                   CpsExpr.sync(dm, f)
                 case Block(prevs,last) =>
-                   BlockTransform(cpsCtx).run(prevs,last)
+                   val rPrevs = prevs.map{
+                         case d: Definition =>
+                            d match {
+                               case v@ValDef(vName,vtt,optRhs) =>
+                                 optRhs match {
+                                   case Some(rhs) =>
+                                     val patternExpr = Block(List(v),Literal(Constant(()))).seal
+                                     val patternExprUnit = patternExpr.asInstanceOf[Expr[Unit]]
+                                     ValWrappedCpsExpr(dm, Seq(), patternExprUnit, CpsExpr.unit(dm) )
+                                }
+                            }
+                         case t: Term =>
+                            t.seal match
+                              case '{ $p:$tp } =>
+                                Async.rootTransform(p, dm, true)
+                              case other =>
+                                printf(other.show)
+                                throw MacroError(s"can't handle statement in block: $other",t.seal)
+                   }
+                   val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],dm,true)
+                   val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
+                   CpsExpr.wrap(blockResult)
                 case Ident(name) =>
-                   CpsExpr.sync(cpsCtx.asyncMonad, cpsCtx.patternCode)
+                   CpsExpr.sync(dm, f)
                 case _ =>
                    printf("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)
