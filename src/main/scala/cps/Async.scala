@@ -44,9 +44,6 @@ trait CpsExpr[T:Type](prev: Seq[Expr[_]])
 
   def flatMap[A:Type](f: Expr[T => CB[A]])(given QuoteContext): CpsExpr[A] = ???
 
-  def flatMapIgnore[A:Type](t: Expr[CB[A]])(given QuoteContext): CpsExpr[A] =
-         flatMap( '{ _ => $t } )
-
 
 
 abstract class SyncCpsExpr[T: Type](
@@ -88,9 +85,6 @@ case class GenericSyncCpsExpr[T:Type](
             GenericAsyncCpsExpr[A](prev, '{ CBM.flatMap(CBM.pure($last))($f) } ) 
                            
 
-       override def flatMapIgnore[A:Type](t: Expr[CB[A]])(given QuoteContext): CpsExpr[A] =
-            GenericAsyncCpsExpr(prev, '{ CBM.flatMap(CBM.pure($last))(_ => $t) } )
-                         
            
 
 abstract class AsyncCpsExpr[T:Type](
@@ -99,8 +93,7 @@ abstract class AsyncCpsExpr[T:Type](
 
        override def isAsync = true
 
-       override def append[A:Type](e: CpsExpr[A])(given QuoteContext): CpsExpr[A] = 
-           flatMapIgnore(e.transformed)
+       override def append[A:Type](e: CpsExpr[A])(given QuoteContext): CpsExpr[A] 
 
        override def syncOrigin(given QuoteContext): Option[Expr[T]] = None
 
@@ -115,11 +108,11 @@ case class GenericAsyncCpsExpr[T:Type](
     override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T] =
            copy(prev = exprs ++: prev)
 
+    override def append[A:Type](e: CpsExpr[A])(given QuoteContext): CpsExpr[A] = ???
+
     override def map[A:Type](f: Expr[T => A])(given QuoteContext): CpsExpr[A] = ???
 
     override def flatMap[A:Type](f: Expr[T => CB[A]])(given QuoteContext): CpsExpr[A] = ???
-
-    override def flatMapIgnore[A:Type](t: Expr[CB[A]])(given QuoteContext): CpsExpr[A] = ???
 
 }
 
@@ -137,11 +130,8 @@ class ValWrappedCpsExpr[T:Type, V:Type](
        override def transformed(given qctx: QuoteContext) = 
            import qctx.tasty.{_,given}
            val oldValDef = extractValDef(oldValDefBlock)
-           val block = next.transformed.unseal match 
-             //case Block(stats, e) =>
-             //    Block( prev.map(_.unseal) ++: oldValDef +: stats, e)
-             case other =>
-                 Block( prev.map(_.unseal) ++: List(oldValDef), other) 
+           val block = 
+                 Block( prev.map(_.unseal) ++: List(oldValDef), next.transformed.unseal) 
            block.seal.asInstanceOf[Expr[CB[T]]]
 
        override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T] =
@@ -252,7 +242,7 @@ object Async {
    inline def testm():CB[Int] =
      ${ testImpl }
      
-   def testImpl(given qctx: QuoteContext) = {
+   def testImpl(given qctx: QuoteContext):Expr[CB[Int]] = {
      Async.transformImpl[Int]('{
          val x1 = 3
          val x2 = 4
@@ -261,3 +251,5 @@ object Async {
    }
 
 }
+
+
