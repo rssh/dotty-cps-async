@@ -9,6 +9,6 @@ lazy val root = project
 
     scalaVersion := dottyVersion,
 
-    libraryDependencies += "ch.epfl.lamp" %% "dotty-staging" % dottyVersion,
+    //libraryDependencies += "ch.epfl.lamp" %% "dotty-staging" % dottyVersion,
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
   )

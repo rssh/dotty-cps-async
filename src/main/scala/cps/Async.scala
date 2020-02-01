@@ -57,7 +57,8 @@ object Async {
      import util._
      val cpsCtx = TransformationContext[F,T](f,tType,dm, inBlock)
      f match 
-         case Const(c) =>   ConstTransform(cpsCtx)
+         case Const(c) =>  
+              CpsExpr.sync(cpsCtx.asyncMonad, cpsCtx.patternCode)
          case '{ val $x:$tx = $y } if inBlock => 
                             ValDefTransform.run(cpsCtx, x, tx, y)
          case _ => 
@@ -65,8 +66,6 @@ object Async {
              fTree match {
                 case Apply(fun,args) =>
                    ApplyTransform(cpsCtx).run(fun,args)
-                //case TypeApply(fun,args) =>
-                //   TypeApplyTransform(cpsCtx).run(fun,args)
                 case Assign(left,right) =>
                    print(s"Assign detected, left=${left}, right=${right}")
                    AssignTransform(cpsCtx).run(left,right)
@@ -74,10 +73,6 @@ object Async {
                    BlockTransform(cpsCtx).run(prevs,last)
                 case Ident(name) =>
                    IdentTransform(cpsCtx).run(name)
-                case selectTerm: Select =>
-                   SelectTreeTransform.run(cpsCtx, selectTerm)
-                case repeatedTerm: Repeated =>
-                   RepeatedTreeTransform.run(cpsCtx, repeatedTerm)
                 case _ =>
                    printf("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)

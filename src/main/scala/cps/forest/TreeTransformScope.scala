@@ -9,8 +9,6 @@ trait TreeTransformScope[F[_]:Type]
                   with KnownTreeFragments[F]
                   with RootTreeTransform[F]
                   with ApplyTreeTransform[F]
-                  with SelectTreeTransform[F]
-                  with RepeatedTreeTransform[F]
 {
 
    val cpsCtx: TransformationContext[F,?]
