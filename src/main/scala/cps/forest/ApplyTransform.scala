@@ -19,118 +19,30 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      println(s"!!! apply detected : ${fun} ${args}")
      fun match 
        case Select(obj,method) =>
-         obj match
+         obj.seal match
            case '{ $e: $et } =>
-                     val r = Async.rootTransform(e, monad, false)
+                     val r = Async.rootTransform(e, asyncMonad, false)
                      if (r.isAsync)
-                         handleArgs(applyTerm, ???  , args)
+                         handleArgs(???  , args)
                      else
-                         handleArgs(applyTerm, r, args)
+                         handleArgs( r, args)
 
-  def handleArgs[X](applyTerm: Term, cpsFun: CpsExpr[F,X], args: List[Term]): CpsTree = 
+  def handleArgs[X:Type](given qctx: QuoteContext)(cpsFun: CpsExpr[F,X], args: List[qctx.tasty.Term]): CpsExpr[F,T] = 
+        import qctx.tasty.{_, given}
         val cpsArgs = args.map{ x =>
-                x match 
+                x.seal match 
                  case '{ $e: $et } =>
-                     Async.rootTransform(e, monad, false)
+                     Async.rootTransform(e, asyncMonad, false)
              }
-        val isAsync = cpsFun.isAsync || isArgsAsync
-        val isArgsAsync = cpsArgs.exists(_.isAsync)
-        if (!isAsync) 
-           CpsTree.pure(applyTerm)
-        else if (cpsFun.isAsync && !isArgsAsync) 
-           cpsFun.monadMap(x => Apply(x,args), applyTerm.tpe)
-        else 
-           throw MacroError("await inside args is not supported yet",cpsCtx.patternCode)
-
-
-     //ApplyTreeTransform.run(cpsCtx, patternCode.unseal, fun, args)
-     
-
-
-trait ApplyTreeTransform[F[_]]
-
-  thisTreeTransform: TreeTransformScope[F] =>
-  
-  import qctx.tasty.{_, given}
-
-
-  // case Apply(fun,args) 
-  def runApply(applyTerm: Term, 
-              fun: Term, 
-              args: List[Term]): CpsTree =
-     val monad = cpsCtx.asyncMonad
-     // try to omit things, which should be eta-expanded,
-     fun match 
-      // case TypeApply(obj,targs) =>
-          // check - maybe this is await
-      //    obj match {
-      //      case Ident(name) if (name=="await") =>
-      //               handleFunTypeApply(applyTerm,fun,args,obj,targs)
-      //      case Select(obj1, name) if (name=="await") =>
-      ////               handleFunTypeApply(applyTerm,fun,args,obj,targs)
-      //      case _ => handleFunTypeApply(applyTerm, fun, args, obj, targs)
-      //    }
-       case Select(obj,method) =>
-            handleFunSelect(applyTerm, fun, args, obj, method)
-       case Ident(name) =>
-            handleFunIdent(applyTerm, fun, args, name)
-       case _ =>
-            handleFun(applyTerm, fun, args)
-
-      
-
-  def handleFunSelect(applyTerm:Term, fun:Term, args:List[Term], obj:Term, method: String): CpsTree = 
-     val cpsObj = runRoot(obj)
-     if (cpsObj.isAsync) 
-        handleArgs(applyTerm, cpsObj.applyTerm(x => Select(x,fun.symbol), fun.tpe), args)
-     else
-        handleArgs(applyTerm, CpsTree.pure(fun), args)
-   
-
-  def handleFunIdent(applyTerm: Term, fun:Term, args:List[Term], name: String):CpsTree =
-        handleArgs(applyTerm, CpsTree.pure(fun), args)
-
-  def handleFun(applyTerm: Term, fun:Term, args:List[Term]):CpsTree =
-      val cpsFun = runRoot(fun)
-      handleArgs(applyTerm,cpsFun,args)
-
-
-  def handleArgs(applyTerm: Term, cpsFun: CpsTree, args: List[Term]): CpsTree = 
-        // TODO: maybe handle repeated separately ??
-        val cpsArgs = args.map(x => runRoot(x))
         val isArgsAsync = cpsArgs.exists(_.isAsync)
         val isAsync = cpsFun.isAsync || isArgsAsync
         if (!isAsync) 
-           CpsTree.pure(applyTerm)
+           CpsExpr.sync(asyncMonad, patternCode)
         else if (cpsFun.isAsync && !isArgsAsync) 
-           cpsFun.monadMap(x => Apply(x,args), applyTerm.tpe)
+           CpsExpr.async(asyncMonad, '{ ${asyncMonad}.map(${cpsFun.transformed})(
+                                            a => ${Apply('a.unseal,args).seal}) }.asInstanceOf[Expr[F[T]]] )
         else 
            throw MacroError("await inside args is not supported yet",cpsCtx.patternCode)
-        
-     
-object ApplyTreeTransform
 
-
-  def run[F[_]:Type,T:Type](given qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
-                         applyTerm: qctx.tasty.Term,
-                         fun: qctx.tasty.Term,
-                         args: List[qctx.tasty.Term]): CpsExpr[F,T] = {
-     //val tmpCpsCtx = cpsCtx
-     val tmpQctx = qctx
-     val tmpFtype = summon[Type[F]]
-     class Bridge(tc:TransformationContext[F,T]) extends TreeTransformScope[F]
-                                                    with TreeTransformScopeInstance[F,T](tc) {
-
-         implicit val fType = tmpFtype
-
-         def bridge(): CpsExpr[F,T] =
-            runApply(applyTerm.asInstanceOf[qctx.tasty.Term],
-                         fun.asInstanceOf[qctx.tasty.Term],
-                         args.asInstanceOf[List[qctx.tasty.Term]]
-                        ).toResult(cpsCtx.patternCode).asInstanceOf[CpsExpr[F,T]]
-
-     }
-     (new Bridge(cpsCtx)).bridge()
-  }
 
 
