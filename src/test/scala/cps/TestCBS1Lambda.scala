@@ -31,6 +31,6 @@ class TestCBS1Lambda
      val c = async[ComputationBound]{
        ((x:Int) => x.toString)(3)
      }
-     assert(c.run() == Success("3:2"))
+     assert(c.run() == Success("3"))
 
 
