@@ -70,19 +70,10 @@ object Async {
                 case Assign(left,right) =>
                    print(s"Assign detected, left=${left}, right=${right}")
                    AssignTransform(cpsCtx).run(left,right)
-                case lambda@Lambda(params, body) =>
-                   print(s"Lambda detected, params=${params}, body=${body}")
-                   LambdaTreeTransform.run(cpsCtx,lambda,params,body)
                 case Block(prevs,last) =>
                    BlockTransform(cpsCtx).run(prevs,last)
                 case Ident(name) =>
                    IdentTransform(cpsCtx).run(name)
-                case Typed(expr, tp) =>
-                   TypedTransform(cpsCtx).run(expr,tp)
-                case New(typeTree) =>
-                   NewTransform(cpsCtx).run(typeTree)
-                case thisTerm@This(qual) =>
-                   ThisTransform(cpsCtx).run(thisTerm)
                 case selectTerm: Select =>
                    SelectTreeTransform.run(cpsCtx, selectTerm)
                 case repeatedTerm: Repeated =>

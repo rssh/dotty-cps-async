@@ -10,7 +10,6 @@ trait TreeTransformScope[F[_]:Type]
                   with RootTreeTransform[F]
                   with ApplyTreeTransform[F]
                   with SelectTreeTransform[F]
-                  with LambdaTreeTransform[F]
                   with RepeatedTreeTransform[F]
 {
 
