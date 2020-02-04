@@ -8,6 +8,7 @@ lazy val root = project
     version := "0.1.0",
 
     scalaVersion := dottyVersion,
+    scalacOptions ++= Seq( "-Ydebug", "-Ydebug-trace", "-Ydebug-names"),
 
     libraryDependencies += "ch.epfl.lamp" %% "dotty-staging" % dottyVersion,
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
