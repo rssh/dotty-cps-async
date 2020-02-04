@@ -11,37 +11,37 @@ object CBM {
 
 }
 
-trait CpsExpr[T:Type](prev: Seq[Expr[_]])
-
-  def transformed(given QuoteContext): Expr[CB[T]] 
-
-  def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T]
-
-  def append[A:Type](chunk: CpsExpr[A])(given QuoteContext): CpsExpr[A]
+class AsyncX(given val qctx: QuoteContext)  {
 
 
+  trait CpsExpr[T:Type](prev: Seq[Expr[_]])
+     def transformed: Expr[CB[T]] 
+     def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T]
+     def append[A:Type](chunk: CpsExpr[A]): CpsExpr[A]
 
-case class GenericSyncCpsExpr[T:Type](
+
+  case class GenericSyncCpsExpr[T:Type](
                              prev: Seq[Expr[_]],
                              lastExpr: Expr[T]) extends CpsExpr[T](prev)
 
-       def transformed(given QuoteContext): Expr[CB[T]] =
+       def transformed: Expr[CB[T]] =
+          import qctx.tasty.{_,given}
           Expr.block(prev.toList, '{ CBM.pure(${lastExpr}) })
 
        override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T] =
            copy(prev = exprs ++: prev)
 
-       override def append[A:Type](e: CpsExpr[A])(given QuoteContext) = 
+       override def append[A:Type](e: CpsExpr[A]) = 
            e.prependExprs(Seq(lastExpr)).prependExprs(prev)
 
            
 
-class ValWrappedCpsExpr[T:Type, V:Type](
+  class ValWrappedCpsExpr[T:Type, V:Type](
                                       prev: Seq[Expr[_]],
                                       oldValDefBlock: Expr[Unit],
 				      next: CpsExpr[T] ) extends CpsExpr[T](prev)
 
-       override def transformed(given qctx: QuoteContext) = 
+       override def transformed = 
            import qctx.tasty.{_,given}
            val oldValDef = extractValDef(oldValDefBlock)
            val block = Block( prev.map(_.unseal) ++: List(oldValDef), next.transformed.unseal) 
@@ -50,10 +50,10 @@ class ValWrappedCpsExpr[T:Type, V:Type](
        override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[T] =
            ValWrappedCpsExpr[T,V](exprs ++: prev, oldValDefBlock, next)
 
-       override def append[A:quoted.Type](e:CpsExpr[A])(given qctx: QuoteContext) = 
+       override def append[A:quoted.Type](e:CpsExpr[A]) = 
            ValWrappedCpsExpr(prev, oldValDefBlock,  next.append(e))
                                        
-       def extractValDef(given qctx:QuoteContext)(blockExpr:Expr[Unit]): qctx.tasty.ValDef = {
+       def extractValDef(blockExpr:Expr[Unit]): qctx.tasty.ValDef = {
          import qctx.tasty.{_,given}
          blockExpr.unseal match {
            case Block(stats,last) =>
@@ -69,30 +69,18 @@ class ValWrappedCpsExpr[T:Type, V:Type](
        }
  
 
-object CpsExpr
+  object CpsExpr
 
-   def sync[T:Type](f: Expr[T]): CpsExpr[T] =
-     GenericSyncCpsExpr[T](Seq(), f) 
+    def sync[T:Type](f: Expr[T]): CpsExpr[T] =
+      GenericSyncCpsExpr[T](Seq(), f) 
          
-   def unit()(given QuoteContext) =
-     GenericSyncCpsExpr[Unit](Seq(), '{}) 
+    def unit()(given QuoteContext) =
+      GenericSyncCpsExpr[Unit](Seq(), '{}) 
 
 
-object Async {
-
-  inline def transform[T](expr: =>T): CB[T] =
-    ${ Async.transformImpl[T]('expr) } 
-
-  def transformImpl[T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[CB[T]] = 
-    import qctx.tasty.{_,given}
-    val r = rootTransform[T](f,false).transformed
-    println(s"transformed value: ${r.show}")
-    r
-
-  def rootTransform[T:Type](f: Expr[T], inBlock: Boolean)(
-                                           given qctx: QuoteContext): CpsExpr[T] =
+  def rootTransform[T:Type](f: Expr[T], inBlock: Boolean): CpsExpr[T] =
      val tType = summon[Type[T]]
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_,given}
      import util._
      f match 
          case Const(c) =>  
@@ -117,12 +105,12 @@ object Async {
                          case t: Term =>
                             t.seal match
                               case '{ $p:$tp } =>
-                                Async.rootTransform(p, true)
+                                rootTransform(p, true)
                               case other =>
                                 printf(other.show)
                                 throw IllegalStateException(s"can't handle statement in block: $other")
                    }
-                   val rLast = Async.rootTransform[T](last.seal.asInstanceOf[Expr[T]],true)
+                   val rLast = rootTransform[T](last.seal.asInstanceOf[Expr[T]],true)
                    rPrevs.foldRight(rLast)((e,s) => e.append(s))
                 case Ident(name) =>
                    CpsExpr.sync(f)
@@ -134,4 +122,15 @@ object Async {
 
 }
 
+object Async {
 
+  inline def transform[T](expr: =>T): CB[T] =
+    ${ Async.transformImpl[T]('expr) } 
+
+  def transformImpl[T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[CB[T]] = 
+    import qctx.tasty.{_,given}
+    val r = AsyncX(given qctx).rootTransform[T](f,false).transformed
+    println(s"transformed value: ${r.show}")
+    r
+
+}
