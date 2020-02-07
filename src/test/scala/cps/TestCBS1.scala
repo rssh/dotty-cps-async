@@ -9,13 +9,12 @@ import scala.util.Success
 
 class TestBS1
 
-
-  @Test def tBlockNoAsync(): Unit = 
-     val c = Async.transform[Int]{
+  @Test def testBadTree(): Unit =
+    val c = B.badTree[Int]{
          val x1 = 3
          val x2 = 4 
-         x1 + x2
-     }
+         CBM.pure(x1 + x2)
+    }
 
 
 
