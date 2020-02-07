@@ -35,7 +35,7 @@ trait Handler[F[_]:AsyncMonad] {
          val reply = await(handle(command))
 //         if (!reply.isMuted)
 //           await(connection.send(reply.toBytes))
-//         !command.isShutdown
+         !command.isShutdown
 //       } do ()
 //     finally
 //       connection.close()
