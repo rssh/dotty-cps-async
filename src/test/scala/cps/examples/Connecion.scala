@@ -29,16 +29,16 @@ trait Handler[F[_]:AsyncMonad] {
 
    def run():F[Unit] = async[F]{
      val connection = await(openConnection())
-     try 
-       while {
+//     try 
+//       while {
          val command = await(readCommand(connection))
          val reply = await(handle(command))
-         if (!reply.isMuted)
-           await(connection.send(reply.toBytes))
-         !command.isShutdown
-       } do ()
-     finally
-       connection.close()
+//         if (!reply.isMuted)
+//           await(connection.send(reply.toBytes))
+//         !command.isShutdown
+//       } do ()
+//     finally
+//       connection.close()
    }
 
 
