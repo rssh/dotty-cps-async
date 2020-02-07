@@ -34,16 +34,11 @@ object B {
      case Block(stats, last) =>
        stats.head match {
          case v@ValDef(vName,_,_) if (vName == name) => Some(v)
-         case other => if (stats.tail == Nil) 
-                          None 
-                       else 
-                          extractValDefExpr(name, Block(stats.tail, last).seal)
+         case other =>  ???
        }
      case Inlined(call,binding,body) =>
                           extractValDefExpr(name, body.seal)
-     case _ => 
-        println(s"Can't extract valDef: code=${code.unseal}")
-        throw new IllegalStateException("AAA")
+     case _ => ???
    }
 
   def extractValDef(given qctx:QuoteContext)(name:String, code: qctx.tasty.Tree): qctx.tasty.ValDef =
