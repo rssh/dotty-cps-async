@@ -19,15 +19,12 @@ object B {
   def badTreeImpl[T:Type](qe:Expr[CB[T]])(given qctx: QuoteContext): Expr[CB[T]] = {
     import qctx.tasty.{_,given}
     val q = qe.unseal.underlyingArgument
-    val prev3 = List(Literal(Constant(())))
-    val x2Ident = extractIdent("x2",q)
+    val x2Constant = Literal(Constant(4))
     val plusSelect = extractSelect("x1",q)
-    val lastExpr3 = Apply(plusSelect, List(x2Ident)).seal.asInstanceOf[Expr[T]]
-    val r3=Expr.block(prev3.map(_.seal), '{ CBM.pure($lastExpr3) })
-    val oldValDef1= extractValDefExpr("x2",q.seal).get
-    val r1=Block(prev3 ++: List(oldValDef1), r3.unseal).seal.asInstanceOf[Expr[CB[T]]]
+    val lastExpr3 = Apply(plusSelect, List(x2Constant)).seal.asInstanceOf[Expr[T]]
+    val r3= '{ CBM.pure($lastExpr3) }
     val oldValDef0 = extractValDefExpr("x1",q.seal).get
-    val r0=Block(List(oldValDef0), r1.unseal).seal.asInstanceOf[Expr[CB[T]]]
+    val r0=Block(List(oldValDef0), r3.unseal).seal.asInstanceOf[Expr[CB[T]]]
     r0
   }
 
@@ -49,6 +46,13 @@ object B {
         throw new IllegalStateException("AAA")
    }
 
+  def extractValDef(given qctx:QuoteContext)(name:String, code: qctx.tasty.Tree): qctx.tasty.ValDef =
+   import qctx.tasty.{_,given}
+   find(code,{
+     case v@ValDef(n,_,_) if n == name => Some(v)
+     case _ => None
+   }).get.asInstanceOf[qctx.tasty.ValDef]
+
   def extractSelect(given qctx:QuoteContext)(name:String, code: qctx.tasty.Term): qctx.tasty.Term =
    import qctx.tasty.{_,given}
    find(code,{
@@ -56,14 +60,7 @@ object B {
      case _ => None
    }).get.asInstanceOf[qctx.tasty.Term]
 
-  def extractIdent(given qctx:QuoteContext)(name:String, code: qctx.tasty.Term):qctx.tasty.Term =
-   import qctx.tasty.{_,given}
-   find(code,{
-     case ident@Ident(n) if n == name => Some(ident)
-     case _ => None
-   }).get.asInstanceOf[qctx.tasty.Ident]
-
-  def find(given qctx:QuoteContext)(term: qctx.tasty.Term, 
+  def find(given qctx:QuoteContext)(term: qctx.tasty.Tree, 
                        cond: qctx.tasty.Tree=> Option[qctx.tasty.Tree]):Option[qctx.tasty.Tree] = {
      import qctx.tasty.{_,given}
      import util._
