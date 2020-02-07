@@ -9,24 +9,6 @@ import cps.misc._
 
 object ValDefTransform
 
-     //    case '{ val $x:$tx = $y } => 
-  def run[F[_]:Type,T:Type,TX:Type](transformationContext: TransformationContext[F,T],
-                  x:Sym[TX],tx:Type[TX],y:Expr[TX])(given qctx: QuoteContext) =
-      import transformationContext._
-      import qctx.tasty.{_, given}
-      import util._
-      val cpsRight = Async.rootTransform[F,TX](y,asyncMonad,false)
-      val unitPatternCode = patternCode.asInstanceOf[Expr[Unit]]
-      val oldValDef = extractValDef(unitPatternCode)
-      if (cpsRight.isAsync) 
-         val cpsBuild = RhsFlatMappedCpsExpr[F,Unit,TX](given qctx)(asyncMonad, Seq(),
-                                                   oldValDef, cpsRight, CpsExpr.unit(asyncMonad) )
-         cpsBuild.asInstanceOf[CpsExpr[F,T]]
-      else
-         val cpsBuild = ValWrappedCpsExpr[F,Unit,TX](given qctx)(asyncMonad, Seq(), oldValDef, 
-                                                     CpsExpr.unit(asyncMonad) )
-         cpsBuild.asInstanceOf[CpsExpr[F,T]]
-
 
   def fromBlock[F[_]:Type](given qctx:QuoteContext)(cpsCtx: TransformationContext[F,_],
                            valDef: qctx.tasty.ValDef): CpsExpr[F,Unit] = {
@@ -139,20 +121,6 @@ object ValDefTransform
     Block(List(v),Literal(Constant(()))).seal.asInstanceOf[Expr[Unit]]
   }
 
-  def extractValDef(given qctx:QuoteContext)(blockExpr:Expr[Unit]): qctx.tasty.ValDef = {
-    import qctx.tasty.{_,given}
-    blockExpr.unseal match {
-      case Block(stats,last) =>
-        stats.head match {
-          case v: ValDef => v
-          case _ => qctx.error("Block with ValDef as first statement expected",blockExpr)
-                  ???
-        }
-      case Inlined(call,binding,body) => extractValDef(body.seal.asInstanceOf[Expr[Unit]])
-      case _ => qctx.error("Block expected",blockExpr)
-                ??? 
-    }
-  }
  
   // substitute identifier with the same part.
 

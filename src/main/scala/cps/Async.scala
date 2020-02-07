@@ -63,10 +63,6 @@ object Async {
         // looks like matching error in dotty.
         // case '{ _root_.cps.await[$mType,$sType]($mst) } => 
         //                    AwaitTransformOtherMonad(cpsCtx, mType, sType, mst.asInstanceOf[Expr[Any]])
-        // case '{ val $x:$tx = $y } if inBlock => 
-        //                    ValDefTransform.run(cpsCtx, x, tx, y)
-        // case '{ var $x:$tx = $y } if inBlock => 
-        //                    ValDefTransform.run(cpsCtx, x, tx, y)
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
          case '{ while ($cond) { $repeat }  } =>
