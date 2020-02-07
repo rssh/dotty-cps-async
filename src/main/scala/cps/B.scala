@@ -16,7 +16,6 @@ object B {
   inline def badTree[T](q: =>CB[T]): CB[T] =
     ${ badTreeImpl('q) }
 
-
   def badTreeImpl[T:Type](qe:Expr[CB[T]])(given qctx: QuoteContext): Expr[CB[T]] = {
     import qctx.tasty.{_,given}
     val q = qe.unseal.underlyingArgument
@@ -55,20 +54,6 @@ object B {
         println(s"Can't extract valDef: code=${code.unseal}")
         throw new IllegalStateException("AAA")
    }
-
-  def extractApply(given qctx:QuoteContext)(name:String, code: qctx.tasty.Term): qctx.tasty.Term =
-   import qctx.tasty.{_,given}
-   find(code,{
-     case a@Apply(fun, args) => Some(a)
-     case _ => None
-   }).get.asInstanceOf[qctx.tasty.Term]
-
-  def extractTypeApply(given qctx:QuoteContext)(code: qctx.tasty.Term): qctx.tasty.Term =
-   import qctx.tasty.{_,given}
-   find(code,{
-     case a@TypeApply(fun, args) => Some(a)
-     case _ => None
-   }).get.asInstanceOf[qctx.tasty.Term]
 
   def extractSelect(given qctx:QuoteContext)(name:String, code: qctx.tasty.Term): qctx.tasty.Term =
    import qctx.tasty.{_,given}
