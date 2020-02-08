@@ -64,15 +64,23 @@ object TransformUtil
      changes.transformTerm(tree)
 
 
-  def eraseInline(given qctx:QuoteContext)(tree: qctx.tasty.Term): qctx.tasty.Term = 
-     import qctx.tasty.{_,given}
-     import util._
-     val changes = new TreeMap() {
-        override def transformTerm(tree:Term)(given ctx: Context):Term =
-          tree match 
-            case Inlined(x,y,z) => z
-            case _ => super.transformTerm(tree)
-     }
-     ???
-   
+  def namedLet(given qctx: QuoteContext)(name: String, rhs: qctx.tasty.Term)(body: qctx.tasty.Ident => qctx.tasty.Term): qctx.tasty.Term = {
+    import qctx.tasty.{_,given}
+    import scala.internal.quoted.showName
+    import scala.quoted.QuoteContext
+    import scala.quoted.Expr
+    val expr = (rhs.seal: @unchecked) match {
+      case '{ $rhsExpr: $t } =>
+        '{
+          @showName(${Expr(name)})
+          val x = $rhsExpr
+          ${
+            val id = ('x).unseal.asInstanceOf[Ident]
+            body(id).seal
+          }
+        }
+    }
+    expr.unseal
+  }
+
 
