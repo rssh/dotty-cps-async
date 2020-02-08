@@ -3,15 +3,17 @@ package cps
 import scala.quoted._
 import scala.quoted.matching._
 
+trait ComputationBound[T] 
 
-object T1 {
-
-  def cbi(n:Int): ComputationBound[Int] = ???
-
-  def cbBool(b:Boolean): ComputationBound[Boolean] = ???
-
+object ComputationBoundAsyncMonad  {
+   def map[A,B](fa:ComputationBound[A])(f: A=>B):ComputationBound[B] = ???
+   def flatMap[A,B](fa:ComputationBound[A])(f: A=>ComputationBound[B]):ComputationBound[B] = ???
 }
 
+object T1 {
+  def cbi(n:Int): ComputationBound[Int] = ???
+  def cbBool(b:Boolean): ComputationBound[Boolean] = ???
+}
 
 object B {
 
