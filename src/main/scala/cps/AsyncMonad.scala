@@ -5,6 +5,7 @@ import scala.util.Try
 import scala.concurrent.duration._
 
 
+/*
 trait AsyncMonad[F[_]] {
 
    def pure[T](t:T):F[T]
@@ -33,3 +34,4 @@ trait AsyncMonad[F[_]] {
    def fulfill[T](t:F[T], timeout: Duration): Option[Try[T]]
 
 }
+*/

@@ -4,6 +4,15 @@ import scala.quoted._
 import scala.quoted.matching._
 
 
+object T1 {
+
+  def cbi(n:Int): ComputationBound[Int] = ???
+
+  def cbBool(b:Boolean): ComputationBound[Boolean] = ???
+
+}
+
+
 object B {
 
  def await[T](e:ComputationBound[T]):T = ???
@@ -14,23 +23,19 @@ object B {
  def badTreeImpl[T](given qctx: QuoteContext)(input:Expr[T]):Expr[ComputationBound[T]] = {
   import qctx.tasty.{_,given}
   val q = input.unseal.underlyingArgument
-  val xValDef = findValDef(q,"x")
   val yValDef = findValDef(q,"y")
   val yIdent = findIdent(q,"y")
-  val zIdent = findIdent(q,"z")
-  val selectYPlus = findSelect(q, yIdent, "+")
   val t = 
     '{ComputationBoundAsyncMonad.flatMap[Boolean,Int]( T1.cbBool(true) )(
         (v:Boolean) =>
        ${
         Block(
          List(
-           //ValDef.copy(xValDef)("x",xValDef.tpt,Some('v.unseal)),
            yValDef,
          ),
          '{
            ComputationBoundAsyncMonad.map[Int,Int](T1.cbi(2))( (v1: Int) => {
-              ${Apply(selectYPlus,List('v1.unseal)).seal.asInstanceOf[Expr[Int]]}
+              ${yIdent.seal.asInstanceOf[Expr[Int]]} + v1
            })
          }.unseal
         ).seal.asInstanceOf[Expr[ComputationBound[Int]]]
@@ -46,18 +51,6 @@ object B {
      case _ => None
    }).get.asInstanceOf[qctx.tasty.Ident]
 
-
- def findSelect(given qctx:QuoteContext)(code: qctx.tasty.Term, obj: qctx.tasty.Term, name: String):qctx.tasty.Term = {
-   import qctx.tasty.{_,given}
-   find(code,{
-     case s@Select(qual,n) if n == name => 
-                                 qual match {
-                                    case Inlined(a,b,c) if (c == obj) => Some(s)
-                                    case other if (other == obj) => Some(s)
-                                 } 
-     case _ => None
-   }).get.asInstanceOf[qctx.tasty.Select]
- }
 
  def findValDef(given qctx:QuoteContext)(code: qctx.tasty.Term, name: String):qctx.tasty.ValDef = {
    import qctx.tasty.{_,given}
