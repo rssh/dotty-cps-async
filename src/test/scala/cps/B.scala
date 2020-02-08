@@ -6,6 +6,8 @@ import scala.quoted.matching._
 
 object B {
 
+ def await[T](e:ComputationBound[T]):T = ???
+
  inline def badTree[T](expr: =>T): ComputationBound[T] =
     ${ B.badTreeImpl[T]('expr) }
 
