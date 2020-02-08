@@ -39,7 +39,7 @@ object Async {
              //println(s"value: ${f.unseal}")
              val r = rootTransform[F,T](f,dm,false).transformed
              println(s"transformed value: ${r.show}")
-             //println(s"transformed tree: ${r.unseal}")
+             println(s"transformed tree: ${r.unseal}")
              r
         case None => 
              val ft = summon[quoted.Type[F]]
@@ -65,8 +65,8 @@ object Async {
         //                    AwaitTransformOtherMonad(cpsCtx, mType, sType, mst.asInstanceOf[Expr[Any]])
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
-         case '{ while ($cond) { $repeat }  } =>
-                            WhileTransform.run(cpsCtx, cond, repeat)
+         //case '{ while ($cond) { $repeat }  } =>
+         //                   WhileTransform.run(cpsCtx, cond, repeat)
          //case '{ try $body catch $cases finally $finalizer   } =>
          //                  can't be determinated inside matching
          case '{ throw $ex } =>
