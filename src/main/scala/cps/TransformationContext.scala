@@ -8,6 +8,6 @@ case class TransformationContext[F[_],T](
    patternCode: Expr[T],  // code, for which we build pattern expression
    patternType: Type[T],
    asyncMonad: Expr[AsyncMonad[F]],
-   inBlock: Boolean,  // true if we called from Block entry
-)
+   exprMarker: String
+) 
 

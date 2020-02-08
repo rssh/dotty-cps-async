@@ -18,13 +18,13 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      println("try/catch handling")
      import qctx.tasty.{_, given}
      val cpsBody = Async.rootTransform[F,T](body.seal.asInstanceOf[Expr[T]],
-                                       asyncMonad, false)    
-     val cpsCaseDefs = cases.map(cd => Async.rootTransform[F,T](
+                                       asyncMonad, exprMarker+"B")    
+     val cpsCaseDefs = cases.zipWithIndex.map((cd,i) => Async.rootTransform[F,T](
                                        cd.rhs.seal.asInstanceOf[Expr[T]],
-                                       asyncMonad, false))
+                                       asyncMonad, exprMarker+i.toString))
      val isCaseDefsAsync = cpsCaseDefs.exists(_.isAsync)
      val optCpsFinalizer = finalizer.map( x => Async.rootTransform[F,Unit](
-                                        x.seal.asInstanceOf[Expr[Unit]], asyncMonad, false))
+                                        x.seal.asInstanceOf[Expr[Unit]], asyncMonad, exprMarker+"F"))
      val isFinalizerAsync = optCpsFinalizer.exists(_.isAsync)
      val isAsync = cpsBody.isAsync || isCaseDefsAsync || isFinalizerAsync
 

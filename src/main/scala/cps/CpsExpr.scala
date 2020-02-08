@@ -156,17 +156,16 @@ case class FlatMappedCpsExpr[F[_]:Type, S:Type, T:Type](
 
 
 
-/*
 case class UnitCpsExpr[F[_]:Type](monad: Expr[AsyncMonad[F]],
-                                  prev: Seq[Expr[_]]) extends SyncCpsExpr[F,Unit](monad,prev) 
+                                  prev: Seq[Expr[_]])(given QuoteContext) extends SyncCpsExpr[F,Unit](monad,prev)
 
        override def last(given QuoteContext): Expr[Unit] = '{()}
 
        override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,Unit] =
           copy(prev = exprs ++: prev)
-*/
 
-
+       override def append[A:Type](e: CpsExpr[F,A])(given QuoteContext) = 
+           e
 
 
 object CpsExpr
@@ -179,7 +178,7 @@ object CpsExpr
      GenericAsyncCpsExpr[F,T](dm, Seq(), f) 
 
    def unit[F[_]:Type](dm: Expr[AsyncMonad[F]])(given QuoteContext) =
-     GenericSyncCpsExpr[F,Unit](dm, Seq(), '{}) 
+     UnitCpsExpr[F](dm, Seq())  //  GenericSyncCpsExpr[F,Unit](dm, Seq(), '{}) 
 
    def wrap[F[_]:Type, T:Type](internal:CpsExpr[F,T])(given QuoteContext): CpsExpr[F,T] =
       internal.syncOrigin match 

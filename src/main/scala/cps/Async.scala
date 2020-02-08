@@ -37,7 +37,7 @@ object Async {
         case Some(dm) => 
              println(s"before transformed: ${f.show}")
              //println(s"value: ${f.unseal}")
-             val r = rootTransform[F,T](f,dm,false).transformed
+             val r = rootTransform[F,T](f,dm,"R").transformed
              println(s"transformed value: ${r.show}")
              //println(s"transformed tree: ${r.unseal}")
              r
@@ -50,12 +50,12 @@ object Async {
            '{???}
 
 
-  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], inBlock: Boolean)(
+  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], exprMarker: String)(
                                            given qctx: QuoteContext): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._
-     val cpsCtx = TransformationContext[F,T](f,tType,dm, inBlock)
+     val cpsCtx = TransformationContext[F,T](f,tType,dm,exprMarker)
      f match 
          case Const(c) =>   ConstTransform(cpsCtx)
          case '{ _root_.cps.await[F,$sType]($fs) } => 

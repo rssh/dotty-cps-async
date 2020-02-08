@@ -20,7 +20,7 @@ object ValDefTransform
                )
      rhs.seal match {
         case '{ $e: $et } =>
-            val cpsRight = Async.rootTransform(e,asyncMonad,false)
+            val cpsRight = Async.rootTransform(e,asyncMonad,exprMarker+"R")
             if (cpsRight.isAsync) {
                RhsFlatMappedCpsExpr(given qctx)(asyncMonad, Seq(),
                                                 valDef, cpsRight, CpsExpr.unit(asyncMonad) )
@@ -114,11 +114,6 @@ object ValDefTransform
   def newValDef(given qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, name: String, newRhs: qctx.tasty.Term): qctx.tasty.ValDef = {
          import qctx.tasty.{_,given}
          ValDef.copy(oldValDef)(name,oldValDef.tpt,Some(newRhs))
-  }
-
-  def valDefBlock(given qctx:QuoteContext)(v:qctx.tasty.ValDef):Expr[Unit] = {
-    import qctx.tasty.{_,given}
-    Block(List(v),Literal(Constant(()))).seal.asInstanceOf[Expr[Unit]]
   }
 
  

@@ -27,7 +27,7 @@ trait RootTreeTransform[F[_]]
                 val monad = cpsCtx.asyncMonad
                 expr match {
                   case '{ $e: $et } =>
-                     val r = Async.rootTransform(e, monad, false)
+                     val r = Async.rootTransform(e, monad, cpsCtx.exprMarker)
                      if (r.isAsync) 
                         val transformed = r.transformed.unseal
                         AwaitCpsTree(transformed, e.unseal.tpe)
