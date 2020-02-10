@@ -50,7 +50,6 @@ class TestBS1While
      }
      assert(c.run() == Success(45))
 
-/*
  // Dotty crash.
  // TODO: minimize and submit bug.
  //  onlu this test : branch  dotty-break-while-00,
@@ -72,7 +71,6 @@ class TestBS1While
         s
      }
      assert(c.run() == Success(45))
-*/
 
 
 
