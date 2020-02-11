@@ -5,7 +5,7 @@ import scala.quoted.matching._
 
 import cps._
  
-object IfTransform
+object IfTransform:
 
   /**
    *'''
@@ -14,7 +14,7 @@ object IfTransform
    **/
   def run[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T], 
                                cond: Expr[Boolean], ifTrue: Expr[T], ifFalse: Expr[T]
-                               )(given qctx: QuoteContext): CpsExpr[F,T] =
+                               )(using qctx: QuoteContext): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      import util._
      import cpsCtx._

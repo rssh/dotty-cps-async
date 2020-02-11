@@ -6,12 +6,12 @@ import scala.quoted.matching._
 import cps._
 
 
-class TypeApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
+class TypeApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
   // case TypeApply(fun,targs) 
-  def run(given qctx: QuoteContext)(fun: qctx.tasty.Term, targs: List[qctx.tasty.TypeTree]): CpsExpr[F,T] =
+  def run(using qctx: QuoteContext)(fun: qctx.tasty.Term, targs: List[qctx.tasty.TypeTree]): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      TypeApplyTreeTransform.run(cpsCtx,patternCode.unseal, fun, targs)
      

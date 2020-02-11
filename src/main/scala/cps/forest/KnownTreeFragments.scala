@@ -7,7 +7,7 @@ import cps._
 import cps.misc._
 
 
-trait KnownTreeFragments[F[_]]
+trait KnownTreeFragments[F[_]]:
 
   thisKnownTreeTransform: TreeTransformScope[F] =>
   

@@ -2,7 +2,7 @@ package cps.example
 
 import cps._
 
-trait Connection[F[_]:AsyncMonad]
+trait Connection[F[_]:AsyncMonad]:
 
   def read():F[Array[Byte]]
   
@@ -14,11 +14,11 @@ trait Connection[F[_]:AsyncMonad]
 
 trait Handler[F[_]:AsyncMonad] {
 
-   trait Command 
+   trait Command:
      def isShutdown: Boolean
 
 
-   trait Reply
+   trait Reply:
      def isMuted: Boolean
      def toBytes: Array[Byte]
    

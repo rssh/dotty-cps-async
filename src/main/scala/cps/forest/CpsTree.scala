@@ -9,7 +9,7 @@ trait CpsTreeScope[F[_]] {
 
   import qctx.tasty.{_,given}
 
-  sealed abstract class CpsTree
+  sealed abstract class CpsTree:
 
      def isAsync: Boolean
 
@@ -36,7 +36,7 @@ trait CpsTreeScope[F[_]] {
              val transformed = cpsTree.transformed.seal.asInstanceOf[Expr[F[T]]]
              CpsExpr.async[F,T](asyncMonad, transformed)
 
-  object CpsTree
+  object CpsTree:
 
     def pure(origin:Term): CpsTree = PureCpsTree(origin)
 
@@ -45,7 +45,7 @@ trait CpsTreeScope[F[_]] {
 
   
 
-  case class PureCpsTree(origin: qctx.tasty.Term) extends CpsTree
+  case class PureCpsTree(origin: qctx.tasty.Term) extends CpsTree:
 
     def isAsync = false
 
@@ -68,7 +68,7 @@ trait CpsTreeScope[F[_]] {
     def transformed: Term = TransformUtil.makePure(cpsCtx.asyncMonad, origin)
        
 
-  abstract class AsyncCpsTree extends CpsTree
+  abstract class AsyncCpsTree extends CpsTree:
                       
     def isAsync = true
 
@@ -82,13 +82,13 @@ trait CpsTreeScope[F[_]] {
 
 
 
-  class AwaitCpsTree(val transformed: Term, val otpe: Type) extends AsyncCpsTree
+  class AwaitCpsTree(val transformed: Term, val otpe: Type) extends AsyncCpsTree:
                      
     def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
           AwaitCpsTree(f(transformed), ntpe)
 
 
-  case class MappedCpsTree(prev: CpsTree, op: Term => Term, otpe: Type) extends AsyncCpsTree
+  case class MappedCpsTree(prev: CpsTree, op: Term => Term, otpe: Type) extends AsyncCpsTree:
 
     def applyTerm(f: Term => Term, npte: Type): CpsTree =
           MappedCpsTree(prev, t => f(op(t)), npte)

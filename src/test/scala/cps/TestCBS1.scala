@@ -20,7 +20,7 @@ object T1 {
 
 }
 
-class TestBS1
+class TestBS1:
 
   @Test def tConstantMeta(): Unit = 
      val c = Async.transform[ComputationBound,Int](3)

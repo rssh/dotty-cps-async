@@ -7,7 +7,7 @@ import cps._
 import cps.misc._
 
 
-trait SelectTreeTransform[F[_]]
+trait SelectTreeTransform[F[_]]:
 
   thisScope: TreeTransformScope[F] =>
 
@@ -19,10 +19,10 @@ trait SelectTreeTransform[F[_]]
      runRoot(selectTerm.qualifier).applyTerm(_.select(symbol), selectTerm.tpe)
 
 
-object SelectTreeTransform
+object SelectTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](given qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
                          selectTerm: qctx.tasty.Select): CpsExpr[F,T] = {
                          
      val tmpFType = summon[Type[F]]

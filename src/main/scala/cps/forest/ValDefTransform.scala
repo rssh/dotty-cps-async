@@ -7,10 +7,10 @@ import cps._
 import cps.misc._
 
 
-object ValDefTransform
+object ValDefTransform:
 
 
-  def fromBlock[F[_]:Type](given qctx:QuoteContext)(cpsCtx: TransformationContext[F,_],
+  def fromBlock[F[_]:Type](using qctx:QuoteContext)(cpsCtx: TransformationContext[F,_],
                            valDef: qctx.tasty.ValDef): CpsExpr[F,Unit] = {
      import qctx.tasty.{_, given}
      import cpsCtx._
@@ -22,10 +22,10 @@ object ValDefTransform
         case '{ $e: $et } =>
             val cpsRight = Async.rootTransform(e,asyncMonad,exprMarker+"R")
             if (cpsRight.isAsync) {
-               RhsFlatMappedCpsExpr(given qctx)(asyncMonad, Seq(),
+               RhsFlatMappedCpsExpr(using qctx)(asyncMonad, Seq(),
                                                 valDef, cpsRight, CpsExpr.unit(asyncMonad) )
             } else {
-               ValWrappedCpsExpr(given qctx)(asyncMonad, Seq(), valDef, 
+               ValWrappedCpsExpr(using qctx)(asyncMonad, Seq(), valDef, 
                                                 CpsExpr.unit(asyncMonad) )
             }
         case other =>
@@ -36,7 +36,7 @@ object ValDefTransform
   }
 
 
-  class RhsFlatMappedCpsExpr[F[_]:Type, T:Type, V:Type](given qctx:QuoteContext)
+  class RhsFlatMappedCpsExpr[F[_]:Type, T:Type, V:Type](using qctx:QuoteContext)
                                      (monad: Expr[AsyncMonad[F]],
                                       prev: Seq[Expr[_]],
                                       oldValDef: qctx.tasty.ValDef,
@@ -45,7 +45,7 @@ object ValDefTransform
                                      )
                                     extends AsyncCpsExpr[F,T](monad, prev) {
 
-       override def fLast(given qctx: QuoteContext) = 
+       override def fLast(using qctx: QuoteContext) = 
           import qctx.tasty.{_, given}
 
           def appendBlockExpr[A](rhs: qctx.tasty.Term, expr: Expr[A]):Expr[A] =
@@ -65,14 +65,14 @@ object ValDefTransform
              }
 
        override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
-          RhsFlatMappedCpsExpr(given qctx)(monad, exprs ++: prev,oldValDef,cpsRhs,next)
+          RhsFlatMappedCpsExpr(using qctx)(monad, exprs ++: prev,oldValDef,cpsRhs,next)
 
 
-       override def append[A:quoted.Type](e: CpsExpr[F,A])(given qtcx: QuoteContext) = 
-          RhsFlatMappedCpsExpr(given qctx)(monad,prev,oldValDef,cpsRhs,next.append(e))
+       override def append[A:quoted.Type](e: CpsExpr[F,A])(using qtcx: QuoteContext) = 
+          RhsFlatMappedCpsExpr(using qctx)(monad,prev,oldValDef,cpsRhs,next.append(e))
                                                           
              
-       private def buildAppendBlock(given qctx:QuoteContext)(
+       private def buildAppendBlock(using qctx:QuoteContext)(
                       oldValDef: qctx.tasty.ValDef, rhs:qctx.tasty.Term, 
                                                     exprTerm:qctx.tasty.Term): qctx.tasty.Term = 
        {
@@ -115,24 +115,24 @@ object ValDefTransform
 
        }
 
-       private def buildAppendBlockExpr[A](given qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, rhs: qctx.tasty.Term, expr:Expr[A]):Expr[A] = 
+       private def buildAppendBlockExpr[A](using qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, rhs: qctx.tasty.Term, expr:Expr[A]):Expr[A] = 
           import qctx.tasty.{_, given}
           buildAppendBlock(oldValDef,rhs,expr.unseal).seal.asInstanceOf[Expr[A]]
 
   }
 
-  class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](given qctx: QuoteContext)(
+  class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](using qctx: QuoteContext)(
                                       monad: Expr[AsyncMonad[F]],
                                       prev: Seq[Expr[_]],
                                       oldValDef: qctx.tasty.ValDef,
-				      next: CpsExpr[F,T] ) extends AsyncCpsExpr[F,T](monad,prev)
+				      next: CpsExpr[F,T] ) extends AsyncCpsExpr[F,T](monad,prev):
 
 
        override def isAsync = next.isAsync
 
-       override def fLast(given qctx: QuoteContext) = next.fLast
+       override def fLast(using qctx: QuoteContext) = next.fLast
               
-       override def transformed(given qctx: QuoteContext) = {
+       override def transformed(using qctx: QuoteContext) = {
           import qctx.tasty.{_, given}
 
           // not worked due https://github.com/lampepfl/dotty/issues/8168
@@ -149,14 +149,14 @@ object ValDefTransform
        }
 
        override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
-           ValWrappedCpsExpr[F,T,V](given qctx)(monad, exprs ++: prev, oldValDef, next)
+           ValWrappedCpsExpr[F,T,V](using qctx)(monad, exprs ++: prev, oldValDef, next)
 
-       override def append[A:quoted.Type](e:CpsExpr[F,A])(given qctx: QuoteContext) = 
-           ValWrappedCpsExpr(given qctx)(monad, prev, 
+       override def append[A:quoted.Type](e:CpsExpr[F,A])(using qctx: QuoteContext) = 
+           ValWrappedCpsExpr(using qctx)(monad, prev, 
                                          oldValDef.asInstanceOf[qctx.tasty.ValDef], 
                                          next.append(e))
 
-       def genBlock(given qctx:QuoteContext)(oldValDef: qctx.tasty.ValDef, nextTerm: qctx.tasty.Term): qctx.tasty.Term =
+       def genBlock(using qctx:QuoteContext)(oldValDef: qctx.tasty.ValDef, nextTerm: qctx.tasty.Term): qctx.tasty.Term =
             import qctx.tasty.{_, given}
             import scala.internal.quoted.showName
             import scala.quoted.QuoteContext
@@ -188,7 +188,7 @@ object ValDefTransform
                    throw MacroError(s"Invalid ValDef $oldValDef", valDefExpr) 
                 
 
-       def prependPrev(given qctx:QuoteContext)(term: qctx.tasty.Term): qctx.tasty.Term =
+       def prependPrev(using qctx:QuoteContext)(term: qctx.tasty.Term): qctx.tasty.Term =
           import qctx.tasty.{_, given}
           if (prev.isEmpty) {
              term
@@ -205,14 +205,14 @@ object ValDefTransform
   // substitute identifier with the same part.
 
 
-  def substituteIdent(given qctx:QuoteContext)(tree: qctx.tasty.Term, 
+  def substituteIdent(using qctx:QuoteContext)(tree: qctx.tasty.Term, 
                            origin: qctx.tasty.Symbol, 
                            newIdent: qctx.tasty.Ident): qctx.tasty.Term =
      import qctx.tasty.{_,given}
      import qctx.tasty._
      import util._
      val changes = new TreeMap() {
-        override def transformTerm(tree:Term)(given ctx: Context):Term =
+        override def transformTerm(tree:Term)(using ctx: Context):Term =
           tree match 
             case ident@Ident(name) => if (ident.symbol == origin) {
                                          newIdent

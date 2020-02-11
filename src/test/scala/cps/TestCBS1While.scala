@@ -7,7 +7,7 @@ import scala.quoted._
 import scala.util.Success
 
 
-class TestBS1While
+class TestBS1While:
 
 
   @Test def tWhileC1_00(): Unit = 

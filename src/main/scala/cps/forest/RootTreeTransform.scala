@@ -7,7 +7,7 @@ import cps._
 import cps.misc._
 
 
-trait RootTreeTransform[F[_]]
+trait RootTreeTransform[F[_]]:
 
   thisTransform: TreeTransformScope[F] =>
   

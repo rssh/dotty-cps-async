@@ -12,7 +12,7 @@ object GenUtil {
   }
 
 
-  inline def defaultValue[T:Type](given qctx: QuoteContext) = {
+  inline def defaultValue[T:Type](using qctx: QuoteContext) = {
     inline erasedValue[T] match {
       case _: Byte => (0: Byte)
       case _: Char => (0: Char)
@@ -30,7 +30,7 @@ object GenUtil {
     }
   }
 
-  def error(msg: String, posExpr:Expr[_])(given qctx: QuoteContext): Nothing = 
+  def error(msg: String, posExpr:Expr[_])(using QuoteContext): Nothing = 
       throw MacroError(msg, posExpr)
 
 

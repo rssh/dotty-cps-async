@@ -7,12 +7,12 @@ import cps._
 import cps.misc._
 
 
-class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
+class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
   // case Try(body, cases, finalizer) 
-  def run(given qctx: QuoteContext)(body: qctx.tasty.Term, 
+  def run(using qctx: QuoteContext)(body: qctx.tasty.Term, 
                                     cases: List[qctx.tasty.CaseDef],
                                     finalizer: Option[qctx.tasty.Term]): CpsExpr[F,T] = 
      println("try/catch handling")

@@ -9,7 +9,7 @@ import scala.quoted.matching._
 
 trait DM[F[_]] {
 
-   def pure[T:Type](t:Expr[T]):(given ctx:QuoteContext) => Expr[F[T]]
+   def pure[T:Type](t:Expr[T]): (ctx:QuoteContext) ?=> Expr[F[T]]
 
 }
 
@@ -18,7 +18,7 @@ case class Done[T](value:T) extends CB[T]
 
 implicit val dmCB: DM[CB] = new DM[CB] {
 
-  def pure[T:Type](t:Expr[T]):(given ctx:QuoteContext) => Expr[CB[T]] =
+  def pure[T:Type](t:Expr[T]):(ctx:QuoteContext) ?=> Expr[CB[T]] =
     '{ Done(${t}) }
 
 }
@@ -31,7 +31,7 @@ object A {
        '{???} //A.transformImpl('expr)
      }
 
-  def transformImpl[F[_]:DM,T:Type](f: Expr[T])(given QuoteContext):Expr[F[T]] = 
+  def transformImpl[F[_]:DM,T:Type](f: Expr[T])(using QuoteContext):Expr[F[T]] = 
     f match 
       case Const(t) => implicitly[DM[F]].pure(f)
       case _ => print(f)
@@ -40,7 +40,7 @@ object A {
 
 }
 
-class TestBS2
+class TestBS2:
 
   @Ignore
   @Test def tConstant(): Unit = {

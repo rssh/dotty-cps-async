@@ -4,7 +4,7 @@ import scala.util._
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
-enum CountSignal[+T]
+enum CountSignal[+T]:
  case Data(data: T)
  case Finish
   

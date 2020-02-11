@@ -7,7 +7,7 @@ import cps._
 import cps.misc._
 
 
-trait TypeApplyTreeTransform[F[_]]
+trait TypeApplyTreeTransform[F[_]]:
 
   thisScope: TreeTransformScope[F] =>
 
@@ -20,10 +20,10 @@ trait TypeApplyTreeTransform[F[_]]
      runRoot(fun).typeApply(targs, applyTerm.tpe)
 
 
-object TypeApplyTreeTransform
+object TypeApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](given qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
                          applyTerm: qctx.tasty.Term, 
                          fun: qctx.tasty.Term, 
                          targs: List[qctx.tasty.TypeTree]): CpsExpr[F,T] = {

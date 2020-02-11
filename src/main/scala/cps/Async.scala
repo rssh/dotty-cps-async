@@ -12,25 +12,25 @@ import cps.misc._
 
 def await[F[_],T](f:F[T]):T = ???
 
-inline def async[F[_]](given am:AsyncMonad[F]): Async.InferAsyncArg[F] =
+inline def async[F[_]](using am:AsyncMonad[F]): Async.InferAsyncArg[F] =
    new Async.InferAsyncArg[F]
 
 object Async {
 
-  class InferAsyncArg[F[_]](given am:AsyncMonad[F]) {
+  class InferAsyncArg[F[_]](using am:AsyncMonad[F]) {
 
-       inline def apply[T](expr: =>T):F[T] =
+       inline def apply[T](inline expr: T):F[T] =
             transform[F,T](expr)
 
   }
 
-  inline def async[F[_]](given am:AsyncMonad[F]): InferAsyncArg[F] =
+  inline def async[F[_]](using am:AsyncMonad[F]): InferAsyncArg[F] =
           new InferAsyncArg[F]
 
-  inline def transform[F[_], T](expr: =>T): F[T] =
+  inline def transform[F[_], T](inline expr: T): F[T] =
     ${ Async.transformImpl[F,T]('expr) } 
 
-  def transformImpl[F[_]:Type,T:Type](f: Expr[T])(given qctx: QuoteContext): Expr[F[T]] = 
+  def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[F[T]] = 
     import qctx.tasty.{_,given}
     try
       summonExpr[AsyncMonad[F]] match 
@@ -51,7 +51,7 @@ object Async {
 
 
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], exprMarker: String)(
-                                           given qctx: QuoteContext): CpsExpr[F,T] =
+                                           using qctx: QuoteContext): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given}
      import util._
@@ -60,9 +60,9 @@ object Async {
          case Const(c) =>   ConstTransform(cpsCtx)
          case '{ _root_.cps.await[F,$sType]($fs) } => 
                             AwaitTransform(cpsCtx, sType, fs)
-        // looks like matching error in dotty.
-        // case '{ _root_.cps.await[$mType,$sType]($mst) } => 
-        //                    AwaitTransformOtherMonad(cpsCtx, mType, sType, mst.asInstanceOf[Expr[Any]])
+         // looks like matching error in dotty.
+         // case '{ _root_.cps.await[$mType,$sType]($mst) } => 
+         //                    AwaitTransformOtherMonad(cpsCtx, mType, sType, mst.asInstanceOf[Expr[Any]])
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
          case '{ while ($cond) { $repeat }  } =>
@@ -72,7 +72,8 @@ object Async {
          case '{ throw $ex } =>
                             ThrowTransform.run(cpsCtx, ex)
          case _ => 
-             val fTree = f.unseal.underlyingArgument
+             //val fTree = f.unseal.underlyingArgument
+             val fTree = f.unseal
              fTree match {
                 case Apply(fun,args) =>
                    ApplyTransform(cpsCtx).run(fun,args)
@@ -100,6 +101,8 @@ object Async {
                    SelectTreeTransform.run(cpsCtx, selectTerm)
                 case repeatedTerm: Repeated =>
                    RepeatedTreeTransform.run(cpsCtx, repeatedTerm)
+                case Inlined(call,bindings,body) =>
+                   rootTransform(body.seal.asInstanceOf[Expr[T]],dm,exprMarker)
                 case _ =>
                    printf("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)

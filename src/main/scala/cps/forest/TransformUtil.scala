@@ -6,15 +6,15 @@ import scala.quoted.matching._
 import cps._
 
 
-object TransformUtil
+object TransformUtil:
 
-  def skipInlined(given qctx:QuoteContext)(tree: qctx.tasty.Term):qctx.tasty.Term =
+  def skipInlined(using qctx:QuoteContext)(tree: qctx.tasty.Term):qctx.tasty.Term =
     import qctx.tasty.{_,given}
     tree match 
       case Inlined(origin, binding, expansion) => skipInlined(expansion)
       case _ => tree
 
-  def makePure[F[_]:Type](given qctx:QuoteContext)(monad: Expr[AsyncMonad[F]], 
+  def makePure[F[_]:Type](using qctx:QuoteContext)(monad: Expr[AsyncMonad[F]], 
                                           tree: qctx.tasty.Term):qctx.tasty.Term =
     import qctx.tasty.{_,given}
     val selectExpr = '{ ${monad}.pure }
@@ -23,16 +23,16 @@ object TransformUtil
 
 
   
-  def find(given qctx:QuoteContext)(term: qctx.tasty.Term, 
+  def find(using qctx:QuoteContext)(term: qctx.tasty.Term, 
                        cond: qctx.tasty.Tree=> Option[qctx.tasty.Tree]) :Option[qctx.tasty.Tree] = {
      import qctx.tasty.{_,given}
      import util._
      val search = new TreeAccumulator[Option[Tree]] {
 
-        def foldTree(x: Option[Tree], tree: Tree)(given ctx: Context): Option[Tree] =
+        def foldTree(x: Option[Tree], tree: Tree)(using ctx: Context): Option[Tree] =
                  foldOverTree(x,tree)
 
-        override def foldOverTree(x: Option[Tree], tree: Tree)(given ctx: Context): Option[Tree] = {
+        override def foldOverTree(x: Option[Tree], tree: Tree)(using ctx: Context): Option[Tree] = {
            if (x.isDefined) 
              x
            else 
@@ -46,13 +46,13 @@ object TransformUtil
   /**
    * substitute identifier with the origin symbol to new tree
    **/
-  def substituteIdent(given qctx:QuoteContext)(tree: qctx.tasty.Term, 
+  def substituteIdent(using qctx:QuoteContext)(tree: qctx.tasty.Term, 
                            origin: qctx.tasty.Symbol, 
                            newTerm: qctx.tasty.Term): qctx.tasty.Term =
      import qctx.tasty.{_,given}
      import util._
      val changes = new TreeMap() {
-        override def transformTerm(tree:Term)(given ctx: Context):Term =
+        override def transformTerm(tree:Term)(using ctx: Context):Term =
           tree match 
             case ident@Ident(name) => if (ident.symbol == origin) {
                                          newTerm
@@ -64,7 +64,7 @@ object TransformUtil
      changes.transformTerm(tree)
 
 
-  def namedLet(given qctx: QuoteContext)(name: String, rhs: qctx.tasty.Term)(body: qctx.tasty.Ident => qctx.tasty.Term): qctx.tasty.Term = {
+  def namedLet(using qctx: QuoteContext)(name: String, rhs: qctx.tasty.Term)(body: qctx.tasty.Ident => qctx.tasty.Term): qctx.tasty.Term = {
     import qctx.tasty.{_,given}
     import scala.internal.quoted.showName
     import scala.quoted.QuoteContext

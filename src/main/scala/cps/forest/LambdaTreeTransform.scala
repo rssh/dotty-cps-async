@@ -7,7 +7,7 @@ import cps._
 import cps.misc._
 
 
-trait LambdaTreeTransform[F[_]]
+trait LambdaTreeTransform[F[_]]:
 
   thisScope: TreeTransformScope[F] =>
 
@@ -63,10 +63,10 @@ trait LambdaTreeTransform[F[_]]
      
 
 
-object LambdaTreeTransform
+object LambdaTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](given qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
                          lambdaTerm: qctx.tasty.Term,
                          params: List[qctx.tasty.ValDef],
                          expr: qctx.tasty.Term): CpsExpr[F,T] = {

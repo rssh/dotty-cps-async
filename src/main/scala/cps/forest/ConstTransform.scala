@@ -7,12 +7,12 @@ import scala.compiletime._
 import cps._
 
 
-object ConstTransform 
+object ConstTransform:
 
   // we know, that f is match to Const
   //(see rootTransform)
   def apply[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])(
-                                           given qctx: QuoteContext): CpsExpr[F,T] =
+                                           using qctx: QuoteContext): CpsExpr[F,T] =
      CpsExpr.sync(cpsCtx.asyncMonad, cpsCtx.patternCode) 
 
 

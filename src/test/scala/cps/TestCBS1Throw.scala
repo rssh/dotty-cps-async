@@ -7,7 +7,7 @@ import scala.quoted._
 import scala.util.Success
 
 
-class TestBS1Throw
+class TestBS1Throw:
 
 
   @Test def try_00n(): Unit = 

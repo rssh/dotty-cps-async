@@ -159,7 +159,7 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
      
 }
 
-case class Done[T](value:T) extends ComputationBound[T] 
+case class Done[T](value:T) extends ComputationBound[T]:
 
   override def fulfill(timeout: Duration): Option[Try[T]] = Some(Success(value))
 
@@ -169,7 +169,7 @@ case class Done[T](value:T) extends ComputationBound[T]
      Thunk( () => f(value) )
 
 
-case class Error[T](e: Throwable) extends ComputationBound[T] 
+case class Error[T](e: Throwable) extends ComputationBound[T]:
 
   override def fulfill(timeout: Duration): Option[Try[T]] = Some(Failure(e))
 

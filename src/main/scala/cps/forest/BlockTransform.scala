@@ -9,12 +9,12 @@ import cps._
 import cps.misc._
 
 
-class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
+class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
   // case Block(prevs,last) 
-  def run(given qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
+  def run(using qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
      val tType = implicitly[Type[T]]
      import qctx.tasty.{_, given}
      val rPrevs = prevs.zipWithIndex.map{ (p,i) =>
@@ -22,7 +22,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T])
           case d: Definition =>
             d match {
               case v@ValDef(vName,vtt,optRhs) =>
-                ValDefTransform.fromBlock[F](given qctx)(cpsCtx.copy(exprMarker=exprMarker+i.toString), v)
+                ValDefTransform.fromBlock[F](using qctx)(cpsCtx.copy(exprMarker=exprMarker+i.toString), v)
               case _ =>
                 printf(d.show)
                 throw MacroError("definition is not supported inside block",patternCode)

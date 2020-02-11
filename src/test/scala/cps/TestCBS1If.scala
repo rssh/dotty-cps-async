@@ -7,7 +7,7 @@ import scala.quoted._
 import scala.util.Success
 
 
-class TestBS1If
+class TestBS1If:
 
   @Test def tIfC1_000(): Unit = 
      val c = Async.transform[ComputationBound,Int]{

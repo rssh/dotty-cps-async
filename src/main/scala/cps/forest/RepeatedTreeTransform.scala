@@ -7,21 +7,25 @@ import cps._
 import cps.misc._
 
 
-trait RepeatedTreeTransform[F[_]]
+trait RepeatedTreeTransform[F[_]]:
 
   thisScope: TreeTransformScope[F] =>
 
   import qctx.tasty.{_, given}
 
   def runRepeated(repeated: Repeated): CpsTree =
-     ???
-     
+     val cpsElems = repeated.elems.map(runRoot)
+     val isAsync = cpsElems.exists(_.isAsync)
+     if (!isAsync) 
+         CpsTree.pure(repeated)
+     else
+         ???     
 
 
-object RepeatedTreeTransform
+object RepeatedTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](given qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
                          repeated: qctx.tasty.Repeated)
                                                        : CpsExpr[F,T] = {
                          

@@ -1,12 +1,12 @@
 package cps.chessboard
 
-enum Color 
+enum Color:
   case Black, White
 
-enum Figure
+enum Figure:
   case Pawn, Knight, Bishop, Rook, Queen, King
 
-case class Chessman(figure: Figure, color: Color) 
+case class Chessman(figure: Figure, color: Color):
   def symbol: Char = 
     color match
       case Color.Black =>
@@ -29,7 +29,7 @@ case class Chessman(figure: Figure, color: Color)
 
 opaque type Chessboard = Map[(Int,Int),Chessman]
 
-object Chessboard 
+object Chessboard:
    def empty = Map.empty
    val size = 8
 

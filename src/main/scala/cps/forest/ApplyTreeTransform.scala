@@ -7,7 +7,7 @@ import cps._
 import cps.misc._
 
 
-trait ApplyTreeTransform[F[_]]
+trait ApplyTreeTransform[F[_]]:
 
   thisTreeTransform: TreeTransformScope[F] =>
   
@@ -92,9 +92,40 @@ trait ApplyTreeTransform[F[_]]
      val cpsFun = runRoot(fun)
      handleArgs(applyTerm,cpsFun,args)
 
+  /**
+   * How to handle arguments?
+   *  We want keep evaluation order from left to right, so, imagine we have 
+   *  function f(a1,a2,a3) and a2 is async, a1, a3 - sync.
+   *  we will transform this to
+   *  ```
+   *  { val arg1 = a1; 
+   *    transform(a2).flatMap( x => 
+   *       { val arg2 = x; 
+   *         val arg3 = a3;  
+   *         f(arg1, arg2, arg3) 
+   *  }    }
+   *  ```
+   *
+   * more generally we at first generate block:
+   *   { arg1 = a1; .....  argN = aN; f(arg1,...argN) }
+   * and then transform one, knowing that all arguments to f are sync
+   *  (of course, if all arguments are sync, we just call f(arg1,... arg2) without all this machinery)
+   *
+   * And we don't want to generate tree and then resu 
+   *
+   **/
+  trait ApplyArgGenerator {
+     def isConst: Boolean
+     def isAsync: Boolean
+     def argName: String
+  }
+   
 
   def handleArgs(applyTerm: Term, cpsFun: CpsTree, args: List[Term]): CpsTree = 
         // TODO: maybe handle repeated separately ??
+ 
+        
+
         val cpsArgs = args.map(x => runRoot(x))
         val isArgsAsync = cpsArgs.exists(_.isAsync)
         val isAsync = cpsFun.isAsync || isArgsAsync
@@ -106,10 +137,10 @@ trait ApplyTreeTransform[F[_]]
            throw MacroError("await inside args is not supported yet",cpsCtx.patternCode)
         
      
-object ApplyTreeTransform
+object ApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](given qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
                          applyTerm: qctx.tasty.Term,
                          fun: qctx.tasty.Term,
                          args: List[qctx.tasty.Term]): CpsExpr[F,T] = {

@@ -7,12 +7,12 @@ import cps._
 import cps.misc._
 
 
-class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
+class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
   // case Assign(left,right) 
-  def run(given qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsExpr[F,T] = 
+  def run(using qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsExpr[F,T] = 
      import qctx.tasty.{_, given}
      println(s"!!! assign detected : ${left} ${right}")
      left.seal match 
@@ -25,7 +25,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
             throw MacroError("Can't determinate type",left.seal)
 
 
-  def runWithLeft[L:Type](given qctx: QuoteContext)(
+  def runWithLeft[L:Type](using qctx: QuoteContext)(
        left: qctx.tasty.Term, right: qctx.tasty.Term, cpsLeft:CpsExpr[F,L]): CpsExpr[F,T] = {
      import qctx.tasty.{_, given}
      right.seal match {
@@ -40,7 +40,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
   //implicit def getOrigin[S](x:CpsExprResult[F,S]): quoted.Type[S] = x.originType
 
 
-  def run1[L:Type,R:Type](given qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term,
+  def run1[L:Type,R:Type](using qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term,
                 cpsLeft: CpsExpr[F,L], cpsRight: CpsExpr[F,R]): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      if (!cpsLeft.isAsync) {
@@ -65,7 +65,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
      }
 
 
-  def run2[L:Type,R:Type,LU:Type](given qctx: QuoteContext)(
+  def run2[L:Type,R:Type,LU:Type](using qctx: QuoteContext)(
             left: qctx.tasty.Term, right: qctx.tasty.Term,
              cpsLeft: CpsExpr[F,L], cpsRight: CpsExpr[F,R],
              cpsLu: CpsExpr[F,LU]): CpsExpr[F,T] =

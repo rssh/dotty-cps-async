@@ -4,7 +4,7 @@ import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
 
-class TestCBS3
+class TestCBS3:
 
   @Ignore
   @Test def tConstantA3(): Unit = 

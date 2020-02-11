@@ -5,7 +5,7 @@ import scala.quoted.matching._
 
 import cps._
  
-object AwaitTransform
+object AwaitTransform:
 
   /**
    *'''
@@ -14,7 +14,7 @@ object AwaitTransform
    **/
   def apply[F[_]:Type,T:Type,S:Type](transformationContext: TransformationContext[F,T], 
                                     fType:  Type[S], ft:Expr[F[S]])(
-                                        given qctx: QuoteContext): CpsExpr[F,T] =
+                                        using qctx: QuoteContext): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      import util._
      import transformationContext._

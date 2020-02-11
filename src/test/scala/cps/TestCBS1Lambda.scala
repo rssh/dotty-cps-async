@@ -16,7 +16,7 @@ class PINT(v:Int) extends P {
    def x = v
 }
 
-class TestCBS1Lambda
+class TestCBS1Lambda:
 
 
   // dotty bug: https://github.com/lampepfl/dotty/issues/8146

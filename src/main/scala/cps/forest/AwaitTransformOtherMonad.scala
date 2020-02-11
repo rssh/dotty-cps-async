@@ -6,7 +6,7 @@ import scala.quoted.matching._
 import cps._
 import cps.misc._
  
-object AwaitTransformOtherMonad
+object AwaitTransformOtherMonad:
 
   /**
    *'''
@@ -17,7 +17,7 @@ object AwaitTransformOtherMonad
                                     gType:  Type[G],
                                     sType:  Type[S], 
                                     gs:Expr[Any])  // should be G[S], but dotty bug.
-                                      ( given qctx: QuoteContext): CpsExpr[F,T] =
+                                      ( using qctx: QuoteContext): CpsExpr[F,T] =
                                        
      import qctx.tasty.{_, given}
      import util._

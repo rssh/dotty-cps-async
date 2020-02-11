@@ -8,12 +8,12 @@ import scala.quoted.matching._
 import cps._
 
 
-class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])
+class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
   // case Apply(fun,args) 
-  def run(given qctx: QuoteContext)(fun: qctx.tasty.Term, args: List[qctx.tasty.Term]): CpsExpr[F,T] =
+  def run(using qctx: QuoteContext)(fun: qctx.tasty.Term, args: List[qctx.tasty.Term]): CpsExpr[F,T] =
      import qctx.tasty.{_, given}
      println(s"!!! apply detected : ${fun} ${args}")
      ApplyTreeTransform.run(cpsCtx, patternCode.unseal, fun, args)
