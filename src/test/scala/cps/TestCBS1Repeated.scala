@@ -12,7 +12,6 @@ class TestCBS1Repeated:
 
   def qqq:Int = 0
   
-/*
   @Test def repeated_0(): Unit = 
      val c = async[ComputationBound]{
        val (b,c) = (2,4)
@@ -35,5 +34,4 @@ class TestCBS1Repeated:
   def f(x:String, y: Int*):String =
       x + y.mkString
 
-*/
 
