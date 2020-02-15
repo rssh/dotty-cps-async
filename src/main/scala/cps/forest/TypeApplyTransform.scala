@@ -12,7 +12,7 @@ class TypeApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   // case TypeApply(fun,targs) 
   def run(using qctx: QuoteContext)(fun: qctx.tasty.Term, targs: List[qctx.tasty.TypeTree]): CpsExpr[F,T] =
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      TypeApplyTreeTransform.run(cpsCtx,patternCode.unseal, fun, targs)
      
 

@@ -11,7 +11,7 @@ trait LambdaTreeTransform[F[_]]:
 
   thisScope: TreeTransformScope[F] =>
 
-  import qctx.tasty.{_, given}
+  import qctx.tasty.{_, given _}
 
   // case lambdaTree @ Lambda(params,body) 
   def runLambda(lambdaTerm: Term, params: List[ValDef], expr: Term ): CpsTree =

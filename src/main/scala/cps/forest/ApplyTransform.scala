@@ -1,5 +1,5 @@
 // CPS Transform for tasty apply
-// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019
+// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020
 package cps.forest
 
 import scala.quoted._
@@ -14,7 +14,7 @@ class ApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   // case Apply(fun,args) 
   def run(using qctx: QuoteContext)(fun: qctx.tasty.Term, args: List[qctx.tasty.Term]): CpsExpr[F,T] =
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      println(s"!!! apply detected : ${fun} ${args}")
      ApplyTreeTransform.run(cpsCtx, patternCode.unseal, fun, args)
      

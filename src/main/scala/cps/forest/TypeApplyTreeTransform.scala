@@ -11,7 +11,7 @@ trait TypeApplyTreeTransform[F[_]]:
 
   thisScope: TreeTransformScope[F] =>
 
-  import qctx.tasty.{_, given}
+  import qctx.tasty.{_, given _}
 
   // case TypeApply(fun,targs) 
   def runTypeApply( applyTerm: qctx.tasty.Term, 

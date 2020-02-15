@@ -15,7 +15,7 @@ object WhileTransform:
   def run[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T], 
                                cond: Expr[Boolean], repeat: Expr[Unit]
                                )(using qctx: QuoteContext): CpsExpr[F,T] =
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      import util._
      import cpsCtx._
      val cpsCond = Async.rootTransform(cond, asyncMonad, exprMarker+"C")

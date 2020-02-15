@@ -12,7 +12,7 @@ object ValDefTransform:
 
   def fromBlock[F[_]:Type](using qctx:QuoteContext)(cpsCtx: TransformationContext[F,_],
                            valDef: qctx.tasty.ValDef): CpsExpr[F,Unit] = {
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      import cpsCtx._
      val posExpr = Block(List(valDef),Literal(Constant(()))).seal
      val rhs = valDef.rhs.getOrElse(
@@ -46,7 +46,7 @@ object ValDefTransform:
                                     extends AsyncCpsExpr[F,T](monad, prev) {
 
        override def fLast(using qctx: QuoteContext) = 
-          import qctx.tasty.{_, given}
+          import qctx.tasty.{_, given _}
 
           def appendBlockExpr[A](rhs: qctx.tasty.Term, expr: Expr[A]):Expr[A] =
                 buildAppendBlockExpr(oldValDef.asInstanceOf[qctx.tasty.ValDef],
@@ -76,20 +76,19 @@ object ValDefTransform:
                       oldValDef: qctx.tasty.ValDef, rhs:qctx.tasty.Term, 
                                                     exprTerm:qctx.tasty.Term): qctx.tasty.Term = 
        {
-          import qctx.tasty.{_, given}
+          import qctx.tasty.{_, given _}
           import scala.internal.quoted.showName
           import scala.quoted.QuoteContext
           import scala.quoted.Expr
 
-          // not worked due https://github.com/lampepfl/dotty/issues/8168
-          //
-          //val valDef = ValDef(oldValDef.symbol, Some(rhs))
-          //exprTerm match 
-          //    case Block(stats,last) =>
-          //           Block(valDef::stats, last)
-          //    case other =>
-          //          Block(valDef::Nil,other)
+          val valDef = ValDef(oldValDef.symbol, Some(rhs)).asInstanceOf[qctx.tasty.ValDef]
+          exprTerm match 
+              case Block(stats,last) =>
+                     Block(valDef::stats, last)
+              case other =>
+                    Block(valDef::Nil,other)
 
+          /*
           // workarrround against https://github.com/lampepfl/dotty/issues/8045
           def substituteIdent(nextTerm: Term, v: Symbol, newIdent:Ident):Term =
                   TransformUtil.substituteIdent(nextTerm,v,newIdent)
@@ -112,11 +111,12 @@ object ValDefTransform:
                    var x:V = ${rhs.seal.asInstanceOf[Expr[V]]}
                    ${substituteIdent(exprTerm,oldValDef.symbol,'x.unseal.asInstanceOf[Ident]).seal}
                 }.unseal
+          */
 
        }
 
        private def buildAppendBlockExpr[A](using qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, rhs: qctx.tasty.Term, expr:Expr[A]):Expr[A] = 
-          import qctx.tasty.{_, given}
+          import qctx.tasty.{_, given _}
           buildAppendBlock(oldValDef,rhs,expr.unseal).seal.asInstanceOf[Expr[A]]
 
   }
@@ -133,19 +133,20 @@ object ValDefTransform:
        override def fLast(using qctx: QuoteContext) = next.fLast
               
        override def transformed(using qctx: QuoteContext) = {
-          import qctx.tasty.{_, given}
+          import qctx.tasty.{_, given _}
 
           // not worked due https://github.com/lampepfl/dotty/issues/8168
-          //  val block = next.transformed.unseal match 
-          //   case Block(stats, e) =>
-          //       Block( prev.map(_.unseal) ++: oldValDef +: stats, e)
-          //   case other =>
-          //       Block( prev.map(_.unseal) ++: List(oldValDef) , other) 
-          // block.seal.asInstanceOf[Expr[F[T]]]
+          val valDef = oldValDef.asInstanceOf[qctx.tasty.ValDef]
+          val block = next.transformed.unseal match 
+             case Block(stats, e) =>
+                 Block( prev.map(_.unseal) ++: valDef +: stats, e)
+             case other =>
+                 Block( prev.map(_.unseal) ++: List(valDef) , other) 
+          block.seal.asInstanceOf[Expr[F[T]]]
 
-          val r = prependPrev(genBlock(oldValDef.asInstanceOf[qctx.tasty.ValDef], 
-                              next.transformed.unseal))
-          r.seal.asInstanceOf[Expr[F[T]]]
+          //val r = prependPrev(genBlock(oldValDef.asInstanceOf[qctx.tasty.ValDef], 
+          //                    next.transformed.unseal))
+          //r.seal.asInstanceOf[Expr[F[T]]]
        }
 
        override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
@@ -157,7 +158,7 @@ object ValDefTransform:
                                          next.append(e))
 
        def genBlock(using qctx:QuoteContext)(oldValDef: qctx.tasty.ValDef, nextTerm: qctx.tasty.Term): qctx.tasty.Term =
-            import qctx.tasty.{_, given}
+            import qctx.tasty.{_, given _}
             import scala.internal.quoted.showName
             import scala.quoted.QuoteContext
             import scala.quoted.Expr
@@ -189,7 +190,7 @@ object ValDefTransform:
                 
 
        def prependPrev(using qctx:QuoteContext)(term: qctx.tasty.Term): qctx.tasty.Term =
-          import qctx.tasty.{_, given}
+          import qctx.tasty.{_, given _}
           if (prev.isEmpty) {
              term
           } else {
@@ -200,27 +201,4 @@ object ValDefTransform:
                  Block(prev.map(_.unseal).toList, other)
           }
      
-
- 
-  // substitute identifier with the same part.
-
-
-  def substituteIdent(using qctx:QuoteContext)(tree: qctx.tasty.Term, 
-                           origin: qctx.tasty.Symbol, 
-                           newIdent: qctx.tasty.Ident): qctx.tasty.Term =
-     import qctx.tasty.{_,given}
-     import qctx.tasty._
-     import util._
-     val changes = new TreeMap() {
-        override def transformTerm(tree:Term)(using ctx: Context):Term =
-          tree match 
-            case ident@Ident(name) => if (ident.symbol == origin) {
-                                         newIdent
-                                      } else {
-                                         super.transformTerm(tree)
-                                      }
-            case _ => super.transformTerm(tree)
-     }
-     changes.transformTerm(tree)
-
 

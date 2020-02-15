@@ -13,7 +13,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   // case Assign(left,right) 
   def run(using qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsExpr[F,T] = 
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      println(s"!!! assign detected : ${left} ${right}")
      left.seal match 
         case '{ $le: $lt } =>
@@ -27,7 +27,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   def runWithLeft[L:Type](using qctx: QuoteContext)(
        left: qctx.tasty.Term, right: qctx.tasty.Term, cpsLeft:CpsExpr[F,L]): CpsExpr[F,T] = {
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      right.seal match {
         case '{ $re: $rt } =>
             val cpsRight = Async.rootTransform(re,asyncMonad,exprMarker+"R")
@@ -42,7 +42,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   def run1[L:Type,R:Type](using qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term,
                 cpsLeft: CpsExpr[F,L], cpsRight: CpsExpr[F,R]): CpsExpr[F,T] =
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      if (!cpsLeft.isAsync) {
         if (!cpsRight.isAsync) 
             CpsExpr.sync(asyncMonad, patternCode)
@@ -69,7 +69,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
             left: qctx.tasty.Term, right: qctx.tasty.Term,
              cpsLeft: CpsExpr[F,L], cpsRight: CpsExpr[F,R],
              cpsLu: CpsExpr[F,LU]): CpsExpr[F,T] =
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      if (!cpsRight.isAsync) {
           CpsExpr.async[F,T](asyncMonad,
                cpsLu.map[T]('{ x => 

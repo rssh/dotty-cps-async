@@ -31,7 +31,7 @@ object Async {
     ${ Async.transformImpl[F,T]('expr) } 
 
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[F[T]] = 
-    import qctx.tasty.{_,given}
+    import qctx.tasty.{_,given _}
     try
       summonExpr[AsyncMonad[F]] match 
         case Some(dm) => 
@@ -53,7 +53,7 @@ object Async {
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], exprMarker: String)(
                                            using qctx: QuoteContext): CpsExpr[F,T] =
      val tType = summon[Type[T]]
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      import util._
      val cpsCtx = TransformationContext[F,T](f,tType,dm,exprMarker)
      f match 

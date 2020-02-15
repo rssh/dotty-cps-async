@@ -7,7 +7,7 @@ trait CpsTreeScope[F[_]] {
 
   cpsTreeScope: TreeTransformScope[F] =>
 
-  import qctx.tasty.{_,given}
+  import qctx.tasty.{_,given _}
 
   sealed abstract class CpsTree:
 

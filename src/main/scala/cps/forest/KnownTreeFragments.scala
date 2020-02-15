@@ -11,7 +11,7 @@ trait KnownTreeFragments[F[_]]:
 
   thisKnownTreeTransform: TreeTransformScope[F] =>
   
-  import qctx.tasty.{_, given}
+  import qctx.tasty.{_, given _}
 
   lazy val awaitPure = TransformUtil.skipInlined(
                          '{ _root_.cps.await[F,Int](${cpsCtx.asyncMonad}.pure(3)) }.unseal)

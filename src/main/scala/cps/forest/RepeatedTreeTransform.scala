@@ -11,7 +11,7 @@ trait RepeatedTreeTransform[F[_]]:
 
   thisScope: TreeTransformScope[F] =>
 
-  import qctx.tasty.{_, given}
+  import qctx.tasty.{_, given _}
 
   def runRepeated(repeated: Repeated): CpsTree =
      val cpsElems = repeated.elems.map(runRoot)

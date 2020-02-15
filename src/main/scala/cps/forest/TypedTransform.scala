@@ -12,7 +12,7 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   // case Apply(fun,args) 
   def run(using qctx: QuoteContext)(t: qctx.tasty.Term, tp: qctx.tasty.TypeTree): CpsExpr[F,T] =
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      val r = Async.rootTransform[F,T](t.seal.asInstanceOf[Expr[T]], asyncMonad, exprMarker+"T")
      if (!r.isAsync) 
        CpsExpr.sync(asyncMonad, patternCode)

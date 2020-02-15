@@ -11,7 +11,7 @@ trait RootTreeTransform[F[_]]:
 
   thisTransform: TreeTransformScope[F] =>
   
-  import qctx.tasty.{_, given}
+  import qctx.tasty.{_, given _}
 
   def runRoot(term: qctx.tasty.Term): CpsTree =
      term.tpe.widen match {

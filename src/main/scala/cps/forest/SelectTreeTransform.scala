@@ -11,7 +11,7 @@ trait SelectTreeTransform[F[_]]:
 
   thisScope: TreeTransformScope[F] =>
 
-  import qctx.tasty.{_, given}
+  import qctx.tasty.{_, given _}
 
   // case selectTerm @ Select(qualifier,name) 
   def runSelect( selectTerm: Select ): CpsTree =

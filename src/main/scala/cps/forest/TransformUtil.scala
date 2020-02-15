@@ -9,14 +9,14 @@ import cps._
 object TransformUtil:
 
   def skipInlined(using qctx:QuoteContext)(tree: qctx.tasty.Term):qctx.tasty.Term =
-    import qctx.tasty.{_,given}
+    import qctx.tasty.{_,given _}
     tree match 
       case Inlined(origin, binding, expansion) => skipInlined(expansion)
       case _ => tree
 
   def makePure[F[_]:Type](using qctx:QuoteContext)(monad: Expr[AsyncMonad[F]], 
                                           tree: qctx.tasty.Term):qctx.tasty.Term =
-    import qctx.tasty.{_,given}
+    import qctx.tasty.{_,given _}
     val selectExpr = '{ ${monad}.pure }
     Apply(
       selectExpr.unseal,List(tree))
@@ -25,7 +25,7 @@ object TransformUtil:
   
   def find(using qctx:QuoteContext)(term: qctx.tasty.Term, 
                        cond: qctx.tasty.Tree=> Option[qctx.tasty.Tree]) :Option[qctx.tasty.Tree] = {
-     import qctx.tasty.{_,given}
+     import qctx.tasty.{_,given _}
      import util._
      val search = new TreeAccumulator[Option[Tree]] {
 
@@ -49,7 +49,7 @@ object TransformUtil:
   def substituteIdent(using qctx:QuoteContext)(tree: qctx.tasty.Term, 
                            origin: qctx.tasty.Symbol, 
                            newTerm: qctx.tasty.Term): qctx.tasty.Term =
-     import qctx.tasty.{_,given}
+     import qctx.tasty.{_,given _}
      import util._
      val changes = new TreeMap() {
         override def transformTerm(tree:Term)(using ctx: Context):Term =
@@ -65,7 +65,7 @@ object TransformUtil:
 
 
   def namedLet(using qctx: QuoteContext)(name: String, rhs: qctx.tasty.Term)(body: qctx.tasty.Ident => qctx.tasty.Term): qctx.tasty.Term = {
-    import qctx.tasty.{_,given}
+    import qctx.tasty.{_,given _}
     import scala.internal.quoted.showName
     import scala.quoted.QuoteContext
     import scala.quoted.Expr

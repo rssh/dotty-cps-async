@@ -16,7 +16,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                     cases: List[qctx.tasty.CaseDef],
                                     finalizer: Option[qctx.tasty.Term]): CpsExpr[F,T] = 
      println("try/catch handling")
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      val cpsBody = Async.rootTransform[F,T](body.seal.asInstanceOf[Expr[T]],
                                        asyncMonad, exprMarker+"B")    
      val cpsCaseDefs = cases.zipWithIndex.map((cd,i) => Async.rootTransform[F,T](

@@ -16,7 +16,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
   // case Block(prevs,last) 
   def run(using qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
      val tType = implicitly[Type[T]]
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      val rPrevs = prevs.zipWithIndex.map{ (p,i) =>
         p match
           case d: Definition =>

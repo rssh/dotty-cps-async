@@ -11,7 +11,7 @@ trait AwaitTreeTransform[F[_]]:
 
   thisTreeTransform: TreeTransformScope[F] =>
   
-  import qctx.tasty.{_, given}
+  import qctx.tasty.{_, given _}
 
 
   def runAwait(awaitTerm: Term, args: Term): CpsTree =

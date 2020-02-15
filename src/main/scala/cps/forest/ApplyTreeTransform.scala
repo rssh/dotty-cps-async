@@ -11,7 +11,7 @@ trait ApplyTreeTransform[F[_]]:
 
   thisTreeTransform: TreeTransformScope[F] =>
   
-  import qctx.tasty.{_, given}
+  import qctx.tasty.{_, given _}
 
 
   // case Apply(fun,args) 
@@ -113,19 +113,12 @@ trait ApplyTreeTransform[F[_]]:
    *
    * And we don't want to generate tree and then resu 
    *
-   **/
-  trait ApplyArgGenerator {
-     def isConst: Boolean
-     def isAsync: Boolean
-     def argName: String
-  }
-   
+  **/
+
+
 
   def handleArgs(applyTerm: Term, cpsFun: CpsTree, args: List[Term]): CpsTree = 
         // TODO: maybe handle repeated separately ??
- 
-        
-
         val cpsArgs = args.map(x => runRoot(x))
         val isArgsAsync = cpsArgs.exists(_.isAsync)
         val isAsync = cpsFun.isAsync || isArgsAsync
@@ -135,7 +128,37 @@ trait ApplyTreeTransform[F[_]]:
            cpsFun.monadMap(x => Apply(x,args), applyTerm.tpe)
         else 
            throw MacroError("await inside args is not supported yet",cpsCtx.patternCode)
+
+  case class ApplyArgRecord(
+       isConst: Boolean,
+       argName: String,
+       cpsTree: CpsTree,
+       term: Term 
+  )
+   
+  case class ApplyArgs[T](
+      exprToAsync: Expr[F[T]],
+      isAsync: Boolean
+  )
         
+  def handleAsyncArgs(applyTerm: Term, cpsFun: CpsTree, 
+                      args: List[Term], cpsArgs:List[CpsTree]): CpsTree =  {
+        import scala.internal.quoted.showName
+        import scala.quoted.QuoteContext
+        import scala.quoted.Expr
+        val valDefBlocks = args.zipWithIndex.map{ (t:Term, i:Int) =>
+           t.seal match {
+              case '{ $x:$tx } =>
+                  val argName:String = "arg"+i
+                  val valDefExpr = '{
+                                     @showName(${Expr(argName)})
+                                     val a:${tx} = ${x}
+                                   }
+           }
+        }
+        ???
+    
+  }
      
 object ApplyTreeTransform:
 

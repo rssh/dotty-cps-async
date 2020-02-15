@@ -19,7 +19,7 @@ object AwaitTransformOtherMonad:
                                     gs:Expr[Any])  // should be G[S], but dotty bug.
                                       ( using qctx: QuoteContext): CpsExpr[F,T] =
                                        
-     import qctx.tasty.{_, given}
+     import qctx.tasty.{_, given _}
      import util._
      import cpsCtx._
      // TODO: think about situation, when ftType != tType.
