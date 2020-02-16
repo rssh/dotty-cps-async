@@ -79,9 +79,6 @@ object Async {
                    ApplyTransform(cpsCtx).run(fun,args)
                 case TypeApply(fun,args) =>
                    TypeApplyTransform(cpsCtx).run(fun,args)
-                case Assign(left,right) =>
-                   print(s"Assign detected, left=${left}, right=${right}")
-                   AssignTransform(cpsCtx).run(left,right)
                 case lambda@Lambda(params, body) =>
                    print(s"Lambda detected, params=${params}, body=${body}")
                    LambdaTreeTransform.run(cpsCtx,lambda,params,body)

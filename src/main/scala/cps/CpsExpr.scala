@@ -9,10 +9,14 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[Expr[_]]):
 
   def fLast(using QuoteContext): Expr[F[T]]
 
-  def transformed(using QuoteContext): Expr[F[T]] =
+  def transformed(using qctx: QuoteContext): Expr[F[T]] =
+     import qctx.tasty.{_, given _ }
+     println(s"CpsExpr.transformed: fLast=${fLast.unseal}")
      if (prev.isEmpty)
          fLast
      else
+         println(s"CpsExpr.transformed: prev=$prev.map(_.unseal)")
+         println(s"CpsExpr.transformed: Expr.block(prev,fLast)")
          Expr.block(prev.toList,fLast)
 
   def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T]
