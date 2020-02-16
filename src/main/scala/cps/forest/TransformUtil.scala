@@ -42,6 +42,14 @@ object TransformUtil:
      search.foldTree(None,term)
   }
 
+  def containsAwait(using qctx:QuoteContext)(term: qctx.tasty.Term): Boolean =
+    import qctx.tasty.{_,given _}
+    find(term, {
+           case v@Apply(TypeApply(id@Ident("await"),targs),args) =>
+                         if (id.symbol.fullName == "cps.await") Some(v) else None
+           case _ => None
+         }).isDefined
+
  
   /**
    * substitute identifier with the origin symbol to new tree

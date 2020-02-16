@@ -28,12 +28,9 @@ trait RootTreeTransform[F[_]]:
                 expr match {
                   case '{ $e: $et } =>
                      val r = Async.rootTransform(e, monad, cpsCtx.exprMarker)
-                     if (r.isAsync) 
-                        val transformed = r.transformed.unseal
-                        AwaitCpsTree(transformed, e.unseal.tpe)
-                     else
-                        PureCpsTree(e.unseal)
-                     
+                     exprToTree(r,term)
+                  case _ =>
+                     throw MacroError("Can't determinate exact type for term", expr)
                 }
      }
 
@@ -56,6 +53,13 @@ trait RootTreeTransform[F[_]]:
              throw MacroError(s"cps tree transform is not supported yet to ${term}",cpsCtx.patternCode)
      }
   }
+
+  def exprToTree(expr: CpsExpr[F,_], e: Term): CpsTree =
+    if (expr.isAsync) 
+       val transformed = expr.transformed.unseal
+       AwaitCpsTree(transformed, e.tpe)
+    else
+       PureCpsTree(e)
 
 
 

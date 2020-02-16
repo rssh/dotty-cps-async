@@ -66,31 +66,31 @@ trait ApplyTreeTransform[F[_]]:
           val cpsObj1 = runRoot(obj1)
           if (cpsObj1.isAsync) 
               val cpsObj = cpsObj1.applyTerm(x => TypeApply(Select(x,obj1.symbol),targs), fun.tpe)
-              handleArgs(applyTerm, cpsObj, args)
+              handleArgs1(applyTerm, cpsObj, args)
           else 
-              handleArgs(applyTerm, CpsTree.pure(fun), args)
+              handleArgs1(applyTerm, CpsTree.pure(fun), args)
         case Ident(name) =>
-          handleArgs(applyTerm, CpsTree.pure(fun), args)
+          handleArgs1(applyTerm, CpsTree.pure(fun), args)
         case _ =>
           val cpsObj = runRoot(obj)  
-          handleArgs(applyTerm, cpsObj, args)
+          handleArgs1(applyTerm, cpsObj, args)
      }
 
 
   def handleFunSelect(applyTerm:Term, fun:Term, args:List[Term], obj:Term, method: String): CpsTree = 
      val cpsObj = runRoot(obj)
      if (cpsObj.isAsync) 
-        handleArgs(applyTerm, cpsObj.applyTerm(x => Select(x,fun.symbol), fun.tpe), args)
+        handleArgs1(applyTerm, cpsObj.applyTerm(x => Select(x,fun.symbol), fun.tpe), args)
      else
-        handleArgs(applyTerm, CpsTree.pure(fun), args)
+        handleArgs1(applyTerm, CpsTree.pure(fun), args)
    
 
   def handleFunIdent(applyTerm: Term, fun:Term, args:List[Term], name: String):CpsTree =
-        handleArgs(applyTerm, CpsTree.pure(fun), args)
+        handleArgs1(applyTerm, CpsTree.pure(fun), args)
 
   def handleFun(applyTerm: Term, fun:Term, args:List[Term]):CpsTree =
      val cpsFun = runRoot(fun)
-     handleArgs(applyTerm,cpsFun,args)
+     handleArgs1(applyTerm,cpsFun,args)
 
   /**
    * How to handle arguments?
@@ -129,36 +129,175 @@ trait ApplyTreeTransform[F[_]]:
         else 
            throw MacroError("await inside args is not supported yet",cpsCtx.patternCode)
 
-  case class ApplyArgRecord(
-       isConst: Boolean,
-       argName: String,
-       cpsTree: CpsTree,
-       term: Term 
-  )
-   
-  case class ApplyArgs[T](
-      exprToAsync: Expr[F[T]],
-      isAsync: Boolean
-  )
-        
-  def handleAsyncArgs(applyTerm: Term, cpsFun: CpsTree, 
-                      args: List[Term], cpsArgs:List[CpsTree]): CpsTree =  {
-        import scala.internal.quoted.showName
-        import scala.quoted.QuoteContext
-        import scala.quoted.Expr
-        val valDefBlocks = args.zipWithIndex.map{ (t:Term, i:Int) =>
-           t.seal match {
-              case '{ $x:$tx } =>
-                  val argName:String = "arg"+i
-                  val valDefExpr = '{
-                                     @showName(${Expr(argName)})
-                                     val a:${tx} = ${x}
-                                   }
-           }
-        }
-        ???
-    
+  sealed trait ApplyArgRecord:
+    def term: Term
+    def identArg: Term
+    def isAsync: Boolean
+    def noOrderDepended: Boolean
+    def useIdent: Boolean = isAsync || !noOrderDepended
+    def isOrderDepended = !noOrderDepended
+    def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] 
+
+  case class ApplyArgRepeatRecord(
+       term: Repeated,
+       elements: List[ApplyArgRecord],
+  ) extends ApplyArgRecord {
+    override def useIdent: Boolean = (elements.exists(x => x.isAsync || x.isOrderDepended))
+    override def identArg: Term = 
+      if (useIdent)
+          Repeated(elements.map(_.identArg),term.elemtpt)
+      else
+          term
+    override def isAsync = elements.exists(_.isAsync)
+    override def noOrderDepended = elements.forall(_.noOrderDepended)
+    override def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] =
+       val s0: CpsExpr[F,_] = CpsExpr.unit(cpsCtx.asyncMonad)
+       val r = elements.foldLeft(s0){(s,e) => 
+           e match
+              case e1: ApplyArgTermRecord =>
+                  if (e.useIdent) s.append(e1.valDefCpsExpr) else s
+              case _ =>
+                  // impossible: repeated inside repeated
+                  throw MacroError("Impossible: repeated inside repeated",cpsCtx.patternCode)
+       }
+       r.append(a)
   }
+  
+
+  case class ApplyArgTermRecord(
+       term: Term,
+       valDefExpr: Expr[Unit],
+       valDefCpsExpr: CpsExpr[F,Unit],
+       ident: Ident 
+  ) extends ApplyArgRecord
+  {
+     def isAsync = valDefCpsExpr.isAsync
+     def noOrderDepended = termIsNoOrderDepended(term)
+     def identArg: Term = 
+        if (!isAsync && noOrderDepended)
+            term
+        else
+            ident
+     def append[A:quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] =
+        valDefCpsExpr.append(a)
+  }
+
+  def termIsNoOrderDepended(x:Term): Boolean =
+    x match {
+      case Literal(_) => true
+      case Ident(_) => if (x.symbol.isValDef) then
+                         x.symbol.flags.is(Flags.Mutable)
+                       else if x.symbol.isDefDef then
+                         true
+                       else if x.symbol.isBind then
+                         true
+                       else
+                         false
+      case _ => false  
+    }
+   
+  def handleArgs1(applyTerm: Term, cpsFun: CpsTree, 
+                      args: List[Term]): CpsTree =  {
+        val applyRecords = buildApplyArgsRecords(args, cpsCtx.exprMarker)
+        val existsAsyncArgs = applyRecords.exists(_.isAsync)
+        if (!existsAsyncArgs) {
+           if (!cpsFun.isAsync)
+              CpsTree.pure(applyTerm)
+           else  
+              cpsFun.monadMap(x => Apply(x,args), applyTerm.tpe)
+        } else {
+           var newArgs = applyRecords.map(_.identArg).toList
+           if (haveAsyncLambdaInArgs(args)) 
+               // TODO: implement shifted lambda.
+               throw MacroError("await inside lambda expressions is not supported yet", cpsCtx.patternCode)
+           else 
+               val allArgsAreSync = applyRecords.forall(! _.isAsync )
+               var runFold = true
+               val lastCpsTree = if (allArgsAreSync && cpsFun.isSync) {
+                                    runFold = false
+                                    CpsTree.pure(applyTerm)
+                                 } else {
+                                    buildApply(cpsFun, args, applyTerm.tpe)
+                                 }
+               if (runFold) 
+                 applyTerm.seal match
+                   case '{ $t: $tt } =>
+                      val lastCpsExpr = lastCpsTree.toResult(t)
+                      val expr = applyRecords.foldRight(lastCpsExpr){ (p,s) =>
+                             if (p.useIdent) 
+                                 p.append(s)
+                             else
+                                 s
+                      }
+                      exprToTree(expr,applyTerm)
+                   case _ => 
+                       throw MacroError(s"Can't determinate type for $applyTerm",applyTerm.seal)
+               else
+                 lastCpsTree
+        }
+  }
+
+  def buildApplyArgsRecords(args: List[Term], exprMarker: String): List[ApplyArgRecord] = {
+     import scala.internal.quoted.showName
+     import scala.quoted.QuoteContext
+     import scala.quoted.Expr
+     args.zipWithIndex.map{ (t:Term, i:Int) =>
+       t match {
+         case tr@Typed(r@Repeated(rargs, tpt),tpt1) => 
+            ApplyArgRepeatRecord(r, buildApplyArgsRecords(rargs, exprMarker+i.toString+"r") )
+         case r@Repeated(rargs, tpt) => 
+            ApplyArgRepeatRecord(r, buildApplyArgsRecords(rargs, exprMarker+i.toString+"r") )
+         case _ =>
+            t.seal match {
+              case '{ $x:$tx } =>
+                  val argName:String = "a"+i
+                  val valDefExpr = '{
+                                      @showName(${Expr(argName)})
+                                      val a:${tx} = ${x}
+                                      a
+                                    }
+                  val valDef = TransformUtil.find(valDefExpr.unseal, {
+                        case v@ValDef(_,_,_) => Some(v)
+                        case _ => None
+                  }).get.asInstanceOf[ValDef]
+                  val ident = TransformUtil.find(valDefExpr.unseal, {
+                        case id@Ident(name) => if (id.symbol == valDef.symbol) 
+                                                  Some(id)
+                                               else None
+                        case _ => None
+                  }).get.asInstanceOf[Ident]
+                  val unitBlockExpr = Block( valDef::Nil, Literal(Constant(())) ).seal.
+                                                                     asInstanceOf[Expr[Unit]]
+                  val valDefCpsExpr = ValDefTransform.fromBlock(
+                                        TransformationContext(
+                                           unitBlockExpr,
+                                           quoted.Type.UnitTag,
+                                           cpsCtx.asyncMonad,
+                                           exprMarker + argName
+                                        ), 
+                                        valDef
+                                      )
+                  ApplyArgTermRecord(t,unitBlockExpr,
+                                     valDefCpsExpr, ident)
+           }
+       }
+    }
+  }
+
+  def haveAsyncLambdaInArgs(args:List[Term]):Boolean = 
+     args.exists{ x =>
+       x match
+          case Lambda(largs,body) => TransformUtil.containsAwait(body)
+          case Repeated(rargs,tpt) => haveAsyncLambdaInArgs(rargs)
+          case _ => false
+     }
+
+  def buildApply(cpsFun: CpsTree, args: List[Term], applyTpe: Type) = 
+        if (cpsFun.isSync) 
+            cpsFun.applyTerm(_.appliedToArgs(args), applyTpe)
+        else
+            cpsFun.monadMap(x => Apply(x,args), applyTpe)
+
      
 object ApplyTreeTransform:
 

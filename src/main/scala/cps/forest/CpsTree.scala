@@ -13,6 +13,8 @@ trait CpsTreeScope[F[_]] {
 
      def isAsync: Boolean
 
+     def isSync: Boolean = ! isAsync
+
      def transformed: Term
 
      def typeApply(targs: List[qctx.tasty.TypeTree], ntpe: Type): CpsTree =
@@ -24,13 +26,16 @@ trait CpsTreeScope[F[_]] {
 
      def monadFlatMap(f: Term => Term, ntpe:Type): CpsTree
 
+     /**
+      * type which is 'inside ' monad, i.e. T for F[T]
+      **/
      def otpe: Type
 
      def toResult[T: quoted.Type](origin: Expr[T]) : CpsExpr[F,T] =
        import cpsCtx._
        this match
          case syncTerm: PureCpsTree =>
-             val code = origin
+             val code = syncTerm.origin.seal.asInstanceOf[Expr[T]]
              CpsExpr.sync(asyncMonad,code)
          case cpsTree: AsyncCpsTree =>
              val transformed = cpsTree.transformed.seal.asInstanceOf[Expr[F[T]]]

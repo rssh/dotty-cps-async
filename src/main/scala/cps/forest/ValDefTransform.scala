@@ -10,6 +10,7 @@ import cps.misc._
 object ValDefTransform:
 
 
+
   def fromBlock[F[_]:Type](using qctx:QuoteContext)(cpsCtx: TransformationContext[F,_],
                            valDef: qctx.tasty.ValDef): CpsExpr[F,Unit] = {
      import qctx.tasty.{_, given _}
@@ -87,31 +88,6 @@ object ValDefTransform:
                      Block(valDef::stats, last)
               case other =>
                     Block(valDef::Nil,other)
-
-          /*
-          // workarrround against https://github.com/lampepfl/dotty/issues/8045
-          def substituteIdent(nextTerm: Term, v: Symbol, newIdent:Ident):Term =
-                  TransformUtil.substituteIdent(nextTerm,v,newIdent)
-
-
-          //val valDef = ValDef(oldValDef.symbol, Some(rhs))
-          val oldValDefExpr = Block(List(oldValDef),Literal(Constant(()))).seal
-          oldValDefExpr match 
-            case '{ val $x:$tx = $y } =>
-                val name: String = x.name 
-                '{ 
-                   @showName(${Expr(name)})
-                   val x:V = ${rhs.seal.asInstanceOf[Expr[V]]}
-                   ${substituteIdent(exprTerm,oldValDef.symbol,'x.unseal.asInstanceOf[Ident]).seal}
-                }.unseal
-            case '{ var $x:$tx = $y } =>
-                val name: String = x.name 
-                '{ 
-                   @showName(${Expr(name)})
-                   var x:V = ${rhs.seal.asInstanceOf[Expr[V]]}
-                   ${substituteIdent(exprTerm,oldValDef.symbol,'x.unseal.asInstanceOf[Ident]).seal}
-                }.unseal
-          */
 
        }
 
