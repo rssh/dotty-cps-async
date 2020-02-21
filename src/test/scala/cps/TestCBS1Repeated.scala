@@ -12,7 +12,6 @@ class TestCBS1Repeated:
 
   def qqq:Int = 0
   
-/*
   @Test def repeated_0(): Unit = 
      val c = async[ComputationBound]{
        val (b,c) = (2,4)
@@ -24,14 +23,14 @@ class TestCBS1Repeated:
      val c = async[ComputationBound]{
        f("x",1,2,3,4)
      }
-     assert(c.run() == Success("a 2 4"))
+     assert(c.run() == Success("x1234"))
 
   @Test def repeated_0a(): Unit = 
      val c = async[ComputationBound]{
        val s = Seq(12,13,14)
        f("x",s :_* )
      }
-*/
+     assert(c.run() == Success("x121314"))
 
   def f(x:String, y: Int*):String =
       x + y.mkString
