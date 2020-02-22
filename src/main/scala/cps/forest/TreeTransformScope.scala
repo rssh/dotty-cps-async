@@ -13,7 +13,6 @@ trait TreeTransformScope[F[_]:Type]
                   with AwaitTreeTransform[F]
                   with SelectTreeTransform[F]
                   with LambdaTreeTransform[F]
-                  with RepeatedTreeTransform[F] 
 {
 
    val cpsCtx: TransformationContext[F,?]

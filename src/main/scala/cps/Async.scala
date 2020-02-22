@@ -99,8 +99,6 @@ object Async {
                    ThisTransform(cpsCtx).run(thisTerm)
                 case selectTerm: Select =>
                    SelectTreeTransform.run(cpsCtx, selectTerm)
-                //case repeatedTerm: Repeated =>
-                //   RepeatedTreeTransform.run(cpsCtx, repeatedTerm)
                 case Inlined(call,bindings,body) =>
                    rootTransform(body.seal.asInstanceOf[Expr[T]],dm,exprMarker)
                 case _ =>
