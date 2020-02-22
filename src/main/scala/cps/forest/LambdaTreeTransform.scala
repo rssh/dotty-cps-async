@@ -13,53 +13,29 @@ trait LambdaTreeTransform[F[_]]:
 
   import qctx.tasty.{_, given _}
 
+  def typeInMonad(tp:Type): Type =
+       AppliedType(cpsCtx.asyncMonad.unseal.tpe, List(tp))
+
   // case lambdaTree @ Lambda(params,body) 
   def runLambda(lambdaTerm: Term, params: List[ValDef], expr: Term ): CpsTree =
-     val symbol = lambdaTerm.symbol
-     val tpe = lambdaTerm.tpe
-     System.out.println(s"Lambda, symbol=${symbol}, tpe=${tpe}")
-     lambdaTerm.tpe match 
-        case x: MethodType => System.out.println("MethodType detected")
-        case other =>
-          if (other.isFunctionType)
-               System.out.println("Function Type (not method type)")
-               System.out.println(s"${tpe}")
      val cpsBody = runRoot(expr)
-     if (cpsBody.isAsync) {
-        buildShiftedLambda(lambdaTerm, params, cpsBody)
-     } else {
+     if (cpsBody.isAsync) 
+        asyncBodyShiftedLambda(lambdaTerm, params, cpsBody)
+     else
         CpsTree.pure(lambdaTerm)
-     }
 
-  def buildShiftedLambda(lambdaTerm: Term, params: List[ValDef], cpsBody: CpsTree): CpsTree =
-    val methodType = buildShiftedMethodType(params, cpsBody.otpe)
-    ???
+  def asyncBodyShiftedLambda(lambdaTerm: Term, params: List[ValDef], cpsBody: CpsTree): CpsTree =
+     val paramNames = params.map(_.name)
+     val paramTypes = params.map(_.tpt.tpe)
+     val shiftedType = shiftedMethodType(paramNames, paramTypes, cpsBody.otpe)
+     // TODO: think, maybe exists case, where we need substitute Ident(param) for x[i] (?)
+     //       because otherwise it's quite strange why we have such interface in compiler
+     val rLambda = Lambda(shiftedType, (x: List[Tree]) => cpsBody.transformed )
+     CpsTree.pure(rLambda)
      
 
-  def buildShiftedMethodType(params: List[ValDef], otpe: Type): MethodType =
-     val paramNames = params.map{ case ValDef(name,_,_) => name  }
-     var paramIndexes: Map[Symbol, Int] = Map.empty
-     var paramsSubst: Map[Symbol, Int] = Map.empty
-     for((valDef,i) <- params.zipWithIndex) {
-       println("ValDef:"+valDef)
-       val tpt = valDef.tpt
-       paramsSubst = paramsSubst.updated( valDef.symbol, i)
-     }
-
-     def shiftedParamType(tp: Type): Type = 
-         if (tp.isFunctionType) 
-            ???
-         else 
-            tp
-
-     //TODO: change param name for shifted functions.
-     //  (now they are not implemented)
-     MethodType(paramNames)(mt => {
-                 ??? 
-                }, ???)
-
-
-  end buildShiftedMethodType
+  def shiftedMethodType(paramNames: List[String], paramTypes:List[Type], otpe: Type): MethodType =
+     MethodType(paramNames)(_ => paramTypes, _ => typeInMonad(otpe))
      
 
 

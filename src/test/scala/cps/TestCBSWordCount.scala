@@ -11,7 +11,6 @@ enum CountSignal[+T]:
 
 object CBSWordCount 
   
-/*
   def generate(line: String, channel:ASChannel[ComputationBound, CountSignal[String]]):ComputationBound[Unit] = async {
      val words = line.split(" ") 
      for(w <- words) {
@@ -20,6 +19,7 @@ object CBSWordCount
      await(channel.write(CountSignal.Finish))
   }
 
+ /*
   def accept(channel:ASChannel[ComputationBound, CountSignal[String]]): ComputationBound[Map[String,Int]] = async {
      var state: Map[String,Int] = Map.empty
      var finished = false
@@ -36,8 +36,7 @@ object CBSWordCount
      } do ()
      state
   }
-
-*/
+ */
 
 class TestCBSWordCount
 
