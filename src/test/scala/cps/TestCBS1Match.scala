@@ -10,7 +10,6 @@ import scala.util.Success
 class TestBS1Match:
 
 
-/*
   @Test def tMatchC1_00(): Unit = 
      val c = async[ComputationBound]{
        10 match {
@@ -29,7 +28,6 @@ class TestBS1Match:
        }
      }
      assert(c.run() == Success(3))
-*/
 
   @Test def tMatchC1_01(): Unit = 
      implicit val printCode = cps.macroFlags.PrintCode
