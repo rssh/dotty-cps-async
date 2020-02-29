@@ -106,7 +106,7 @@ implicit object ComputationBoundAsyncMonad extends AsyncMonad[ComputationBound] 
 
    def finalAwait[T](t:ComputationBound[T]):Try[T] = t.run()
 
-   def map[A,B](fa:ComputationBound[A])(f: A=>B):ComputationBound[B] = fa.map(f)
+   def map[A,B](fa:ComputationBound[A])(f: A=>B): ComputationBound[B] = fa.map(f)
 
    def flatMap[A,B](fa:ComputationBound[A])(f: A=>ComputationBound[B]):ComputationBound[B] = 
             fa.flatMap(f) 

@@ -107,23 +107,25 @@ trait CpsTreeScope[F[_]] {
           FlatMappedCpsTree(prev, t => f(op(t)), ntpe)
 
     def transformed: Term = {
-          // ${cpsCtx.asyncMonad}.map(${prev.transformed})((x:${prev.it}) => ${op('x)})
           val prevType = prev.otpe
-          Apply(
-             Apply(
-                Select(cpsCtx.asyncMonad.unseal, mapSymbol), // Guess compiler will deduce TypeApply
-                List(prev.transformed)
-             ),
-             List(
-               Lambda(
-                 MethodType(List("x"))(mt => List(prev.otpe), mt => otpe),
-                 opArgs => op(opArgs.head.asInstanceOf[Term])
-               )
-              //'{ 
-              //   (x:${prevType.seal}) => ${op('x.unseal).seal}
-              // }.unseal 
-             )
+          val untmapTerm = cpsCtx.asyncMonad.unseal.select(mapSymbol)
+          val tmapTerm = untmapTerm.appliedToTypes(List(prev.otpe,otpe))
+          val r = tmapTerm.appliedToArgss(
+                     List(List(prev.transformed),
+                          List(
+                            Lambda(
+                              MethodType(List("x"))(mt => List(prev.otpe), mt => otpe),
+                              opArgs => op(opArgs.head.asInstanceOf[Term])
+                            )
+                          )
+                     )
           )
+          //val r = '{
+          //   ${cpsCtx.asyncMonad}.map(${prev.transformed.seal.asInstanceOf[F[T]]})(
+          //             (x:${prev.seal}) => ${op('x)}
+          //   )
+          //}.unseal
+          r 
     }
 
       
@@ -146,18 +148,21 @@ trait CpsTreeScope[F[_]] {
     def transformed: Term = {
         // ${cpsCtx.asyncMonad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
         val monad = cpsCtx.asyncMonad.unseal
-        Apply(
-          Apply(
-             Select(monad, flatMapSymbol), 
-             List(prev.transformed)
-          ),
-          List(
-            Lambda(
-               MethodType(List("x"))(mt => List(prev.otpe), mt => AppliedType(monad.tpe,List(otpe))),
-               opArgs => opm(opArgs.head.asInstanceOf[Term])
-            )
-          )
+        val untpFlatMapTerm = monad.select(flatMapSymbol)
+        val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(prev.otpe,otpe))
+        val r = tpFlatMapTerm.appliedToArgss(
+            List(
+              List(prev.transformed),
+              List(
+                Lambda(
+                  MethodType(List("x"))(mt => List(prev.otpe), 
+                                        mt => AppliedType(monad.tpe,List(otpe))),
+                  opArgs => opm(opArgs.head.asInstanceOf[Term])
+                )
+             )
+           )
         )
+        r
     }
 
 
