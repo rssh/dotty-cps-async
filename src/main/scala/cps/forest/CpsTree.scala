@@ -70,7 +70,12 @@ trait CpsTreeScope[F[_]] {
 
     def otpe: Type = origin.tpe
 
-    def transformed: Term = TransformUtil.makePure(cpsCtx.asyncMonad, origin)
+    def transformed: Term = 
+          val untpureTerm = cpsCtx.asyncMonad.unseal.select(pureSymbol)
+          val tpureTerm = untpureTerm.appliedToType(otpe)
+          val r = tpureTerm.appliedTo(origin)
+          r
+      
        
 
   abstract class AsyncCpsTree extends CpsTree:

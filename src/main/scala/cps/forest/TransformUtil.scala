@@ -14,14 +14,6 @@ object TransformUtil:
       case Inlined(origin, binding, expansion) => skipInlined(expansion)
       case _ => tree
 
-  def makePure[F[_]:Type](using qctx:QuoteContext)(monad: Expr[AsyncMonad[F]], 
-                                          tree: qctx.tasty.Term):qctx.tasty.Term =
-    import qctx.tasty.{_,given _}
-    val selectExpr = '{ ${monad}.pure }
-    Apply(
-      selectExpr.unseal,List(tree))
-
-
   
   def find(using qctx:QuoteContext)(term: qctx.tasty.Term, 
                        cond: qctx.tasty.Tree=> Option[qctx.tasty.Tree]) :Option[qctx.tasty.Tree] = {

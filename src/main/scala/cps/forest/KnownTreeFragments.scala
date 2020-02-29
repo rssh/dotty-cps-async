@@ -27,6 +27,12 @@ trait KnownTreeFragments[F[_]]:
                          case _ => None
                        }).get.asInstanceOf[TypeTree]
 
+ 
+  lazy val pureSymbol = TransformUtil.find(awaitPure,
+                           { case v@Select(x,m) if m == "pure" => Some(v)
+                             case _ => None
+                           }).get.symbol
+  
 
   lazy val mapSymbol = {
         val mapTmpl = TransformUtil.skipInlined(
@@ -52,4 +58,5 @@ trait KnownTreeFragments[F[_]]:
                            }).get.symbol
   }
 
+  
 
