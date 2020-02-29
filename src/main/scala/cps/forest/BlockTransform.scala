@@ -22,7 +22,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
           case d: Definition =>
             d match {
               case v@ValDef(vName,vtt,optRhs) =>
-                ValDefTransform.fromBlock[F](using qctx)(cpsCtx.copy(exprMarker=exprMarker+i.toString), v)
+                ValDefTransform.fromBlock(using qctx)(cpsCtx.copy(exprMarker=exprMarker+i.toString), v)
               case _ =>
                 printf(d.show)
                 throw MacroError("definition is not supported inside block",patternCode)
@@ -30,12 +30,12 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
           case t: Term =>
             t.seal match 
                 case '{ $p:$tp } =>
-                        Async.rootTransform(p, asyncMonad, cpsCtx.exprMarker+i.toString)
+                        Async.nestTransform(p, cpsCtx, i.toString)
                 case other =>
                         printf(other.show)
                         throw MacroError(s"can't handle statement in block: $other",t.seal)
      }
-     val rLast = Async.rootTransform[F,T](last.seal.asInstanceOf[Expr[T]],asyncMonad,cpsCtx.exprMarker+"B")
+     val rLast = Async.nestTransform(last.seal.asInstanceOf[Expr[T]],cpsCtx,"B")
      val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
      // wrap yet in one Expr, to 'seal' (not unroll during append in enclosing block).
      CpsExpr.wrap(blockResult)

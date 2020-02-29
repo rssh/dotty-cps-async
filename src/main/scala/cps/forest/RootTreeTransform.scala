@@ -27,7 +27,7 @@ trait RootTreeTransform[F[_]]:
                 val monad = cpsCtx.asyncMonad
                 expr match {
                   case '{ $e: $et } =>
-                     val r = Async.rootTransform(e, monad, cpsCtx.exprMarker)
+                     val r = Async.nestTransform(e, cpsCtx, "_")
                      exprToTree(r,term)
                   case _ =>
                      throw MacroError("Can't determinate exact type for term", expr)

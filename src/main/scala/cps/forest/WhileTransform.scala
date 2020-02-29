@@ -18,8 +18,8 @@ object WhileTransform:
      import qctx.tasty.{_, given _}
      import util._
      import cpsCtx._
-     val cpsCond = Async.rootTransform(cond, asyncMonad, exprMarker+"C")
-     val cpsRepeat = Async.rootTransform(repeat, asyncMonad, exprMarker+"W")
+     val cpsCond = Async.nestTransform(cond, cpsCtx, "C")
+     val cpsRepeat = Async.nestTransform(repeat, cpsCtx, "W")
      val isAsync = cpsCond.isAsync || cpsRepeat.isAsync
 
      def uninline[X](x:Expr[X]):Expr[X] = 

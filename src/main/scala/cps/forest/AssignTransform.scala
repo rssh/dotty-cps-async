@@ -16,7 +16,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import qctx.tasty.{_, given _}
      left.seal match 
         case '{ $le: $lt } =>
-            val cpsLeft = Async.rootTransform(le,asyncMonad,exprMarker+"L")
+            val cpsLeft = Async.nestTransform(le,cpsCtx,"L")
             // shpuld have to structure in such waym as workarround against
             //  
             runWithLeft(left,right,cpsLeft)
@@ -29,7 +29,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import qctx.tasty.{_, given _}
      right.seal match {
         case '{ $re: $rt } =>
-            val cpsRight = Async.rootTransform(re,asyncMonad,exprMarker+"R")
+            val cpsRight = Async.nestTransform(re,cpsCtx,"R")
             run1(left,right,cpsLeft,cpsRight)
         case _ =>
             throw MacroError("Can't determinate type",right.seal)
@@ -55,7 +55,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
           case Select(obj,sym) => 
               obj.seal match 
                  case '{ $o: $ot } =>
-                    val lu = Async.rootTransform(o,asyncMonad,exprMarker+"S")
+                    val lu = Async.nestTransform(o,cpsCtx,"S")
                     run2(left,right,cpsLeft,cpsRight,lu)
                  case _ =>
                     throw MacroError("Can't determinate type",obj.seal)

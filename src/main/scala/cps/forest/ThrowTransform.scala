@@ -18,7 +18,7 @@ object ThrowTransform:
      import qctx.tasty.{_, given _}
      import util._
      import cpsCtx._
-     val cpsEx = Async.rootTransform(ex, asyncMonad, exprMarker+"E")
+     val cpsEx = Async.nestTransform(ex, cpsCtx, "E")
 
      if (!cpsEx.isAsync)
             // TODO: think, mb leave as is...

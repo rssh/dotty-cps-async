@@ -16,14 +16,14 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                     cases: List[qctx.tasty.CaseDef],
                                     finalizer: Option[qctx.tasty.Term]): CpsExpr[F,T] = 
      import qctx.tasty.{_, given _}
-     val cpsBody = Async.rootTransform[F,T](body.seal.asInstanceOf[Expr[T]],
-                                       asyncMonad, exprMarker+"B")    
-     val cpsCaseDefs = cases.zipWithIndex.map((cd,i) => Async.rootTransform[F,T](
-                                       cd.rhs.seal.asInstanceOf[Expr[T]],
-                                       asyncMonad, exprMarker+i.toString))
+     val cpsBody = Async.nestTransform(body.seal.asInstanceOf[Expr[T]],
+                                            cpsCtx, "B")    
+     val cpsCaseDefs = cases.zipWithIndex.map((cd,i) => Async.nestTransform(
+                                                  cd.rhs.seal.asInstanceOf[Expr[T]],
+                                                  cpsCtx, i.toString))
      val isCaseDefsAsync = cpsCaseDefs.exists(_.isAsync)
-     val optCpsFinalizer = finalizer.map( x => Async.rootTransform[F,Unit](
-                                        x.seal.asInstanceOf[Expr[Unit]], asyncMonad, exprMarker+"F"))
+     val optCpsFinalizer = finalizer.map( x => Async.nestTransform[F,T,Unit](
+                                        x.seal.asInstanceOf[Expr[Unit]], cpsCtx, "F"))
      val isFinalizerAsync = optCpsFinalizer.exists(_.isAsync)
      val isAsync = cpsBody.isAsync || isCaseDefsAsync || isFinalizerAsync
 

@@ -11,7 +11,7 @@ object ValDefTransform:
 
 
 
-  def fromBlock[F[_]:Type](using qctx:QuoteContext)(cpsCtx: TransformationContext[F,_],
+  def fromBlock[F[_]:Type,T:Type](using qctx:QuoteContext)(cpsCtx: TransformationContext[F,T],
                            valDef: qctx.tasty.ValDef): CpsExpr[F,Unit] = {
      import qctx.tasty.{_, given _}
      import cpsCtx._
@@ -21,7 +21,7 @@ object ValDefTransform:
                )
      rhs.seal match {
         case '{ $e: $et } =>
-            val cpsRight = Async.rootTransform(e,asyncMonad,exprMarker+"R")
+            val cpsRight = Async.nestTransform(e,cpsCtx,"R")
             if (cpsRight.isAsync) {
                RhsFlatMappedCpsExpr(using qctx)(asyncMonad, Seq(),
                                                 valDef, cpsRight, CpsExpr.unit(asyncMonad) )

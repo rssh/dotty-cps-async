@@ -194,7 +194,7 @@ trait ApplyTreeTransform[F[_]]:
    
   def handleArgs1(applyTerm: Term, cpsFun: CpsTree, 
                       args: List[Term]): CpsTree =  {
-        val applyRecords = buildApplyArgsRecords(args, cpsCtx.exprMarker)
+        val applyRecords = buildApplyArgsRecords(args, cpsCtx)
         val existsAsyncArgs = applyRecords.exists(_.isAsync)
         if (!existsAsyncArgs) {
            if (!cpsFun.isAsync)
@@ -233,16 +233,16 @@ trait ApplyTreeTransform[F[_]]:
         }
   }
 
-  def buildApplyArgsRecords(args: List[Term], exprMarker: String): List[ApplyArgRecord] = {
+  def buildApplyArgsRecords(args: List[Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
      import scala.internal.quoted.showName
      import scala.quoted.QuoteContext
      import scala.quoted.Expr
      args.zipWithIndex.map{ (t:Term, i:Int) =>
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) => 
-            ApplyArgRepeatRecord(r, buildApplyArgsRecords(rargs, exprMarker+i.toString+"r") )
+            ApplyArgRepeatRecord(r, buildApplyArgsRecords(rargs, cpsCtx.nestSame("r")) )
          case r@Repeated(rargs, tpt) => 
-            ApplyArgRepeatRecord(r, buildApplyArgsRecords(rargs, exprMarker+i.toString+"r") )
+            ApplyArgRepeatRecord(r, buildApplyArgsRecords(rargs, cpsCtx.nestSame("r")) )
          case _ =>
             t.seal match {
               case '{ $x:$tx } =>
@@ -266,10 +266,12 @@ trait ApplyTreeTransform[F[_]]:
                                                                      asInstanceOf[Expr[Unit]]
                   val valDefCpsExpr = ValDefTransform.fromBlock(
                                         TransformationContext(
-                                           unitBlockExpr,
-                                           quoted.Type.UnitTag,
-                                           cpsCtx.asyncMonad,
-                                           exprMarker + argName
+                                          unitBlockExpr,
+                                          quoted.Type.UnitTag,
+                                          cpsCtx.asyncMonad,
+                                          cpsCtx.flags,
+                                          cpsCtx.exprMarker + argName, 
+                                          cpsCtx.nesting + 1
                                         ), 
                                         valDef
                                       )

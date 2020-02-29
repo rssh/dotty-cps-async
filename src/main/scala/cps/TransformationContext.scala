@@ -8,6 +8,18 @@ case class TransformationContext[F[_],T](
    patternCode: Expr[T],  // code, for which we build pattern expression
    patternType: Type[T],
    asyncMonad: Expr[AsyncMonad[F]],
-   exprMarker: String
-) 
+   flags: AsyncMacroFlags,
+   exprMarker: String,
+   nesting: Int
+)  {
+
+  def nestSame(s:String): TransformationContext[F,T] = 
+           copy(exprMarker=exprMarker+s, nesting=nesting+1)
+
+  def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], s: String): 
+             TransformationContext[F,S] =
+      TransformationContext(newPatternCode, newPatternType, asyncMonad, flags, 
+                             exprMarker+s, nesting + 1 )
+
+}
 
