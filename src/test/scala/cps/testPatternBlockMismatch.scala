@@ -13,9 +13,7 @@ class TestPatternBlockMismatch:
               { val t = 3 }
               val t = 4 
              }
-     Console.println(s"!!!!: c==$c")
      val c1 = c.run()
-     Console.println(s"!!!!: c1==$c1")
      assert(c1 == Success(()))
 
 

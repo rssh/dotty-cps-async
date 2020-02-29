@@ -167,7 +167,7 @@ case class Done[T](value:T) extends ComputationBound[T]:
 
   override def progress(timeout: Duration): ComputationBound[T] = this
 
-  override def flatMap[S](f: T=>ComputationBound[S]): ComputationBound[S] =
+  override def flatMap[S](f: T=>ComputationBound[S] ): ComputationBound[S] =
      Thunk( () => f(value) )
 
 
