@@ -27,9 +27,7 @@ implicit val dmCB: DM[CB] = new DM[CB] {
 object A {
 
   inline def transform[F[_]:DM,T](expr: =>T): F[T] =
-    ${ 
-       '{???} //A.transformImpl('expr)
-     }
+       ??? //A.transformImpl('expr)
 
   def transformImpl[F[_]:DM,T:Type](f: Expr[T])(using QuoteContext):Expr[F[T]] = 
     f match 

@@ -9,17 +9,21 @@ enum CountSignal[+T]:
  case Finish
   
 
-object CBSWordCount 
-  
-  def generate(line: String, channel:ASChannel[ComputationBound, CountSignal[String]]):ComputationBound[Unit] = async {
-     val words = line.split(" ") 
-     for(w <- words) {
-        await(channel.write(CountSignal.Data(w)))
-     }
-     await(channel.write(CountSignal.Finish))
-  }
+object CBSWordCount1:
 
- /*
+
+/*
+  def generate(line: String, channel:ASChannel[ComputationBound, CountSignal[String]]):ComputationBound[Unit] = 
+     implicit val printTree = cps.macroFlags.PrintTree
+     async {
+       val words = line.split(" ") 
+       for(w <- words) {
+         await(channel.write(CountSignal.Data(w)))
+       }
+       await(channel.write(CountSignal.Finish))
+     }
+*/
+
   def accept(channel:ASChannel[ComputationBound, CountSignal[String]]): ComputationBound[Map[String,Int]] = async {
      var state: Map[String,Int] = Map.empty
      var finished = false
@@ -36,15 +40,16 @@ object CBSWordCount
      } do ()
      state
   }
- */
 
-class TestCBSWordCount
 
-  //@Ignore
+class TestCBSWordCount:
+
+  def qqq = ???
+
   //@Test def tWordCount(): Unit = 
   //   val ch = new ASChannel[ComputationBound, CountSignal[String]]();
-  //   val generator = ComputationBound.spawn(CBSWordCount.generate("A A A",ch))
-  //   val acceptor = CBSWordCount.accept(ch)
+  //   val generator = ComputationBound.spawn(CBSWordCount1.generate("A A A",ch))
+  //   val acceptor = CBSWordCount1.accept(ch)
   //   val c = acceptor.run()
   //   assert(c == Success(Map("A" -> 3)))
   

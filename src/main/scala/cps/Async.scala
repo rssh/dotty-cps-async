@@ -1,5 +1,6 @@
 package cps
 
+import scala.annotation._
 import scala.quoted._
 import scala.quoted.matching._
 import scala.compiletime._
@@ -10,6 +11,7 @@ import cps.misc._
 // erased disabled in current version
 // erased def await[F[_],T](f:F[T]):T = ???
 
+@compileTimeOnly("await should be inside async block")
 def await[F[_],T](f:F[T]):T = ???
 
 inline def async[F[_]](using am:AsyncMonad[F]): Async.InferAsyncArg[F] =
@@ -28,17 +30,22 @@ object Async {
           new InferAsyncArg[F]
 
   inline def transform[F[_], T](inline expr: T): F[T] =
-    ${ Async.transformImpl[F,T]('expr) } 
+    ${ 
+        Async.transformImpl[F,T]('expr)
+     } 
 
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[F[T]] = 
     import qctx.tasty.{_,given _}
+    val printTree = summonExpr[cps.macroFlags.PrintTree.type].isDefined
     try
       summonExpr[AsyncMonad[F]] match 
         case Some(dm) => 
-             println(s"before transformed: ${f.show}")
+             if (printTree)
+                println(s"before transformed: ${f.show}")
              //println(s"value: ${f.unseal}")
              val r = rootTransform[F,T](f,dm,"R").transformed
-             println(s"transformed value: ${r.show}")
+             if (printTree)
+                println(s"transformed value: ${r.show}")
              //println(s"transformed tree: ${r.unseal}")
              r
         case None => 
@@ -80,10 +87,8 @@ object Async {
                 case TypeApply(fun,args) =>
                    TypeApplyTransform(cpsCtx).run(fun,args)
                 case Assign(left,right) =>
-                   print(s"Assign detected, left=${left}, right=${right}")
                    AssignTransform(cpsCtx).run(left,right)
                 case lambda@Lambda(params, body) =>
-                   print(s"Lambda detected, params=${params}, body=${body}")
                    LambdaTreeTransform.run(cpsCtx,lambda,params,body)
                 case Block(prevs,last) =>
                    BlockTransform(cpsCtx).run(prevs,last)
@@ -97,6 +102,8 @@ object Async {
                    NewTransform(cpsCtx).run(typeTree)
                 case thisTerm@This(qual) =>
                    ThisTransform(cpsCtx).run(thisTerm)
+                case matchTerm@Match(scrutinee, caseDefs) =>
+                   MatchTreeTransform.run(cpsCtx, matchTerm)
                 case selectTerm: Select =>
                    SelectTreeTransform.run(cpsCtx, selectTerm)
                 case Inlined(call,bindings,body) =>

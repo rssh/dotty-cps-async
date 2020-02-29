@@ -25,10 +25,6 @@ trait ApplyTreeTransform[F[_]]:
           // check - maybe this is await
           obj match {
             case Ident(name) if (name=="await") =>
-                   println(s"await detected, obj.tpe=${obj.tpe}")
-                   println(s"obj.symbol=${obj.symbol}")
-                   println(s"targs = ${targs}")
-                   println(s"targs.length = ${targs.length}")
                    if ( obj.symbol == awaitSymbol ) 
                      if (targs.head.tpe =:= monadTypeTree.tpe) 
                          // TODO: check, that args have one element
@@ -156,7 +152,7 @@ trait ApplyTreeTransform[F[_]]:
            e match
               case e1: ApplyArgTermRecord =>
                   if (e.useIdent) s.append(e1.valDefCpsExpr) else s
-              case _ =>
+              case null =>
                   // impossible: repeated inside repeated
                   throw MacroError("Impossible: repeated inside repeated",cpsCtx.patternCode)
        }

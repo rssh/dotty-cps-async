@@ -35,16 +35,18 @@ object ComputationBound {
    def pure[T](value:T): ComputationBound[T] = Done(value)
 
    def asyncCallback[A](source: (Try[A]=>Unit)=>Unit): ComputationBound[A] = {
-        val ref = new AtomicReference[Option[Try[A]]]()
+        val ref = new AtomicReference[Option[Try[A]]](None)
         source( r => {
           ref.set(Some(r))
-          externalAsyncNotifier.notify()
+          externalAsyncNotifier.synchronized{
+             externalAsyncNotifier.notify()
+          }
         } )
         Wait(ref, fromTry[A] _ )
    }
 
    def spawn[A](op: =>ComputationBound[A]):ComputationBound[A] = {
-        val ref = new AtomicReference[Option[Try[A]]]()
+        val ref = new AtomicReference[Option[Try[A]]](None)
         val waiter = Wait[A,A](ref, fromTry[A] _ )
         deferredQueue = deferredQueue.enqueue(Deferred(ref, Some(Thunk( () => op )) ))
         waiter
@@ -59,9 +61,9 @@ object ComputationBound {
    case class Deferred[A](ref: AtomicReference[Option[Try[A]]],
                      optComputations: Option[ComputationBound[A]])
    
-   private val externalAsyncNotifier = new { }
    private var deferredQueue: Queue[Deferred[?]] = Queue()
    private val waitQuant = (100 millis).toNanos
+   private val externalAsyncNotifier = new { }
 
    def  advanceDeferredQueue(endNanos: Long): Boolean = {
       var nFinished = 0
@@ -186,12 +188,13 @@ case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => Computa
        case Some(r) => op(r).progress(timeout)
        case None =>
          val beforeWait = Duration(System.nanoTime, NANOSECONDS)
-         val endTime = (beforeWait + timeout).toNanos
          if (timeout.isFinite) 
+            val endTime = (beforeWait + timeout).toNanos
             while(ref.get().isEmpty && ( System.nanoTime < endTime ) )
                ComputationBound.advanceDeferredQueue(endTime)
          else
             while(ref.get().isEmpty)
+               val endTime = System.nanoTime + 1000000
                ComputationBound.advanceDeferredQueue(endTime)
          ref.get.map{ r => 
              val afterWait = Duration(System.nanoTime, NANOSECONDS)

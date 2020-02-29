@@ -20,10 +20,8 @@ object AwaitTransform:
      import transformationContext._
      // TODO: think about situation, when ftType != tType.
      // [independend / translated ]
-     println(s"!!!: AwaitTransform, ft=${ft.show}")
      val awBuild = CpsExpr.async[F,S](asyncMonad, ft)
      //TODO: get data about independence and rewrite.
-     println(s"!!!: AwaitTransform retval, ${awBuild.transformed.show}")
      awBuild.asInstanceOf[CpsExpr[F,T]]
      
 

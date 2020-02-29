@@ -14,7 +14,6 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
   // case Assign(left,right) 
   def run(using qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsExpr[F,T] = 
      import qctx.tasty.{_, given _}
-     println(s"!!! assign detected : ${left} ${right}")
      left.seal match 
         case '{ $le: $lt } =>
             val cpsLeft = Async.rootTransform(le,asyncMonad,exprMarker+"L")
