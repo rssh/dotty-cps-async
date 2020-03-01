@@ -27,7 +27,7 @@ trait CpsTreeScope[F[_]] {
      def monadFlatMap(f: Term => Term, ntpe:Type): CpsTree
 
      /**
-      * type which is 'inside ' monad, i.e. T for F[T]
+      * type which is 'inside ' monad, i.e. T for F[T].
       **/
      def otpe: Type
 
@@ -48,7 +48,6 @@ trait CpsTreeScope[F[_]] {
     def impure(transformed:Term, tpe: Type): CpsTree = 
                    AwaitCpsTree(transformed, tpe)
 
-  
 
   case class PureCpsTree(origin: qctx.tasty.Term) extends CpsTree:
 
@@ -76,7 +75,6 @@ trait CpsTreeScope[F[_]] {
           val r = tpureTerm.appliedTo(origin)
           r
       
-       
 
   abstract class AsyncCpsTree extends CpsTree:
                       
@@ -172,6 +170,6 @@ trait CpsTreeScope[F[_]] {
 
 
   }
-                     
+
 
 }

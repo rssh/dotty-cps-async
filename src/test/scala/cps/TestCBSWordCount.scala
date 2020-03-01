@@ -14,7 +14,8 @@ object CBSWordCount1:
 
 /*
   def generate(line: String, channel:ASChannel[ComputationBound, CountSignal[String]]):ComputationBound[Unit] = 
-     implicit val printTree = cps.macroFlags.PrintTree
+     implicit val printCode = cps.macroFlags.PrintCode
+     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      async {
        val words = line.split(" ") 
        for(w <- words) {

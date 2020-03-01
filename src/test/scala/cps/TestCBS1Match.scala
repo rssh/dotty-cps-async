@@ -39,7 +39,7 @@ class TestBS1Match:
      assert(c.run() == Success(4))
 
   @Test def tMatchC1_11(): Unit = 
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      val c = async[ComputationBound]{
        await(T1.cbi(2)) match 
          case 1 => await(T1.cbi(4))

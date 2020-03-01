@@ -18,6 +18,8 @@ trait ApplyTreeTransform[F[_]]:
   def runApply(applyTerm: Term, 
               fun: Term, 
               args: List[Term]): CpsTree =
+     if (cpsCtx.flags.debugLevel >= 10)
+       println(s"runApply, appyTerm=${applyTerm}")
      val monad = cpsCtx.asyncMonad
      // try to omit things, which should be eta-expanded,
      fun match 
@@ -31,6 +33,9 @@ trait ApplyTreeTransform[F[_]]:
                         val awaitArg = args.head
                         runAwait(applyTerm, awaitArg)
                      else
+                        // not my await [?]
+                        if (cpsCtx.flags.debugLevel >= 10)
+                           println("Not-my-await") 
                         // ??  TODO: apply conversion if exists or touch unchanged
                         handleFunTypeApply(applyTerm,fun,args,obj,targs)
                    else
@@ -110,20 +115,6 @@ trait ApplyTreeTransform[F[_]]:
    * And we don't want to generate tree and then resu 
    *
   **/
-
-
-
-  def handleArgs(applyTerm: Term, cpsFun: CpsTree, args: List[Term]): CpsTree = 
-        // TODO: maybe handle repeated separately ??
-        val cpsArgs = args.map(x => runRoot(x))
-        val isArgsAsync = cpsArgs.exists(_.isAsync)
-        val isAsync = cpsFun.isAsync || isArgsAsync
-        if (!isAsync) 
-           CpsTree.pure(applyTerm)
-        else if (cpsFun.isAsync && !isArgsAsync) 
-           cpsFun.monadMap(x => Apply(x,args), applyTerm.tpe)
-        else 
-           throw MacroError("await inside args is not supported yet",cpsCtx.patternCode)
 
   sealed trait ApplyArgRecord:
     def term: Term
@@ -275,6 +266,11 @@ trait ApplyTreeTransform[F[_]]:
                                         ), 
                                         valDef
                                       )
+                  if (cpsCtx.flags.debugLevel > 15) {
+                       println(s"buildApplyArg, t=$t")
+                       println(s"buildApplyArg, unitBlockExpr=${unitBlockExpr.show}")
+                       println(s"buildApplyArg, valDefCpsExpr=${valDefCpsExpr}")
+                  }
                   ApplyArgTermRecord(t,unitBlockExpr,
                                      valDefCpsExpr, ident)
            }

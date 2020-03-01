@@ -14,15 +14,23 @@ trait LambdaTreeTransform[F[_]]:
   import qctx.tasty.{_, given _}
 
   def typeInMonad(tp:Type): Type =
-       AppliedType(cpsCtx.asyncMonad.unseal.tpe, List(tp))
+       AppliedType(fType.unseal.tpe, List(tp))
+
 
   // case lambdaTree @ Lambda(params,body) 
   def runLambda(lambdaTerm: Term, params: List[ValDef], expr: Term ): CpsTree =
+     if (cpsCtx.flags.debugLevel >= 10)
+       println(s"runLambda, lambdaTerm=$lambdaTerm")
+       println(s"runLambda, expr=$expr")
      val cpsBody = runRoot(expr)
-     if (cpsBody.isAsync) 
+     val retval = if (cpsBody.isAsync) 
+        // in general, shifted lambda 
         asyncBodyShiftedLambda(lambdaTerm, params, cpsBody)
      else
         CpsTree.pure(lambdaTerm)
+     if (cpsCtx.flags.debugLevel >= 10) {
+     }
+     retval
 
   def asyncBodyShiftedLambda(lambdaTerm: Term, params: List[ValDef], cpsBody: CpsTree): CpsTree =
      val paramNames = params.map(_.name)

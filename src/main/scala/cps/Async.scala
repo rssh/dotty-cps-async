@@ -69,9 +69,17 @@ object Async {
             throw MacroError(
                     s"AsyncMacroFlags ($flagsExpr) is not a compile-time value", flagsExpr )
       case None => 
-            val printTree = summonExpr[cps.macroFlags.PrintTree.type].isDefined
-            val printCode = summonExpr[cps.macroFlags.PrintCode.type].isDefined
-            AsyncMacroFlags(printCode,printTree,0)
+            import cps.macroFlags.{_, given _}
+            val printTree = summonExpr[PrintTree.type].isDefined
+            val printCode = summonExpr[PrintCode.type].isDefined
+            val debugLevel = summonExpr[DebugLevel] match
+                 case Some(expr) =>
+                   expr match
+                      case Value(v) => v.value
+                      case other  => 
+                          throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
+                 case None => 0
+            AsyncMacroFlags(printCode,printTree,debugLevel)
   
 
 
