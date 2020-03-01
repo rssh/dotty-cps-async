@@ -25,11 +25,12 @@ trait LambdaTreeTransform[F[_]]:
      val cpsBody = runRoot(expr)
      val retval = if (cpsBody.isAsync) 
         // in general, shifted lambda 
-        asyncBodyShiftedLambda(lambdaTerm, params, cpsBody)
+        if (cpsCtx.flags.allowShiftedLambda) 
+            asyncBodyShiftedLambda(lambdaTerm, params, cpsBody)
+        else
+            throw MacroError("await inside lambda functions without enclosing async block", lambdaTerm.seal)
      else
         CpsTree.pure(lambdaTerm)
-     if (cpsCtx.flags.debugLevel >= 10) {
-     }
      retval
 
   def asyncBodyShiftedLambda(lambdaTerm: Term, params: List[ValDef], cpsBody: CpsTree): CpsTree =

@@ -7,7 +7,8 @@ import scala.quoted.matching._
 case class AsyncMacroFlags(
    printCode: Boolean = false,
    printTree: Boolean = false,
-   debugLevel: Int = 0
+   debugLevel: Int = 0,
+   allowShiftedLambda: Boolean = false
 )
 
 given ValueOfExpr[AsyncMacroFlags]:
