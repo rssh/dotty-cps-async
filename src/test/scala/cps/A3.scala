@@ -26,7 +26,7 @@ object A3 {
 
   def aTransform[F[_]:Type,T:Type](e:Expr[T])(using qctx: QuoteContext):Expr[F[T]] = 
      // call mmTransform here
-     summonExpr[MM[F]] match 
+     Expr.summon[MM[F]] match 
          case Some(mme) =>  // we have Expr[MM[F]] here, need MM[F]
                          val mm: MM[F] = ???  //   staging not works inside macros.
                          mm.mmTransform(e) 

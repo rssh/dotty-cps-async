@@ -38,7 +38,7 @@ object Async {
     import qctx.tasty.{_,given _}
     val flags = adoptFlags(f)
     try
-      summonExpr[AsyncMonad[F]] match 
+      Expr.summon[AsyncMonad[F]] match 
         case Some(dm) => 
              if (flags.printCode)
                 println(s"before transformed: ${f.show}")
@@ -61,21 +61,21 @@ object Async {
 
   def adoptFlags(f: Expr[_])(using qctx: QuoteContext): AsyncMacroFlags = 
     import qctx.tasty.{_,given _}
-    summonExpr[AsyncMacroFlags] match
+    Expr.summon[AsyncMacroFlags] match
       case Some(flagsExpr) =>
         flagsExpr match
-          case Value(flags) => flags
+          case Unlifted(flags) => flags
           case _  => 
             throw MacroError(
                     s"AsyncMacroFlags ($flagsExpr) is not a compile-time value", flagsExpr )
       case None => 
             import cps.macroFlags.{_, given _}
-            val printTree = summonExpr[PrintTree.type].isDefined
-            val printCode = summonExpr[PrintCode.type].isDefined
-            val debugLevel = summonExpr[DebugLevel] match
+            val printTree = Expr.summon[PrintTree.type].isDefined
+            val printCode = Expr.summon[PrintCode.type].isDefined
+            val debugLevel = Expr.summon[DebugLevel] match
                  case Some(expr) =>
                    expr match
-                      case Value(v) => v.value
+                      case Unlifted(v) => v.value
                       case other  => 
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0

@@ -379,7 +379,7 @@ trait ApplyTreeTransform[F[_]]:
      }
 
   def findAsyncShift[E:quoted.Type](e:Expr[E]):Option[Expr[AsyncShift[E]]] =
-    summonExpr[AsyncShift[E]]
+    Expr.summon[AsyncShift[E]]
       
 
   def shiftedApply(term: Term, args: List[Term], shiftedIndexes:Set[Int]): Term =
