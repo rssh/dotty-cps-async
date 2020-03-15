@@ -35,11 +35,20 @@ trait CpsTreeScope[F[_]] {
        import cpsCtx._
        this match
          case syncTerm: PureCpsTree =>
-             val code = syncTerm.origin.seal.asInstanceOf[Expr[T]]
+             val code = safeSeal(syncTerm.origin).asInstanceOf[Expr[T]]
              CpsExpr.sync(asyncMonad,code)
          case cpsTree: AsyncCpsTree =>
-             val transformed = cpsTree.transformed.seal.asInstanceOf[Expr[F[T]]]
+             val transformed = safeSeal(cpsTree.transformed).asInstanceOf[Expr[F[T]]]
              CpsExpr.async[F,T](asyncMonad, transformed)
+
+     def safeSeal(t:Term): Expr[Any] =
+       t.tpe.widen match 
+         case _ : MethodType | _ : PolyType => 
+           val etaExpanded = t.etaExpand
+           etaExpanded.seal
+         case _ => t.seal
+            
+
 
   object CpsTree:
 

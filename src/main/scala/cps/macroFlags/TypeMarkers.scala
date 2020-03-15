@@ -8,15 +8,15 @@ object PrintTree
 
 case class DebugLevel(value: Int)
 
-given ValueOfExpr[DebugLevel]:
+given Unliftable[DebugLevel]:
    
    def apply(x: Expr[DebugLevel])(using qctx: QuoteContext): Option[DebugLevel] =
      import qctx.tasty.{ _, given _ }
-     println(s"ValueOfExpr[DebugLevel], x=${x.show}")
+     println(s"Unliftable[DebugLevel], x=${x.show}")
      x match 
-       case '{ DebugLevel(${Value(x)}) } =>
+       case '{ DebugLevel(${Unlifted(x)}) } =>
                  Some(DebugLevel(x))
-       case '{ new DebugLevel(${Value(x)}) } =>
+       case '{ new DebugLevel(${Unlifted(x)}) } =>
                  Some(DebugLevel(x))
        case other => 
           val sym = other.unseal.symbol

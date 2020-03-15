@@ -158,14 +158,14 @@ object ValDefTransform:
             val valDefExpr = Block(List(oldValDef),Literal(Constant(()))).seal
             valDefExpr match 
               case '{ val $v:$tv = $y } =>
-                 val name: String = v.name
+                 val name: String = v
                  '{ 
                    @showName(${Expr(name)})
                    val x:$tv = $y
                    ${substituteIdent(nextTerm,oldValDef.symbol,'x.unseal.asInstanceOf[Ident]).seal}
                   }.unseal
               case '{ var $x:$tx = $y } =>
-                  val name: String = x.name
+                  val name: String = x
                   '{ 
                     @showName(${Expr(name)})
                     var x:$tx = $y
@@ -184,7 +184,7 @@ object ValDefTransform:
                case Block(stats, expr) =>
                  Block(prev.map(_.unseal) ++: stats, expr)
                case other =>
-                 Block(prev.map(_.unseal).toList, other)
+                 Block(prev.toList.map(_.unseal) , other)
           }
      
 

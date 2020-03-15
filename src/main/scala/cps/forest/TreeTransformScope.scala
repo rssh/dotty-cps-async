@@ -14,6 +14,7 @@ trait TreeTransformScope[F[_]:Type]
                   with SelectTreeTransform[F]
                   with LambdaTreeTransform[F]
                   with MatchTreeTransform[F]
+                  with AsyncTreeShifter[F]
 {
 
    val cpsCtx: TransformationContext[F,?]
