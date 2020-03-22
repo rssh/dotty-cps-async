@@ -11,18 +11,18 @@ enum CountSignal[+T]:
 
 object CBSWordCount1:
 
-/*
-  def generate(line: String, channel:ASChannel[ComputationBound, CountSignal[String]]):ComputationBound[Unit] = 
+  def generate(line: String, channel:ASChannel[ComputationBound, CountSignal[String]]):ComputationBound[Unit] = {
      implicit val printCode = cps.macroFlags.PrintCode
      implicit val debugLevel = cps.macroFlags.DebugLevel(20)
-     async {
+     val r = async {
        val words = line.split(" ") 
        for(w <- words) {
          await(channel.write(CountSignal.Data(w)))
        }
        await(channel.write(CountSignal.Finish))
      }
-*/
+     r
+  }
 
   def accept(channel:ASChannel[ComputationBound, CountSignal[String]]): ComputationBound[Map[String,Int]] = async {
      var state: Map[String,Int] = Map.empty
@@ -46,14 +46,14 @@ class TestCBSWordCount:
 
   def qqq = ???
 
-/*
+
   @Test def tWordCount(): Unit = 
      val ch = new ASChannel[ComputationBound, CountSignal[String]]();
      val generator = ComputationBound.spawn(CBSWordCount1.generate("A A A",ch))
      val acceptor = CBSWordCount1.accept(ch)
      val c = acceptor.run()
      assert(c == Success(Map("A" -> 3)))
-*/
+
   
 
 

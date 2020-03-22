@@ -196,9 +196,8 @@ trait ApplyTreeTransform[F[_]]:
 
        def identArg: Term = 
          if (hasShiftedLambda || shifted) 
-            val paramNames = term match
-              case Lambda(params, body) =>
-                 params.map(_.name)
+            val params = term match
+              case Lambda(params, body) => params
               case _ =>
                  throw MacroError(s"Lambda expexted, we have ${term.seal.show}",term.seal)
             val mt = term.tpe match 
@@ -209,8 +208,7 @@ trait ApplyTreeTransform[F[_]]:
                       println("IsFunctionType!!!")
                       val paramTypes = tparams.dropRight(1).map(typeOrBoundsToType(_,false)) 
                       val resType = typeOrBoundsToType(tparams.last,true)
-                      val paramNames = term match 
-                         case Lambda(params,block) => params map (_.name)
+                      val paramNames = params.map(_.name)
                       shiftedMethodType(paramNames, paramTypes, resType)
                   } else {
                       throw MacroError(s"FunctionType expected, we have ${tp}", term.seal) 
@@ -222,13 +220,32 @@ trait ApplyTreeTransform[F[_]]:
                   println(s"term.body = ${term}") 
                   println(s"mt = ${other}") 
                   throw MacroError(s"methodType expected for ${term.seal.show}, we have $other",term.seal)
-            Lambda(mt, _ => cpsBody.transformed)
+            Lambda(mt, args => changeArgs(params,args,cpsBody.transformed))
          else 
             term
 
        def shift(): ApplyArgRecord = copy(shifted=true)
 
        def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] = a
+
+       private def changeArgs(params:List[ValDef], nParams:List[Tree], body: Term): Term =
+         val association: Map[Symbol, Tree] = (params zip nParams).foldLeft(Map.empty){
+           case (m, (oldParam, newParam)) => m.updated(oldParam.symbol, newParam)
+         }
+         val changes = new TreeMap() {
+             override def transformTerm(tree:Term)(using ctx: Context):Term =
+               tree match
+                 case ident@Ident(name) => association.get(ident.symbol) match
+                                            case Some(paramTree) =>
+                                              paramTree match 
+                                                case paramTerm: Term => paramTerm
+                                                case _ =>
+                                                 throw MacroError(s"term expected for lambda param, we ahave ${paramTree}",term.seal)
+                                            case None => super.transformTerm(tree)
+                 case _ => super.transformTerm(tree)
+         }
+         changes.transformTerm(body)
+         
   }
 
   def termIsNoOrderDepended(x:Term): Boolean =
@@ -405,19 +422,21 @@ trait ApplyTreeTransform[F[_]]:
           Select.unique(shiftQual(x.qualifier),x.name)
        
     def shiftCaller(term:Term): Term = 
+       val monad = cpsCtx.asyncMonad.unseal
        term match
           case TypeApply(s@Select(qual,name),targs) =>
                   val newSelect = shiftSelect(s)
-                  TypeApply(newSelect, fType.unseal::targs).appliedTo(qual)
+                  TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
           case s@Select(qual,name) =>
-                  TypeApply(shiftSelect(s), fType.unseal::Nil).appliedTo(qual)
+                  TypeApply(shiftSelect(s), fType.unseal::Nil).appliedTo(qual, monad)
           case TypeApply(x, targs) => 
                   TypeApply(shiftCaller(x),targs)
           case Lambda(params, body) =>
                   val shiftedSymbols = params.zipWithIndex.filter{ 
                       (p,i) => shiftedIndexes.contains(i)
                   }.map{ (p,i) => p.symbol }.toSet 
-                  asyncShift(body, shiftedSymbols)
+                  val nBody = asyncShift(body, shiftedSymbols)
+                  ???
           case Block(statements, last) =>
                   Block(statements, shiftCaller(last))
           case _ => 
