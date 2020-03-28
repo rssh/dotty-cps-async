@@ -1,5 +1,5 @@
 // CPS Transform for tasty block
-// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019
+// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020
 package cps.forest
 
 import scala.quoted._
@@ -33,7 +33,12 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                         Async.nestTransform(p, cpsCtx, i.toString)
                 case other =>
                         printf(other.show)
-                        throw MacroError(s"can't handle statement in block: $other",t.seal)
+                        throw MacroError(s"can't handle term in block: $other",t.seal)
+          case i:Import =>
+                   ImportTransform.fromBlock(using qctx)(cpsCtx.copy(exprMarker=exprMarker+"i"),i)
+          case other =>
+                printf(other.show)
+                throw MacroError(s"unknown tree type in block: $other",patternCode)
      }
      val rLast = Async.nestTransform(last.seal.asInstanceOf[Expr[T]],cpsCtx,"B")
      val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))

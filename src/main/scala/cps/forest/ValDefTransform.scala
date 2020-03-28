@@ -49,7 +49,7 @@ object ValDefTransform:
 
   class RhsFlatMappedCpsExpr[F[_]:Type, T:Type, V:Type](using qctx:QuoteContext)
                                      (monad: Expr[AsyncMonad[F]],
-                                      prev: Seq[Expr[_]],
+                                      prev: Seq[ExprTreeGen],
                                       oldValDef: qctx.tasty.ValDef,
                                       cpsRhs: CpsExpr[F,V],
                                       next: CpsExpr[F,T]
@@ -75,7 +75,7 @@ object ValDefTransform:
                           ${appendBlockExpr('v.unseal, next.transformed)}) 
              }
 
-       override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
+       override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
           RhsFlatMappedCpsExpr(using qctx)(monad, exprs ++: prev,oldValDef,cpsRhs,next)
 
 
@@ -109,7 +109,7 @@ object ValDefTransform:
 
   class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](using qctx: QuoteContext)(
                                       monad: Expr[AsyncMonad[F]],
-                                      prev: Seq[Expr[_]],
+                                      prev: Seq[ExprTreeGen],
                                       oldValDef: qctx.tasty.ValDef,
 				      next: CpsExpr[F,T] ) extends AsyncCpsExpr[F,T](monad,prev):
 
@@ -121,21 +121,17 @@ object ValDefTransform:
        override def transformed(using qctx: QuoteContext) = {
           import qctx.tasty.{_, given _}
 
-          // not worked due https://github.com/lampepfl/dotty/issues/8168
           val valDef = oldValDef.asInstanceOf[qctx.tasty.ValDef]
           val block = next.transformed.unseal match 
              case Block(stats, e) =>
-                 Block( prev.map(_.unseal) ++: valDef +: stats, e)
+                 Block( prev.map(_.extract) ++: valDef +: stats, e)
              case other =>
-                 Block( prev.map(_.unseal) ++: List(valDef) , other) 
+                 Block( prev.map(_.extract) ++: List(valDef) , other) 
           block.seal.asInstanceOf[Expr[F[T]]]
 
-          //val r = prependPrev(genBlock(oldValDef.asInstanceOf[qctx.tasty.ValDef], 
-          //                    next.transformed.unseal))
-          //r.seal.asInstanceOf[Expr[F[T]]]
        }
 
-       override def prependExprs(exprs: Seq[Expr[_]]): CpsExpr[F,T] =
+       override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
            ValWrappedCpsExpr[F,T,V](using qctx)(monad, exprs ++: prev, oldValDef, next)
 
        override def append[A:quoted.Type](e:CpsExpr[F,A])(using qctx: QuoteContext) = 
@@ -182,9 +178,9 @@ object ValDefTransform:
           } else {
              term match
                case Block(stats, expr) =>
-                 Block(prev.map(_.unseal) ++: stats, expr)
+                 Block(prev.map(_.extract) ++: stats, expr)
                case other =>
-                 Block(prev.toList.map(_.unseal) , other)
+                 Block(prev.toList.map(_.extract) , other)
           }
      
 
