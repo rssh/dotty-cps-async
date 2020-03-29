@@ -1,10 +1,12 @@
 package cps
 
-import scala.quoted._
-import scala.util.{Try,Success,Failure}
 import scala.concurrent.duration._
+import scala.quoted._
+import scala.language.postfixOps
+import scala.util.{Try,Success,Failure}
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
+
 
 trait ComputationBound[T] {
  

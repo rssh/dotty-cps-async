@@ -24,10 +24,10 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
               case v@ValDef(vName,vtt,optRhs) =>
                 ValDefTransform.fromBlock(using qctx)(cpsCtx.copy(exprMarker=exprMarker+i.toString), v)
               case _ =>
-                printf(d.show)
-                throw MacroError("definition is not supported inside block",patternCode)
+                DefCpsExpr(using qctx)(cpsCtx.asyncMonad,Seq(),d)
             } 
           case t: Term =>
+            // TODO: rootTransform
             t.seal match 
                 case '{ $p:$tp } =>
                         Async.nestTransform(p, cpsCtx, i.toString)
@@ -46,4 +46,21 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
      CpsExpr.wrap(blockResult)
   
 
+class DefCpsExpr[F[_]:Type](using qctx: QuoteContext)(
+                     monad: Expr[AsyncMonad[F]],
+                     prev: Seq[ExprTreeGen],
+                     definition: qctx.tasty.Definition) extends SyncCpsExpr[F, Unit](monad, prev) {
 
+  def last(using QuoteContext): Expr[Unit] = '{ () }
+
+  def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,Unit] =
+       if (exprs.isEmpty) 
+         this
+       else
+         new DefCpsExpr(using qctx)(monad,exprs ++: prev,definition)
+
+  def append[A:Type](chunk: CpsExpr[F,A])(using qctx: QuoteContext): CpsExpr[F,A] =
+       chunk.prependExprs(Seq(StatementExprTreeGen(using this.qctx)(definition))).prependExprs(prev)
+
+
+}

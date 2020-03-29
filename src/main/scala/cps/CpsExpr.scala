@@ -10,13 +10,9 @@ case class UnsealExprTreeGen[T](expr: Expr[T]) extends ExprTreeGen:
   def extract(using qctx:QuoteContext): qctx.tasty.Statement =
     expr.unseal
 
-case class StatementExprTreeGen(blockExpr: Expr[Unit]) extends ExprTreeGen:
+class StatementExprTreeGen(using qctx: QuoteContext)(stat: qctx.tasty.Statement) extends ExprTreeGen:
   def extract(using qctx:QuoteContext): qctx.tasty.Statement =
-    import qctx.tasty._
-    blockExpr.unseal match
-      case Block(statements, last) => 
-             if (statements == Nil) last else statements.head
-      case _ => throw MacroError("block expected", blockExpr)
+    stat.asInstanceOf[qctx.tasty.Statement]
 
 
 trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[ExprTreeGen]):
@@ -145,6 +141,9 @@ case class MappedCpsExpr[F[_]:Type, S:Type, T:Type](
                              '{ $monad.map(${point.transformed})($mapping) }
 
   override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
+        if (exprs.isEmpty)
+           this
+        else
            copy(prev = exprs ++: prev)
 
   override def map[A:Type](f: Expr[T => A])(using QuoteContext): CpsExpr[F,A] =
@@ -179,10 +178,16 @@ case class UnitCpsExpr[F[_]:Type](monad: Expr[AsyncMonad[F]],
        override def last(using QuoteContext): Expr[Unit] = '{()}
 
        override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,Unit] =
-          copy(prev = exprs ++: prev)
+          if (exprs.isEmpty)
+             this
+          else
+             copy(prev = exprs ++: prev)
 
        override def append[A:Type](e: CpsExpr[F,A])(using QuoteContext) = 
-           e
+           if (prev.isEmpty)
+             e
+           else
+             e.prependExprs(prev)
 
 
 object CpsExpr:

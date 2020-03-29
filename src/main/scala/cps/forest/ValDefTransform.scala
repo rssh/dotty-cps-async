@@ -76,7 +76,10 @@ object ValDefTransform:
              }
 
        override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
-          RhsFlatMappedCpsExpr(using qctx)(monad, exprs ++: prev,oldValDef,cpsRhs,next)
+          if (exprs.isEmpty) 
+             this
+          else
+             RhsFlatMappedCpsExpr(using qctx)(monad, exprs ++: prev,oldValDef,cpsRhs,next)
 
 
        override def append[A:quoted.Type](e: CpsExpr[F,A])(using qtcx: QuoteContext) = 
@@ -95,7 +98,7 @@ object ValDefTransform:
           val valDef = ValDef(oldValDef.symbol, Some(rhs)).asInstanceOf[qctx.tasty.ValDef]
           exprTerm match 
               case Block(stats,last) =>
-                     Block(valDef::stats, last)
+                    Block(valDef::stats, last)
               case other =>
                     Block(valDef::Nil,other)
 
@@ -132,7 +135,10 @@ object ValDefTransform:
        }
 
        override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
-           ValWrappedCpsExpr[F,T,V](using qctx)(monad, exprs ++: prev, oldValDef, next)
+          if (exprs.isEmpty)
+            this
+          else
+            ValWrappedCpsExpr[F,T,V](using qctx)(monad, exprs ++: prev, oldValDef, next)
 
        override def append[A:quoted.Type](e:CpsExpr[F,A])(using qctx: QuoteContext) = 
            ValWrappedCpsExpr(using qctx)(monad, prev, 
