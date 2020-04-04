@@ -22,8 +22,8 @@ trait SelectTreeTransform[F[_]]:
 object SelectTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
-                         selectTerm: qctx.tasty.Select): CpsExpr[F,T] = {
+  def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
+                         selectTerm: qctx1.tasty.Select): CpsExpr[F,T] = {
                          
      val tmpFType = summon[Type[F]]
      class Bridge(tc:TransformationContext[F,T]) extends
@@ -38,6 +38,6 @@ object SelectTreeTransform:
                         
 
      } 
-     (new Bridge(cpsCtx)).bridge()
+     (new Bridge(cpsCtx1)).bridge()
   }
 

@@ -121,7 +121,7 @@ implicit object ComputationBoundAsyncMonad extends AsyncMonad[ComputationBound] 
             case Failure(ex) => fx(ex)
        })
 
-   def withAction[A](fa:ComputationBound[A])(action: =>Unit):ComputationBound[A] = Thunk(() => {
+   override def withAction[A](fa:ComputationBound[A])(action: =>Unit):ComputationBound[A] = Thunk(() => {
          val r = fa.run()  
          action
          r match {

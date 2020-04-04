@@ -18,7 +18,15 @@ trait AsyncMonad[F[_]] {
 
    def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A]
 
-   def withAction[A](fa:F[A])(action: =>Unit):F[A]
+   def withAction[A](fa:F[A])(action: =>Unit):F[A] =
+      flatMap(fa){x => 
+        try{
+          action
+          pure(x)
+        }catch{
+          case ex: Throwable => error(ex)
+        }
+      }
 
    // TODO: not all interesting monads can adopt callback
 

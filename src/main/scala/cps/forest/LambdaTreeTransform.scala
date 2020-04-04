@@ -50,10 +50,10 @@ trait LambdaTreeTransform[F[_]]:
 object LambdaTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
-                         lambdaTerm: qctx.tasty.Term,
-                         params: List[qctx.tasty.ValDef],
-                         expr: qctx.tasty.Term): CpsExpr[F,T] = {
+  def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
+                         lambdaTerm: qctx1.tasty.Term,
+                         params: List[qctx1.tasty.ValDef],
+                         expr: qctx1.tasty.Term): CpsExpr[F,T] = {
                          
      val tmpFType = summon[Type[F]]
      class Bridge(tc:TransformationContext[F,T]) extends
@@ -70,7 +70,7 @@ object LambdaTreeTransform:
                         
 
      } 
-     (new Bridge(cpsCtx)).bridge()
+     (new Bridge(cpsCtx1)).bridge()
   }
 
 

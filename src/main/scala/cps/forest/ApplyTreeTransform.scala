@@ -463,12 +463,12 @@ trait ApplyTreeTransform[F[_]]:
 object ApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
-                         applyTerm: qctx.tasty.Term,
-                         fun: qctx.tasty.Term,
-                         args: List[qctx.tasty.Term]): CpsExpr[F,T] = {
+  def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
+                         applyTerm: qctx1.tasty.Term,
+                         fun: qctx1.tasty.Term,
+                         args: List[qctx1.tasty.Term]): CpsExpr[F,T] = {
      //val tmpCpsCtx = cpsCtx
-     val tmpQctx = qctx
+     val tmpQctx = qctx1
      val tmpFtype = summon[Type[F]]
      class Bridge(tc:TransformationContext[F,T]) extends TreeTransformScope[F]
                                                     with TreeTransformScopeInstance[F,T](tc) {
@@ -482,7 +482,7 @@ object ApplyTreeTransform:
                         ).toResult(cpsCtx.patternCode).asInstanceOf[CpsExpr[F,T]]
 
      }
-     (new Bridge(cpsCtx)).bridge()
+     (new Bridge(cpsCtx1)).bridge()
   }
 
 

@@ -23,10 +23,10 @@ trait TypeApplyTreeTransform[F[_]]:
 object TypeApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
-                         applyTerm: qctx.tasty.Term, 
-                         fun: qctx.tasty.Term, 
-                         targs: List[qctx.tasty.TypeTree]): CpsExpr[F,T] = {
+  def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
+                         applyTerm: qctx1.tasty.Term, 
+                         fun: qctx1.tasty.Term, 
+                         targs: List[qctx1.tasty.TypeTree]): CpsExpr[F,T] = {
      val tmpFType = summon[Type[F]]
      class Bridge(tc:TransformationContext[F,T]) extends
                                                     TreeTransformScope[F]
@@ -41,6 +41,6 @@ object TypeApplyTreeTransform:
                         ).toResult(cpsCtx.patternCode).asInstanceOf[CpsExpr[F,T]]
 
      } 
-     (new Bridge(cpsCtx)).bridge()
+     (new Bridge(cpsCtx1)).bridge()
   }
 

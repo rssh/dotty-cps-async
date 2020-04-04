@@ -42,8 +42,8 @@ trait MatchTreeTransform[F[_]]:
 object MatchTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx: QuoteContext)(cpsCtx: TransformationContext[F,T],
-                         matchTerm: qctx.tasty.Match): CpsExpr[F,T] = {
+  def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
+                         matchTerm: qctx1.tasty.Match): CpsExpr[F,T] = {
                          
      val tmpFType = summon[Type[F]]
      class Bridge(tc:TransformationContext[F,T]) extends
@@ -58,6 +58,6 @@ object MatchTreeTransform:
                         
 
      } 
-     (new Bridge(cpsCtx)).bridge()
+     (new Bridge(cpsCtx1)).bridge()
   }
 
