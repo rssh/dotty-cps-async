@@ -248,6 +248,21 @@ trait ApplyTreeTransform[F[_]]:
          
   }
 
+  case class ApplyArgNamedRecord(term: NamedArg, name: String, nested: ApplyArgRecord ) 
+     extends ApplyArgRecord {
+
+       def index: Int = nested.index
+
+       def hasShiftedLambda: Boolean = nested.hasShiftedLambda
+       def isAsync: Boolean = nested.isAsync
+       def noOrderDepended = nested.noOrderDepended
+       def identArg: Term = NamedArg(name, nested.identArg)
+       def shift(): ApplyArgRecord = copy(nested=nested.shift())
+       def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] = 
+                                                nested.append(a)
+
+  }
+
   def termIsNoOrderDepended(x:Term): Boolean =
     x match {
       case Literal(_) => true
@@ -331,10 +346,16 @@ trait ApplyTreeTransform[F[_]]:
   }
 
   def buildApplyArgsRecords(args: List[Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
-     import scala.internal.quoted.showName
-     import scala.quoted.QuoteContext
-     import scala.quoted.Expr
      args.zipWithIndex.map{ (t:Term, i:Int) =>
+       buildApplyArgRecord(t,i, cpsCtx)
+     }
+  }
+
+
+  def buildApplyArgRecord(t: Term,i: Int, cpsCtx: TransformationContext[F,?]): ApplyArgRecord = {
+       import scala.internal.quoted.showName
+       import scala.quoted.QuoteContext
+       import scala.quoted.Expr
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) => 
             ApplyArgRepeatRecord(r, i, buildApplyArgsRecords(rargs, cpsCtx.nestSame("r")) )
@@ -343,6 +364,8 @@ trait ApplyTreeTransform[F[_]]:
          case lambda@Lambda(params, body) => 
             val cpsBody = runRoot(body)
             ApplyArgLambdaRecord(lambda,i,cpsBody, false)
+         case namedArg@NamedArg(name, arg) =>
+            ApplyArgNamedRecord(namedArg, name, buildApplyArgRecord(arg,i,cpsCtx))
          case _ =>
             t.seal match {
               case '{ $x:$tx } =>
@@ -382,9 +405,10 @@ trait ApplyTreeTransform[F[_]]:
                   }
                   ApplyArgTermRecord(t,i, unitBlockExpr,
                                      valDefCpsExpr, ident)
-           }
-       }
-    }
+              case _ =>
+                  throw MacroError(s"Can't determinate type for argument $t",t.seal)
+            }
+      }
   }
 
   def haveAsyncLambdaInArgs(args:List[Term]):Boolean = 
