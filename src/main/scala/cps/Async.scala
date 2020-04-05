@@ -135,6 +135,8 @@ object Async {
                    SelectTreeTransform.run(cpsCtx, selectTerm)
                 case Inlined(call,bindings,body) =>
                    rootTransform(body.seal.asInstanceOf[Expr[T]],dm,flags,exprMarker,nesting+1)
+                case superTerm@Super(qual,mix) =>
+                   SuperTransform(cpsCtx).run(superTerm)
                 case _ =>
                    printf("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)

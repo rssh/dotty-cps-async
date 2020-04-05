@@ -15,6 +15,8 @@ object T1 {
 
   def cbBool(b:Boolean): ComputationBound[Boolean] = Done(b)
 
+  def cbs(s:String): ComputationBound[String] = Done(s)
+
 }
 
 
