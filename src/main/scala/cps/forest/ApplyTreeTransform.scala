@@ -79,9 +79,14 @@ trait ApplyTreeTransform[F[_]]:
 
 
   def handleFunSelect(applyTerm:Term, fun:Term, args:List[Term], obj:Term, method: String): CpsTree = 
+     if (cpsCtx.flags.debugLevel >= 10)
+       println( "runApply:handleFunSelect")
+       println(s"   obj=${obj}")
+       println(s"   method=${method}")
      val cpsObj = runRoot(obj)
      if (cpsObj.isAsync) 
-        handleArgs1(applyTerm, fun, cpsObj.applyTerm(x => Select(x,fun.symbol), fun.tpe), args)
+        //handleArgs1(applyTerm, fun, cpsObj.applyTerm(x => Select(x,fun.symbol), fun.tpe), args)
+        handleArgs1(applyTerm, fun, cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe), args)
      else
         handleArgs1(applyTerm, fun, CpsTree.pure(fun), args)
    

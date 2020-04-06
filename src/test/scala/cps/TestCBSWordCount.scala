@@ -12,7 +12,7 @@ enum CountSignal[+T]:
 object CBSWordCount1:
 
   def generate(line: String, channel:ASChannel[ComputationBound, CountSignal[String]]):ComputationBound[Unit] = {
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val r = async {
        val words = line.split(" ") 
