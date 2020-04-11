@@ -145,38 +145,7 @@ object ValDefTransform:
                                          oldValDef.asInstanceOf[qctx.tasty.ValDef], 
                                          next.append(e))
 
-       def genBlock(using qctx:QuoteContext)(oldValDef: qctx.tasty.ValDef, nextTerm: qctx.tasty.Term): qctx.tasty.Term =
-            import qctx.tasty.{_, given _}
-            import scala.internal.quoted.showName
-            import scala.quoted.QuoteContext
-            import scala.quoted.Expr
-
-            // workarrround against https://github.com/lampepfl/dotty/issues/8045
-            def substituteIdent(nextTerm: Term, v: Symbol, newIdent:Ident):Term =
-                  TransformUtil.substituteIdent(nextTerm,v,newIdent)
-
-            // TODO: add to scala Reflection ValDefOps something like isVal
-            // for now - use quote matching to determinate
-            val valDefExpr = Block(List(oldValDef),Literal(Constant(()))).seal
-            valDefExpr match 
-              case '{ val $v:$tv = $y } =>
-                 val name: String = v
-                 '{ 
-                   @showName(${Expr(name)})
-                   val x:$tv = $y
-                   ${substituteIdent(nextTerm,oldValDef.symbol,'x.unseal.asInstanceOf[Ident]).seal}
-                  }.unseal
-              case '{ var $x:$tx = $y } =>
-                  val name: String = x
-                  '{ 
-                    @showName(${Expr(name)})
-                    var x:$tx = $y
-                    ${substituteIdent(nextTerm,oldValDef.symbol,'x.unseal.asInstanceOf[Ident]).seal}
-                   }.unseal
-              case other =>
-                   throw MacroError(s"Invalid ValDef $oldValDef", valDefExpr) 
-                
-
+       
        def prependPrev(using qctx:QuoteContext)(term: qctx.tasty.Term): qctx.tasty.Term =
           import qctx.tasty.{_, given _}
           if (prev.isEmpty) {
