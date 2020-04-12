@@ -84,7 +84,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                                       'r.unseal
                                                ).seal.asInstanceOf[Expr[F[T]]]
                                          }}
-                                      ).transformed }
+                                      ).transformed  }
                                  }).transformed
                            )
      }

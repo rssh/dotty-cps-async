@@ -50,6 +50,7 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[ExprTreeGen
 
 
 
+
 abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[AsyncMonad[F]],
                                       prev: Seq[ExprTreeGen]) extends CpsExpr[F,T](dm, prev):
  
@@ -88,10 +89,11 @@ case class GenericSyncCpsExpr[F[_]:Type,T:Type](
 
        override def flatMap[A:Type](f: Expr[T => F[A]])(using QuoteContext): CpsExpr[F,A] =
             GenericAsyncCpsExpr[F,A](dm, prev, '{ $dm.flatMap($dm.pure($last))($f) } ) 
-                           
+                         
 
        override def flatMapIgnore[A:Type](t: Expr[F[A]])(using QuoteContext): CpsExpr[F,A] =
             GenericAsyncCpsExpr(dm, prev, '{ ${dm}.flatMap($dm.pure($last))(_ => $t) } )
+
                          
            
 
@@ -112,7 +114,9 @@ abstract class AsyncCpsExpr[F[_]:Type,T:Type](
 case class GenericAsyncCpsExpr[F[_]:Type,T:Type](
                             dm: Expr[AsyncMonad[F]],
                             prev: Seq[ExprTreeGen],
-                            fLastExpr: Expr[F[T]]) extends AsyncCpsExpr[F,T](dm, prev) {
+                            fLastExpr: Expr[F[T]]
+                            ) extends AsyncCpsExpr[F,T](dm, prev) {
+                                                           
 
     override def fLast(using QuoteContext): Expr[F[T]] = fLastExpr
 
@@ -134,7 +138,8 @@ case class MappedCpsExpr[F[_]:Type, S:Type, T:Type](
                               monad: Expr[AsyncMonad[F]],
                               prev: Seq[ExprTreeGen],
                               point: CpsExpr[F,S],
-                              mapping: Expr[S=>T]) extends AsyncCpsExpr[F,T](monad, prev) {
+                              mapping: Expr[S=>T]
+                              ) extends AsyncCpsExpr[F,T](monad, prev) {
 
 
   override def fLast(using QuoteContext): Expr[F[T]] =
@@ -147,7 +152,7 @@ case class MappedCpsExpr[F[_]:Type, S:Type, T:Type](
            copy(prev = exprs ++: prev)
 
   override def map[A:Type](f: Expr[T => A])(using QuoteContext): CpsExpr[F,A] =
-      MappedCpsExpr[F,S,A](monad,prev,point, '{ x => $f($mapping(x)) } )
+      MappedCpsExpr[F,S,A](monad,prev,point, '{ x => $f($mapping(x)) })
 
   override def flatMap[A:Type](f: Expr[T => F[A]])(using QuoteContext): CpsExpr[F,A] =
       FlatMappedCpsExpr[F,S,A](monad, prev, point,
