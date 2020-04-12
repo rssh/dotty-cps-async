@@ -37,15 +37,15 @@ trait ApplyTreeTransform[F[_]]:
                         if (cpsCtx.flags.debugLevel >= 10)
                            println("Not-my-await") 
                         // ??  TODO: apply conversion if exists or touch unchanged
-                        handleFunTypeApply(applyTerm,fun,args,obj,targs)
+                        handleFunTypeAwaitApply(applyTerm,fun,args,obj,targs)
                    else
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
             case Select(obj1, name) if (name=="await") =>
-                   if ( obj1.symbol == awaitSymbol ) 
+                   if ( obj.symbol == awaitSymbol ) 
                      if (targs.head.tpe =:= monadTypeTree.tpe) 
                         runAwait(applyTerm, args.head)
                      else
-                        handleFunTypeApply(applyTerm,fun,args,obj,targs)
+                        handleFunTypeAwaitApply(applyTerm,fun,args,obj,targs)
                    else
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
             case _ => handleFunTypeApply(applyTerm, fun, args, obj, targs)
@@ -57,16 +57,45 @@ trait ApplyTreeTransform[F[_]]:
        case _ =>
             handleFun(applyTerm, fun, args)
 
+  def handleFunTypeAwaitApply(applyTerm: Term, 
+                              awaitFun:Term, 
+                              args: List[Term], 
+                              obj:Term, targs:List[TypeTree]): CpsTree =
+      if (cpsCtx.flags.debugLevel >= 10)
+        println( "runApply:handleFunTypeAwaitApply")
+      if (targs.head.tpe =:= monadTypeTree.tpe) 
+         if (cpsCtx.flags.debugLevel >= 10)
+            println( "our monad")
+         runAwait(applyTerm, args.head)
+      else
+         println(s"targs.head.tpe=${targs.head.tpe.show}")
+         println(s"monadTypeTree.tpe = ${monadTypeTree.tpe}")
+         throw MacroError("Interpplation of await between ${targs.head.tpe} and ${monadTypeTree.tpe} is not supported yet", cpsCtx.patternCode )
+         
+
       
   def handleFunTypeApply(applyTerm: Term, 
                          fun:Term, 
                          args: List[Term], 
                          obj:Term, targs:List[TypeTree]): CpsTree =
+     if (cpsCtx.flags.debugLevel >= 10)
+       println( "runApply:handleFunTypeApply")
+       println(s"obj=${obj}")
+       println(s"targs=${targs}")
      obj match {
         case Select(obj1,method) =>
           val cpsObj1 = runRoot(obj1)
           if (cpsObj1.isAsync) 
-              val cpsObj = cpsObj1.applyTerm(x => TypeApply(Select(x,obj1.symbol),targs), fun.tpe)
+              if (cpsCtx.flags.debugLevel >= 10)
+                  println(s"obj1=${obj1}")
+                  println(s"obj1.symbol=${obj1.symbol}")
+                  println(s"fun=${fun}")
+                  println(s"args=${args}")
+              val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
+              if (cpsCtx.flags.debugLevel >= 10)
+                  println(s"cpsObj1=${cpsObj1}")
+                  println(s"cpsObj=${cpsObj}")
+              //val cpsObj = cpsObj1.applyTerm(x => TypeApply(Select(x,obj1.symbol),targs), fun.tpe)
               handleArgs1(applyTerm, fun, cpsObj, args)
           else 
               handleArgs1(applyTerm, fun, CpsTree.pure(fun), args)
@@ -85,7 +114,6 @@ trait ApplyTreeTransform[F[_]]:
        println(s"   method=${method}")
      val cpsObj = runRoot(obj)
      if (cpsObj.isAsync) 
-        //handleArgs1(applyTerm, fun, cpsObj.applyTerm(x => Select(x,fun.symbol), fun.tpe), args)
         handleArgs1(applyTerm, fun, cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe), args)
      else
         handleArgs1(applyTerm, fun, CpsTree.pure(fun), args)
