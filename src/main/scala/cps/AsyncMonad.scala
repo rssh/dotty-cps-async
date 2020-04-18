@@ -14,7 +14,8 @@ trait CpsMonad[F[_]] {
 
 }
 
-trait AsyncMonad[F[_]] extends CpsMonad[F] {
+
+trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
    // TODO: not all interesting monads can handle error
    def error[A](e: Throwable): F[A]
@@ -31,7 +32,10 @@ trait AsyncMonad[F[_]] extends CpsMonad[F] {
         }
       }
 
-   // TODO: not all interesting monads can adopt callback
+}
+
+
+trait AsyncMonad[F[_]] extends CpsTryMonad[F] {
 
    /**
     * return a future, which will be completed after callback will-be
