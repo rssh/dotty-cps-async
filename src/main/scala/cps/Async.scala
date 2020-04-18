@@ -136,7 +136,6 @@ object Async {
                 //   SelectOuter ? //TreeTransform.run(cpsCtx, selectTerm)
                 case inlinedTerm@ Inlined(call,bindings,body) =>
                    InlinedTransform(cpsCtx).run(inlinedTerm)
-                   //rootTransform(body.seal.asInstanceOf[Expr[T]],dm,flags,exprMarker,nesting+1)
                 case superTerm@Super(qual,mix) =>
                    SuperTransform(cpsCtx).run(superTerm)
                 case returnTerm@Return(expr)=>
