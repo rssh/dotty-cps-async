@@ -10,7 +10,6 @@ import cps.misc._
 object ValDefTransform:
 
 
-
   def fromBlock[F[_]:Type,T:Type](using qctx:QuoteContext)(cpsCtx: TransformationContext[F,T],
                            valDef: qctx.tasty.ValDef): CpsExpr[F,Unit] = {
      import qctx.tasty.{_, given _}
@@ -48,7 +47,7 @@ object ValDefTransform:
 
 
   class RhsFlatMappedCpsExpr[F[_]:Type, T:Type, V:Type](using qctx:QuoteContext)
-                                     (monad: Expr[AsyncMonad[F]],
+                                     (monad: Expr[CpsMonad[F]],
                                       prev: Seq[ExprTreeGen],
                                       oldValDef: qctx.tasty.ValDef,
                                       cpsRhs: CpsExpr[F,V],
@@ -111,7 +110,7 @@ object ValDefTransform:
   }
 
   class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](using qctx: QuoteContext)(
-                                      monad: Expr[AsyncMonad[F]],
+                                      monad: Expr[CpsMonad[F]],
                                       prev: Seq[ExprTreeGen],
                                       oldValDef: qctx.tasty.ValDef,
                                       next: CpsExpr[F,T] ) extends AsyncCpsExpr[F,T](monad,prev):

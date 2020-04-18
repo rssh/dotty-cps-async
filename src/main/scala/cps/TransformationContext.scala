@@ -7,7 +7,7 @@ import scala.quoted.matching._
 case class TransformationContext[F[_],T](
    patternCode: Expr[T],  // code, for which we build pattern expression
    patternType: Type[T],
-   monad: Expr[AsyncMonad[F]],
+   monad: Expr[CpsMonad[F]],
    flags: AsyncMacroFlags,
    exprMarker: String,
    nesting: Int

@@ -14,19 +14,19 @@ import cps.misc._
 @compileTimeOnly("await should be inside async block")
 def await[F[_],T](f:F[T]):T = ???
 
-inline def async[F[_]](using am:AsyncMonad[F]): Async.InferAsyncArg[F] =
+inline def async[F[_]](using am:CpsMonad[F]): Async.InferAsyncArg[F] =
    new Async.InferAsyncArg[F]
 
 object Async {
 
-  class InferAsyncArg[F[_]](using am:AsyncMonad[F]) {
+  class InferAsyncArg[F[_]](using am:CpsMonad[F]) {
 
        inline def apply[T](inline expr: T):F[T] =
             transform[F,T](expr)
 
   }
 
-  inline def async[F[_]](using am:AsyncMonad[F]): InferAsyncArg[F] =
+  inline def async[F[_]](using am:CpsMonad[F]): InferAsyncArg[F] =
           new InferAsyncArg[F]
 
   inline def transform[F[_], T](inline expr: T): F[T] =
@@ -38,7 +38,7 @@ object Async {
     import qctx.tasty.{_,given _}
     val flags = adoptFlags(f)
     try
-      Expr.summon[AsyncMonad[F]] match 
+      Expr.summon[CpsMonad[F]] match 
         case Some(dm) => 
              if (flags.printCode)
                 println(s"before transformed: ${f.show}")
@@ -83,7 +83,7 @@ object Async {
   
 
 
-  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[AsyncMonad[F]], 
+  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]], 
                                       flags: AsyncMacroFlags,
                                       exprMarker: String, nesting: Int)(
                                            using qctx: QuoteContext): CpsExpr[F,T] =

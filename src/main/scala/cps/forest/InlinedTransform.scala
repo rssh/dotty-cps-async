@@ -24,7 +24,7 @@ class InlinedTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
   
 
 class InlinedCpsExpr[F[_]:Type,T:Type](using qctx0: QuoteContext)(
-                     monad: Expr[AsyncMonad[F]],
+                     monad: Expr[CpsMonad[F]],
                      prev: Seq[ExprTreeGen],
                      oldInlined: qctx0.tasty.Inlined,
                      nested: CpsExpr[F,T]) extends CpsExpr[F, T](monad, prev) {

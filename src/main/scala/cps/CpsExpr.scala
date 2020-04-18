@@ -15,7 +15,7 @@ class StatementExprTreeGen(using qctx: QuoteContext)(stat: qctx.tasty.Statement)
     stat.asInstanceOf[qctx.tasty.Statement]
 
 
-trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[ExprTreeGen]):
+trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen]):
 
   def isAsync: Boolean
 
@@ -34,7 +34,8 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[ExprTreeGen
 
   def syncOrigin(using QuoteContext): Option[Expr[T]]  
   
-  def asyncMonad: Expr[AsyncMonad[F]] = monad
+  @Deprecated("use monad instead")
+  def asyncMonad: Expr[CpsMonad[F]] = monad
 
   //def pure[A:Type](t: Expr[A])(using QuoteContext): CpsExpr[F,A] = 
   //                     CpsExpr.sync(monad, t)
@@ -51,7 +52,7 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[AsyncMonad[F]], prev: Seq[ExprTreeGen
 
 
 
-abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[AsyncMonad[F]],
+abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[CpsMonad[F]],
                                       prev: Seq[ExprTreeGen]) extends CpsExpr[F,T](dm, prev):
  
      override def isAsync = false
@@ -71,7 +72,7 @@ abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[AsyncMonad[F]],
                   
 
 case class GenericSyncCpsExpr[F[_]:Type,T:Type](
-                             dm: Expr[AsyncMonad[F]],
+                             dm: Expr[CpsMonad[F]],
                              prev: Seq[ExprTreeGen],
                              lastExpr: Expr[T]) extends SyncCpsExpr[F,T](dm, prev):
 
@@ -98,7 +99,7 @@ case class GenericSyncCpsExpr[F[_]:Type,T:Type](
            
 
 abstract class AsyncCpsExpr[F[_]:Type,T:Type](
-                              dm: Expr[AsyncMonad[F]],
+                              dm: Expr[CpsMonad[F]],
                               prev: Seq[ExprTreeGen]
                             ) extends CpsExpr[F,T](dm, prev):
 
@@ -112,7 +113,7 @@ abstract class AsyncCpsExpr[F[_]:Type,T:Type](
 
 
 case class GenericAsyncCpsExpr[F[_]:Type,T:Type](
-                            dm: Expr[AsyncMonad[F]],
+                            dm: Expr[CpsMonad[F]],
                             prev: Seq[ExprTreeGen],
                             fLastExpr: Expr[F[T]]
                             ) extends AsyncCpsExpr[F,T](dm, prev) {
@@ -135,7 +136,7 @@ case class GenericAsyncCpsExpr[F[_]:Type,T:Type](
 }
 
 case class MappedCpsExpr[F[_]:Type, S:Type, T:Type](
-                              monad: Expr[AsyncMonad[F]],
+                              monad: Expr[CpsMonad[F]],
                               prev: Seq[ExprTreeGen],
                               point: CpsExpr[F,S],
                               mapping: Expr[S=>T]
@@ -162,7 +163,7 @@ case class MappedCpsExpr[F[_]:Type, S:Type, T:Type](
 }
 
 case class FlatMappedCpsExpr[F[_]:Type, S:Type, T:Type](
-                              monad: Expr[AsyncMonad[F]],
+                              monad: Expr[CpsMonad[F]],
                               prev: Seq[ExprTreeGen],
                               point: CpsExpr[F,S],
                               mapping: Expr[S => F[T]]
@@ -177,7 +178,7 @@ case class FlatMappedCpsExpr[F[_]:Type, S:Type, T:Type](
 
 
 
-case class UnitCpsExpr[F[_]:Type](monad: Expr[AsyncMonad[F]],
+case class UnitCpsExpr[F[_]:Type](monad: Expr[CpsMonad[F]],
                                   prev: Seq[ExprTreeGen])(using QuoteContext) extends SyncCpsExpr[F,Unit](monad,prev):
 
        override def last(using QuoteContext): Expr[Unit] = '{()}
@@ -197,13 +198,13 @@ case class UnitCpsExpr[F[_]:Type](monad: Expr[AsyncMonad[F]],
 
 object CpsExpr:
 
-   def sync[F[_]:Type,T:Type](dm: Expr[AsyncMonad[F]], f: Expr[T]): CpsExpr[F,T] =
+   def sync[F[_]:Type,T:Type](dm: Expr[CpsMonad[F]], f: Expr[T]): CpsExpr[F,T] =
      GenericSyncCpsExpr[F,T](dm, Seq(), f) 
          
-   def async[F[_]:Type,T:Type](dm: Expr[AsyncMonad[F]], f: Expr[F[T]]): CpsExpr[F,T] = 
+   def async[F[_]:Type,T:Type](dm: Expr[CpsMonad[F]], f: Expr[F[T]]): CpsExpr[F,T] = 
      GenericAsyncCpsExpr[F,T](dm, Seq(), f) 
 
-   def unit[F[_]:Type](dm: Expr[AsyncMonad[F]])(using QuoteContext) =
+   def unit[F[_]:Type](dm: Expr[CpsMonad[F]])(using QuoteContext) =
      UnitCpsExpr[F](dm, Seq())  //  GenericSyncCpsExpr[F,Unit](dm, Seq(), '{}) 
 
    def wrap[F[_]:Type, T:Type](internal:CpsExpr[F,T])(using QuoteContext): CpsExpr[F,T] =

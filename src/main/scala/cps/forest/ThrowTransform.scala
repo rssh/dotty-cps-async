@@ -4,6 +4,7 @@ import scala.quoted._
 import scala.quoted.matching._
 
 import cps._
+import cps.misc._
  
 object ThrowTransform:
 
@@ -20,12 +21,14 @@ object ThrowTransform:
      import cpsCtx._
      val cpsEx = Async.nestTransform(ex, cpsCtx, "E")
 
-     if (!cpsEx.isAsync)
+     if (cpsCtx.monad.unseal.tpe <:< '[CpsTryMonad[F]].unseal.tpe)
+       val errorMonad = monad.asInstanceOf[Expr[CpsTryMonad[F]]]
+       if (!cpsEx.isAsync)
             // TODO: think, mb leave as is...
-            CpsExpr.async[F,T](monad,  '{  ${monad}.error(${ex}) })
-                                        
-     else  
+            CpsExpr.async[F,T](monad,  '{  ${errorMonad}.error(${ex}) })
+       else  
             CpsExpr.async[F,T](monad,
-                cpsEx.flatMap[T]( '{ (ex:S) => ${monad}.error(ex) } ).transformed )
-     
+                cpsEx.flatMap[T]( '{ (ex:S) => ${errorMonad}.error(ex) } ).transformed )
+     else
+       throw MacroError("this monad not support try/catch",patternCode) 
 

@@ -34,9 +34,16 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
         val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs.toList).seal} }
         restoreExpr.asInstanceOf[Expr[Throwable => F[T]]]
 
+     
+
      val builder = if (!isAsync) {
                       CpsExpr.sync(monad, patternCode) 
                    } else {
+                      val errorMonad = if (monad.unseal.tpe <:< '[CpsTryMonad[F]].unseal.tpe) {
+                                          monad.asInstanceOf[Expr[CpsTryMonad[F]]]
+                                      } else {
+                                          throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)
+                                      }
                       optCpsFinalizer match 
                         case None =>
                            if (cpsCaseDefs.isEmpty) 
@@ -44,7 +51,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                            else 
                              CpsExpr.async[F,T](cpsCtx.monad,
                                '{
-                                 ${cpsCtx.monad}.restore(
+                                 ${errorMonad}.restore(
                                    ${cpsBody.transformed}
                                    )(${makeRestoreExpr()})
                                })
@@ -52,15 +59,15 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                            if (cpsCaseDefs.isEmpty) 
                              CpsExpr.async[F,T](cpsCtx.monad,
                                '{
-                                  ${cpsCtx.monad}.withAction(
+                                  ${errorMonad}.withAction(
                                     ${cpsBody.transformed}
                                   )(${cpsFinalizer.transformed})
                                })
                            else
                              CpsExpr.async[F,T](cpsCtx.monad,
                                  '{
-                                   ${cpsCtx.monad}.withAction(
-                                    ${cpsCtx.monad}.restore(
+                                   ${errorMonad}.withAction(
+                                    ${errorMonad}.restore(
                                      ${cpsBody.transformed}
                                     )(${makeRestoreExpr()})
                                    )(${cpsFinalizer.transformed})

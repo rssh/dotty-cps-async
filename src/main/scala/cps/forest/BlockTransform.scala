@@ -52,7 +52,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
   
 
 class DefCpsExpr[F[_]:Type](using qctx: QuoteContext)(
-                     monad: Expr[AsyncMonad[F]],
+                     monad: Expr[CpsMonad[F]],
                      prev: Seq[ExprTreeGen],
                      definition: qctx.tasty.Definition) extends SyncCpsExpr[F, Unit](monad, prev) {
 
