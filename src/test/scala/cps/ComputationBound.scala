@@ -102,7 +102,7 @@ object ComputationBound {
 
 }
 
-implicit object ComputationBoundAsyncMonad extends AsyncMonad[ComputationBound] {
+implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBound] {
 
    def pure[T](value:T): ComputationBound[T] = ComputationBound.pure(value)
 

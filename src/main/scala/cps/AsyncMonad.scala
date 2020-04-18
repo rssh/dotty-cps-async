@@ -35,7 +35,7 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 }
 
 
-trait AsyncMonad[F[_]] extends CpsTryMonad[F] {
+trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
    /**
     * return a future, which will be completed after callback will-be

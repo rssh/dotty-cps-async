@@ -6,7 +6,7 @@ import scala.util.Success
 import scala.util.Failure
 import scala.concurrent.duration._
 
-class ASChannel[F[_]:AsyncMonad,A]
+class ASChannel[F[_]:CpsAsyncMonad,A]
 {
 
    private var readers: Queue[A => F[Unit]] = Queue()
@@ -19,7 +19,7 @@ class ASChannel[F[_]:AsyncMonad,A]
                 writers = nWriters;
                 writer(())
         case None =>
-                val m = summon[AsyncMonad[F]]
+                val m = summon[CpsAsyncMonad[F]]
                 m.adoptCallbackStyle[A]( callback =>
                     readers = readers.enqueue(x => m.pure(callback(Success(x))))
                 )
@@ -31,7 +31,7 @@ class ASChannel[F[_]:AsyncMonad,A]
                    readers = nReaders;
                    reader(a)
         case None =>
-                val m = summon[AsyncMonad[F]]
+                val m = summon[CpsAsyncMonad[F]]
                 m.adoptCallbackStyle[Unit]( callback =>
                     writers = writers.enqueue(
                                    x => m.pure{callback(Success(())); a} )

@@ -8,7 +8,7 @@ import scala.collection.mutable.ArrayBuilder
 class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
 
   // TODO: think about default semantics for foreach.
-  def foreach[F[_],U](arrayOps: ArrayOps[A], monad: AsyncMonad[F])(f: A => F[U]): F[Unit] = {
+  def foreach[F[_],U](arrayOps: ArrayOps[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] = {
      var r:F[Unit] = monad.pure(())
      arrayOps.foreach{ a =>
        val b = f(a)
@@ -17,7 +17,7 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
      r
   }
 
-  def map[F[_]:AsyncMonad,B:ClassTag](arr: ArrayOps[A], monad: AsyncMonad[F])(f: A=> F[B]):F[Array[B]] = {
+  def map[F[_]:CpsMonad,B:ClassTag](arr: ArrayOps[A], monad: CpsMonad[F])(f: A=> F[B]):F[Array[B]] = {
      val mappedArr = arr.map(f)
      val r = new Array[B](arr.knownSize)
      val fu = mappedArr.zipWithIndex.foldLeft(monad.pure(())){
@@ -27,7 +27,7 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
      monad.map(fu)(_ => r)
   }
 
-  def flatMap[F[_]:AsyncMonad,B:ClassTag](arr: ArrayOps[A], monad: AsyncMonad[F])(f: A=> F[IterableOnce[B]]):F[Array[B]] = {
+  def flatMap[F[_]:CpsMonad,B:ClassTag](arr: ArrayOps[A], monad: CpsMonad[F])(f: A=> F[IterableOnce[B]]):F[Array[B]] = {
      val b = monad.pure(ArrayBuilder.make[B])
      monad.map(
       arr.foldLeft(b)((s,e) => 
