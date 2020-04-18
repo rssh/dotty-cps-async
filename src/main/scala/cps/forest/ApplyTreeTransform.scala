@@ -40,6 +40,9 @@ trait ApplyTreeTransform[F[_]]:
                         handleFunTypeAwaitApply(applyTerm,fun,args,obj,targs)
                    else
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
+            case SelectOuter(obj1, name, levels)  =>
+                     println("select-outer launched")
+                     ???
             case Select(obj1, name) if (name=="await") =>
                    if ( obj.symbol == awaitSymbol ) 
                      if (targs.head.tpe =:= monadTypeTree.tpe) 
@@ -50,6 +53,9 @@ trait ApplyTreeTransform[F[_]]:
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
             case _ => handleFunTypeApply(applyTerm, fun, args, obj, targs)
           }
+       case SelectOuter(obj,level, tpe) =>
+            println("!!!! - SelectOuter catched")
+            ???
        case Select(obj,method) =>
             handleFunSelect(applyTerm, fun, args, obj, method)
        case Ident(name) =>
@@ -86,16 +92,7 @@ trait ApplyTreeTransform[F[_]]:
         case Select(obj1,method) =>
           val cpsObj1 = runRoot(obj1)
           if (cpsObj1.isAsync) 
-              if (cpsCtx.flags.debugLevel >= 10)
-                  println(s"obj1=${obj1}")
-                  println(s"obj1.symbol=${obj1.symbol}")
-                  println(s"fun=${fun}")
-                  println(s"args=${args}")
               val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
-              if (cpsCtx.flags.debugLevel >= 10)
-                  println(s"cpsObj1=${cpsObj1}")
-                  println(s"cpsObj=${cpsObj}")
-              //val cpsObj = cpsObj1.applyTerm(x => TypeApply(Select(x,obj1.symbol),targs), fun.tpe)
               handleArgs1(applyTerm, fun, cpsObj, args)
           else 
               handleArgs1(applyTerm, fun, CpsTree.pure(fun), args)

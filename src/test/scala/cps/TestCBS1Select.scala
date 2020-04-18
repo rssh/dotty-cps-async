@@ -6,6 +6,19 @@ import org.junit.Assert._
 import scala.quoted._
 import scala.util.Success
 
+class SelectOuterC1 {
+
+  def f(): Int = 2;
+
+  class InnerC2 {
+
+    inline def g(): Int = f() + 1
+
+    inline def gi(): ComputationBound[Int] = T1.cbi(f())
+
+  }
+
+}
 
 class TestCBS1Select:
 
@@ -42,7 +55,7 @@ class TestCBS1Select:
      assert(c2.run() == Success(2))
 
 
-  @Test def sel_out_0(): Unit = 
+  @Test def sel_o_0(): Unit = 
      object O1 {
           val k: Int = 3
           object O2 {
@@ -54,4 +67,24 @@ class TestCBS1Select:
      val c = O1.O2.q
      assert(c.run().isSuccess)
 
+  @Test def sel_outer_0(): Unit = 
+      //implicit val printCode = cps.macroFlags.PrintCode
+      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+      val c = async{
+                val c1 = new SelectOuterC1()
+                val c2 = new c1.InnerC2()
+                c2.g()
+              }
+      assert(c.run() == Success(3))
+
+  @Test def sel_outer_1(): Unit = 
+      //implicit val printCode = cps.macroFlags.PrintCode
+      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+      val c = async{
+                val c1 = new SelectOuterC1()
+                val c2 = new c1.InnerC2()
+                await(c2.gi()) + c2.g()
+              }
+      println("c=="+c)
+      assert(c.run() == Success(5))
 

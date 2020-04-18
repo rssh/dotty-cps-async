@@ -17,7 +17,12 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
   def run(using qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
      val tType = implicitly[Type[T]]
      import qctx.tasty.{_, given _}
+     if (cpsCtx.flags.debugLevel > 10)
+        println(s"!!!Block-transform, prevs = $prevs")
+        println(s"!!!Block-transform, last = $last")
      val rPrevs = prevs.zipWithIndex.map{ (p,i) =>
+        if (cpsCtx.flags.debugLevel > 10)
+           println(s"!!!Block-transform, i=$i, p=$p")
         p match
           case d: Definition =>
             d match {
