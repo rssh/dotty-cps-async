@@ -13,6 +13,6 @@ object ConstTransform:
   //(see rootTransform)
   def apply[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])(
                                            using qctx: QuoteContext): CpsExpr[F,T] =
-     CpsExpr.sync(cpsCtx.asyncMonad, cpsCtx.patternCode) 
+     CpsExpr.sync(cpsCtx.monad, cpsCtx.patternCode) 
 
 

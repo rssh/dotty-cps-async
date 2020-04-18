@@ -28,9 +28,9 @@ object WhileTransform:
      val unitBuilder = {
        if (!cpsCond.isAsync)
          if (!cpsRepeat.isAsync) 
-            CpsExpr.sync(asyncMonad, patternCode)
+            CpsExpr.sync(monad, patternCode)
          else
-            CpsExpr.async[F,Unit](asyncMonad,
+            CpsExpr.async[F,Unit](monad,
                // TODO: add name to whileFun ?
                '{
                  def _whilefun(): F[Unit] = {
@@ -39,13 +39,13 @@ object WhileTransform:
                           '{ _whilefun() }
                       ).transformed}
                    else
-                     ${asyncMonad}.pure(())
+                     ${monad}.pure(())
                  }
                  _whilefun()
                })
        else // (cpsCond.isAsync) 
          if (!cpsRepeat.isAsync) {
-            CpsExpr.async[F,Unit](asyncMonad,
+            CpsExpr.async[F,Unit](monad,
                '{
                  def _whilefun(): F[Unit] = {
                    ${cpsCond.flatMap[Unit]( '{ c =>
@@ -53,7 +53,7 @@ object WhileTransform:
                          $repeat 
                          _whilefun()
                        } else {
-                         ${asyncMonad}.pure(())
+                         ${monad}.pure(())
                        }
                     }
                    ).transformed}
@@ -61,7 +61,7 @@ object WhileTransform:
                  _whilefun()
                })
          } else {
-            CpsExpr.async[F,Unit](asyncMonad,
+            CpsExpr.async[F,Unit](monad,
                '{
                  def _whilefun(): F[Unit] = {
                    ${cpsCond.flatMap[Unit]('{ (c: Boolean) =>
@@ -70,7 +70,7 @@ object WhileTransform:
                              '{ _whilefun() }
                           ).transformed}
                        } else {
-                         ${asyncMonad}.pure(())
+                         ${monad}.pure(())
                        }
                     }).transformed 
                    }

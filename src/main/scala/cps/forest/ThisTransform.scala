@@ -11,6 +11,6 @@ class ThisTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
   import cpsCtx._
 
   def run(using qctx: QuoteContext)(thisTerm: qctx.tasty.This): CpsExpr[F,T] =
-     CpsExpr.sync(asyncMonad, patternCode)
+     CpsExpr.sync(monad, patternCode)
 
   

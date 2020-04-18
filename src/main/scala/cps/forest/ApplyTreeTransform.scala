@@ -20,7 +20,7 @@ trait ApplyTreeTransform[F[_]]:
               args: List[Term]): CpsTree =
      if (cpsCtx.flags.debugLevel >= 10)
        println(s"runApply, appyTerm=${applyTerm}")
-     val monad = cpsCtx.asyncMonad
+     val monad = cpsCtx.monad
      // try to omit things, which should be eta-expanded,
      fun match 
        case TypeApply(obj,targs) =>
@@ -176,7 +176,7 @@ trait ApplyTreeTransform[F[_]]:
     override def noOrderDepended = elements.forall(_.noOrderDepended)
     override def shift() = copy(elements = elements.map(_.shift()))
     override def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] =
-       val s0: CpsExpr[F,_] = CpsExpr.unit(cpsCtx.asyncMonad)
+       val s0: CpsExpr[F,_] = CpsExpr.unit(cpsCtx.monad)
        val r = elements.foldLeft(s0){(s,e) => 
            e match
               case e1: ApplyArgTermRecord =>
@@ -421,7 +421,7 @@ trait ApplyTreeTransform[F[_]]:
                                         TransformationContext(
                                           unitBlockExpr,
                                           quoted.Type.UnitTag,
-                                          cpsCtx.asyncMonad,
+                                          cpsCtx.monad,
                                           cpsCtx.flags,
                                           cpsCtx.exprMarker + argName, 
                                           cpsCtx.nesting + 1
@@ -476,7 +476,7 @@ trait ApplyTreeTransform[F[_]]:
           Select.unique(shiftQual(x.qualifier),x.name)
        
     def shiftCaller(term:Term): Term = 
-       val monad = cpsCtx.asyncMonad.unseal
+       val monad = cpsCtx.monad.unseal
        term match
           case TypeApply(s@Select(qual,name),targs) =>
                   val newSelect = shiftSelect(s)

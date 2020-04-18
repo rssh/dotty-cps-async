@@ -22,10 +22,10 @@ object ThrowTransform:
 
      if (!cpsEx.isAsync)
             // TODO: think, mb leave as is...
-            CpsExpr.async[F,T](asyncMonad,
-                                          '{  ${asyncMonad}.error(${ex}) })
+            CpsExpr.async[F,T](monad,  '{  ${monad}.error(${ex}) })
+                                        
      else  
-            CpsExpr.async[F,T](asyncMonad,
-                cpsEx.flatMap[T]( '{ (ex:S) => ${asyncMonad}.error(ex) } ).transformed )
+            CpsExpr.async[F,T](monad,
+                cpsEx.flatMap[T]( '{ (ex:S) => ${monad}.error(ex) } ).transformed )
      
 

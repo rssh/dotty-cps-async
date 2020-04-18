@@ -36,10 +36,10 @@ trait CpsTreeScope[F[_]] {
        this match
          case syncTerm: PureCpsTree =>
              val code = safeSeal(syncTerm.origin).asInstanceOf[Expr[T]]
-             CpsExpr.sync(asyncMonad,code)
+             CpsExpr.sync(monad,code)
          case cpsTree: AsyncCpsTree =>
              val transformed = safeSeal(cpsTree.transformed).asInstanceOf[Expr[F[T]]]
-             CpsExpr.async[F,T](asyncMonad, transformed)
+             CpsExpr.async[F,T](monad, transformed)
 
      def safeSeal(t:Term): Expr[Any] =
        t.tpe.widen match 
@@ -79,7 +79,7 @@ trait CpsTreeScope[F[_]] {
     def otpe: Type = origin.tpe
 
     def transformed: Term = 
-          val untpureTerm = cpsCtx.asyncMonad.unseal.select(pureSymbol)
+          val untpureTerm = cpsCtx.monad.unseal.select(pureSymbol)
           val tpureTerm = untpureTerm.appliedToType(otpe)
           val r = tpureTerm.appliedTo(origin)
           r
@@ -120,7 +120,7 @@ trait CpsTreeScope[F[_]] {
 
     def transformed: Term = {
           val prevType = prev.otpe
-          val untmapTerm = cpsCtx.asyncMonad.unseal.select(mapSymbol)
+          val untmapTerm = cpsCtx.monad.unseal.select(mapSymbol)
           val tmapTerm = untmapTerm.appliedToTypes(List(prev.otpe,otpe))
           val r = tmapTerm.appliedToArgss(
                      List(List(prev.transformed),
@@ -133,7 +133,7 @@ trait CpsTreeScope[F[_]] {
                      )
           )
           //val r = '{
-          //   ${cpsCtx.asyncMonad}.map(${prev.transformed.seal.asInstanceOf[F[T]]})(
+          //   ${cpsCtx.monad}.map(${prev.transformed.seal.asInstanceOf[F[T]]})(
           //             (x:${prev.seal}) => ${op('x)}
           //   )
           //}.unseal
@@ -158,8 +158,8 @@ trait CpsTreeScope[F[_]] {
           FlatMappedCpsTree(this,f,ntpe)
 
     def transformed: Term = {
-        // ${cpsCtx.asyncMonad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
-        val monad = cpsCtx.asyncMonad.unseal
+        // ${cpsCtx.monad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
+        val monad = cpsCtx.monad.unseal
         val untpFlatMapTerm = monad.select(flatMapSymbol)
         val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(prev.otpe,otpe))
         val r = tpFlatMapTerm.appliedToArgss(

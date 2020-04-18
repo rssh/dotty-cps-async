@@ -29,7 +29,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
               case v@ValDef(vName,vtt,optRhs) =>
                 ValDefTransform.fromBlock(using qctx)(cpsCtx.copy(exprMarker=exprMarker+i.toString), v)
               case _ =>
-                DefCpsExpr(using qctx)(cpsCtx.asyncMonad,Seq(),d)
+                DefCpsExpr(using qctx)(cpsCtx.monad,Seq(),d)
             } 
           case t: Term =>
             // TODO: rootTransform

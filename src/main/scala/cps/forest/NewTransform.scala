@@ -12,7 +12,7 @@ class NewTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   // case Apply(fun,args) 
   def run(using qctx: QuoteContext)(tp: qctx.tasty.TypeTree): CpsExpr[F,T] =
-     CpsExpr.sync(asyncMonad, patternCode)
+     CpsExpr.sync(monad, patternCode)
 
   
 

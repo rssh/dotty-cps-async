@@ -13,7 +13,7 @@ class IdentTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
   def run(using qctx: QuoteContext)(name: String): CpsExpr[F,T] =
      import qctx.tasty.{_, given _}
      import cpsCtx._
-     CpsExpr.sync(asyncMonad, patternCode) 
+     CpsExpr.sync(monad, patternCode) 
   
   
 

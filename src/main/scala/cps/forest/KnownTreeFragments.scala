@@ -14,7 +14,7 @@ trait KnownTreeFragments[F[_]]:
   import qctx.tasty.{_, given _}
 
   lazy val awaitPure = TransformUtil.skipInlined(
-                         '{ _root_.cps.await[F,Int](${cpsCtx.asyncMonad}.pure(3)) }.unseal)
+                         '{ _root_.cps.await[F,Int](${cpsCtx.monad}.pure(3)) }.unseal)
 
   lazy val awaitSymbol = TransformUtil.find(awaitPure,
                            { case v@Select(x,m) if m == "await" => Some(v)
@@ -36,7 +36,7 @@ trait KnownTreeFragments[F[_]]:
 
   lazy val mapSymbol = {
         val mapTmpl = TransformUtil.skipInlined(
-                          '{ ${cpsCtx.asyncMonad}.map(${cpsCtx.asyncMonad}.pure(3))(_ + 1)  }
+                          '{ ${cpsCtx.monad}.map(${cpsCtx.monad}.pure(3))(_ + 1)  }
                          .unseal)
 
         TransformUtil.find(mapTmpl,
@@ -48,8 +48,8 @@ trait KnownTreeFragments[F[_]]:
 
   lazy val flatMapSymbol = {
         val flatMapTmpl = TransformUtil.skipInlined(
-                          '{ ${cpsCtx.asyncMonad}.flatMap(${cpsCtx.asyncMonad}.pure(3))( x =>
-                                                                ${cpsCtx.asyncMonad}.pure(1 + x))  }
+                          '{ ${cpsCtx.monad}.flatMap(${cpsCtx.monad}.pure(3))( x =>
+                                                                ${cpsCtx.monad}.pure(1 + x))  }
                          .unseal)
      
         TransformUtil.find(flatMapTmpl,

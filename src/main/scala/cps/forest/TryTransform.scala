@@ -35,32 +35,32 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
         restoreExpr.asInstanceOf[Expr[Throwable => F[T]]]
 
      val builder = if (!isAsync) {
-                      CpsExpr.sync(asyncMonad, patternCode) 
+                      CpsExpr.sync(monad, patternCode) 
                    } else {
                       optCpsFinalizer match 
                         case None =>
                            if (cpsCaseDefs.isEmpty) 
                              cpsBody
                            else 
-                             CpsExpr.async[F,T](cpsCtx.asyncMonad,
+                             CpsExpr.async[F,T](cpsCtx.monad,
                                '{
-                                 ${cpsCtx.asyncMonad}.restore(
+                                 ${cpsCtx.monad}.restore(
                                    ${cpsBody.transformed}
                                    )(${makeRestoreExpr()})
                                })
                         case Some(cpsFinalizer) =>
                            if (cpsCaseDefs.isEmpty) 
-                             CpsExpr.async[F,T](cpsCtx.asyncMonad,
+                             CpsExpr.async[F,T](cpsCtx.monad,
                                '{
-                                  ${cpsCtx.asyncMonad}.withAction(
+                                  ${cpsCtx.monad}.withAction(
                                     ${cpsBody.transformed}
                                   )(${cpsFinalizer.transformed})
                                })
                            else
-                             CpsExpr.async[F,T](cpsCtx.asyncMonad,
+                             CpsExpr.async[F,T](cpsCtx.monad,
                                  '{
-                                   ${cpsCtx.asyncMonad}.withAction(
-                                    ${cpsCtx.asyncMonad}.restore(
+                                   ${cpsCtx.monad}.withAction(
+                                    ${cpsCtx.monad}.restore(
                                      ${cpsBody.transformed}
                                     )(${makeRestoreExpr()})
                                    )(${cpsFinalizer.transformed})

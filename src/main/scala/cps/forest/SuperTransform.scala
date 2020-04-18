@@ -11,6 +11,6 @@ class SuperTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
   import cpsCtx._
 
   def run(using qctx: QuoteContext)(superTerm: qctx.tasty.Super): CpsExpr[F,T] =
-     CpsExpr.sync(asyncMonad, patternCode)
+     CpsExpr.sync(monad, patternCode)
 
   

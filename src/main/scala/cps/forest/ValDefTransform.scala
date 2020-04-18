@@ -31,13 +31,13 @@ object ValDefTransform:
                if (cpsCtx.flags.debugLevel > 15) {
                   println(s"rightPart is async")
                }
-               RhsFlatMappedCpsExpr(using qctx)(asyncMonad, Seq(),
-                                                valDef, cpsRight, CpsExpr.unit(asyncMonad) )
+               RhsFlatMappedCpsExpr(using qctx)(monad, Seq(),
+                                                valDef, cpsRight, CpsExpr.unit(monad) )
             } else {
                if (cpsCtx.flags.debugLevel > 15) 
                  println(s"rightPart is no async, cpsRight.transformed=${cpsRight.transformed.show}")
-               ValWrappedCpsExpr(using qctx)(asyncMonad, Seq(), valDef, 
-                                                CpsExpr.unit(asyncMonad) )
+               ValWrappedCpsExpr(using qctx)(monad, Seq(), valDef, 
+                                                CpsExpr.unit(monad) )
             }
         case other =>
             throw MacroError(s"Can't concretize type of right-part $rhs ", posExpr)

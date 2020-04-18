@@ -16,11 +16,11 @@ class InlinedTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
   // case Inlined(call, binding, expansion)
   def run(using qctx: QuoteContext)(inlinedTerm: qctx.tasty.Inlined): CpsExpr[F,T] =
     val bodyExpr = inlinedTerm.body.seal.asInstanceOf[Expr[T]]
-    val nested = Async.rootTransform(bodyExpr,asyncMonad,flags,exprMarker,nesting+1)
+    val nested = Async.rootTransform(bodyExpr,monad,flags,exprMarker,nesting+1)
     if (inlinedTerm.bindings.isEmpty)
       nested
     else
-      InlinedCpsExpr(using qctx)(asyncMonad, Seq(), inlinedTerm, nested)
+      InlinedCpsExpr(using qctx)(monad, Seq(), inlinedTerm, nested)
   
 
 class InlinedCpsExpr[F[_]:Type,T:Type](using qctx0: QuoteContext)(

@@ -26,7 +26,7 @@ trait RootTreeTransform[F[_]]:
                 runRootUneta(term)
        case _ =>
                 val expr = term.seal
-                val monad = cpsCtx.asyncMonad
+                val monad = cpsCtx.monad
                 expr match {
                   case '{ $e: $et } =>
                      val rCpsExpr = Async.nestTransform(e, cpsCtx, "_")
@@ -44,7 +44,7 @@ trait RootTreeTransform[F[_]]:
   def runRootUneta(term: qctx.tasty.Term): CpsTree = {
      if (cpsCtx.flags.debugLevel >= 10)
         println(s"runRootUneta, term=$term")
-     val monad = cpsCtx.asyncMonad
+     val monad = cpsCtx.monad
      term match {
        case Select(qual, name) =>
            runRoot(qual) match 

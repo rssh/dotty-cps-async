@@ -27,9 +27,9 @@ object IfTransform:
        if (!cR.isAsync)
          if (!tR.isAsync && !fR.isAsync) 
             isAsync = false
-            CpsExpr.sync(asyncMonad, patternCode)
+            CpsExpr.sync(monad, patternCode)
          else
-            CpsExpr.async[F,T](asyncMonad,
+            CpsExpr.async[F,T](monad,
                 '{ if ($cond) 
                      ${tR.transformed}
                    else 
@@ -37,8 +37,8 @@ object IfTransform:
        else // (cR.isAsync) 
          def condAsyncExpr() = cR.transformed
          if (!tR.isAsync && !fR.isAsync) 
-           CpsExpr.async[F,T](asyncMonad,
-                    '{ ${asyncMonad}.map(
+           CpsExpr.async[F,T](monad,
+                    '{ ${monad}.map(
                                  ${condAsyncExpr()}
                         )( c =>
                                    if (c) {
@@ -48,8 +48,8 @@ object IfTransform:
                                    } 
                      )})
          else
-           CpsExpr.async[F,T](asyncMonad,
-                   '{ ${asyncMonad}.flatMap(
+           CpsExpr.async[F,T](monad,
+                   '{ ${monad}.flatMap(
                          ${condAsyncExpr()}
                        )( c =>
                            if (c) {

@@ -20,7 +20,7 @@ object AwaitTransform:
      import cpsCtx._
      if (cpsCtx.flags.debugLevel >= 10)
         println(s"AwaitTransform, ft=${ft.show}")
-     val awBuild = CpsExpr.async[F,S](asyncMonad, ft)
+     val awBuild = CpsExpr.async[F,S](monad, ft)
      //TODO: get data about independence and rewrite.
      awBuild.asInstanceOf[CpsExpr[F,T]]
      

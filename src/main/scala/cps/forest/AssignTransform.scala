@@ -44,9 +44,9 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import qctx.tasty.{_, given _}
      if (!cpsLeft.isAsync) {
         if (!cpsRight.isAsync) 
-            CpsExpr.sync(asyncMonad, patternCode)
+            CpsExpr.sync(monad, patternCode)
         else    // !cpsLeft.isAsync && cpsRight.isAsync
-            CpsExpr.async(asyncMonad,
+            CpsExpr.async(monad,
                    cpsRight.map[T]( 
                          '{ (x:R) => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]] } 
                           }).transformed )
@@ -70,13 +70,13 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
              cpsLu: CpsExpr[F,LU]): CpsExpr[F,T] =
      import qctx.tasty.{_, given _}
      if (!cpsRight.isAsync) {
-          CpsExpr.async[F,T](asyncMonad,
+          CpsExpr.async[F,T](monad,
                cpsLu.map[T]('{ x => 
                     ${Assign('x.unseal.select(left.symbol), right).seal.
                                           asInstanceOf[Expr[T]] } }).transformed
          )
      } else {
-         CpsExpr.async[F,T](asyncMonad,
+         CpsExpr.async[F,T](monad,
                cpsLu.flatMap[T]('{ l =>
                                      ${cpsRight.flatMap[T]( 
                                         '{ r => ${
