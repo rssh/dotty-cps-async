@@ -4,14 +4,17 @@ import scala.quoted._
 import scala.util.Try
 import scala.concurrent.duration._
 
-
-trait AsyncMonad[F[_]] {
+trait CpsMonad[F[_]] {
 
    def pure[T](t:T):F[T]
 
    def map[A,B](fa:F[A])(f: A=>B):F[B]
 
    def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B]
+
+}
+
+trait AsyncMonad[F[_]] extends CpsMonad[F] {
 
    // TODO: not all interesting monads can handle error
    def error[A](e: Throwable): F[A]

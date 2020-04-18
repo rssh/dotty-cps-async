@@ -26,12 +26,18 @@ implicit val dmCB: DM[CB] = new DM[CB] {
 
 object A {
 
-  inline def transform[F[_]:DM,T](expr: =>T): F[T] =
-       ??? //A.transformImpl('expr)
+  inline def transform[F[_]:DM:Type,T:Type](inline expr: T): F[T] =
+   ???
+   /*
+      error here: https://github.com/lampepfl/dotty/issues/7839
+     ${
+         A.transformImpl( 'expr )
+      }
+   */
 
   def transformImpl[F[_]:DM,T:Type](f: Expr[T])(using QuoteContext):Expr[F[T]] = 
     f match 
-      case Const(t) => implicitly[DM[F]].pure(f)
+      case Const(t) => summon[DM[F]].pure(f)
       case _ => print(f)
          throw new IllegalStateException("language construction is not supported")
 
@@ -40,10 +46,14 @@ object A {
 
 class TestBS2:
 
-  @Ignore
+  def qqq: Int = 2
+
+ /*
+  // testcase is submitted to dotty
   @Test def tConstant(): Unit = {
      val c = A.transform[CB,Int](3)
      assert(c == Done(3))
   }
+ */
   
 
