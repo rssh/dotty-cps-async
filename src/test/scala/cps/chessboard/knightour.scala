@@ -28,7 +28,24 @@ object Tour {
      trace: List[Point]
    )
 
-   def nextMoves(state: State):List[State] = ???
+   val knight = Chessman(Figure.Knight,Color.White)
+
+   def nextMoves(state: State):List[State] = 
+        def inStep(sx:Int,sy:Int):List[State] =
+           for
+              dx <- List(-sx,sx) 
+              x = state.currentPoint.x + dx  
+              if (x >= 0 && x < Chessboard.size)
+              dy <- List(-sy,sy)
+              y = state.currentPoint.y + dy  
+              if (y >= 0 && y < Chessboard.size)
+              nextBoard <- state.board.put(x,y,knight).toList
+           yield
+              state.copy(
+                board = nextBoard,
+                trace = Point(x,y)::state.trace 
+              )
+        inStep(2,1) ++ inStep(1,2)
        
 
    def findPath(initPos:Point, state: State): List[State] = 
