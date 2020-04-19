@@ -19,7 +19,7 @@ trait LambdaTreeTransform[F[_]]:
   // case lambdaTree @ Lambda(params,body) 
   def runLambda(lambdaTerm: Term, params: List[ValDef], expr: Term ): CpsTree =
      if (cpsCtx.flags.debugLevel >= 10)
-       println(s"runLambda, lambdaTerm=$lambdaTerm")
+       println(s"runLambda, lambda=${lambdaTerm.seal.show}")
        println(s"runLambda, expr=$expr")
      val cpsBody = runRoot(expr)
      val retval = if (cpsBody.isAsync) 

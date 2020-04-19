@@ -293,6 +293,28 @@ trait ApplyTreeTransform[F[_]]:
 
   }
 
+  case class ApplyArgInlinedRecord(origin: Inlined, nested: ApplyArgRecord ) 
+     extends ApplyArgRecord {
+       def index: Int = nested.index
+
+       def term: Term =
+             Inlined(origin.call, origin.bindings, nested.term)
+
+       def hasShiftedLambda: Boolean = nested.hasShiftedLambda
+       def isAsync: Boolean = nested.isAsync
+       def noOrderDepended = nested.noOrderDepended
+       def identArg: Term = nested.identArg
+       def shift(): ApplyArgRecord = copy(nested=nested.shift())
+       def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] = 
+             val na = nested.append(a)
+             if (na eq a) {
+                na
+             } else {
+                InlinedCpsExpr(using qctx)(cpsCtx.monad,Seq(),origin,na)
+             }
+
+  }
+
   def termIsNoOrderDepended(x:Term): Boolean =
     x match {
       case Literal(_) => true
@@ -386,16 +408,28 @@ trait ApplyTreeTransform[F[_]]:
        import scala.internal.quoted.showName
        import scala.quoted.QuoteContext
        import scala.quoted.Expr
+       if cpsCtx.flags.debugLevel >= 15 then
+          println(s"buildApplyArgRecord: i=$i, t=$t")
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) => 
             ApplyArgRepeatRecord(r, i, buildApplyArgsRecords(rargs, cpsCtx.nestSame("r")) )
          case r@Repeated(rargs, tpt) => 
             ApplyArgRepeatRecord(r, i, buildApplyArgsRecords(rargs, cpsCtx.nestSame("r")) )
          case lambda@Lambda(params, body) => 
+            // mb, this will not work, for expressions, which return block.
+            //  look's like somewhere in future, better add 'shifted' case to CpsExpr
             val cpsBody = runRoot(body)
             ApplyArgLambdaRecord(lambda,i,cpsBody, false)
          case namedArg@NamedArg(name, arg) =>
             ApplyArgNamedRecord(namedArg, name, buildApplyArgRecord(arg,i,cpsCtx))
+         case Block(Nil,last) => 
+            buildApplyArgRecord(last,i,cpsCtx)
+         case inlined@Inlined(call,bindings,body) => 
+            val nested = buildApplyArgRecord(body,i,cpsCtx)
+            if (bindings.isEmpty)
+               nested
+            else
+               ApplyArgInlinedRecord(inlined, nested)
          case _ =>
             t.seal match {
               case '{ $x:$tx } =>
@@ -429,7 +463,7 @@ trait ApplyTreeTransform[F[_]]:
                                         valDef
                                       )
                   if (cpsCtx.flags.debugLevel > 15) {
-                       println(s"buildApplyArg, t=$t")
+                       println(s"buildApplyArg, t=$t, i=$i")
                        println(s"buildApplyArg, unitBlockExpr=${unitBlockExpr.show}")
                        println(s"buildApplyArg, valDefCpsExpr=${valDefCpsExpr}")
                   }
@@ -471,8 +505,8 @@ trait ApplyTreeTransform[F[_]]:
     //    in qualifier
     def shiftSelect(x:Select):Select = 
           val sq = shiftQual(x.qualifier)
-          println("sq=$sq")
-          println("name=$x.name")
+          println(s"sq=$sq")
+          println(s"name=$x.name")
           Select.unique(shiftQual(x.qualifier),x.name)
        
     def shiftCaller(term:Term): Term = 

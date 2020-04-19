@@ -14,9 +14,9 @@ trait RootTreeTransform[F[_]]:
   import qctx.tasty.{_, given _}
 
   def runRoot(term: qctx.tasty.Term): CpsTree =
-     if (cpsCtx.flags.debugLevel >= 10)
+     if (cpsCtx.flags.debugLevel >= 15)
         println(s"runRoot: term=$term")
-     term.tpe.widen match {
+     val r = term.tpe.widen match {
        case _ : MethodType =>
                //  in such case, we can't transform tree to expr
                //  without eta-expansion.  
@@ -39,13 +39,16 @@ trait RootTreeTransform[F[_]]:
                      throw MacroError("Can't determinate exact type for term", expr)
                 }
      }
+     if (cpsCtx.flags.debugLevel >= 15)
+        println(s"runRoot result: $r  (term=$term)")
+     r
 
 
   def runRootUneta(term: qctx.tasty.Term): CpsTree = {
-     if (cpsCtx.flags.debugLevel >= 10)
+     if (cpsCtx.flags.debugLevel >= 15)
         println(s"runRootUneta, term=$term")
      val monad = cpsCtx.monad
-     term match {
+     val r = term match {
        case Select(qual, name) =>
            runRoot(qual) match 
               case rq: AsyncCpsTree =>
@@ -60,6 +63,9 @@ trait RootTreeTransform[F[_]]:
        case _ =>
              throw MacroError(s"cps tree transform is not supported yet to ${term}",cpsCtx.patternCode)
      }
+     if (cpsCtx.flags.debugLevel >= 15)
+        println(s"runRootUneta result: $r  (term=$term)")
+     r
   }
 
   def exprToTree(expr: CpsExpr[F,_], e: Term): CpsTree =
