@@ -20,7 +20,6 @@ class TestBS1ShiftCollectionOps:
      }
      assert(c.run() == Success(List(4,5,6)))
 
-/*
   @Test def testMapSeq(): Unit = 
      val c = async[ComputationBound]{
         Seq(1,2,3).map{ x =>
@@ -29,6 +28,7 @@ class TestBS1ShiftCollectionOps:
      }
      assert(c.run() == Success(Seq(4,5,6)))
 
+/*
   @Test def testMapSet(): Unit = 
      val c = async[ComputationBound]{
         Set(1,2,3).map{ x =>
