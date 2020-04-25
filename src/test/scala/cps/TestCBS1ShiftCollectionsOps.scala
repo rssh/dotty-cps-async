@@ -11,8 +11,8 @@ class TestBS1ShiftCollectionOps:
 
 
   @Test def testMapList(): Unit = 
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
         List(1,2,3).map{ x =>
            await(T1.cbi(3)) + x
@@ -28,7 +28,17 @@ class TestBS1ShiftCollectionOps:
      }
      assert(c.run() == Success(Seq(4,5,6)))
 
-/*
+  @Test def testForeachSeq(): Unit = 
+     val c = async[ComputationBound]{
+        var s = 0
+        Seq(1,2,3).foreach{ x =>
+           s += await(T1.cbi(3)) + x
+        }
+        s
+     }
+     assert(c.run() == Success(15))
+
+
   @Test def testMapSet(): Unit = 
      val c = async[ComputationBound]{
         Set(1,2,3).map{ x =>
@@ -36,7 +46,6 @@ class TestBS1ShiftCollectionOps:
         }
      }
      assert(c.run() == Success(Set(4,5,6)))
-*/
   
 
 

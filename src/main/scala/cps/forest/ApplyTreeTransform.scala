@@ -505,8 +505,6 @@ trait ApplyTreeTransform[F[_]]:
     //    in qualifier
     def shiftSelect(x:Select):Select = 
           val sq = shiftQual(x.qualifier)
-          println(s"sq=$sq")
-          println(s"name=$x.name")
           Select.unique(shiftQual(x.qualifier),x.name)
        
     def shiftCaller(term:Term): Term = 

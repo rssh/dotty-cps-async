@@ -30,13 +30,13 @@ trait Handler[F[_]:CpsTryMonad] {
    def run():F[Unit] = async[F]{
      val connection = await(openConnection())
      try 
-       while {
+       while
          val command = await(readCommand(connection))
          val reply = await(handle(command))
          if (!reply.isMuted)
            await(connection.send(reply.toBytes))
          !command.isShutdown
-       } do ()
+       do ()
      finally
        connection.close()
    }
