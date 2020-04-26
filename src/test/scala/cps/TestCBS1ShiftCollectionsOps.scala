@@ -75,8 +75,20 @@ class TestBS1ShiftCollectionOps:
      val c = async[ComputationBound]{
                 Vector(T1.cbi(1),T1.cbi(2),T1.cbi(3)).exists(x => await(x)==1000)
      }
-     val l = c.run()
-     println("l="+l)
      assert(c.run() == Success(false))
+
+  @Test def testFindListT(): Unit =
+     val c = async[ComputationBound]{
+                List(T1.cbi(1),T1.cbi(2),T1.cbi(3)).find{x => await(x)==3 }
+     }
+     val l = c.run()
+     l match {
+        case Success(Some(v)) =>
+            assert(v.run() == Success(3))
+        case Success(None) =>
+            assert(false,"find result should be not None")
+        case Failure(ex) =>
+            assert(false,"find result should be successed")
+     }
 
 

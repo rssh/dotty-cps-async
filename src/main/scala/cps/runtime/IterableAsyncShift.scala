@@ -25,7 +25,7 @@ class IterableAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]]] extends
                                       condition: A=>F[Boolean],
                                       acc: (S,Boolean,A)=>S,
                                       epilog: S =>R):F[R] =
-     def checkIt(it:Iterator[A],s:S):F[S] =
+     def checkIt(it:Iterator[A],s:S):F[S] = 
         if !it.hasNext then
            monad.pure(s)
         else 
@@ -36,7 +36,8 @@ class IterableAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]]] extends
              else 
                monad.pure(acc(s,false,a))
            }
-     monad.map(checkIt(c.iterator,prolog))(epilog)
+     val r = checkIt(c.iterator,prolog)
+     monad.map(r)(epilog)
      
      
   def foreach[F[_],U](c: C[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] = 
@@ -96,9 +97,11 @@ class IterableAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]]] extends
 
   def find[F[_]](c:C[A], monad: CpsMonad[F])(p: A=>F[Boolean]):F[Option[A]] =
     val s0: Option[A] = None
-    shiftedWhile(c,monad)(s0, a => monad.map(p(a))(! _),
-                        (state,notFound,a)=>if (notFound) state else Some(a),
-                        identity) 
+    shiftedWhile(c,monad)(s0, 
+                        a => monad.map(p(a))(! _),
+                        (state,notFound,a)=> if (notFound) state else Some(a),
+                        identity
+                        ) 
                           
 
 }
