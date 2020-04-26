@@ -235,7 +235,6 @@ trait ApplyTreeTransform[F[_]]:
                   shiftedMethodType(paramNames, paramTypes, resType)
               case ft@AppliedType(tp,tparams) =>
                   if (ft.isFunctionType) {
-                      println("IsFunctionType!!!")
                       val paramTypes = tparams.dropRight(1).map(typeOrBoundsToType(_,false)) 
                       val resType = typeOrBoundsToType(tparams.last,true)
                       val paramNames = params.map(_.name)
