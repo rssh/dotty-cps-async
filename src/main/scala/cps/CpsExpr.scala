@@ -34,7 +34,8 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
 
   def syncOrigin(using QuoteContext): Option[Expr[T]]  
   
-  @Deprecated("use monad instead")
+  //"use monad instead")
+  @Deprecated()
   def asyncMonad: Expr[CpsMonad[F]] = monad
 
   //def pure[A:Type](t: Expr[A])(using QuoteContext): CpsExpr[F,A] = 
