@@ -12,7 +12,7 @@ class TestBS1ShiftCollectionOps:
 
 
   @Test def testMapList(): Unit = 
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
         List(1,2,3).map{ x =>
@@ -91,4 +91,29 @@ class TestBS1ShiftCollectionOps:
             assert(false,"find result should be successed")
      }
 
+  @Test def testFindListF(): Unit =
+     val c = async[ComputationBound]{
+                List(T1.cbi(1),T1.cbi(2),T1.cbi(3)).find( x => await(x)==1000 )
+     }
+     val l = c.run()
+     assert(l == Success(None)) 
+
+  @Test def testFoldSet1(): Unit =
+     val c = async[ComputationBound]{
+          Set(1,2,3).fold(0)(
+                   (x:Int,y:Int) => x + y + await(T1.cbi(1)) 
+          )
+     }
+     val l = c.run()
+     assert(l == Success(9)) 
+
+/*
+  @Test def testFoldSet2(): Unit =
+     val c = async[ComputationBound]{
+          Set(T1.cbi(1),T1.cbi(2),T1.cbi(3)).fold(T1.cbi(4))(
+                   (x,y) => CpsMonad[ComputationBound].map(x)(_ + await(y)) )
+     }
+     val l = c.run()
+     assert(l == Success(10)) 
+*/
 

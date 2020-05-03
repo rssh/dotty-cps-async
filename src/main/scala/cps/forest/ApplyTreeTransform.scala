@@ -495,7 +495,7 @@ trait ApplyTreeTransform[F[_]]:
               case Some(shifted) => shifted.unseal
               case None => 
                    // TODO: provide some other alternatives ?
-                   throw MacroError(s"Can't find AsyncShift for ${x.tpe.seal.show}",x.seal)
+                   throw MacroError(s"Can't find AsyncShift for ${et.show}",x.seal)
          case _ =>
             throw MacroError(s"Can't find AsyncShift for ${x}",x.seal)
 
@@ -516,6 +516,9 @@ trait ApplyTreeTransform[F[_]]:
                   TypeApply(shiftSelect(s), fType.unseal::Nil).appliedTo(qual, monad)
           case TypeApply(x, targs) => 
                   TypeApply(shiftCaller(x),targs)
+          case Apply(x, args) => 
+                  // TODO: shift args
+                  Apply(shiftCaller(x),args)
           case Lambda(params, body) =>
                   val shiftedSymbols = params.zipWithIndex.filter{ 
                       (p,i) => shiftedIndexes.contains(i)
@@ -525,8 +528,28 @@ trait ApplyTreeTransform[F[_]]:
           case Block(statements, last) =>
                   Block(statements, shiftCaller(last))
           case _ => 
-                  // TODO: check, that we can seal term
-                  throw MacroError("Can't shift caller ${term}",term.seal)
+                  val errorExpr = term match 
+                    case (_ : MethodType) =>
+                              cpsCtx.patternCode
+                    case (_ : PolyType) =>
+                              cpsCtx.patternCode
+                    case _: MethodType | _: PolyType =>
+                              Console.println("only sum")
+                              cpsCtx.patternCode
+                    case other =>
+                              try {
+                                term.seal
+                              }catch{
+                                // bug in dotty.
+                                case ex: Exception =>
+                                   Console.println(s"other: s${other}") 
+                                   val isPoly = other.isInstanceOf[PolyType]
+                                   val isMethod = other.isInstanceOf[MethodType]
+                                   Console.println(s"poly=${isPoly}, method=${isMethod}") 
+                                   ex.printStackTrace()
+                                   cpsCtx.patternCode
+                              }
+                  throw MacroError(s"Can't shift caller ${term}",errorExpr)
 
     Apply(shiftCaller(term),args)
 

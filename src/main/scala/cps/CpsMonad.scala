@@ -14,6 +14,12 @@ trait CpsMonad[F[_]] {
 
 }
 
+object CpsMonad {
+
+  transparent inline given shiftedCpsMonad[F[_],T](using CpsMonad[F]) as AsyncShift[F[T]] = ???
+     
+
+}
 
 trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
