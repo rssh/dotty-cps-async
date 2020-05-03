@@ -17,6 +17,9 @@ object AsyncShift {
  transparent inline given shiftedList[A] as AsyncShift[scala.collection.immutable.List[A]] =
       new cps.runtime.ListAsyncShift[A]()
 
+ transparent inline given shiftedCpsMonad[F[_], M <: CpsMonad[F]](using CpsMonad[F]) as AsyncShift[M] = new cps.runtime.CpsMonadSelfAsyncShift[F,M]
+
+
 
 }
 

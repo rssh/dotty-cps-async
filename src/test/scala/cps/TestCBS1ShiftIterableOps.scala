@@ -107,13 +107,13 @@ class TestBS1ShiftCollectionOps:
      val l = c.run()
      assert(l == Success(9)) 
 
-/*
   @Test def testFoldSet2(): Unit =
      val c = async[ComputationBound]{
           Set(T1.cbi(1),T1.cbi(2),T1.cbi(3)).fold(T1.cbi(4))(
-                   (x,y) => CpsMonad[ComputationBound].map(x)(_ + await(y)) )
+                         (x,y) => async(await(x) + await(y))  )
      }
      val l = c.run()
-     assert(l == Success(10)) 
-*/
+     val l1 = l.get.run()
+     assert(l1 == Success(10)) 
+
 
