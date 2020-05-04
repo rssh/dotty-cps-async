@@ -40,9 +40,6 @@ trait ApplyTreeTransform[F[_]]:
                         handleFunTypeAwaitApply(applyTerm,fun,args,obj,targs)
                    else
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
-            case SelectOuter(obj1, name, levels)  =>
-                     println("select-outer launched")
-                     ???
             case Select(obj1, name) if (name=="await") =>
                    if ( obj.symbol == awaitSymbol ) 
                      if (targs.head.tpe =:= monadTypeTree.tpe) 
@@ -53,9 +50,6 @@ trait ApplyTreeTransform[F[_]]:
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
             case _ => handleFunTypeApply(applyTerm, fun, args, obj, targs)
           }
-       case SelectOuter(obj,level, tpe) =>
-            println("!!!! - SelectOuter catched")
-            ???
        case Select(obj,method) =>
             handleFunSelect(applyTerm, fun, args, obj, method)
        case Ident(name) =>
