@@ -1,8 +1,8 @@
 package cps.forest
 
-trait AsyncTreeShifter[F[_]]:
+trait AsyncTreeShifter[F[_], CT]:
 
-   thisTreeTransform: TreeTransformScope[F] =>
+   thisTreeTransform: TreeTransformScope[F, CT] =>
 
    import qctx.tasty.{_, given _}
 

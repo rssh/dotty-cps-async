@@ -7,9 +7,9 @@ import cps._
 import cps.misc._
 
 
-trait ApplyTreeTransform[F[_]]:
+trait ApplyTreeTransform[F[_],CT]:
 
-  thisTreeTransform: TreeTransformScope[F] =>
+  thisTreeTransform: TreeTransformScope[F,CT] =>
   
   import qctx.tasty.{_, given _}
 
@@ -40,9 +40,6 @@ trait ApplyTreeTransform[F[_]]:
                         handleFunTypeAwaitApply(applyTerm,fun,args,obj,targs)
                    else
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
-            case SelectOuter(obj1, name, levels)  =>
-                     println("select-outer launched")
-                     ???
             case Select(obj1, name) if (name=="await") =>
                    if ( obj.symbol == awaitSymbol ) 
                      if (targs.head.tpe =:= monadTypeTree.tpe) 
@@ -53,9 +50,6 @@ trait ApplyTreeTransform[F[_]]:
                      handleFunTypeApply(applyTerm,fun,args,obj,targs)
             case _ => handleFunTypeApply(applyTerm, fun, args, obj, targs)
           }
-       case SelectOuter(obj,level, tpe) =>
-            println("!!!! - SelectOuter catched")
-            ???
        case Select(obj,method) =>
             handleFunSelect(applyTerm, fun, args, obj, method)
        case Ident(name) =>
@@ -494,28 +488,46 @@ trait ApplyTreeTransform[F[_]]:
             findAsyncShift(e) match
               case Some(shifted) => shifted.unseal
               case None => 
+                   // check, if this is our monad map/flatMap - then we 
+                   if cpsCtx.flags.debugLevel > 10 then
+                      println(s"Can't find async shift, x=$x")
                    // TODO: provide some other alternatives ?
-                   throw MacroError(s"Can't find AsyncShift for ${x.tpe.seal.show}",x.seal)
+                   throw MacroError(s"Can't find AsyncShift for ${et.show} (e=${e.show})",x.seal)
          case _ =>
-            throw MacroError(s"Can't find AsyncShift for ${x}",x.seal)
+            throw MacroError(s"Can't find AsyncShift for ${x} (x is not typed)",x.seal)
 
     //TODO: will work only for unique.
     //   change dotty API to find case, where name is not unique
     //    in qualifier
     def shiftSelect(x:Select):Select = 
-          val sq = shiftQual(x.qualifier)
           Select.unique(shiftQual(x.qualifier),x.name)
        
     def shiftCaller(term:Term): Term = 
        val monad = cpsCtx.monad.unseal
        term match
           case TypeApply(s@Select(qual,name),targs) =>
-                  val newSelect = shiftSelect(s)
-                  TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+                  if (qual.tpe =:= monad.tpe) 
+                    println("!!! - our monad discovered")
+                    if (s.symbol == mapSymbol) 
+                      println("!!! - our map discovered, term")
+                      val newSelect = Select.unique(shiftQual(s.qualifier),s.name)
+                      TypeApply(newSelect, targs).appliedTo(qual)
+                    else if (s.symbol == flatMapSymbol)
+                      println(s"!!! - our flatMap  discovered, term=${term}")
+                      val newSelect = Select.unique(shiftQual(s.qualifier),s.name)
+                      TypeApply(newSelect, targs).appliedTo(qual)
+                    else
+                      throw new MacroError("Unimplemented shift for CpsMonad", term.seal) 
+                  else
+                    val newSelect = shiftSelect(s)
+                    TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
           case s@Select(qual,name) =>
                   TypeApply(shiftSelect(s), fType.unseal::Nil).appliedTo(qual, monad)
           case TypeApply(x, targs) => 
                   TypeApply(shiftCaller(x),targs)
+          case Apply(x, args) => 
+                  // TODO: shift args
+                  Apply(shiftCaller(x),args)
           case Lambda(params, body) =>
                   val shiftedSymbols = params.zipWithIndex.filter{ 
                       (p,i) => shiftedIndexes.contains(i)
@@ -525,8 +537,28 @@ trait ApplyTreeTransform[F[_]]:
           case Block(statements, last) =>
                   Block(statements, shiftCaller(last))
           case _ => 
-                  // TODO: check, that we can seal term
-                  throw MacroError("Can't shift caller ${term}",term.seal)
+                  val errorExpr = term match 
+                    case (_ : MethodType) =>
+                              cpsCtx.patternCode
+                    case (_ : PolyType) =>
+                              cpsCtx.patternCode
+                    case _: MethodType | _: PolyType =>
+                              Console.println("only sum")
+                              cpsCtx.patternCode
+                    case other =>
+                              try {
+                                term.seal
+                              }catch{
+                                // bug in dotty.
+                                case ex: Exception =>
+                                   Console.println(s"other: s${other}") 
+                                   val isPoly = other.isInstanceOf[PolyType]
+                                   val isMethod = other.isInstanceOf[MethodType]
+                                   Console.println(s"poly=${isPoly}, method=${isMethod}") 
+                                   ex.printStackTrace()
+                                   cpsCtx.patternCode
+                              }
+                  throw MacroError(s"Can't shift caller ${term}",errorExpr)
 
     Apply(shiftCaller(term),args)
 
@@ -555,10 +587,12 @@ object ApplyTreeTransform:
      //val tmpCpsCtx = cpsCtx
      val tmpQctx = qctx1
      val tmpFtype = summon[Type[F]]
-     class Bridge(tc:TransformationContext[F,T]) extends TreeTransformScope[F]
+     val tmpCTtype = summon[Type[T]]
+     class Bridge(tc:TransformationContext[F,T]) extends TreeTransformScope[F,T]
                                                     with TreeTransformScopeInstance[F,T](tc) {
 
          implicit val fType = tmpFtype
+         implicit val ctType = tmpCTtype
 
          def bridge(): CpsExpr[F,T] =
             runApply(applyTerm.asInstanceOf[qctx.tasty.Term],

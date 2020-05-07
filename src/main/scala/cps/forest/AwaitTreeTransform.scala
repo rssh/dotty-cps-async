@@ -7,9 +7,9 @@ import cps._
 import cps.misc._
 
 
-trait AwaitTreeTransform[F[_]]:
+trait AwaitTreeTransform[F[_],CT]:
 
-  thisTreeTransform: TreeTransformScope[F] =>
+  thisTreeTransform: TreeTransformScope[F, CT] =>
   
   import qctx.tasty.{_, given _}
 

@@ -17,7 +17,6 @@ trait CpsMonad[F[_]] {
 
 trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
-   // TODO: not all interesting monads can handle error
    def error[A](e: Throwable): F[A]
 
    def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A]

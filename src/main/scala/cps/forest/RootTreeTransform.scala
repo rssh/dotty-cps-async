@@ -7,11 +7,11 @@ import cps._
 import cps.misc._
 
 
-trait RootTreeTransform[F[_]]:
+trait RootTreeTransform[F[_], CT]:
 
-  thisTransform: TreeTransformScope[F] =>
+  thisTransform: TreeTransformScope[F, CT] =>
   
-  import qctx.tasty.{_, given _}
+  import qctx.tasty._
 
   def runRoot(term: qctx.tasty.Term): CpsTree =
      if (cpsCtx.flags.debugLevel >= 15)

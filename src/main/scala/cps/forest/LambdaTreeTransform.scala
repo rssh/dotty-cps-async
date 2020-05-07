@@ -7,9 +7,9 @@ import cps._
 import cps.misc._
 
 
-trait LambdaTreeTransform[F[_]]:
+trait LambdaTreeTransform[F[_], CT]:
 
-  thisScope: TreeTransformScope[F] =>
+  thisScope: TreeTransformScope[F, CT] =>
 
   import qctx.tasty.{_, given _}
 
@@ -56,11 +56,13 @@ object LambdaTreeTransform:
                          expr: qctx1.tasty.Term): CpsExpr[F,T] = {
                          
      val tmpFType = summon[Type[F]]
+     val tmpCTType = summon[Type[T]]
      class Bridge(tc:TransformationContext[F,T]) extends
-                                                    TreeTransformScope[F]
+                                                    TreeTransformScope[F,T]
                                                     with TreeTransformScopeInstance[F,T](tc) {
 
          implicit val fType: quoted.Type[F] = tmpFType
+         implicit val ctType: quoted.Type[T] = tmpCTType
           
          def bridge(): CpsExpr[F,T] =
             val origin = lambdaTerm.asInstanceOf[qctx.tasty.Term]

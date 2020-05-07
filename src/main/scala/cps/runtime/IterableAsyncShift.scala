@@ -39,6 +39,15 @@ class IterableAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]]] extends
      val r = checkIt(c.iterator,prolog)
      monad.map(r)(epilog)
      
+  def shiftedStateFold[F[_],S,R](c:C[A], monad: CpsMonad[F])(
+                            prolog: S,
+                            acc: (S,A) => F[S],
+                            epilog:S=>R):F[R] =
+   val r = c.foldLeft(monad.pure(prolog)){(ms,a) =>
+                monad.flatMap(ms){ s=> acc(s,a) }
+           }
+   monad.map(r)(epilog)
+    
      
   def foreach[F[_],U](c: C[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] = 
      shiftedFold(c,monad)((),f,(s,a,b)=>s,identity)
@@ -69,21 +78,6 @@ class IterableAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]]] extends
     shiftedWhile(c,monad)(false, 
              x => monad.map(p(x))(! _),
              (s,c,a) => !c, identity)
-   /*
-   def checkIt(it:Iterator[A]):F[Boolean]=
-     if it.hasNext then
-       val a = it.next
-       monad.flatMap(p(a)){ r =>
-          if (r) 
-            monad.pure(true)
-          else
-            checkIt(it)
-       }
-     else
-       monad.pure(false)
-   checkIt(c.iterator)
-   */
-
        
   def filter[F[_]](c:C[A], monad: CpsMonad[F])(p: A=>F[Boolean]):F[C[A]] =
     shiftedFold(c,monad)(
@@ -102,7 +96,18 @@ class IterableAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]]] extends
                         (state,notFound,a)=> if (notFound) state else Some(a),
                         identity
                         ) 
+
+  def flatten[F[_],B](c:C[A],monad: CpsMonad[F])(implicit asIterable: (A)=> F[IterableOnce[B]]):F[C[B]]=
+    shiftedFold(c,monad)(
+       c.iterableFactory.newBuilder[B],
+       asIterable,
+       (s,a,b) => s.addAll(b),
+       _.result    
+    )
                           
+  def fold[F[_],A1 >: A](c:C[A],monad: CpsMonad[F])(z:A1)(op:(A1,A1)=>F[A1]):F[A1]=
+    shiftedStateFold(c,monad)(z, op, identity)
+    
 
 }
 
