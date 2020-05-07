@@ -7,9 +7,9 @@ import cps._
 import cps.misc._
 
 
-trait KnownTreeFragments[F[_]]:
+trait KnownTreeFragments[F[_], CT]:
 
-  thisKnownTreeTransform: TreeTransformScope[F] =>
+  thisKnownTreeTransform: TreeTransformScope[F, CT] =>
   
   import qctx.tasty.{_, given _}
 

@@ -3,9 +3,9 @@ package cps.forest
 import scala.quoted._
 import cps._
 
-trait CpsTreeScope[F[_]] {
+trait CpsTreeScope[F[_], CT] {
 
-  cpsTreeScope: TreeTransformScope[F] =>
+  cpsTreeScope: TreeTransformScope[F, CT] =>
 
   import qctx.tasty.{_,given _}
 

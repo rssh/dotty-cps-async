@@ -7,11 +7,11 @@ import cps._
 import cps.misc._
 
 
-trait RootTreeTransform[F[_]]:
+trait RootTreeTransform[F[_], CT]:
 
-  thisTransform: TreeTransformScope[F] =>
+  thisTransform: TreeTransformScope[F, CT] =>
   
-  import qctx.tasty.{_, given _}
+  import qctx.tasty._
 
   def runRoot(term: qctx.tasty.Term): CpsTree =
      if (cpsCtx.flags.debugLevel >= 15)
@@ -29,12 +29,7 @@ trait RootTreeTransform[F[_]]:
                 val monad = cpsCtx.monad
                 expr match {
                   case '{ $e: $et } =>
-                     // FIXME: `cpsCtx` is of type `TransformationContext[F,?]` which implies that `nestTransform`
-                     // requires a `quoted.Type[?]` which cannot be created.
-                     //   * `nestTransform` should not require a `quoted.Type[T]`
-                     //   * or, `cpsCtx` should have a type without a whildcard
-                     val cpsCtxNoWhildCard = cpsCtx.asInstanceOf[TransformationContext[F,Any]] // emulate previous behavior
-                     val rCpsExpr = Async.nestTransform(e, cpsCtxNoWhildCard, "_")
+                     val rCpsExpr = Async.nestTransform(e, cpsCtx, "_")
                      val r = exprToTree(rCpsExpr,term)
                      if (cpsCtx.flags.debugLevel >= 10) 
                          println(s"rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")

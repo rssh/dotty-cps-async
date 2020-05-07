@@ -7,9 +7,9 @@ import cps._
 import cps.misc._
 
 
-trait ApplyTreeTransform[F[_]]:
+trait ApplyTreeTransform[F[_],CT]:
 
-  thisTreeTransform: TreeTransformScope[F] =>
+  thisTreeTransform: TreeTransformScope[F,CT] =>
   
   import qctx.tasty.{_, given _}
 
@@ -587,10 +587,12 @@ object ApplyTreeTransform:
      //val tmpCpsCtx = cpsCtx
      val tmpQctx = qctx1
      val tmpFtype = summon[Type[F]]
-     class Bridge(tc:TransformationContext[F,T]) extends TreeTransformScope[F]
+     val tmpCTtype = summon[Type[T]]
+     class Bridge(tc:TransformationContext[F,T]) extends TreeTransformScope[F,T]
                                                     with TreeTransformScopeInstance[F,T](tc) {
 
          implicit val fType = tmpFtype
+         implicit val ctType = tmpCTtype
 
          def bridge(): CpsExpr[F,T] =
             runApply(applyTerm.asInstanceOf[qctx.tasty.Term],
