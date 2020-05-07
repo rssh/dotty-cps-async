@@ -29,7 +29,12 @@ trait RootTreeTransform[F[_]]:
                 val monad = cpsCtx.monad
                 expr match {
                   case '{ $e: $et } =>
-                     val rCpsExpr = Async.nestTransform(e, cpsCtx, "_")
+                     // FIXME: `cpsCtx` is of type `TransformationContext[F,?]` which implies that `nestTransform`
+                     // requires a `quoted.Type[?]` which cannot be created.
+                     //   * `nestTransform` should not require a `quoted.Type[T]`
+                     //   * or, `cpsCtx` should have a type without a whildcard
+                     val cpsCtxNoWhildCard = cpsCtx.asInstanceOf[TransformationContext[F,Any]] // emulate previous behavior
+                     val rCpsExpr = Async.nestTransform(e, cpsCtxNoWhildCard, "_")
                      val r = exprToTree(rCpsExpr,term)
                      if (cpsCtx.flags.debugLevel >= 10) 
                          println(s"rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
