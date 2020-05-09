@@ -1,7 +1,6 @@
 package cps
 
 import scala.quoted._
-import scala.quoted.matching._
 
 trait X[T] { type V = T }
 

@@ -3,7 +3,6 @@
 package cps.forest
 
 import scala.quoted._
-import scala.quoted.matching._
 
 import cps._
 
