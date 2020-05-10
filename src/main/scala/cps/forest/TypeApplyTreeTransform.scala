@@ -40,7 +40,7 @@ object TypeApplyTreeTransform:
             runTypeApply(applyTerm.asInstanceOf[qctx.tasty.Term],
                          fun.asInstanceOf[qctx.tasty.Term],
                          targs.asInstanceOf[List[qctx.tasty.TypeTree]]
-                        ).toResult(cpsCtx.patternCode).asInstanceOf[CpsExpr[F,T]]
+                        ).toResult[T].asInstanceOf[CpsExpr[F,T]]
 
      } 
      (new Bridge(cpsCtx1)).bridge()

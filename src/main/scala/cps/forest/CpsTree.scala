@@ -1,5 +1,6 @@
 package cps.forest
 
+import scala.collection.immutable.Queue
 import scala.quoted._
 import cps._
 
@@ -17,8 +18,10 @@ trait CpsTreeScope[F[_], CT] {
 
      def transformed: Term
 
+     def syncOrigin: Option[Term]
+
      def typeApply(targs: List[qctx.tasty.TypeTree], ntpe: Type): CpsTree =
-           applyTerm(_.appliedToTypeTrees(targs), ntpe)
+            applyTerm(_.appliedToTypeTrees(targs), ntpe)
 
      def applyTerm(f: Term => Term, ntpe: Type): CpsTree
 
@@ -26,20 +29,27 @@ trait CpsTreeScope[F[_], CT] {
 
      def monadFlatMap(f: Term => Term, ntpe:Type): CpsTree
 
+     def append(next: CpsTree): CpsTree
+
      /**
       * type which is 'inside ' monad, i.e. T for F[T].
       **/
      def otpe: Type
 
-     def toResult[T: quoted.Type](origin: Expr[T]) : CpsExpr[F,T] =
+     def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
-       this match
-         case syncTerm: PureCpsTree =>
-             val code = safeSeal(syncTerm.origin).asInstanceOf[Expr[T]]
+       syncOrigin match
+         case Some(syncTerm) =>
+             val code = safeSeal(syncTerm).asInstanceOf[Expr[T]]
              CpsExpr.sync(monad,code)
-         case cpsTree: AsyncCpsTree =>
-             val transformed = safeSeal(cpsTree.transformed).asInstanceOf[Expr[F[T]]]
-             CpsExpr.async[F,T](monad, transformed)
+         case None =>
+             val sealedTransformed = safeSeal(transformed).asInstanceOf[Expr[F[T]]]
+             CpsExpr.async[F,T](monad, sealedTransformed)
+
+     def toResultWithType[T](qt: quoted.Type[T]): CpsExpr[F,T] = {
+             given quoted.Type[T] = qt
+             toResult[T]
+     }
 
      def safeSeal(t:Term): Expr[Any] =
        t.tpe.widen match 
@@ -76,7 +86,24 @@ trait CpsTreeScope[F[_], CT] {
     def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
       FlatMappedCpsTree(this,f, ntpe)
 
+    def append(next: CpsTree): CpsTree =
+      next match
+        case BlockCpsTree(statements,last) =>  //dott warn here.  TODO: research
+             BlockCpsTree(statements.prepended(origin), last)
+        case x: AsyncCpsTree =>
+             BlockCpsTree(Queue(origin), x)
+        case y: PureCpsTree =>
+             BlockCpsTree(Queue(origin), y)
+        //case _ =>
+        //    BlockCpsTree(Queue(origin), next)
+      
+
+    def prepend(prev: CpsTree): CpsTree =
+       prev.append(this)
+
     def otpe: Type = origin.tpe
+
+    def syncOrigin: Option[Term] = Some(origin)
 
     def transformed: Term = 
           val untpureTerm = cpsCtx.monad.unseal.select(pureSymbol)
@@ -89,13 +116,24 @@ trait CpsTreeScope[F[_], CT] {
                       
     def isAsync = true
 
-    def transformed: qctx.tasty.Term
+    def transformed: Term
+
+    def syncOrigin: Option[Term] = None
 
     def monadMap(f: Term => Term, ntpe: Type): CpsTree =
           MappedCpsTree(this,f, ntpe)
 
     def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
           FlatMappedCpsTree(this,f, ntpe)
+
+    def append(next: CpsTree): CpsTree =
+          next match
+            case syncNext: PureCpsTree => monadMap(_ => syncNext.origin, next.otpe)
+            case asyncNext: AsyncCpsTree => monadFlatMap(_ => next.transformed, next.otpe)
+            case blockNext: BlockCpsTree =>
+                  blockNext.syncOrigin match
+                    case Some(syncTerm) => monadMap(_ => syncTerm, next.otpe)
+                    case None => monadFlatMap(_ => blockNext.transformed, next.otpe)
 
 
 
@@ -144,7 +182,7 @@ trait CpsTreeScope[F[_], CT] {
   case class FlatMappedCpsTree(
                       val prev: CpsTree,
                       opm: Term => Term,
-                      otpe: Type) extends AsyncCpsTree {
+                      otpe: Type) extends AsyncCpsTree:
 
     def applyTerm(f: Term => Term, npte: Type): CpsTree =
           FlatMappedCpsTree(prev, t => f(opm(t)), npte)
@@ -178,7 +216,47 @@ trait CpsTreeScope[F[_], CT] {
     }
 
 
-  }
+  end FlatMappedCpsTree
 
+  case class BlockCpsTree(prevs:Queue[Statement], last:CpsTree) extends CpsTree:
+
+    override def isAsync = last.isAsync
+
+    def toLast(f:CpsTree=>CpsTree):CpsTree =
+      if (prevs.isEmpty)
+        f(last)
+      else
+        BlockCpsTree(prevs,f(last))
+
+    override def transformed: Term = 
+      if (prevs.isEmpty)
+        last.transformed
+      else
+        Block(prevs.toList, last.transformed)
+     
+    override def syncOrigin: Option[Term] = 
+      if prevs.isEmpty then
+        last.syncOrigin
+      else 
+        last.syncOrigin map (l => Block(prevs.toList,l))
+
+    def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
+       toLast(_.applyTerm(f,ntpe))
+
+    def monadMap(f: Term => Term, ntpe: Type): CpsTree =
+       toLast(_.monadMap(f,ntpe))
+      
+    def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
+       toLast(_.monadFlatMap(f,ntpe))
+
+    def append(next: CpsTree): CpsTree =
+       last.syncOrigin match
+         case Some(syncLast) => BlockCpsTree(prevs.appended(syncLast),next)
+         case None => BlockCpsTree(prevs, last.append(next))
+
+    def otpe: Type = last.otpe
+
+  end BlockCpsTree
+  
 
 }

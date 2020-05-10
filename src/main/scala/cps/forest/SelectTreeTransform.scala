@@ -36,7 +36,7 @@ object SelectTreeTransform:
           
          def bridge(): CpsExpr[F,T] =
             val origin = selectTerm.asInstanceOf[qctx.tasty.Select]
-            runSelect(origin).toResult(cpsCtx.patternCode).asInstanceOf[CpsExpr[F,T]]
+            runSelect(origin).toResult[T]
                         
 
      } 

@@ -56,7 +56,7 @@ object MatchTreeTransform:
           
          def bridge(): CpsExpr[F,T] =
             val origin = matchTerm.asInstanceOf[qctx.tasty.Match]
-            runMatch(origin).toResult(cpsCtx.patternCode).asInstanceOf[CpsExpr[F,T]]
+            runMatch(origin).toResult[T]
                         
 
      } 
