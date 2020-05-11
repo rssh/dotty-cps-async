@@ -31,6 +31,9 @@ trait CpsTreeScope[F[_], CT] {
 
      def append(next: CpsTree): CpsTree
 
+     def prepend(prev: CpsTree): CpsTree =
+          prev.append(this)
+
      /**
       * type which is 'inside ' monad, i.e. T for F[T].
       **/
@@ -97,9 +100,6 @@ trait CpsTreeScope[F[_], CT] {
         //case _ =>
         //    BlockCpsTree(Queue(origin), next)
       
-
-    def prepend(prev: CpsTree): CpsTree =
-       prev.append(this)
 
     def otpe: Type = origin.tpe
 
@@ -258,5 +258,55 @@ trait CpsTreeScope[F[_], CT] {
 
   end BlockCpsTree
   
+  case class InlinedCpsTree(origin: Inlined, nested: CpsTree) extends CpsTree:
+
+    override def isAsync = nested.isAsync
+
+    override def transformed: Term = 
+                  Inlined(origin.call, origin.bindings, nested.transformed)
+
+    override def syncOrigin: Option[Term] = 
+                  nested.syncOrigin.map(Inlined(origin.call, origin.bindings, _ ))
+
+    def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
+         InlinedCpsTree(origin, nested.applyTerm(f, ntpe))
+
+    def monadMap(f: Term => Term, ntpe: Type): CpsTree =
+         InlinedCpsTree(origin, nested.monadMap(f, ntpe))
+
+    def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
+         InlinedCpsTree(origin, nested.monadFlatMap(f, ntpe))
+
+    def append(next: CpsTree): CpsTree =
+         InlinedCpsTree(origin, nested.append(next))
+
+    def otpe: Type = nested.otpe
+
+  end InlinedCpsTree
+
+  case class ValCpsTree(valDef: ValDef, rightPart: CpsTree, nested: CpsTree) extends CpsTree:
+
+    override def isAsync = rightPart.isAsync || nested.isAsync
+
+    override def transformed: Term = 
+       if (rightPart.isAsync)
+         if (nested.isAsync) 
+             rightPart.monadFlatMap(v => appendValDef(v) , nested.otpe).transformed
+         else
+             rightPart.monadMap(v => appendValDef(v) , nested.otpe).transformed
+       else
+         appendValDef(valDef.right.get)
+
+     def appendValDef(right: Term):Term =
+       val nValDef = valDef.copy(valDef)(right=Some(right))
+       val result = nested match
+         case BlockCpsTree( prevs,last) => 
+           val nLast = last.syncOrigin.getOrElse(last.transformed)
+           Block(nValDef +: prevs.toList, last)
+         case other =>
+           val sync = other.
+                 
+
+  end ValCpsTree
 
 }
