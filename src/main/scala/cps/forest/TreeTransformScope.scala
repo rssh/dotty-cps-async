@@ -2,7 +2,6 @@ package cps.forest
 
 import cps._
 import scala.quoted._
-import scala.tasty._
 
 trait TreeTransformScope[F[_]:Type,CT:Type]
                extends CpsTreeScope[F, CT]

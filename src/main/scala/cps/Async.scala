@@ -2,7 +2,6 @@ package cps
 
 import scala.annotation._
 import scala.quoted._
-import scala.quoted.matching._
 import scala.compiletime._
 
 import cps.forest._
