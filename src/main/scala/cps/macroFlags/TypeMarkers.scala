@@ -1,7 +1,6 @@
 package cps.macroFlags
 
 import scala.quoted._
-import scala.quoted.matching._
 
 object PrintCode
 object PrintTree

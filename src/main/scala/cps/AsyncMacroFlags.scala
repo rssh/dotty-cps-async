@@ -1,8 +1,6 @@
 package cps
 
 import scala.quoted._
-import scala.quoted.matching._
-
 
 case class AsyncMacroFlags(
    printCode: Boolean = false,

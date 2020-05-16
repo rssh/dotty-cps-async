@@ -4,7 +4,6 @@ import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
 import scala.quoted._
-import scala.quoted.matching._
 
 
 trait DM[F[_]] {
