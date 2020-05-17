@@ -34,6 +34,9 @@ class TestCBS1Apply:
      def znt[T <: Any](x: =>T):String =
            x.toString + x.toString
 
+     def ztCurried[T <: Any](x: T)(y: T):String =
+           x.toString + y.toString + x.toString + y.toString
+
      def zntCurried[T <: Any](x: =>T)(y: =>T):String =
            x.toString + y.toString + x.toString + y.toString
 
@@ -49,8 +52,8 @@ class TestCBS1Apply:
   }
 
   @Test @Ignore def apply_funNamed(): Unit = {
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async{
        val zzz = new Zzz(3)
        var x = 0;
@@ -73,7 +76,19 @@ class TestCBS1Apply:
      assert(c.run() == Success(2))
   }
 
-  @Test def apply_funGenericNamedCurried(): Unit = {
+  @Test def apply_funGenericCurried(): Unit = {
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async{
+       val zzz = new Zzz(3)
+       var x = 0;
+       val q = zzz.ztCurried(await({ x=x+1; T1.cbi(2)}))(await({x=x+1; T1.cbs("A")}))
+       x
+     }
+     assert(c.run() == Success(2))
+  }
+
+  @Test @Ignore def apply_funGenericByNameCurried(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async{
@@ -82,7 +97,7 @@ class TestCBS1Apply:
        val q = zzz.zntCurried(await({ x=x+1; T1.cbi(2)}))(await({x=x+1; T1.cbs("A")}))
        x
      }
-     assert(c.run() == Success(2))
+     assert(c.run() == Success(4))
   }
 
 
