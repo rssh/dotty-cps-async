@@ -24,6 +24,15 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
 
    implicit val ctType: quoted.Type[CT]
 
+   def safeSeal(t: qctx.tasty.Term): Expr[Any] =
+       import qctx.tasty._
+       t.tpe.widen match
+         case _ : MethodType | _ : PolyType =>
+           val etaExpanded = t.etaExpand
+           etaExpanded.seal
+         case _ => t.seal
+
+
 }
 
 

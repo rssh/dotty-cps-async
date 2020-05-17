@@ -69,6 +69,7 @@ class TestCBS1Apply:
        zzz.znt(await({ x=x+1; T1.cbi(2)}))
        x
      }
+     // TODO: assert x
      assert(c.run() == Success(2))
   }
 
@@ -81,7 +82,7 @@ class TestCBS1Apply:
        val q = zzz.zntCurried(await({ x=x+1; T1.cbi(2)}))(await({x=x+1; T1.cbs("A")}))
        x
      }
-     assert(c.run() == Success(4))
+     assert(c.run() == Success(2))
   }
 
 

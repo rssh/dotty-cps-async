@@ -54,13 +54,6 @@ trait CpsTreeScope[F[_], CT] {
              toResult[T]
      }
 
-     def safeSeal(t:Term): Expr[Any] =
-       t.tpe.widen match 
-         case _ : MethodType | _ : PolyType => 
-           val etaExpanded = t.etaExpand
-           etaExpanded.seal
-         case _ => t.seal
-            
 
 
   object CpsTree:
@@ -295,17 +288,45 @@ trait CpsTreeScope[F[_], CT] {
          else
              rightPart.monadMap(v => appendValDef(v) , nested.otpe).transformed
        else
-         appendValDef(valDef.right.get)
+         appendValDef(valDef.rhs.get)
 
-     def appendValDef(right: Term):Term =
-       val nValDef = valDef.copy(valDef)(right=Some(right))
+    override def syncOrigin: Option[Term] = 
+       for{
+           rhs <- rightPart.syncOrigin
+           next <- rightPart.syncOrigin
+       } yield appendValDef(rhs)
+          
+    override def applyTerm(f: Term => Term, ntpe: Type): CpsTree = 
+        ValCpsTree(valDef, rightPart, nested.applyTerm(f,ntpe))
+       
+    override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
+        ValCpsTree(valDef, rightPart, nested.monadMap(f,ntpe))
+        
+    override def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
+        ValCpsTree(valDef, rightPart, nested.monadFlatMap(f,ntpe))
+
+    override def append(next: CpsTree): CpsTree =
+        ValCpsTree(valDef, rightPart, nested.append(next))
+
+    override def otpe: Type = nested.otpe
+
+    def appendValDef(right: Term):Term =
+       val nValDef = ValDef.copy(valDef)(name = valDef.name, tpt=valDef.tpt, rhs=Some(right))
        val result = nested match
          case BlockCpsTree( prevs,last) => 
-           val nLast = last.syncOrigin.getOrElse(last.transformed)
-           Block(nValDef +: prevs.toList, last)
-         case other =>
-           val sync = other.
-                 
+           val lastTerm = last.syncOrigin.getOrElse(last.transformed)
+           Block(nValDef +: prevs.toList, lastTerm)
+         case _ =>
+           val next = nested.syncOrigin.getOrElse(nested.transformed)
+           appendValDefToNextTerm(nValDef, next)
+       result 
+                  
+    def appendValDefToNextTerm(valDef: ValDef, next:Term): Term =
+       next match
+         case x@Lambda(params,term) => Block(List(valDef), x) 
+         case Block(stats, last) => Block(valDef::stats, last)
+         case other => Block(List(valDef), other)
+
 
   end ValCpsTree
 

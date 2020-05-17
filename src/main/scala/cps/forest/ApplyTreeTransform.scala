@@ -157,8 +157,7 @@ trait ApplyTreeTransform[F[_],CT]:
     def useIdent: Boolean = isAsync || !noOrderDepended
     def isOrderDepended = !noOrderDepended
     def shift(): ApplyArgRecord
-    def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] 
-    def appendTree(tree: CpsTree): CpsTree
+    def append(tree: CpsTree): CpsTree
 
   case class ApplyArgRepeatRecord(
        term: Repeated,
@@ -178,31 +177,16 @@ trait ApplyTreeTransform[F[_],CT]:
     override def noOrderDepended = elements.forall(_.noOrderDepended)
     override def shift() = copy(elements = elements.map(_.shift()))
 
-    override def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] =
-       val s0: CpsExpr[F,_] = CpsExpr.unit(cpsCtx.monad)
-       val r = elements.foldLeft(s0){(s,e) => 
-           e match
-              case e1: ApplyArgTermRecord =>
-                  if (e.useIdent) s.append(e1.valDefCpsExpr) else s
-              case _: ApplyArgLambdaRecord => s
-              case _ => // incorrect warning
-                  // impossible: repeated inside repeated
-                  throw MacroError("Impossible: repeated inside repeated",cpsCtx.patternCode)
-       }
-       r.append(a)
-
-    override def appendTree(tree: CpsTree): CpsTree =
+    override def append(tree: CpsTree): CpsTree =
        if (elements.isEmpty)
          tree
        else 
          elements.foldRight(tree){(e,s) => 
            e match
-            case e1: ApplyArgTermRecord =>
-               if (e1.useIdent)
-                  val valTree = exprToTree(e1.valDefCpsExpr, e1.valDefExpr.unseal )
-                  s.prepend(valTree)
-               else
-                  s 
+            case _: ApplyArgNoPrecalcTermRecord =>
+                  s
+            case e1: ApplyArgPrecalcTermRecord =>
+                  e.append(s)
             case _: ApplyArgLambdaRecord => s
             case _ => // incorrect warning
                throw MacroError("Impossible: repeated inside repeated",cpsCtx.patternCode)
@@ -211,35 +195,36 @@ trait ApplyTreeTransform[F[_],CT]:
 
   }
   
-
-  case class ApplyArgTermRecord(
+  case class ApplyArgNoPrecalcTermRecord(
        term: Term,
-       index: Int,
-       valDefExpr: Expr[Unit],
-       valDefCpsExpr: CpsExpr[F,Unit],
-       ident: Ident 
+       index: Int
   ) extends ApplyArgRecord
   {
-     def isAsync = valDefCpsExpr.isAsync
+     def isAsync = false
      def hasShiftedLambda: Boolean = false
      def noOrderDepended = termIsNoOrderDepended(term)
-     def identArg: Term = 
-        if (!isAsync && noOrderDepended)
-            term
-        else
-            ident
+     def identArg: Term = term
      def shift(): ApplyArgRecord = this
-     def append[A:quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] =
-        valDefCpsExpr.append(a)
-
-     override def appendTree(tree: CpsTree): CpsTree =
-        if (useIdent)
-           val valTree = exprToTree(valDefCpsExpr, valDefExpr.unseal)
-           valTree.append(tree)
-        else
-           tree
-        
+     override def append(tree: CpsTree): CpsTree = tree
   }
+
+  case class ApplyArgPrecalcTermRecord(
+       term: Term,
+       index: Int,
+       termCpsTree: CpsTree,
+       valDef: ValDef,
+       ident: Term
+  ) extends ApplyArgRecord
+  {
+     def isAsync = termCpsTree.isAsync
+     def hasShiftedLambda: Boolean = false
+     def noOrderDepended = termIsNoOrderDepended(term)
+     def identArg: Term = ident
+     def shift(): ApplyArgRecord = this
+     override def append(tree: CpsTree): CpsTree =
+        ValCpsTree(valDef, termCpsTree, tree)
+  }
+
 
   case class ApplyArgLambdaRecord(
        term: Block,   // Lambda,  see coding of Lambda in Tasty Reflect.
@@ -285,9 +270,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
        def shift(): ApplyArgRecord = copy(shifted=true)
 
-       def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] = a
-
-       def appendTree(a: CpsTree): CpsTree = a
+       def append(a: CpsTree): CpsTree = a
 
        private def changeArgs(params:List[ValDef], nParams:List[Tree], body: Term): Term =
          val association: Map[Symbol, Tree] = (params zip nParams).foldLeft(Map.empty){
@@ -319,9 +302,7 @@ trait ApplyTreeTransform[F[_],CT]:
        def noOrderDepended = nested.noOrderDepended
        def identArg: Term = NamedArg(name, nested.identArg)
        def shift(): ApplyArgRecord = copy(nested=nested.shift())
-       def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] = 
-                                                nested.append(a)
-       def appendTree(a: CpsTree): CpsTree = nested.appendTree(a)
+       def append(a: CpsTree): CpsTree = nested.append(a)
 
   }
 
@@ -337,16 +318,8 @@ trait ApplyTreeTransform[F[_],CT]:
        def noOrderDepended = nested.noOrderDepended
        def identArg: Term = nested.identArg
        def shift(): ApplyArgRecord = copy(nested=nested.shift())
-       def append[A: quoted.Type](a: CpsExpr[F,A]): CpsExpr[F,A] = 
+       def append(a: CpsTree): CpsTree =
              val na = nested.append(a)
-             if (na eq a) {
-                a
-             } else {
-                InlinedCpsExpr(using qctx)(cpsCtx.monad,Seq(),origin,na)
-             }
-
-       def appendTree(a: CpsTree): CpsTree =
-             val na = nested.appendTree(a)
              if (na eq a)
                 a
              else
@@ -423,24 +396,11 @@ trait ApplyTreeTransform[F[_],CT]:
                                     buildApply(cpsFun, fun, newArgs, applyTerm.tpe, shiftedLambdaIndexes)
                                  }
            if (runFold) 
-              /*
-              val lastCpsExpr = lastCpsTree.toResult[CT]
-              if (cpsCtx.flags.debugLevel > 15)
-                  println(s"lastCpsTree=${lastCpsTree}")
-                  println(s"lastCpsExpr.transformed=${lastCpsExpr.transformed.show}")
-              val expr = applyRecords.foldRight(lastCpsExpr){ (p,s) =>
-                             if (p.useIdent) 
-                                 p.append(s)
-                             else
-                                 s
-              }
-              exprToTree(expr,applyTerm)
-              */
               if (cpsCtx.flags.debugLevel >= 15)
                  println(s"lastCpsTree = ${lastCpsTree}")
               applyRecords.foldRight(lastCpsTree){ (p,s) =>
                  if (p.useIdent)
-                   val r = p.appendTree(s)
+                   val r = p.append(s)
                    if (cpsCtx.flags.debugLevel >= 15)
                      println(s"prepending $p")
                      println(s"result: $r")
@@ -492,48 +452,23 @@ trait ApplyTreeTransform[F[_],CT]:
             else
                ApplyArgInlinedRecord(inlined, nested)
          case _ =>
-            t.seal match {
-              case '{ $x:$tx } =>
-                  val argName:String = "a"+i
-                  val valDefExpr = '{
-                                      @showName(${Expr(argName)})
-                                      val a:${tx} = ${x}
-                                      a
-                                    }
-                  val valDef = TransformUtil.find(valDefExpr.unseal, {
-                        case v@ValDef(_,_,_) => Some(v)
-                        case _ => None
-                  }).get.asInstanceOf[ValDef]
-                  val ident = TransformUtil.find(valDefExpr.unseal, {
-                        case id@Ident(name) => if (id.symbol == valDef.symbol) 
-                                                  Some(id)
-                                               else None
-                        case _ => None
-                  }).get.asInstanceOf[Ident]
-                  val unitBlockExpr = Block( valDef::Nil, Literal(Constant(())) ).seal.
-                                                                     asInstanceOf[Expr[Unit]]
-                  val valDefCpsExpr = ValDefTransform.fromBlock(
-                                        TransformationContext(
-                                          unitBlockExpr,
-                                          quoted.Type.UnitTag,
-                                          cpsCtx.monad,
-                                          cpsCtx.flags,
-                                          cpsCtx.exprMarker + argName, 
-                                          cpsCtx.nesting + 1
-                                        ), 
-                                        valDef
-                                      )
-                  if (cpsCtx.flags.debugLevel > 15) {
-                       println(s"buildApplyArg, t=$t, i=$i")
-                       println(s"buildApplyArg, unitBlockExpr=${unitBlockExpr.show}")
-                       println(s"buildApplyArg, valDefCpsExpr=${valDefCpsExpr}")
-                  }
-                  ApplyArgTermRecord(t,i, unitBlockExpr,
-                                     valDefCpsExpr, ident)
-              case _ =>
-                  throw MacroError(s"Can't determinate type for argument $t",t.seal)
-            }
-      }
+            // TODO: check pass by name before
+            val termCpsTree = runRoot(t)
+            if (!termCpsTree.isAsync && termIsNoOrderDepended(t)) 
+               ApplyArgNoPrecalcTermRecord(t,i)
+            else
+               val argName: String = "a" + i  // TODO: get name from params
+               val symbol = Symbol.newVal(summon[Context].owner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
+               val valDef = symbol.tree match
+                 case v@ValDef(_,_,_) => v
+                 case _ =>
+                    throw MacroError("Impossible internal error, create ValDef but have ${symbol.tree", safeSeal(t))
+               val ident = Ref(symbol)
+               if (cpsCtx.flags.debugLevel > 15) {
+                    println(s"buildApplyArg: Precacl, t=$t, i=$i")
+               }
+               ApplyArgPrecalcTermRecord(t,i,termCpsTree,valDef,ident)
+       }
   }
 
   def haveAsyncLambdaInArgs(args:List[Term]):Boolean = 
@@ -602,27 +537,7 @@ trait ApplyTreeTransform[F[_],CT]:
           case Block(statements, last) =>
                   Block(statements, shiftCaller(last))
           case _ => 
-                  val errorExpr = term match 
-                    case (_ : MethodType) =>
-                              cpsCtx.patternCode
-                    case (_ : PolyType) =>
-                              cpsCtx.patternCode
-                    case _: MethodType | _: PolyType =>
-                              Console.println("only sum")
-                              cpsCtx.patternCode
-                    case other =>
-                              try {
-                                term.seal
-                              }catch{
-                                // bug in dotty.
-                                case ex: Exception =>
-                                   Console.println(s"other: s${other}") 
-                                   val isPoly = other.isInstanceOf[PolyType]
-                                   val isMethod = other.isInstanceOf[MethodType]
-                                   Console.println(s"poly=${isPoly}, method=${isMethod}") 
-                                   ex.printStackTrace()
-                                   cpsCtx.patternCode
-                              }
+                  val errorExpr = safeSeal(term)
                   throw MacroError(s"Can't shift caller ${term}",errorExpr)
 
     Apply(shiftCaller(term),args)
