@@ -52,8 +52,8 @@ class TestCBS1Apply:
   }
 
   @Test @Ignore def apply_funNamed(): Unit = {
-     //implicit val printCode = cps.macroFlags.PrintCode
-     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     implicit val printCode = cps.macroFlags.PrintCode
+     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async{
        val zzz = new Zzz(3)
        var x = 0;

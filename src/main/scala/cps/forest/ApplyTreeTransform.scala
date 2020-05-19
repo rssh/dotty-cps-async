@@ -105,11 +105,12 @@ trait ApplyTreeTransform[F[_],CT]:
      }
 
 
-  def handleFunSelect(applyTerm:Term, fun:Term, args:List[Term], obj:Term, method: String): CpsTree = 
+  def handleFunSelect(applyTerm:Term, fun:Term, args:List[Term], obj:Term, methodName: String): CpsTree = 
      if (cpsCtx.flags.debugLevel >= 10)
        println( "runApply:handleFunSelect")
        println(s"   obj=${obj}")
-       println(s"   method=${method}")
+       println(s"   obj.symbol=${obj.symbol}")
+       println(s"   methodName=${methodName}")
      val cpsObj = runRoot(obj)
      if (cpsObj.isAsync) 
         handleArgs1(applyTerm, fun, cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe), args)
@@ -365,10 +366,14 @@ trait ApplyTreeTransform[F[_],CT]:
    
   def handleArgs1(applyTerm: Term, fun: Term, cpsFun: CpsTree, 
                       args: List[Term]): CpsTree =  {
+        if cpsCtx.flags.debugLevel >= 15 then
+            println(s"handleArgs1, fun=${fun}")
+            println(s" fun.symbol=${fun.symbol}")
+        
         val paramSyms = fun.symbol.paramSymss.head.toIndexedSeq
         if (paramSyms.isEmpty && !args.isEmpty)
             warning(s"can't find paramDefs for args, fun=$fun",fun.symbol.pos)
-        val applyRecords = buildApplyArgsRecords(paramSyms, args, cpsCtx)
+        val applyRecords = buildApplyArgsRecords(fun, paramSyms, args, cpsCtx)
         val existsAsyncArgs = applyRecords.exists(_.isAsync)
         val shiftedLambdaIndexes = applyRecords.filter(_.hasShiftedLambda).map(_.index).toSet
         if (!existsAsyncArgs && shiftedLambdaIndexes.isEmpty) {
@@ -400,11 +405,7 @@ trait ApplyTreeTransform[F[_],CT]:
                  println(s"lastCpsTree = ${lastCpsTree}")
               applyRecords.foldRight(lastCpsTree){ (p,s) =>
                  if (p.useIdent)
-                   val r = p.append(s)
-                   if (cpsCtx.flags.debugLevel >= 15)
-                     println(s"prepending $p")
-                     println(s"result: $r")
-                   r
+                   p.append(s)
                  else
                    s
               }
@@ -413,40 +414,45 @@ trait ApplyTreeTransform[F[_],CT]:
         }
   }
 
-  def buildApplyArgsRecords(paramSyms: IndexedSeq[Symbol], args: List[Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
+  def buildApplyArgsRecords(fun: Term, paramSyms: IndexedSeq[Symbol], args: List[Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
      if cpsCtx.flags.debugLevel >= 15 then
        println(s"buildApplyArgRecords, paramSyms=${paramSyms}")
+       println(s"fun.symbol.tree=${fun.symbol.tree}")
      args.zipWithIndex.map{ (t:Term, i:Int) =>
-       buildApplyArgRecord(paramSyms,t,i, cpsCtx)
+       buildApplyArgRecord(fun,paramSyms,t,i, cpsCtx)
      }
   }
 
 
-  def buildApplyArgRecord(paramSyms: IndexedSeq[Symbol], t: Term,i: Int, cpsCtx: TransformationContext[F,?]): ApplyArgRecord = {
+  def buildApplyArgRecord(fun:Term, paramSyms: IndexedSeq[Symbol], t: Term,i: Int, cpsCtx: TransformationContext[F,?]): ApplyArgRecord = {
        import scala.internal.quoted.showName
        import scala.quoted.QuoteContext
        import scala.quoted.Expr
        if cpsCtx.flags.debugLevel >= 15 then
           println(s"buildApplyArgRecord: i=$i, t=$t, t.tpe=${t.tpe}")
+          // TODO: this will not work with NamedArgs
+          println(s"paramSyms(i)=${paramSyms(i)}")
+          println(s"paramSyms(i).tree=${paramSyms(i).tree}")
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) => 
             ApplyArgRepeatRecord(r, i, 
-                 buildApplyArgsRecords(paramSyms, rargs, cpsCtx.nestSame("r")) )
+                 buildApplyArgsRecords(fun,paramSyms, rargs, cpsCtx.nestSame("r")) )
          case r@Repeated(rargs, tpt) => 
             ApplyArgRepeatRecord(r, i, 
-                 buildApplyArgsRecords(paramSyms, rargs, cpsCtx.nestSame("r")) )
+                 buildApplyArgsRecords(fun,paramSyms, rargs, cpsCtx.nestSame("r")) )
          case lambda@Lambda(params, body) => 
             // mb, this will not work, for expressions, which return block.
             //  look's like somewhere in future, better add 'shifted' case to CpsExpr
             val cpsBody = runRoot(body)
             ApplyArgLambdaRecord(lambda,i,cpsBody, false)
          case namedArg@NamedArg(name, arg) =>
+             // TODO: change i ?
             ApplyArgNamedRecord(namedArg, name, 
-                 buildApplyArgRecord(paramSyms,arg,i,cpsCtx))
+                 buildApplyArgRecord(fun,paramSyms,arg,i,cpsCtx))
          case Block(Nil,last) => 
-            buildApplyArgRecord(paramSyms,last,i,cpsCtx)
+            buildApplyArgRecord(fun,paramSyms,last,i,cpsCtx)
          case inlined@Inlined(call,bindings,body) => 
-            val nested = buildApplyArgRecord(paramSyms, body,i,cpsCtx)
+            val nested = buildApplyArgRecord(fun,paramSyms, body,i,cpsCtx)
             if (bindings.isEmpty)
                nested
             else

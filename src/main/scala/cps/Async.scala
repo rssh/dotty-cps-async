@@ -1,5 +1,7 @@
 package cps
 
+import scala.language.implicitConversions
+
 import scala.annotation._
 import scala.quoted._
 import scala.compiletime._
@@ -54,7 +56,7 @@ object Async {
              throw MacroError(s"Can't find async monad for ${ft.show}", f)
     catch
       case ex: MacroError =>
-           qctx.error(ex.msg, ex.posExpr)
+           Reporting.error(ex.msg, ex.posExpr)
            '{???}
 
 
