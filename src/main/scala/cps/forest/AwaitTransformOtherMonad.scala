@@ -1,7 +1,7 @@
 package cps.forest
 
+import scala.language.implicitConversions
 import scala.quoted._
-import scala.quoted.matching._
 
 import cps._
 import cps.misc._
@@ -29,7 +29,7 @@ object AwaitTransformOtherMonad:
      if (gtType.tpe =:= ftType.tpe) {
         AwaitTransform.apply(cpsCtx,sType,gs.asInstanceOf[Expr[F[S]]])
      } else {
-        qctx.warning("other monad: ${gType.show} vs ${fType.show}", patternCode)
+        Reporting.warning("other monad: ${gType.show} vs ${fType.show}", patternCode)
         //TODO: call typedApply
         //CpsExprResult[F,T](patternCode, builder, patternType, true)
         throw MacroError("intersection of different asyc areas is not supported now", patternCode)

@@ -1,5 +1,6 @@
 package cps.forest
 
+import scala.collection.immutable.Queue
 import scala.quoted._
 import cps._
 
@@ -17,8 +18,10 @@ trait CpsTreeScope[F[_], CT] {
 
      def transformed: Term
 
+     def syncOrigin: Option[Term]
+
      def typeApply(targs: List[qctx.tasty.TypeTree], ntpe: Type): CpsTree =
-           applyTerm(_.appliedToTypeTrees(targs), ntpe)
+            applyTerm(_.appliedToTypeTrees(targs), ntpe)
 
      def applyTerm(f: Term => Term, ntpe: Type): CpsTree
 
@@ -26,28 +29,31 @@ trait CpsTreeScope[F[_], CT] {
 
      def monadFlatMap(f: Term => Term, ntpe:Type): CpsTree
 
+     def append(next: CpsTree): CpsTree
+
+     def prepend(prev: CpsTree): CpsTree =
+          prev.append(this)
+
      /**
       * type which is 'inside ' monad, i.e. T for F[T].
       **/
      def otpe: Type
 
-     def toResult[T: quoted.Type](origin: Expr[T]) : CpsExpr[F,T] =
+     def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
-       this match
-         case syncTerm: PureCpsTree =>
-             val code = safeSeal(syncTerm.origin).asInstanceOf[Expr[T]]
+       syncOrigin match
+         case Some(syncTerm) =>
+             val code = safeSeal(syncTerm).asInstanceOf[Expr[T]]
              CpsExpr.sync(monad,code)
-         case cpsTree: AsyncCpsTree =>
-             val transformed = safeSeal(cpsTree.transformed).asInstanceOf[Expr[F[T]]]
-             CpsExpr.async[F,T](monad, transformed)
+         case None =>
+             val sealedTransformed = safeSeal(transformed).asInstanceOf[Expr[F[T]]]
+             CpsExpr.async[F,T](monad, sealedTransformed)
 
-     def safeSeal(t:Term): Expr[Any] =
-       t.tpe.widen match 
-         case _ : MethodType | _ : PolyType => 
-           val etaExpanded = t.etaExpand
-           etaExpanded.seal
-         case _ => t.seal
-            
+     def toResultWithType[T](qt: quoted.Type[T]): CpsExpr[F,T] = {
+             given quoted.Type[T] = qt
+             toResult[T]
+     }
+
 
 
   object CpsTree:
@@ -76,7 +82,21 @@ trait CpsTreeScope[F[_], CT] {
     def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
       FlatMappedCpsTree(this,f, ntpe)
 
+    def append(next: CpsTree): CpsTree =
+      next match
+        case BlockCpsTree(statements,last) =>  //dott warn here.  TODO: research
+             BlockCpsTree(statements.prepended(origin), last)
+        case x: AsyncCpsTree =>
+             BlockCpsTree(Queue(origin), x)
+        case y: PureCpsTree =>
+             BlockCpsTree(Queue(origin), y)
+        //case _ =>
+        //    BlockCpsTree(Queue(origin), next)
+      
+
     def otpe: Type = origin.tpe
+
+    def syncOrigin: Option[Term] = Some(origin)
 
     def transformed: Term = 
           val untpureTerm = cpsCtx.monad.unseal.select(pureSymbol)
@@ -89,13 +109,24 @@ trait CpsTreeScope[F[_], CT] {
                       
     def isAsync = true
 
-    def transformed: qctx.tasty.Term
+    def transformed: Term
+
+    def syncOrigin: Option[Term] = None
 
     def monadMap(f: Term => Term, ntpe: Type): CpsTree =
           MappedCpsTree(this,f, ntpe)
 
     def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
           FlatMappedCpsTree(this,f, ntpe)
+
+    def append(next: CpsTree): CpsTree =
+          next match
+            case syncNext: PureCpsTree => monadMap(_ => syncNext.origin, next.otpe)
+            case asyncNext: AsyncCpsTree => monadFlatMap(_ => next.transformed, next.otpe)
+            case blockNext: BlockCpsTree =>
+                  blockNext.syncOrigin match
+                    case Some(syncTerm) => monadMap(_ => syncTerm, next.otpe)
+                    case None => monadFlatMap(_ => blockNext.transformed, next.otpe)
 
 
 
@@ -144,7 +175,7 @@ trait CpsTreeScope[F[_], CT] {
   case class FlatMappedCpsTree(
                       val prev: CpsTree,
                       opm: Term => Term,
-                      otpe: Type) extends AsyncCpsTree {
+                      otpe: Type) extends AsyncCpsTree:
 
     def applyTerm(f: Term => Term, npte: Type): CpsTree =
           FlatMappedCpsTree(prev, t => f(opm(t)), npte)
@@ -178,7 +209,125 @@ trait CpsTreeScope[F[_], CT] {
     }
 
 
-  }
+  end FlatMappedCpsTree
 
+  case class BlockCpsTree(prevs:Queue[Statement], last:CpsTree) extends CpsTree:
+
+    override def isAsync = last.isAsync
+
+    def toLast(f:CpsTree=>CpsTree):CpsTree =
+      if (prevs.isEmpty)
+        f(last)
+      else
+        BlockCpsTree(prevs,f(last))
+
+    override def transformed: Term = 
+      if (prevs.isEmpty)
+        last.transformed
+      else
+        Block(prevs.toList, last.transformed)
+     
+    override def syncOrigin: Option[Term] = 
+      if prevs.isEmpty then
+        last.syncOrigin
+      else 
+        last.syncOrigin map (l => Block(prevs.toList,l))
+
+    def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
+       toLast(_.applyTerm(f,ntpe))
+
+    def monadMap(f: Term => Term, ntpe: Type): CpsTree =
+       toLast(_.monadMap(f,ntpe))
+      
+    def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
+       toLast(_.monadFlatMap(f,ntpe))
+
+    def append(next: CpsTree): CpsTree =
+       last.syncOrigin match
+         case Some(syncLast) => BlockCpsTree(prevs.appended(syncLast),next)
+         case None => BlockCpsTree(prevs, last.append(next))
+
+    def otpe: Type = last.otpe
+
+  end BlockCpsTree
+  
+  case class InlinedCpsTree(origin: Inlined, nested: CpsTree) extends CpsTree:
+
+    override def isAsync = nested.isAsync
+
+    override def transformed: Term = 
+                  Inlined(origin.call, origin.bindings, nested.transformed)
+
+    override def syncOrigin: Option[Term] = 
+                  nested.syncOrigin.map(Inlined(origin.call, origin.bindings, _ ))
+
+    def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
+         InlinedCpsTree(origin, nested.applyTerm(f, ntpe))
+
+    def monadMap(f: Term => Term, ntpe: Type): CpsTree =
+         InlinedCpsTree(origin, nested.monadMap(f, ntpe))
+
+    def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
+         InlinedCpsTree(origin, nested.monadFlatMap(f, ntpe))
+
+    def append(next: CpsTree): CpsTree =
+         InlinedCpsTree(origin, nested.append(next))
+
+    def otpe: Type = nested.otpe
+
+  end InlinedCpsTree
+
+  case class ValCpsTree(valDef: ValDef, rightPart: CpsTree, nested: CpsTree) extends CpsTree:
+
+    override def isAsync = rightPart.isAsync || nested.isAsync
+
+    override def transformed: Term = 
+       if (rightPart.isAsync)
+         if (nested.isAsync) 
+             rightPart.monadFlatMap(v => appendValDef(v) , nested.otpe).transformed
+         else
+             rightPart.monadMap(v => appendValDef(v) , nested.otpe).transformed
+       else
+         appendValDef(valDef.rhs.get)
+
+    override def syncOrigin: Option[Term] = 
+       for{
+           rhs <- rightPart.syncOrigin
+           next <- rightPart.syncOrigin
+       } yield appendValDef(rhs)
+          
+    override def applyTerm(f: Term => Term, ntpe: Type): CpsTree = 
+        ValCpsTree(valDef, rightPart, nested.applyTerm(f,ntpe))
+       
+    override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
+        ValCpsTree(valDef, rightPart, nested.monadMap(f,ntpe))
+        
+    override def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
+        ValCpsTree(valDef, rightPart, nested.monadFlatMap(f,ntpe))
+
+    override def append(next: CpsTree): CpsTree =
+        ValCpsTree(valDef, rightPart, nested.append(next))
+
+    override def otpe: Type = nested.otpe
+
+    def appendValDef(right: Term):Term =
+       val nValDef = ValDef.copy(valDef)(name = valDef.name, tpt=valDef.tpt, rhs=Some(right))
+       val result = nested match
+         case BlockCpsTree( prevs,last) => 
+           val lastTerm = last.syncOrigin.getOrElse(last.transformed)
+           Block(nValDef +: prevs.toList, lastTerm)
+         case _ =>
+           val next = nested.syncOrigin.getOrElse(nested.transformed)
+           appendValDefToNextTerm(nValDef, next)
+       result 
+                  
+    def appendValDefToNextTerm(valDef: ValDef, next:Term): Term =
+       next match
+         case x@Lambda(params,term) => Block(List(valDef), x) 
+         case Block(stats, last) => Block(valDef::stats, last)
+         case other => Block(List(valDef), other)
+
+
+  end ValCpsTree
 
 }

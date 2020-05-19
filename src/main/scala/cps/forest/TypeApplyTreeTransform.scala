@@ -1,7 +1,6 @@
 package cps.forest
 
 import scala.quoted._
-import scala.quoted.matching._
 
 import cps._
 import cps.misc._
@@ -40,7 +39,7 @@ object TypeApplyTreeTransform:
             runTypeApply(applyTerm.asInstanceOf[qctx.tasty.Term],
                          fun.asInstanceOf[qctx.tasty.Term],
                          targs.asInstanceOf[List[qctx.tasty.TypeTree]]
-                        ).toResult(cpsCtx.patternCode).asInstanceOf[CpsExpr[F,T]]
+                        ).toResult[T].asInstanceOf[CpsExpr[F,T]]
 
      } 
      (new Bridge(cpsCtx1)).bridge()

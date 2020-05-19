@@ -1,7 +1,6 @@
 package cps.forest
 
 import scala.quoted._
-import scala.quoted.matching._
 
 import cps._
 import cps.misc._
@@ -30,7 +29,7 @@ trait RootTreeTransform[F[_], CT]:
                 expr match {
                   case '{ $e: $et } =>
                      val rCpsExpr = Async.nestTransform(e, cpsCtx, "_")
-                     val r = exprToTree(rCpsExpr,term)
+                     val r = exprToTree(rCpsExpr, term)
                      if (cpsCtx.flags.debugLevel >= 10) 
                          println(s"rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
                          println(s"r=$r, async=${r.isAsync}")
@@ -69,11 +68,11 @@ trait RootTreeTransform[F[_], CT]:
   }
 
   def exprToTree(expr: CpsExpr[F,_], e: Term): CpsTree =
-    if (expr.isAsync) 
-       val transformed = expr.transformed.unseal
-       AwaitCpsTree(transformed, e.tpe)
-    else
-       PureCpsTree(e)
+     if (expr.isAsync)
+         val transformed = expr.transformed.unseal
+         AwaitCpsTree(transformed, e.tpe)
+     else
+         PureCpsTree(e)
 
 
 

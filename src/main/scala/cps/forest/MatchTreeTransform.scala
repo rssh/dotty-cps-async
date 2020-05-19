@@ -1,7 +1,6 @@
 package cps.forest
 
 import scala.quoted._
-import scala.quoted.matching._
 
 import cps._
 import cps.misc._
@@ -56,7 +55,7 @@ object MatchTreeTransform:
           
          def bridge(): CpsExpr[F,T] =
             val origin = matchTerm.asInstanceOf[qctx.tasty.Match]
-            runMatch(origin).toResult(cpsCtx.patternCode).asInstanceOf[CpsExpr[F,T]]
+            runMatch(origin).toResult[T]
                         
 
      } 
