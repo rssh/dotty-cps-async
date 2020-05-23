@@ -414,56 +414,107 @@ trait ApplyTreeTransform[F[_],CT]:
         }
   }
 
+
+  case class BuildApplyArgsAcc(
+    posIndex: Int = 0,
+    paramIndex: Int = 0,
+    wasNamed: Boolean = false,
+    inRepeat: Boolean = false,
+    inNamed: Boolean = false,
+    records: Seq[ApplyArgRecord] = IndexedSeq.empty,
+    filledNamed: Set[Int] = Set.empty
+  ) {
+
+    def advance(record: ApplyArgRecord): BuildApplyArgsAcc = 
+      if (inRepeat)
+        copy(posIndex=posIndex+1, records = records.appended(record))
+      else if (inNamed)
+        copy(posIndex=posIndex+1, wasNamed = true, records = records.appended(record))
+      else 
+        copy(posIndex=posIndex+1, paramIndex=paramIndex+1, records = records.appended(record))
+
+
+    def advanceNamed(record: ApplyArgRecord, index: Int): BuildApplyArgsAcc = 
+      if (wasNamed || paramIndex == 0) 
+        copy(records = records.appended(record), filledNamed = filledNamed + index)
+      else 
+        copy(wasNamed = true,
+            records = records.appended(record), filledNamed = (0 until paramIndex).toSet + index)
+    
+
+  }
+
+
   def buildApplyArgsRecords(fun: Term, paramSyms: IndexedSeq[Symbol], args: List[Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
      if cpsCtx.flags.debugLevel >= 15 then
        println(s"buildApplyArgRecords, paramSyms=${paramSyms}")
        println(s"fun.symbol.tree=${fun.symbol.tree}")
-     args.zipWithIndex.map{ (t:Term, i:Int) =>
-       buildApplyArgRecord(fun,paramSyms,t,i, cpsCtx)
-     }
+     buildApplyArgsRecordsAcc(fun, paramSyms, args, cpsCtx, BuildApplyArgsAcc()).records.toList
   }
 
+  def buildApplyArgsRecordsAcc(fun: Term, paramSyms: IndexedSeq[Symbol], args: List[Term], cpsCtx:TransformationContext[F,?], acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
+     if cpsCtx.flags.debugLevel >= 15 then
+       println(s"buildApplyArgRecordsAcc")
+     
+     args.foldLeft(acc){ (s,e) =>
+       buildApplyArgRecord(fun, paramSyms, e, cpsCtx, s)
+    }
 
-  def buildApplyArgRecord(fun:Term, paramSyms: IndexedSeq[Symbol], t: Term,i: Int, cpsCtx: TransformationContext[F,?]): ApplyArgRecord = {
+  }
+
+  def buildApplyArgRecord(fun:Term, paramSyms: IndexedSeq[Symbol], t: Term, cpsCtx: TransformationContext[F,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
        import scala.internal.quoted.showName
        import scala.quoted.QuoteContext
        import scala.quoted.Expr
        if cpsCtx.flags.debugLevel >= 15 then
-          println(s"buildApplyArgRecord: i=$i, t=$t, t.tpe=${t.tpe}")
+          println(s"buildApplyArgRecord: pos=${acc.posIndex} t=$t, t.tpe=${t.tpe}")
           // TODO: this will not work with NamedArgs
-          println(s"paramSyms(i)=${paramSyms(i)}")
-          println(s"paramSyms(i).tree=${paramSyms(i).tree}")
+          //println(s"paramSyms(i)=${paramSyms(i)}")
+          //println(s"paramSyms(i).tree=${paramSyms(i).tree}")
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) => 
-            ApplyArgRepeatRecord(r, i, 
-                 buildApplyArgsRecords(fun,paramSyms, rargs, cpsCtx.nestSame("r")) )
+            val accRepeated = buildApplyArgsRecordsAcc(fun, paramSyms, rargs, cpsCtx.nestSame("r"), 
+                               acc.copy(inRepeat=true,records=IndexedSeq.empty))
+            val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
+            acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case r@Repeated(rargs, tpt) => 
-            ApplyArgRepeatRecord(r, i, 
-                 buildApplyArgsRecords(fun,paramSyms, rargs, cpsCtx.nestSame("r")) )
+            val accRepeated = buildApplyArgsRecordsAcc(fun, paramSyms, rargs, cpsCtx.nestSame("r"), 
+                               acc.copy(inRepeat=true, records=IndexedSeq.empty))
+            val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
+            acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case lambda@Lambda(params, body) => 
             // mb, this will not work, for expressions, which return block.
             //  look's like somewhere in future, better add 'shifted' case to CpsExpr
             val cpsBody = runRoot(body)
-            ApplyArgLambdaRecord(lambda,i,cpsBody, false)
+            val nextRecord = ApplyArgLambdaRecord(lambda,acc.posIndex,cpsBody, false)
+            acc.advance(nextRecord)
          case namedArg@NamedArg(name, arg) =>
              // TODO: change i ?
-            ApplyArgNamedRecord(namedArg, name, 
-                 buildApplyArgRecord(fun,paramSyms,arg,i,cpsCtx))
-         case Block(Nil,last) => 
-            buildApplyArgRecord(fun,paramSyms,last,i,cpsCtx)
-         case inlined@Inlined(call,bindings,body) => 
-            val nested = buildApplyArgRecord(fun,paramSyms, body,i,cpsCtx)
-            if (bindings.isEmpty)
-               nested
+            val realIndex = paramSyms.indexWhere(_.name == name)
+            if (realIndex >= 0) then
+               val namedAcc = acc.copy(inNamed=true,paramIndex = realIndex, records=IndexedSeq.empty)
+               val nested = buildApplyArgRecord(fun,paramSyms,arg,cpsCtx,namedAcc).records.head
+               if (realIndex == acc.paramIndex && !acc.wasNamed)
+                 acc.advance(nested)
+               else
+                 acc.advanceNamed(nested,realIndex)
             else
-               ApplyArgInlinedRecord(inlined, nested)
+               throw MacroError(s"Can't find parameter with name $name", safeSeal(t))
+         case Block(Nil,last) => 
+            buildApplyArgRecord(fun,paramSyms,last,cpsCtx,acc)
+         case inlined@Inlined(call,bindings,body) => 
+            val nested = buildApplyArgRecord(fun,paramSyms, body,cpsCtx, acc.copy(records=IndexedSeq.empty)).records.head
+            if (bindings.isEmpty)
+               acc.advance(nested)
+            else
+               acc.advance(ApplyArgInlinedRecord(inlined, nested))
          case _ =>
             // TODO: check pass by name before
             val termCpsTree = runRoot(t)
             if (!termCpsTree.isAsync && termIsNoOrderDepended(t)) 
-               ApplyArgNoPrecalcTermRecord(t,i)
+               acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex))
             else
-               val argName: String = "a" + i  // TODO: get name from params
+               val argName: String = "a" + acc.posIndex // TODO: get name from params
                val symbol = Symbol.newVal(summon[Context].owner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
                val valDef = symbol.tree match
                  case v@ValDef(_,_,_) => v
@@ -471,9 +522,9 @@ trait ApplyTreeTransform[F[_],CT]:
                     throw MacroError("Impossible internal error, create ValDef but have ${symbol.tree", safeSeal(t))
                val ident = Ref(symbol)
                if (cpsCtx.flags.debugLevel > 15) {
-                    println(s"buildApplyArg: Precacl, t=$t, i=$i")
+                    println(s"buildApplyArg: Precacl, t=$t, i=${acc.posIndex}")
                }
-               ApplyArgPrecalcTermRecord(t,i,termCpsTree,valDef,ident)
+               acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree,valDef,ident))
        }
   }
 
