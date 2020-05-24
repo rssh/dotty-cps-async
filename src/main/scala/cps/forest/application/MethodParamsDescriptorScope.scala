@@ -13,6 +13,8 @@ trait MethodParamsDescriptorScope[F[_], CT]:
 
   import qctx.tasty._
 
+
+
   trait MethodParamsDescriptor:
 
      def  paramIndex(name: String): Option[Int]
@@ -21,5 +23,41 @@ trait MethodParamsDescriptorScope[F[_], CT]:
 
      def  paramType(index: Int): Option[Type]
 
+
+  class MethodTypeBasedParamsDescriptor(mt: MethodType) extends MethodParamsDescriptor:
+
+     override def  paramIndex(name: String): Option[Int] = paramIndexes.get(name)
+
+     override def  paramName(index: Int): Option[String] = 
+       if (index > 0 && index < paramNames.size) 
+         Some(paramNames(index))
+       else
+         None
+
+     override def  paramType(index: Int): Option[Type] = 
+       if (index > 0 && index < paramTypes.size) 
+         Some(paramTypes(index))
+       else
+         None
+
+     private lazy val paramNames = mt.paramNames.toIndexedSeq
+     private lazy val paramIndexes = paramNames.zipWithIndex.toMap
+     private lazy val paramTypes = mt.paramTypes.toIndexedSeq
+
+
+  object EmptyParamsDescriptor extends MethodParamsDescriptor:
+
+     override def  paramIndex(name: String): Option[Int] = None
+     override def  paramName(index: Int): Option[String] = None
+     override def  paramType(index: Int): Option[Type] = None
+
+
+  object DynaminParamsDescriptor extends MethodParamsDescriptor:
+
+     override def  paramIndex(name: String): Option[Int] = 
+        scala.util.Try(name.toInt).toOption
+
+     override def  paramName(index: Int): Option[String] =  Some(index.toString)
+     override def  paramType(index: Int): Option[Type] = Some(defn.AnyType)
 
 
