@@ -21,9 +21,6 @@ object WhileTransform:
      val cpsRepeat = Async.nestTransform(repeat, cpsCtx, "W")
      val isAsync = cpsCond.isAsync || cpsRepeat.isAsync
 
-     def uninline[X](x:Expr[X]):Expr[X] = 
-              TransformUtil.skipInlined(x.unseal).seal.asInstanceOf[Expr[X]]
-
      val unitBuilder = {
        if (!cpsCond.isAsync)
          if (!cpsRepeat.isAsync) 

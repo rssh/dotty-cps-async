@@ -364,11 +364,25 @@ trait ApplyTreeTransform[F[_],CT]:
       case _ => throw MacroError("Not supported type for shifting: ${tpe}",cpsCtx.patternCode)
     }
    
+
   def handleArgs1(applyTerm: Term, fun: Term, cpsFun: CpsTree, 
                       args: List[Term]): CpsTree =  {
         if cpsCtx.flags.debugLevel >= 15 then
             println(s"handleArgs1, fun=${fun}")
             println(s" fun.symbol=${fun.symbol}")
+            println(s" fun.tpe=${fun.tpe}")
+            println(s" fun.tpe.simplified=${fun.tpe.simplified}")
+            println(s" fun.tpe.widen.dealias=${fun.tpe.widen.dealias}")
+            fun.tpe.widen.dealias match 
+              case mt@MethodType(paramNames, paramTypes, resultType) =>
+                 println(s" methodType: paramTypes=${paramTypes}")
+              case pt@PolyType(names, paramBounds, resultBound) =>
+                 println(s" polyType: paramBounds=${paramBounds}")
+              case _ =>
+                 println(s" not a method.")
+            
+               
+
         
         val paramSyms = fun.symbol.paramSymss.head.toIndexedSeq
         if (paramSyms.isEmpty && !args.isEmpty)
