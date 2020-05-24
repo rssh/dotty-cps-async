@@ -1,6 +1,7 @@
 package cps.forest
 
 import cps._
+import cps.forest.application._
 import scala.quoted._
 
 trait TreeTransformScope[F[_]:Type,CT:Type]
@@ -9,6 +10,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
                   with TypeApplyTreeTransform[F,CT]
                   with RootTreeTransform[F, CT]
                   with ApplyTreeTransform[F,CT]
+                  with ApplicationHelper[F,CT]
                   with AwaitTreeTransform[F, CT]
                   with SelectTreeTransform[F, CT]
                   with LambdaTreeTransform[F, CT]
