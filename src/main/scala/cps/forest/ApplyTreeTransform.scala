@@ -188,12 +188,9 @@ trait ApplyTreeTransform[F[_],CT]:
                  println(s" not a method.")
             
                
-
+        val paramsDescriptor = MethodParamsDescriptor(fun)
         
-        val paramSyms = fun.symbol.paramSymss.head.toIndexedSeq
-        if (paramSyms.isEmpty && !args.isEmpty)
-            warning(s"can't find paramDefs for args, fun=$fun",fun.symbol.pos)
-        val applyRecords = buildApplyArgsRecords(fun, paramSyms, args, cpsCtx)
+        val applyRecords = buildApplyArgsRecords(fun, paramsDescriptor, args, cpsCtx)
         val existsAsyncArgs = applyRecords.exists(_.isAsync)
         val shiftedLambdaIndexes = applyRecords.filter(_.hasShiftedLambda).map(_.index).toSet
         if (!existsAsyncArgs && shiftedLambdaIndexes.isEmpty) {
@@ -265,24 +262,23 @@ trait ApplyTreeTransform[F[_],CT]:
   }
 
 
-  def buildApplyArgsRecords(fun: Term, paramSyms: IndexedSeq[Symbol], args: List[Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
+  def buildApplyArgsRecords(fun: Term, paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
      if cpsCtx.flags.debugLevel >= 15 then
-       println(s"buildApplyArgRecords, paramSyms=${paramSyms}")
-       println(s"fun.symbol.tree=${fun.symbol.tree}")
-     buildApplyArgsRecordsAcc(fun, paramSyms, args, cpsCtx, BuildApplyArgsAcc()).records.toList
+       println(s"buildApplyArgRecords, fun.tpe=${fun.tpe}")
+     buildApplyArgsRecordsAcc(fun, paramsDescriptor, args, cpsCtx, BuildApplyArgsAcc()).records.toList
   }
 
-  def buildApplyArgsRecordsAcc(fun: Term, paramSyms: IndexedSeq[Symbol], args: List[Term], cpsCtx:TransformationContext[F,?], acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
+  def buildApplyArgsRecordsAcc(fun: Term, paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?], acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
      if cpsCtx.flags.debugLevel >= 15 then
        println(s"buildApplyArgRecordsAcc")
      
      args.foldLeft(acc){ (s,e) =>
-       buildApplyArgRecord(fun, paramSyms, e, cpsCtx, s)
+       buildApplyArgRecord(fun, paramsDescriptor, e, cpsCtx, s)
     }
 
   }
 
-  def buildApplyArgRecord(fun:Term, paramSyms: IndexedSeq[Symbol], t: Term, cpsCtx: TransformationContext[F,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
+  def buildApplyArgRecord(fun:Term, paramsDescriptor: MethodParamsDescriptor, t: Term, cpsCtx: TransformationContext[F,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
        import scala.internal.quoted.showName
        import scala.quoted.QuoteContext
        import scala.quoted.Expr
@@ -293,12 +289,12 @@ trait ApplyTreeTransform[F[_],CT]:
           //println(s"paramSyms(i).tree=${paramSyms(i).tree}")
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) => 
-            val accRepeated = buildApplyArgsRecordsAcc(fun, paramSyms, rargs, cpsCtx.nestSame("r"), 
+            val accRepeated = buildApplyArgsRecordsAcc(fun, paramsDescriptor, rargs, cpsCtx.nestSame("r"), 
                                acc.copy(inRepeat=true,records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case r@Repeated(rargs, tpt) => 
-            val accRepeated = buildApplyArgsRecordsAcc(fun, paramSyms, rargs, cpsCtx.nestSame("r"), 
+            val accRepeated = buildApplyArgsRecordsAcc(fun, paramsDescriptor, rargs, cpsCtx.nestSame("r"), 
                                acc.copy(inRepeat=true, records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
@@ -310,20 +306,21 @@ trait ApplyTreeTransform[F[_],CT]:
             acc.advance(nextRecord)
          case namedArg@NamedArg(name, arg) =>
              // TODO: change i ?
-            val realIndex = paramSyms.indexWhere(_.name == name)
-            if (realIndex >= 0) then
-               val namedAcc = acc.copy(inNamed=true,paramIndex = realIndex, records=IndexedSeq.empty)
-               val nested = buildApplyArgRecord(fun,paramSyms,arg,cpsCtx,namedAcc).records.head
-               if (realIndex == acc.paramIndex && !acc.wasNamed)
-                 acc.advance(nested)
-               else
-                 acc.advanceNamed(nested,realIndex)
-            else
-               throw MacroError(s"Can't find parameter with name $name", safeSeal(t))
+            paramsDescriptor.paramIndex(name) match
+              case Some(realIndex) =>
+                val namedAcc = acc.copy(inNamed=true,paramIndex = realIndex, records=IndexedSeq.empty)
+                val nested = buildApplyArgRecord(fun,paramsDescriptor,arg,cpsCtx,namedAcc).records.head
+                if (realIndex == acc.paramIndex && !acc.wasNamed)
+                  acc.advance(nested)
+                else
+                  acc.advanceNamed(nested,realIndex)
+              case None =>  
+                 throw MacroError(s"Can't find parameter with name $name", safeSeal(t))
          case Block(Nil,last) => 
-            buildApplyArgRecord(fun,paramSyms,last,cpsCtx,acc)
+            buildApplyArgRecord(fun,paramsDescriptor,last,cpsCtx,acc)
          case inlined@Inlined(call,bindings,body) => 
-            val nested = buildApplyArgRecord(fun,paramSyms, body,cpsCtx, acc.copy(records=IndexedSeq.empty)).records.head
+            val nested = buildApplyArgRecord(fun,paramsDescriptor, body,cpsCtx, 
+                                                acc.copy(records=IndexedSeq.empty)).records.head
             if (bindings.isEmpty)
                acc.advance(nested)
             else

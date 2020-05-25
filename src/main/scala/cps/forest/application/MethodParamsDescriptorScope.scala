@@ -24,6 +24,18 @@ trait MethodParamsDescriptorScope[F[_], CT]:
      def  paramType(index: Int): Option[Type]
 
 
+  object MethodParamsDescriptor:
+
+     def  apply(fun: Term): MethodParamsDescriptor =
+       fun.tpe.widen.dealias match
+         case mt@MethodType(_,_,_) =>
+                   MethodTypeBasedParamsDescriptor(mt)
+         case other =>
+                   Reporting.warning(s"apply to non-method, tpe=${fun.tpe}",safeSeal(fun))
+                   EmptyParamsDescriptor
+
+
+
   class MethodTypeBasedParamsDescriptor(mt: MethodType) extends MethodParamsDescriptor:
 
      override def  paramIndex(name: String): Option[Int] = paramIndexes.get(name)
