@@ -176,10 +176,8 @@ trait ApplyArgRecordScope[F[_], CT]:
   case class ApplyArgInlinedRecord(origin: Inlined, nested: ApplyArgRecord ) 
      extends ApplyArgRecord {
        def index: Int = nested.index
-
        def term: Term =
              Inlined(origin.call, origin.bindings, nested.term)
-
        def hasShiftedLambda: Boolean = nested.hasShiftedLambda
        def isAsync: Boolean = nested.isAsync
        def noOrderDepended = nested.noOrderDepended
@@ -194,6 +192,26 @@ trait ApplyArgRecordScope[F[_], CT]:
                 
 
   }
+
+ 
+  case class ApplyArgByNameRecord(term: Term, 
+                                  index: Int, 
+                                  cpsTree: CpsTree,
+                                  shifted: Boolean) extends ApplyArgRecord:
+    def identArg: Term = 
+      if !shifted then
+         term
+      else
+         val mt = MethodType(List())(_ => List(), _ => typeInMonad(term.tpe))
+         Lambda(mt, args => cpsTree.transformed)
+         
+    def isAsync: Boolean = cpsTree.isAsync
+    def hasShiftedLambda: Boolean = shifted
+    def noOrderDepended: Boolean = true
+    def shift() = copy(shifted = true)
+    def append(tree: CpsTree): CpsTree = tree
+
+
 
   def termIsNoOrderDepended(x:Term): Boolean =
     x match {

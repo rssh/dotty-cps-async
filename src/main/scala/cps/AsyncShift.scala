@@ -20,6 +20,14 @@ object AsyncShift {
  transparent inline given shiftedCpsMonad[F[_], M <: CpsMonad[F]](using CpsMonad[F]) as AsyncShift[M] = new cps.runtime.CpsMonadSelfAsyncShift[F,M]
 
 
-
 }
+
+trait AsyncShifted[T,F[_]]
+
+trait ObjectAsyncShift[T,F[_]]
+{
+  //type S <: AsyncShifted[T,F]
+  def apply(obj:T, cpsMonad: CpsMonad[F]): AsyncShifted[T,F]
+}
+
 

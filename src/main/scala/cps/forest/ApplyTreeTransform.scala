@@ -189,7 +189,6 @@ trait ApplyTreeTransform[F[_],CT]:
             
                
         val paramsDescriptor = MethodParamsDescriptor(fun)
-        
         val applyRecords = buildApplyArgsRecords(fun, paramsDescriptor, args, cpsCtx)
         val existsAsyncArgs = applyRecords.exists(_.isAsync)
         val shiftedLambdaIndexes = applyRecords.filter(_.hasShiftedLambda).map(_.index).toSet
@@ -282,8 +281,8 @@ trait ApplyTreeTransform[F[_],CT]:
        import scala.internal.quoted.showName
        import scala.quoted.QuoteContext
        import scala.quoted.Expr
-       if cpsCtx.flags.debugLevel >= 15 then
-          println(s"buildApplyArgRecord: pos=${acc.posIndex} t=$t, t.tpe=${t.tpe}")
+       //if cpsCtx.flags.debugLevel >= 15 then
+       //   println(s"buildApplyArgRecord: pos=${acc.posIndex} t=$t, t.tpe=${t.tpe}")
           // TODO: this will not work with NamedArgs
           //println(s"paramSyms(i)=${paramSyms(i)}")
           //println(s"paramSyms(i).tree=${paramSyms(i).tree}")
@@ -302,10 +301,13 @@ trait ApplyTreeTransform[F[_],CT]:
             // mb, this will not work, for expressions, which return block.
             //  look's like somewhere in future, better add 'shifted' case to CpsExpr
             val cpsBody = runRoot(body)
-            val nextRecord = ApplyArgLambdaRecord(lambda,acc.posIndex,cpsBody, false)
+            val nextRecord = if (paramsDescriptor.isByName(acc.paramIndex)) {
+                               throw MacroError("passing lamda as byName params is not supported yet",posExpr(t))
+                             } else {
+                               ApplyArgLambdaRecord(lambda,acc.posIndex,cpsBody, false)
+                             }
             acc.advance(nextRecord)
          case namedArg@NamedArg(name, arg) =>
-             // TODO: change i ?
             paramsDescriptor.paramIndex(name) match
               case Some(realIndex) =>
                 val namedAcc = acc.copy(inNamed=true,paramIndex = realIndex, records=IndexedSeq.empty)
@@ -315,7 +317,7 @@ trait ApplyTreeTransform[F[_],CT]:
                 else
                   acc.advanceNamed(nested,realIndex)
               case None =>  
-                 throw MacroError(s"Can't find parameter with name $name", safeSeal(t))
+                 throw MacroError(s"Can't find parameter with name $name", posExpr(t))
          case Block(Nil,last) => 
             buildApplyArgRecord(fun,paramsDescriptor,last,cpsCtx,acc)
          case inlined@Inlined(call,bindings,body) => 
@@ -326,22 +328,26 @@ trait ApplyTreeTransform[F[_],CT]:
             else
                acc.advance(ApplyArgInlinedRecord(inlined, nested))
          case _ =>
-            // TODO: check pass by name before
+            if cpsCtx.flags.debugLevel >= 15 then
+               println(s"paramType=${paramsDescriptor.paramType(acc.paramIndex)}")
+               println(s"byName=${paramsDescriptor.isByName(acc.paramIndex)}")
             val termCpsTree = runRoot(t)
-            if (!termCpsTree.isAsync && termIsNoOrderDepended(t)) 
-               acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex))
+            if (paramsDescriptor.isByName(acc.paramIndex))
+               acc.advance(ApplyArgByNameRecord(t,acc.posIndex,termCpsTree,termCpsTree.isAsync))
             else
-               val argName: String = "a" + acc.posIndex // TODO: get name from params
-               val symbol = Symbol.newVal(summon[Context].owner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
-               val valDef = symbol.tree match
-                 case v@ValDef(_,_,_) => v
-                 case _ =>
-                    throw MacroError("Impossible internal error, create ValDef but have ${symbol.tree", safeSeal(t))
-               val ident = Ref(symbol)
-               if (cpsCtx.flags.debugLevel > 15) {
+              if (!termCpsTree.isAsync && termIsNoOrderDepended(t)) 
+                acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex))
+              else
+                val argName: String = "a" + acc.posIndex // TODO: get name from params
+                val symbol = Symbol.newVal(summon[Context].owner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
+                val valDef = symbol.tree match
+                  case v@ValDef(_,_,_) => v
+                  case _ =>
+                    throw MacroError("Impossible internal error, create ValDef but have ${symbol.tree", posExpr(t))
+                val ident = Ref(symbol)
+                if (cpsCtx.flags.debugLevel > 15) 
                     println(s"buildApplyArg: Precacl, t=$t, i=${acc.posIndex}")
-               }
-               acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree,valDef,ident))
+                acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree,valDef,ident))
        }
   }
 
@@ -356,6 +362,38 @@ trait ApplyTreeTransform[F[_],CT]:
   def findAsyncShift[E:quoted.Type](e:Expr[E]):Option[Expr[AsyncShift[E]]] =
     Expr.summon[AsyncShift[E]]
       
+  def findAsyncShiftedConversion[E:quoted.Type]:ImplicitSearchResult =
+    val tpTree = '[Conversion[E,AsyncShifted[E,F]]].unseal
+    searchImplicit(tpTree.tpe) 
+
+  def findAsyncShifted[E:quoted.Type](e:Expr[E]): ImplicitSearchResult =
+    val tpTree = '[AsyncShifted[E,F]].unseal
+    searchImplicit(tpTree.tpe) 
+
+  // TODO: submit bug-report to dotty
+  def findAsyncShiftedConversionTerm(e:Term): ImplicitSearchResult = 
+     val ewt = e.tpe.widen
+     val et = ewt.seal
+     //val ewt = e.tpe.widen
+     //val fETypeA = '[Conversion[Any,AsyncShifted[Any,F]]].unseal
+     //???
+     val conversion = '[Conversion].unseal.tpe
+     val asyncShifted = '[AsyncShifted].unseal.tpe
+     val monad = fType.unseal.tpe
+     val a1 = AppliedType(asyncShifted,List(ewt,monad)).simplified
+     val a2 = AppliedType(conversion,List(ewt,a1)).simplified
+     val fEType = a2
+     //val fEType = AppliedType(conversion,List(ewt,AppliedType(asyncShifted,List(ewt,monad)))).simplified
+     if cpsCtx.flags.debugLevel >= 15 then
+        println(s"searchImplicits fEType=${fEType}")
+     searchImplicit(fEType) 
+
+  def findAsyncShiftedTerm(e:Term): ImplicitSearchResult = 
+     val asyncShifted = '[AsyncShifted].unseal.tpe
+     val monad = fType.unseal.tpe
+     val targetType = AppliedType(asyncShifted,List(e.tpe,monad))
+     searchImplicit(targetType) 
+
 
   def shiftedApply(term: Term, args: List[Term], shiftedIndexes:Set[Int]): Term =
 
@@ -373,12 +411,39 @@ trait ApplyTreeTransform[F[_],CT]:
          case _ =>
             throw MacroError(s"Can't find AsyncShift for ${x} (x is not typed)",x.seal)
 
-    //TODO: will work only for unique.
-    //   change dotty API to find case, where name is not unique
-    //    in qualifier
     def shiftSelect(x:Select):Select = 
           Select.unique(shiftQual(x.qualifier),x.name)
        
+    def shiftSelectTypeApply(x:Select, targs:List[TypeTree]): Term = 
+       val qual = x.qualifier
+       qual.seal match 
+         case '{ $e: $et} =>
+          if (cpsCtx.flags.debugLevel >= 15)
+             println(s"e=$e, et=${et.unseal}")
+          findAsyncShiftedConversionTerm(qual) match
+            case success1: ImplicitSearchSuccess =>
+              val conversion = success1.tree
+              //TODO: will work only for unique.
+              //   change dotty API to find case, where name is not unique
+              //    in qualifier
+              val newSelect = Select.unique(conversion.appliedTo(qual), x.name)
+              if targs.isEmpty
+                newSelect
+              else
+                TypeApply(newSelect, targs)
+              //success1.tree
+            case failure1: ImplicitSearchFailure =>
+              findAsyncShift(e) match
+                case Some(shift) => 
+                  val newSelect = Select.unique(shift.unseal, x.name)
+                  val monad = cpsCtx.monad.unseal
+                  TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+                case None =>
+                  throw MacroError(s"Can't find AsyncShift or conversion to AsyncShifted for et=${et.show} (e=${e.show}) conv. explanation1: ${failure1.explanation}",posExpr(x))
+         case _ =>
+           throw MacroError(s"Can't find AsyncShift or conversion to AsyncShifted for ${x.tpe.seal}, term can't be typed", posExpr(x))
+
+
     def shiftCaller(term:Term): Term = 
        val monad = cpsCtx.monad.unseal
        term match
@@ -393,10 +458,12 @@ trait ApplyTreeTransform[F[_],CT]:
                     else
                       throw new MacroError("Unimplemented shift for CpsMonad", term.seal) 
                   else
-                    val newSelect = shiftSelect(s)
-                    TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+                    //val newSelect = shiftSelect(s)
+                    //TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+                    shiftSelectTypeApply(s, targs)
           case s@Select(qual,name) =>
-                  TypeApply(shiftSelect(s), fType.unseal::Nil).appliedTo(qual, monad)
+                  //TypeApply(shiftSelect(s), fType.unseal::Nil).appliedTo(qual, monad)
+                  shiftSelectTypeApply(s, Nil)
           case TypeApply(x, targs) => 
                   TypeApply(shiftCaller(x),targs)
           case Apply(x, args) => 
@@ -411,7 +478,7 @@ trait ApplyTreeTransform[F[_],CT]:
           case Block(statements, last) =>
                   Block(statements, shiftCaller(last))
           case _ => 
-                  val errorExpr = safeSeal(term)
+                  val errorExpr = posExpr(term)
                   throw MacroError(s"Can't shift caller ${term}",errorExpr)
 
     Apply(shiftCaller(term),args)

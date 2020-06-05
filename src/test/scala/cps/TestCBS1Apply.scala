@@ -11,7 +11,6 @@ def TestCBS1Apply_toplevelfun(x: =>Int):Int = x + x
 class TestCBS1Apply:
 
 
-
   @Test def apply_fun1(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
@@ -21,15 +20,15 @@ class TestCBS1Apply:
      assert(c.run() == Success(5))
   }
 
-  class Zzz(x:Int) {
+  class Zzz(zx:Int) {
      def ta[T](t:T):String =
-          t.toString + x.toString
+          t.toString + zx.toString
  
      def byNameInt(x: =>Int):Int =
-          x + x
+          zx + x + x
 
      def byNameCurriedIntInt(x: =>Int)(y: =>Int):Int =
-           x+x+y+y;
+           zx+x+x+y+y;
 
      def znt[T <: Any](x: =>T):String =
            x.toString + x.toString
@@ -40,7 +39,30 @@ class TestCBS1Apply:
      def zntCurried[T <: Any](x: =>T)(y: =>T):String =
            x.toString + y.toString + x.toString + y.toString
 
+     def shifted[F[_]](m: CpsMonad[F]): AsyncShifted[Zzz,F] = new AsyncShifted[Zzz,F] {
+
+          def byNameInt(x: ()=>F[Int]): F[Int] = {
+               m.flatMap(x()){ x1 =>
+                 m.map(x()){ x2 =>
+                    zx + x1 + x2
+               } }
+          }
+
+     }
+
   }
+
+  object Zzz {
+
+    given shiftedZzz[F[_]](using m:CpsMonad[F]) as Conversion[Zzz,AsyncShifted[Zzz,F]] =
+          zzz => zzz.shifted[F](m)
+
+    //extension AsyncShifted
+
+
+
+  }
+
 
   @Test def apply_fun2(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
@@ -51,10 +73,12 @@ class TestCBS1Apply:
      assert(c.run() == Success("qqq2"))
   }
 
-  @Test @Ignore def apply_funNamed(): Unit = {
+  @Test def apply_funNamed(): Unit = {
      implicit val printCode = cps.macroFlags.PrintCode
      implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async{
+       //given Conversion[Zzz,AsyncShifted[Zzz,ComputationBound]] = z => z.shifted[ComputationBound](summon[CpsMonad[ComputationBound]])
+       val conversion = summon[Conversion[Zzz, AsyncShifted[Zzz,ComputationBound]]]
        val zzz = new Zzz(3)
        var x = 0;
        zzz.byNameInt(await({ x=x+1; T1.cbi(2)}))
@@ -63,6 +87,7 @@ class TestCBS1Apply:
      assert(c.run() == Success(2))
   }
 
+/*
   @Test @Ignore def apply_funGenericNamed(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
@@ -75,6 +100,7 @@ class TestCBS1Apply:
      // TODO: assert x
      assert(c.run() == Success(2))
   }
+*/
 
   @Test def apply_funGenericCurried(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
@@ -88,6 +114,7 @@ class TestCBS1Apply:
      assert(c.run() == Success(2))
   }
 
+/*
   @Test @Ignore def apply_funGenericByNameCurried(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
@@ -99,5 +126,6 @@ class TestCBS1Apply:
      }
      assert(c.run() == Success(4))
   }
+*/
 
 
