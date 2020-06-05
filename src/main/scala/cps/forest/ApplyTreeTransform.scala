@@ -190,7 +190,7 @@ trait ApplyTreeTransform[F[_],CT]:
                
         val paramsDescriptor = MethodParamsDescriptor(fun)
         
-        val applyRecords = buildApplyArgsRecords(fun, paramsDescriptor, args, cpsCtx)
+        val applyRecords = O.buildApplyArgsRecords(fun, paramsDescriptor, args, cpsCtx)
         val existsAsyncArgs = applyRecords.exists(_.isAsync)
         val shiftedLambdaIndexes = applyRecords.filter(_.hasShiftedLambda).map(_.index).toSet
         if (!existsAsyncArgs && shiftedLambdaIndexes.isEmpty) {
@@ -261,8 +261,8 @@ trait ApplyTreeTransform[F[_],CT]:
 
   }
 
-
-  def buildApplyArgsRecords(fun: Term, paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
+  object O {
+  def buildApplyArgsRecords(fun: qctx.tasty.Term, paramsDescriptor: MethodParamsDescriptor, args: List[qctx.tasty.Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
      if cpsCtx.flags.debugLevel >= 15 then
        println(s"buildApplyArgRecords, fun.tpe=${fun.tpe}")
      buildApplyArgsRecordsAcc(fun, paramsDescriptor, args, cpsCtx, BuildApplyArgsAcc()).records.toList
@@ -282,6 +282,21 @@ trait ApplyTreeTransform[F[_],CT]:
        import scala.internal.quoted.showName
        import scala.quoted.QuoteContext
        import scala.quoted.Expr
+
+       // fix arround https://github.com/lampepfl/dotty/issues/9074
+       def buildApplyArgsRecordsAccW(fun: Term, paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?], acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
+          O.buildApplyArgsRecordsAcc(fun, paramsDescriptor, args, cpsCtx, acc)
+       }
+
+       def buildApplyArgsRecordsW(fun: Term, paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
+          O.buildApplyArgsRecords(fun, paramsDescriptor, args, cpsCtx)
+       }
+ 
+       def buildApplyArgRecordW(fun:Term, paramsDescriptor: MethodParamsDescriptor, t: Term, cpsCtx: TransformationContext[F,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
+          O.buildApplyArgRecord(fun, paramsDescriptor, t, cpsCtx, acc)
+
+       }
+
        if cpsCtx.flags.debugLevel >= 15 then
           println(s"buildApplyArgRecord: pos=${acc.posIndex} t=$t, t.tpe=${t.tpe}")
           // TODO: this will not work with NamedArgs
@@ -289,12 +304,12 @@ trait ApplyTreeTransform[F[_],CT]:
           //println(s"paramSyms(i).tree=${paramSyms(i).tree}")
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) => 
-            val accRepeated = buildApplyArgsRecordsAcc(fun, paramsDescriptor, rargs, cpsCtx.nestSame("r"), 
+            val accRepeated = buildApplyArgsRecordsAccW(fun, paramsDescriptor, rargs, cpsCtx.nestSame("r"), 
                                acc.copy(inRepeat=true,records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case r@Repeated(rargs, tpt) => 
-            val accRepeated = buildApplyArgsRecordsAcc(fun, paramsDescriptor, rargs, cpsCtx.nestSame("r"), 
+            val accRepeated = buildApplyArgsRecordsAccW(fun, paramsDescriptor, rargs, cpsCtx.nestSame("r"), 
                                acc.copy(inRepeat=true, records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
@@ -343,6 +358,7 @@ trait ApplyTreeTransform[F[_],CT]:
                }
                acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree,valDef,ident))
        }
+  }
   }
 
   def haveAsyncLambdaInArgs(args:List[Term]):Boolean = 
