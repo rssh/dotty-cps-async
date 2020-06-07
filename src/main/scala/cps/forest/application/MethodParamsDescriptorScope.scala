@@ -23,6 +23,11 @@ trait MethodParamsDescriptorScope[F[_], CT]:
 
      def  paramType(index: Int): Option[Type]
 
+     def  isByName(index: Int): Boolean =
+           paramType(index) match
+             case Some(ByNameType(_)) => true
+             case _ => false
+
 
   object MethodParamsDescriptor:
 
@@ -31,7 +36,7 @@ trait MethodParamsDescriptorScope[F[_], CT]:
          case mt@MethodType(_,_,_) =>
                    MethodTypeBasedParamsDescriptor(mt)
          case other =>
-                   Reporting.warning(s"apply to non-method, tpe=${fun.tpe}",safeSeal(fun))
+                   Reporting.warning(s"apply to non-method, tpe=${fun.tpe}",posExpr(fun))
                    EmptyParamsDescriptor
 
 
@@ -41,13 +46,13 @@ trait MethodParamsDescriptorScope[F[_], CT]:
      override def  paramIndex(name: String): Option[Int] = paramIndexes.get(name)
 
      override def  paramName(index: Int): Option[String] = 
-       if (index > 0 && index < paramNames.size) 
+       if (index >= 0 && index < paramNames.size) 
          Some(paramNames(index))
        else
          None
 
      override def  paramType(index: Int): Option[Type] = 
-       if (index > 0 && index < paramTypes.size) 
+       if (index >= 0 && index < paramTypes.size) 
          Some(paramTypes(index))
        else
          None

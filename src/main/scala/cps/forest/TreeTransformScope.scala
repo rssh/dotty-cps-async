@@ -26,12 +26,19 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
 
    implicit val ctType: quoted.Type[CT]
 
-   def safeSeal(t: qctx.tasty.Term): Expr[Any] =
+   def posExpr(t: qctx.tasty.Term): Expr[Any] =
        import qctx.tasty._
        t.tpe.widen match
-         case _ : MethodType | _ : PolyType =>
+         case MethodType(_,_,_) | PolyType(_,_,_) =>
            val etaExpanded = t.etaExpand
-           etaExpanded.seal
+           try
+             etaExpanded.seal
+           catch
+             case ex: Exception =>
+                // TODO: via reporting
+                // println(s"etaExpanding not help, t.tpe.widen=${t.tpe.widen}")
+                //ex.printStackTrace
+                cpsCtx.patternCode
          case _ => t.seal
 
 
