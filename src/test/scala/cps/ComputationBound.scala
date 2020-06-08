@@ -4,8 +4,9 @@ import scala.concurrent.duration._
 import scala.quoted._
 import scala.language.postfixOps
 import scala.util.{Try,Success,Failure}
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.TimeoutException
 
 
 trait ComputationBound[T] {
@@ -50,7 +51,7 @@ object ComputationBound {
    def spawn[A](op: =>ComputationBound[A]):ComputationBound[A] = {
         val ref = new AtomicReference[Option[Try[A]]](None)
         val waiter = Wait[A,A](ref, fromTry[A] _ )
-        deferredQueue = deferredQueue.enqueue(Deferred(ref, Some(Thunk( () => op )) ))
+        deferredQueue.add(Deferred(ref, Some(Thunk( () => op )) ))
         waiter
    }
 
@@ -63,19 +64,21 @@ object ComputationBound {
    case class Deferred[A](ref: AtomicReference[Option[Try[A]]],
                      optComputations: Option[ComputationBound[A]])
    
-   private var deferredQueue: Queue[Deferred[?]] = Queue()
+    // TODO: make private back after debug
+   val deferredQueue: ConcurrentLinkedQueue[Deferred[?]] = new ConcurrentLinkedQueue()
    private val waitQuant = (100 millis).toNanos
    private val externalAsyncNotifier = new { }
 
    def  advanceDeferredQueue(endNanos: Long): Boolean = {
       var nFinished = 0
-      var secondDeferred: Queue[Deferred[_]] = Queue()
+      val secondQueue = new ConcurrentLinkedQueue[Deferred[?]]
+      println("advance: before loop, deferredQueue.size=$deferredQueue.size")
       while(!deferredQueue.isEmpty && System.nanoTime < endNanos) 
-        val (c, q) = deferredQueue.dequeue
-        deferredQueue = q
-        c.ref.get() match 
-          case Some(r) => nFinished += 1
-          case None =>
+        val c = deferredQueue.poll()
+        if (!(c eq null)) then
+          c.ref.get() match 
+            case Some(r) => nFinished += 1
+            case None =>
                c.optComputations match
                   case Some(r) =>     
                     val nextR = r.progress((endNanos - System.nanoTime) nanos)
@@ -84,18 +87,21 @@ object ComputationBound {
                         c.ref.set(Some(x))
                         nFinished += 1
                       case None =>
-                        secondDeferred = secondDeferred.enqueue(Deferred(c.ref,Some(nextR)))
+                        secondQueue.add(Deferred(c.ref,Some(nextR)))
                   case None =>
-                    secondDeferred = secondDeferred.enqueue(c) 
-      if (deferredQueue.isEmpty)
-         deferredQueue = secondDeferred
-      else
-         deferredQueue = deferredQueue.enqueueAll(secondDeferred)
+                    // wait next time
+                    secondQueue.add(c)
+      println("advance: after loop, nFinished=$nFinished, deferredQueue.size=${deferredQueue.size}, secondQueue.size = ${secondQueue.size}")
+      while(!secondQueue.isEmpty)
+         val r = secondQueue.poll()
+         if !(r eq null) then
+            deferredQueue.add(r)
       if (nFinished == 0)
          val timeToWait = math.min(waitQuant, endNanos - System.nanoTime)
-         if (timeToWait > 0) 
+         val timeToWaitMillis = (timeToWait nanos).toMillis
+         if (timeToWaitMillis > 0) 
            externalAsyncNotifier.synchronized {
-              externalAsyncNotifier.wait((timeToWait nanos).toMillis)
+              externalAsyncNotifier.wait(timeToWaitMillis)
            }
       nFinished > 0
    }

@@ -37,10 +37,11 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
    /**
-    * return a future, which will be completed after callback will-be
-    * called by the source.
+    * return a future, 
+    * called by the source, which accept callback.
+    * source is called immediatly in adoptCallbackStyle
     **/
-   def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit):F[A]
+   def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A]
 
    def spawn[A](op: =>F[A]): F[A]
 

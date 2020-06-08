@@ -17,12 +17,13 @@ object CBSWordCount1:
      val r = async {
        val words = line.split(" ") 
        for(w <- words) {
-         println(s"before write data $w")
+         println(s"writer:before write $w")
          await(channel.write(CountSignal.Data(w)))
-         println(s"written data $w")
+         println(s"writee:after write $w")
        }
+       println("writer:before write finish")
        await(channel.write(CountSignal.Finish))
-       println(s"written finish")
+       println("writer:after write finish")
      }
      r
   }
@@ -31,9 +32,9 @@ object CBSWordCount1:
      var state: Map[String,Int] = Map.empty
      var finished = false
      while {
-       println("accept: before read")
+       println(s"reader:before read")
        val w = await(channel.read())
-       println(s"readed $w")
+       println(s"reader: read $w")
        w match 
          case CountSignal.Data(d) =>
                state = state.updated(d,
@@ -51,15 +52,12 @@ class TestCBSWordCount:
 
   def qqq = ???
 
-/*
-  // can fail now
   @Test def tWordCount(): Unit = 
      val ch = new ASChannel[ComputationBound, CountSignal[String]]();
      val generator = ComputationBound.spawn(CBSWordCount1.generate("A A A",ch))
      val acceptor = CBSWordCount1.accept(ch)
      val c = acceptor.run()
      assert(c == Success(Map("A" -> 3)))
-*/
   
 
 
