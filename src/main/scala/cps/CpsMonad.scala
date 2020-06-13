@@ -48,3 +48,14 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
    def fulfill[T](t:F[T], timeout: Duration): Option[Try[T]]
 
 }
+
+object CpsMonad:
+
+  extension ForComprehensionSyntax on [F[_],T,S](x:F[T])(using m:CpsMonad[F]):
+
+   def flatMap(f: T=>F[S]): F[S] =
+         m.flatMap(x)(f)
+
+   def map(f: T=>S): F[S] =
+         m.map(x)(f)
+

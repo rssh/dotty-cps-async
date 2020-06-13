@@ -72,7 +72,6 @@ object ComputationBound {
    def  advanceDeferredQueue(endNanos: Long): Boolean = {
       var nFinished = 0
       val secondQueue = new ConcurrentLinkedQueue[Deferred[?]]
-      println("advance: before loop, deferredQueue.size=$deferredQueue.size")
       while(!deferredQueue.isEmpty && System.nanoTime < endNanos) 
         val c = deferredQueue.poll()
         if (!(c eq null)) then
@@ -91,7 +90,6 @@ object ComputationBound {
                   case None =>
                     // wait next time
                     secondQueue.add(c)
-      println("advance: after loop, nFinished=$nFinished, deferredQueue.size=${deferredQueue.size}, secondQueue.size = ${secondQueue.size}")
       while(!secondQueue.isEmpty)
          val r = secondQueue.poll()
          if !(r eq null) then

@@ -48,6 +48,13 @@ class TestCBS1Apply:
                } }
           }
 
+          def znt[T <: Any](x:()=>F[T]): F[String] =
+           given CpsMonad[F] = m
+           import CpsMonad.ForComprehensionSyntax._
+           for{ fx1 <- x()
+                fx2 <- x()
+           } yield fx1.toString + fx2.toString
+
      }
 
      def shifted[F[_]](m: CpsMonad[F]) = InternalAsyncShifted[F](m)
@@ -91,8 +98,7 @@ class TestCBS1Apply:
      assert(c.run() == Success(2))
   }
 
-/*
-  @Test @Ignore def apply_funGenericNamed(): Unit = {
+  @Test def apply_funGenericNamed(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async{
@@ -104,7 +110,6 @@ class TestCBS1Apply:
      // TODO: assert x
      assert(c.run() == Success(2))
   }
-*/
 
   @Test def apply_funGenericCurried(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode

@@ -12,18 +12,14 @@ enum CountSignal[+T]:
 object CBSWordCount1:
 
   def generate(line: String, channel:ASChannel[ComputationBound, CountSignal[String]]):ComputationBound[Unit] = {
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val r = async {
        val words = line.split(" ") 
        for(w <- words) {
-         println(s"writer:before write $w")
          await(channel.write(CountSignal.Data(w)))
-         println(s"writee:after write $w")
        }
-       println("writer:before write finish")
        await(channel.write(CountSignal.Finish))
-       println("writer:after write finish")
      }
      r
   }
@@ -32,9 +28,7 @@ object CBSWordCount1:
      var state: Map[String,Int] = Map.empty
      var finished = false
      while {
-       println(s"reader:before read")
        val w = await(channel.read())
-       println(s"reader: read $w")
        w match 
          case CountSignal.Data(d) =>
                state = state.updated(d,
