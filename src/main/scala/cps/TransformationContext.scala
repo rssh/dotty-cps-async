@@ -19,5 +19,9 @@ case class TransformationContext[F[_],T](
       TransformationContext(newPatternCode, newPatternType, monad, flags, 
                              exprMarker+s, nesting + 1 )
 
+  def log(message:String): Unit =
+       print("  "*nesting)   
+       println(message)   
+
 }
 

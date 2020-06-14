@@ -14,7 +14,7 @@ object ValDefTransform:
      import qctx.tasty.{_, given _}
      import cpsCtx._
      if (cpsCtx.flags.debugLevel >= 10) {
-       println(s"ValDefExpr:fromBlock, valDef=$valDef")
+       cpsCtx.log(s"ValDefExpr:fromBlock, valDef=$valDef")
      }
      val posExpr = Block(List(valDef),Literal(Constant(()))).seal
      val rhs = valDef.rhs.getOrElse(
@@ -23,17 +23,17 @@ object ValDefTransform:
      rhs.seal match {
         case '{ $e: $et } =>
             if (cpsCtx.flags.debugLevel > 15) 
-               println(s"rightPart is ${e.show}")
+               cpsCtx.log(s"rightPart is ${e.show}")
             val cpsRight = Async.nestTransform(e,cpsCtx,"R")
             if (cpsRight.isAsync) {
                if (cpsCtx.flags.debugLevel > 15) {
-                  println(s"rightPart is async")
+                  cpsCtx.log(s"rightPart is async")
                }
                RhsFlatMappedCpsExpr(using qctx)(monad, Seq(),
                                                 valDef, cpsRight, CpsExpr.unit(monad) )
             } else {
                if (cpsCtx.flags.debugLevel > 15) 
-                 println(s"rightPart is no async, cpsRight.transformed=${cpsRight.transformed.show}")
+                 cpsCtx.log(s"rightPart is no async, cpsRight.transformed=${cpsRight.transformed.show}")
                ValWrappedCpsExpr(using qctx)(monad, Seq(), valDef, 
                                                 CpsExpr.unit(monad) )
             }

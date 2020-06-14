@@ -49,11 +49,21 @@ class TestCBS1Apply:
           }
 
           def znt[T <: Any](x:()=>F[T]): F[String] =
-           given CpsMonad[F] = m
-           import CpsMonad.ForComprehensionSyntax._
-           for{ fx1 <- x()
+            given CpsMonad[F] = m
+            import CpsMonad.ForComprehensionSyntax._
+            for{ fx1 <- x()
                 fx2 <- x()
-           } yield fx1.toString + fx2.toString
+            } yield fx1.toString + fx2.toString
+
+          def zntCurried[T <: Any](x: ()=>F[T])(y: ()=>F[T]): F[String] =
+            given CpsMonad[F] = m
+            import CpsMonad.ForComprehensionSyntax._
+            for{ fx1 <- x()
+                 fy1 <- y()
+                 fx2 <- x()
+                 fy2 <- y()
+            } yield fx1.toString + fy1.toString + fx2.toString + fy2.toString
+
 
      }
 
@@ -123,7 +133,6 @@ class TestCBS1Apply:
      assert(c.run() == Success(2))
   }
 
-/*
   @Test @Ignore def apply_funGenericByNameCurried(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
@@ -135,6 +144,5 @@ class TestCBS1Apply:
      }
      assert(c.run() == Success(4))
   }
-*/
 
 

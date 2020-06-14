@@ -108,6 +108,8 @@ class TestBS1ShiftCollectionOps:
      assert(l == Success(9)) 
 
   @Test def testFoldSet2(): Unit =
+     implicit val printCode = cps.macroFlags.PrintCode
+     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
           Set(T1.cbi(1),T1.cbi(2),T1.cbi(3)).fold(T1.cbi(4))(
                          (x,y) => async(await(x) + await(y))  )

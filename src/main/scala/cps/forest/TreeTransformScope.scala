@@ -42,6 +42,14 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
          case _ => t.seal
 
 
+   def safeShow(t: qctx.tasty.Term): String =
+       import qctx.tasty._
+       try 
+         t.seal.show
+       catch 
+         case ex: Exception =>
+            t.toString
+
 }
 
 
