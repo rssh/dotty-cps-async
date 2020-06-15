@@ -7,12 +7,6 @@ import cps._
 
 object TransformUtil:
 
-  def skipInlined(using qctx:QuoteContext)(tree: qctx.tasty.Term):qctx.tasty.Term =
-    import qctx.tasty.{_,given _}
-    tree match 
-      case Inlined(origin, binding, expansion) => skipInlined(expansion)
-      case _ => tree
-
   
   def find(using qctx:QuoteContext)(term: qctx.tasty.Term, 
                        cond: qctx.tasty.Tree=> Option[qctx.tasty.Tree]) :Option[qctx.tasty.Tree] = {

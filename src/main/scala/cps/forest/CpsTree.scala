@@ -41,10 +41,17 @@ trait CpsTreeScope[F[_], CT] {
 
      def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
+
+       def safeSeal(t:Term):Expr[Any] =
+         t.tpe.widen match
+           case MethodType(_,_,_) | PolyType(_,_,_) =>
+             val ext = t.etaExpand
+             ext.seal
+           case _ => t.seal
+
        syncOrigin match
          case Some(syncTerm) =>
-             val code = safeSeal(syncTerm).asInstanceOf[Expr[T]]
-             CpsExpr.sync(monad,code)
+             CpsExpr.sync(monad,safeSeal(syncTerm).asInstanceOf[Expr[T]])
          case None =>
              val sealedTransformed = safeSeal(transformed).asInstanceOf[Expr[F[T]]]
              CpsExpr.async[F,T](monad, sealedTransformed)

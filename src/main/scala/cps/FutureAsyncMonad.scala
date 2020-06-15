@@ -4,9 +4,9 @@ import scala.concurrent._
 import scala.quoted._
 
 object FutureAsyncMonad:
- // extends AsyncMonad[Future] 
+ // extends AsyncMonad[Future]
 
-   type F = Future
+   type F[+T] = Future[T]
 
    //TODO: implement
 

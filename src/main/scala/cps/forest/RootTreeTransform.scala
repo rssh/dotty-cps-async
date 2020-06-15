@@ -14,7 +14,7 @@ trait RootTreeTransform[F[_], CT]:
 
   def runRoot(term: qctx.tasty.Term): CpsTree =
      if (cpsCtx.flags.debugLevel >= 15)
-        println(s"runRoot: term=$term")
+        cpsCtx.log(s"runRoot: term=$safeShow(term)")
      val r = term.tpe.widen match {
        case _ : MethodType =>
                //  in such case, we can't transform tree to expr
@@ -31,21 +31,21 @@ trait RootTreeTransform[F[_], CT]:
                      val rCpsExpr = Async.nestTransform(e, cpsCtx, "_")
                      val r = exprToTree(rCpsExpr, term)
                      if (cpsCtx.flags.debugLevel >= 10) 
-                         println(s"rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
-                         println(s"r=$r, async=${r.isAsync}")
+                         cpsCtx.log(s"rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
+                         cpsCtx.log(s"r=$r, async=${r.isAsync}")
                      r
                   case _ =>
                      throw MacroError("Can't determinate exact type for term", expr)
                 }
      }
      if (cpsCtx.flags.debugLevel >= 15)
-        println(s"runRoot result: $r  (term=$term)")
+        cpsCtx.log(s"runRoot result: $r")
      r
 
 
   def runRootUneta(term: qctx.tasty.Term): CpsTree = {
      if (cpsCtx.flags.debugLevel >= 15)
-        println(s"runRootUneta, term=$term")
+        cpsCtx.log(s"runRootUneta, term=$term")
      val monad = cpsCtx.monad
      val r = term match {
        case Select(qual, name) =>
@@ -58,12 +58,12 @@ trait RootTreeTransform[F[_], CT]:
        case Ident(name) =>
              CpsTree.pure(term)
        case Apply(x, args) =>
-             runApply(term,x,args)
+             runApply(term,x,args,Nil)
        case _ =>
              throw MacroError(s"cps tree transform is not supported yet to ${term}",cpsCtx.patternCode)
      }
      if (cpsCtx.flags.debugLevel >= 15)
-        println(s"runRootUneta result: $r  (term=$term)")
+        cpsCtx.log(s"runRootUneta result: $r  (term=$term)")
      r
   }
 

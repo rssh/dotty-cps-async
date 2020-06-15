@@ -1,6 +1,7 @@
 package cps.forest
 
 import cps._
+import cps.forest.application._
 import scala.quoted._
 
 trait TreeTransformScope[F[_]:Type,CT:Type]
@@ -9,6 +10,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
                   with TypeApplyTreeTransform[F,CT]
                   with RootTreeTransform[F, CT]
                   with ApplyTreeTransform[F,CT]
+                  with ApplicationHelper[F,CT]
                   with AwaitTreeTransform[F, CT]
                   with SelectTreeTransform[F, CT]
                   with LambdaTreeTransform[F, CT]
@@ -24,14 +26,29 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
 
    implicit val ctType: quoted.Type[CT]
 
-   def safeSeal(t: qctx.tasty.Term): Expr[Any] =
+   def posExpr(t: qctx.tasty.Term): Expr[Any] =
        import qctx.tasty._
        t.tpe.widen match
-         case _ : MethodType | _ : PolyType =>
+         case MethodType(_,_,_) | PolyType(_,_,_) =>
            val etaExpanded = t.etaExpand
-           etaExpanded.seal
+           try
+             etaExpanded.seal
+           catch
+             case ex: Exception =>
+                // TODO: via reporting
+                // println(s"etaExpanding not help, t.tpe.widen=${t.tpe.widen}")
+                //ex.printStackTrace
+                cpsCtx.patternCode
          case _ => t.seal
 
+
+   def safeShow(t: qctx.tasty.Term): String =
+       import qctx.tasty._
+       try 
+         t.seal.show
+       catch 
+         case ex: Exception =>
+            t.toString
 
 }
 

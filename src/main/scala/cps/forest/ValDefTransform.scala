@@ -14,7 +14,7 @@ object ValDefTransform:
      import qctx.tasty.{_, given _}
      import cpsCtx._
      if (cpsCtx.flags.debugLevel >= 10) {
-       println(s"ValDefExpr:fromBlock, valDef=$valDef")
+       cpsCtx.log(s"ValDefExpr:fromBlock, valDef=$valDef")
      }
      val posExpr = Block(List(valDef),Literal(Constant(()))).seal
      val rhs = valDef.rhs.getOrElse(
@@ -23,17 +23,17 @@ object ValDefTransform:
      rhs.seal match {
         case '{ $e: $et } =>
             if (cpsCtx.flags.debugLevel > 15) 
-               println(s"rightPart is ${e.show}")
+               cpsCtx.log(s"rightPart is ${e.show}")
             val cpsRight = Async.nestTransform(e,cpsCtx,"R")
             if (cpsRight.isAsync) {
                if (cpsCtx.flags.debugLevel > 15) {
-                  println(s"rightPart is async")
+                  cpsCtx.log(s"rightPart is async")
                }
                RhsFlatMappedCpsExpr(using qctx)(monad, Seq(),
                                                 valDef, cpsRight, CpsExpr.unit(monad) )
             } else {
                if (cpsCtx.flags.debugLevel > 15) 
-                 println(s"rightPart is no async, cpsRight.transformed=${cpsRight.transformed.show}")
+                 cpsCtx.log(s"rightPart is no async, cpsRight.transformed=${cpsRight.transformed.show}")
                ValWrappedCpsExpr(using qctx)(monad, Seq(), valDef, 
                                                 CpsExpr.unit(monad) )
             }
@@ -103,7 +103,7 @@ object ValDefTransform:
        }
 
        private def buildAppendBlockExpr[A](using qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, rhs: qctx.tasty.Term, expr:Expr[A]):Expr[A] = 
-          import qctx.tasty.{_, given _}
+          import qctx.tasty._
           buildAppendBlock(oldValDef,rhs,expr.unseal).seal.asInstanceOf[Expr[A]]
 
   }
@@ -116,6 +116,19 @@ object ValDefTransform:
 
 
        override def isAsync = next.isAsync
+
+       override def syncOrigin(using qctx:QuoteContext): Option[Expr[T]] = next.syncOrigin.map{ n => 
+         import qctx.tasty._
+         val prevStats: List[Statement] = prev.map(_.extract).toList
+         val valDef: Statement = oldValDef.asInstanceOf[qctx.tasty.ValDef]
+         val outputTerm = n.unseal match
+            case Block(statements, last) => 
+                   Block( prevStats ++: (valDef +: statements), last)
+            case other => 
+                   Block( prevStats ++: List(valDef), other)
+         outputTerm.seal.asInstanceOf[Expr[T]]
+       }
+       
 
        override def fLast(using qctx: QuoteContext) = next.fLast
               

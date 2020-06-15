@@ -46,14 +46,12 @@ class TestCBSWordCount:
 
   def qqq = ???
 
-
   @Test def tWordCount(): Unit = 
      val ch = new ASChannel[ComputationBound, CountSignal[String]]();
      val generator = ComputationBound.spawn(CBSWordCount1.generate("A A A",ch))
      val acceptor = CBSWordCount1.accept(ch)
      val c = acceptor.run()
      assert(c == Success(Map("A" -> 3)))
-
   
 
 
