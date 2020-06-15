@@ -18,17 +18,18 @@ trait LambdaTreeTransform[F[_], CT]:
   // case lambdaTree @ Lambda(params,body) 
   def runLambda(lambdaTerm: Term, params: List[ValDef], expr: Term ): CpsTree =
      if (cpsCtx.flags.debugLevel >= 10)
-       println(s"runLambda, lambda=${lambdaTerm.seal.show}")
-       println(s"runLambda, expr=$expr")
+       cpsCtx.log(s"runLambda, lambda=${safeShow(lambdaTerm)}")
+       cpsCtx.log(s"runLambda, expr=${safeShow(expr)}")
      val cpsBody = runRoot(expr)
-     val retval = if (cpsBody.isAsync) 
+     val retval = if (cpsBody.isAsync) {
         // in general, shifted lambda 
-        if (cpsCtx.flags.allowShiftedLambda) 
+        if (cpsCtx.flags.allowShiftedLambda) then
             asyncBodyShiftedLambda(lambdaTerm, params, cpsBody)
         else
             throw MacroError("await inside lambda functions without enclosing async block", lambdaTerm.seal)
-     else
+     } else {
         CpsTree.pure(lambdaTerm)
+     }
      retval
 
   def asyncBodyShiftedLambda(lambdaTerm: Term, params: List[ValDef], cpsBody: CpsTree): CpsTree =

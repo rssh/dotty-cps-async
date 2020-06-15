@@ -103,7 +103,7 @@ object ValDefTransform:
        }
 
        private def buildAppendBlockExpr[A](using qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, rhs: qctx.tasty.Term, expr:Expr[A]):Expr[A] = 
-          import qctx.tasty.{_, given _}
+          import qctx.tasty._
           buildAppendBlock(oldValDef,rhs,expr.unseal).seal.asInstanceOf[Expr[A]]
 
   }
@@ -116,6 +116,19 @@ object ValDefTransform:
 
 
        override def isAsync = next.isAsync
+
+       override def syncOrigin(using qctx:QuoteContext): Option[Expr[T]] = next.syncOrigin.map{ n => 
+         import qctx.tasty._
+         val prevStats: List[Statement] = prev.map(_.extract).toList
+         val valDef: Statement = oldValDef.asInstanceOf[qctx.tasty.ValDef]
+         val outputTerm = n.unseal match
+            case Block(statements, last) => 
+                   Block( prevStats ++: (valDef +: statements), last)
+            case other => 
+                   Block( prevStats ++: List(valDef), other)
+         outputTerm.seal.asInstanceOf[Expr[T]]
+       }
+       
 
        override def fLast(using qctx: QuoteContext) = next.fLast
               

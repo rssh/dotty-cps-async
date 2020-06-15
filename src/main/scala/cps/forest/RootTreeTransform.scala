@@ -39,7 +39,7 @@ trait RootTreeTransform[F[_], CT]:
                 }
      }
      if (cpsCtx.flags.debugLevel >= 15)
-        cpsCtx.log(s"runRoot result: $r  (term=$term)")
+        cpsCtx.log(s"runRoot result: $r")
      r
 
 

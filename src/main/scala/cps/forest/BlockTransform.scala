@@ -14,6 +14,8 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 
   // case Block(prevs,last) 
   def run(using qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
+     if (cpsCtx.flags.debugLevel >= 10) then
+        cpsCtx.log(s"Block transform, last=${last.show}")
      val tType = implicitly[Type[T]]
      import qctx.tasty.{_, given _}
      val rPrevs = prevs.zipWithIndex.map{ (p,i) =>
@@ -41,8 +43,18 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
      }
      val rLast = Async.nestTransform(last.seal.asInstanceOf[Expr[T]],cpsCtx,"B")
      val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
-     // wrap yet in one Expr, to 'seal' (not unroll during append in enclosing block).
-     CpsExpr.wrap(blockResult)
+     // wrap yet in one Expr, to avoid unrolling during append in enclosing block).
+     val retval = CpsExpr.wrap(blockResult)
+     if (cpsCtx.flags.debugLevel >= 15) then
+         cpsCtx.log(s"last.isAsync=${rLast.isAsync}")
+         cpsCtx.log(s"blockResult.isAsync=${blockResult.isAsync}")
+         cpsCtx.log(s"wrapped.isAsync=${retval.isAsync}")
+         if (blockResult.isAsync==false && retval.isAsync==true) {
+              cpsCtx.log(s"blockResult=${blockResult}")
+              cpsCtx.log(s"blockResult.syncOrigin=${blockResult.syncOrigin}")
+         }
+
+     retval
   
 
 class DefCpsExpr[F[_]:Type](using qctx: QuoteContext)(

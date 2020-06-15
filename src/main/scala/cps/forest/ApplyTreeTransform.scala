@@ -229,6 +229,8 @@ trait ApplyTreeTransform[F[_],CT]:
         if cpsCtx.flags.debugLevel >= 15 then
             cpsCtx.log(s"existsShiftedLambda=${existsShiftedLambda}")
             cpsCtx.log(s"tails.existsShiftedLambda=${tails.exists(isExistsShiftedLambda)}")
+            cpsCtx.log(s"existsAsyncArg=${existsAsyncArg}")
+            cpsCtx.log(s"tails.existsAsyncArg=${tails.exists(isExistsAsyncArg)}")
             if (tails.exists(isExistsShiftedLambda)) {
               val shiftedRecord = tails.head.find(_.hasShiftedLambda).get
               shiftedRecord match {
