@@ -405,9 +405,6 @@ trait ApplyTreeTransform[F[_],CT]:
   def findAsyncShift[E:quoted.Type](e:Expr[E]):Option[Expr[AsyncShift[E]]] =
     Expr.summon[AsyncShift[E]]
 
-  def findObjectAsyncShift[E:quoted.Type](e:Expr[E]):Option[Expr[ObjectAsyncShift[E]]]=
-    Expr.summon[ObjectAsyncShift[E]]
-
   def findObjectAsyncShiftTerm(e:Term):ImplicitSearchResult =
     val tpe = e.tpe.widen
     val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
@@ -419,16 +416,6 @@ trait ApplyTreeTransform[F[_],CT]:
       cpsCtx.log(s"'[ObjectAsyncShift].unseal.tpe=${'[ObjectAsyncShift].unseal.tpe}")
     searchImplicit(tpTree) 
       
-
-  def findAsyncShifted[E:quoted.Type](e:Expr[E]): ImplicitSearchResult =
-    val tpTree = '[AsyncShifted[E,F]].unseal
-    searchImplicit(tpTree.tpe) 
-
-  def findAsyncShiftedTerm(e:Term): ImplicitSearchResult = 
-     val asyncShifted = '[AsyncShifted].unseal.tpe
-     val monad = fType.unseal.tpe
-     val targetType = AppliedType(asyncShifted,List(e.tpe,monad))
-     searchImplicit(targetType) 
 
 
   def shiftedApply(term: Term, args: List[Term], shiftedIndexes:Set[Int]): Term =
