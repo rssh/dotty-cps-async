@@ -4,6 +4,7 @@ import scala.concurrent.duration._
 import scala.quoted._
 import scala.language.postfixOps
 import scala.util.{Try,Success,Failure}
+import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
@@ -137,7 +138,7 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit):ComputationBound[A] = 
          ComputationBound.asyncCallback(source)
 
-   def spawn[A](op: =>ComputationBound[A]): ComputationBound[A] =
+   def spawn[A](op: => ComputationBound[A]): ComputationBound[A] =
           ComputationBound.spawn(op)
 
    def fulfill[T](t: ComputationBound[T], timeout: Duration): Option[Try[T]] =

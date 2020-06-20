@@ -37,7 +37,6 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
    /**
-    * return a future, 
     * called by the source, which accept callback.
     * source is called immediatly in adoptCallbackStyle
     **/
