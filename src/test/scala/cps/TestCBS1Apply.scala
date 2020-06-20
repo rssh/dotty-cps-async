@@ -133,7 +133,7 @@ class TestCBS1Apply:
      assert(c.run() == Success(2))
   }
 
-  @Test @Ignore def apply_funGenericByNameCurried(): Unit = {
+  @Test def apply_funGenericByNameCurried(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async{
