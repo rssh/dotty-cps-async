@@ -405,6 +405,12 @@ trait ApplyTreeTransform[F[_],CT]:
   def findAsyncShift[E:quoted.Type](e:Expr[E]):Option[Expr[AsyncShift[E]]] =
     Expr.summon[AsyncShift[E]]
 
+  def findAsyncShiftTerm(e:Term):ImplicitSearchResult =
+    val tpe = e.tpe.widen
+    val asyncShift = TypeIdent(Symbol.classSymbol("cps.AsyncShift")).tpe
+    val tpTree = AppliedType(asyncShift,List(tpe))
+    searchImplicit(tpTree) 
+
   def findObjectAsyncShiftTerm(e:Term):ImplicitSearchResult =
     val tpe = e.tpe.widen
     val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
@@ -420,66 +426,35 @@ trait ApplyTreeTransform[F[_],CT]:
 
   def shiftedApply(term: Term, args: List[Term], shiftedIndexes:Set[Int]): Term =
 
-    def shiftQual(x:Term):Term = 
-       x.seal match 
-         case '{ $e: $et} =>
-            findAsyncShift(e) match
-              case Some(shifted) => shifted.unseal
-              case None => 
-                   // check, if this is our monad map/flatMap - then we 
-                   if cpsCtx.flags.debugLevel > 10 then
-                      cpsCtx.log(s"Can't find async shift, x=$x")
-                   // TODO: provide some other alternatives ?
-                   throw MacroError(s"Can't find AsyncShift for ${et.show} (e=${e.show})",x.seal)
-         case _ =>
-            throw MacroError(s"Can't find AsyncShift for ${x} (x is not typed)",x.seal)
-
-    def shiftSelect(x:Select):Select = 
-          Select.unique(shiftQual(x.qualifier),x.name)
-       
     def shiftSelectTypeApply(x:Select, targs:List[TypeTree]): Term = 
        val qual = x.qualifier
        val monad = cpsCtx.monad.unseal
-       qual.seal match 
-         case '{ $e: $et} =>
-          if (cpsCtx.flags.debugLevel >= 15)
-             cpsCtx.log(s"e=$e, et=${et.unseal}")
-          findObjectAsyncShiftTerm(qual) match
-            case success1: ImplicitSearchSuccess =>
-              val objectShift = success1.tree
-               
+       findObjectAsyncShiftTerm(qual) match
+         case success1: ImplicitSearchSuccess =>
+           val objectShift = success1.tree
+           if (cpsCtx.flags.debugLevel >= 15)
+               cpsCtx.log(s"found objectShift, ${success1.tree}")
+               cpsCtx.log(s"objectShift.tpe = ${objectShift.tpe}")
 
+           val shiftedExpr = Apply(
+                               TypeApply(Select.unique(objectShift, "apply"),fType.unseal::Nil),
+                               List(qual,monad)
+                             )
 
-              //case Some(objectShift) =>
-              //TODO: will work only for unique.
-              //   change dotty API to find case, where name is not unique
-              //    in qualifier
-              if (cpsCtx.flags.debugLevel >= 15)
-                  cpsCtx.log(s"found objectShift, ${success1.tree}")
-                  cpsCtx.log(s"objectShift.tpe = ${objectShift.tpe}")
+           val newSelect = Select.unique(shiftedExpr, x.name)
 
-              val shiftedExpr = Apply(
-                                  TypeApply(Select.unique(objectShift, "apply"),fType.unseal::Nil),
-                                  List(qual,monad)
-                                )
+           if targs.isEmpty
+               newSelect
+           else
+               TypeApply(newSelect, targs)
 
-              val newSelect = Select.unique(shiftedExpr, x.name)
-              //val newSelect = Select.unique(TypeApply(object.appliedTo(qual),fseal), x.name)
-              if targs.isEmpty
-                newSelect
-              else
-                TypeApply(newSelect, targs)
-              //success1.tree
-            case  failure1: ImplicitSearchFailure =>
-              //case  None =>
-              findAsyncShift(e) match
-                case Some(shift) => 
-                  val newSelect = Select.unique(shift.unseal, x.name)
-                  TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
-                case None =>
-                  throw MacroError(s"Can't find AsyncShift or ObjectAsyncShift for e=${e.show}, qual=${qual} type=${et.show} expt=${failure1.explanation} ",posExpr(x))
-         case _ =>
-           throw MacroError(s"Can't find AsyncShift or conversion to AsyncShifted for ${x.tpe.seal}, term can't be typed", posExpr(x))
+         case failure1: ImplicitSearchFailure =>
+           findAsyncShiftTerm(qual) match
+             case success2: ImplicitSearchSuccess =>
+               val newSelect = Select.unique(success2.tree, x.name)
+               TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+             case failure2: ImplicitSearchFailure =>
+               throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or ObjectAsyncShift (${failure1.explanation}) for qual=${qual} ",posExpr(x))
 
 
     def shiftCaller(term:Term): Term = 
@@ -489,14 +464,16 @@ trait ApplyTreeTransform[F[_],CT]:
        term match
           case TypeApply(s@Select(qual,name),targs) =>
                   if (qual.tpe =:= monad.tpe) 
-                    if (s.symbol == mapSymbol) 
-                      val newSelect = Select.unique(shiftQual(s.qualifier),s.name)
-                      TypeApply(newSelect, targs).appliedTo(qual)
-                    else if (s.symbol == flatMapSymbol)
-                      val newSelect = Select.unique(shiftQual(s.qualifier),s.name)
-                      TypeApply(newSelect, targs).appliedTo(qual)
+                    if (s.symbol == mapSymbol || s.symbol == flatMapSymbol)  
+                      // TODO: add more symbols
+                      findAsyncShiftTerm(qual) match
+                        case shiftQual:ImplicitSearchSuccess =>
+                          val newSelect = Select.unique(shiftQual.tree,s.name)
+                          TypeApply(newSelect, targs).appliedTo(qual)
+                        case failure:ImplicitSearchFailure =>
+                          throw new MacroError(s"Can't find asyn shift for cpsMonad: ${failure.explanation}", posExpr(term)) 
                     else
-                      throw new MacroError("Unimplemented shift for CpsMonad", term.seal) 
+                      throw new MacroError("Unimplemented shift for CpsMonad", posExpr(term)) 
                   else
                     //val newSelect = shiftSelect(s)
                     //TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)

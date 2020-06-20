@@ -29,6 +29,15 @@ class TestBS1ShiftCollectionOps:
      }
      assert(c.run() == Success(Seq(4,5,6)))
 
+  @Test def testMapSeqVal(): Unit = 
+     val c = async[ComputationBound]{
+        val seq = Seq(1,2,3)
+        seq.map{ x =>
+           await(T1.cbi(3)) + x
+        }
+     }
+     assert(c.run() == Success(Seq(4,5,6)))
+
   @Test def testForeachSeq(): Unit = 
      val c = async[ComputationBound]{
         var s = 0
