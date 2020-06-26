@@ -18,6 +18,10 @@ def await[F[_],T](f:F[T]):T = ???
 inline def async[F[_]](using am:CpsMonad[F]): Async.InferAsyncArg[F] =
    new Async.InferAsyncArg[F]
 
+inline def async1[F[_]](using am:CpsMonad[F]): Async.InferAsyncArg1[F] =
+   new Async.InferAsyncArg1[F]
+
+
 object Async {
 
   class InferAsyncArg[F[_]](using am:CpsMonad[F]) {
@@ -27,6 +31,13 @@ object Async {
 
   }
 
+  class InferAsyncArg1[F[_]](using am:CpsMonad[F]) {
+       inline def apply[T](inline expr: T):F[T] = {
+            checkPrintType[F,T](expr)
+       }
+  }
+
+
   inline def async[F[_]](using am:CpsMonad[F]): InferAsyncArg[F] =
           new InferAsyncArg[F]
 
@@ -34,6 +45,35 @@ object Async {
     ${ 
         Async.transformImpl[F,T]('expr)
      } 
+
+  inline def checkPrintType[F[_], T](inline expr: T): F[T] =
+    ${ 
+        Async.checkPrintTypeImpl[F,T]('expr)
+     } 
+
+  def checkPrintTypeImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[F[T]] = 
+    import qctx.tasty.{_,given _}
+
+    @tailrec
+    def uninline(t:Term):Term =
+      t match
+        case Inlined(_,_,x) => uninline(x)
+        case _ => t
+
+    Expr.summon[CpsMonad[F]] match 
+      case Some(dm) =>
+           println(s"f.unseal=${f.unseal}")
+           val fu = uninline(f.unseal)
+           println(s"iuninlined =${fu}")
+           fu match 
+              case Block(_,Apply(TypeApply(Select(q,n),tparams),params)) =>
+                   println("apply, tparams=$tparams")
+                   '{ ${dm}.pure($f) }
+              case _ =>
+                   println("!apply")
+                    ???
+      case None => ???
+
 
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[F[T]] = 
     import qctx.tasty.{_,given _}
