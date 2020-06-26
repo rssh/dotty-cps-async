@@ -48,6 +48,10 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
      val r = checkIt(c.iterator,prolog)
      monad.map(r)(epilog)
      
+  def collectFirst[F[_],B](c:CA, monad: CpsMonad[F])(pf: PartialFunction[A,F[B]]): F[Option[B]] =
+       c.collectFirst(pf) match
+          case Some(fb) => monad.map(fb)(Some(_))
+          case None => monad.pure(None)
      
   def foreach[F[_],U](c: CA, monad: CpsMonad[F])(f: A => F[U]): F[Unit] = 
      shiftedFold(c,monad)((),f,(s,a,b)=>s,identity)

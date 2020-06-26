@@ -54,4 +54,9 @@ trait KnownTreeFragments[F[_], CT]:
   }
 
   
+  lazy val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
+
+  lazy val partialFunctionType = TypeIdent(Symbol.classSymbol("scala.PartialFunction")).tpe
+
+
 

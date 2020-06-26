@@ -8,7 +8,7 @@ import scala.util.Success
 import scala.util.Failure
 
 
-class TestBS1ShiftCollectionOps:
+class TestBS1ShiftIterableOps:
 
 
   @Test def testMapList(): Unit = 
@@ -126,5 +126,18 @@ class TestBS1ShiftCollectionOps:
      val l = c.run()
      val l1 = l.get.run()
      assert(l1 == Success(10)) 
+
+/*
+  @Test def testCollectFind(): Unit =
+     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async[ComputationBound]{
+          val c = List(1,2,3,4)
+          val r = c.collectFirst{ case x if x > 0 => x + await(T1.cbi(1)) > 3 }
+          r
+     }
+     assert(c.run() == Success(Some(3)))
+*/
+
 
 

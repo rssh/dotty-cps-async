@@ -1,6 +1,8 @@
 package cps.forest.application
 
+import scala.annotation.tailrec
 import scala.quoted._
+
 
 import cps._
 import cps.forest._
@@ -46,7 +48,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
     override def append(tree: CpsTree): CpsTree =
        if (elements.isEmpty)
-         tree
+        tree
        else 
          elements.foldRight(tree){(e,s) => 
            e match
@@ -108,19 +110,32 @@ trait ApplyArgRecordScope[F[_], CT]:
 
        def identArg: Term = 
          if (hasShiftedLambda || shifted) 
-            val params = term match
-              case Lambda(params, body) => params
+            val (params, body) = term match
+              case Lambda(params, body) => (params, body)
               case _ =>
                  throw MacroError(s"Lambda expexted, we have ${term.seal.show}",term.seal)
-            val mt = term.tpe match 
+            term.tpe match 
               case MethodType(paramNames, paramTypes, resType) =>
-                  shiftedMethodType(paramNames, paramTypes, resType)
+                  val mt = shiftedMethodType(paramNames, paramTypes, resType)
+                  createAsyncLambda(mt, params)
               case ft@AppliedType(tp,tparams) =>
                   if (ft.isFunctionType) {
                       val paramTypes = tparams.dropRight(1).map(typeOrBoundsToType(_,false)) 
                       val resType = typeOrBoundsToType(tparams.last,true)
                       val paramNames = params.map(_.name)
-                      shiftedMethodType(paramNames, paramTypes, resType)
+                      val mt = shiftedMethodType(paramNames, paramTypes, resType)
+                      createAsyncLambda(mt, params)
+                  } else if (tp <:< partialFunctionType ) {
+                      println(s"partial-function, body=$body")
+                      val (tIn, tOut) = tparams match
+                         case tIn::tOut::Nil => (tIn, tOut)
+                         case _ =>
+                           throw MacroError(s"PartialFunction should have 2 type parameters, we have $tparams", term.seal) 
+                      val matchTerm = body match
+                         case m@Match(_,_) => m
+                         case _ => 
+                           throw MacroError(s"PartialFunction should be represented as Match term, we have $body", posExprs(body,term)) 
+                      createAsyncPartialFunction(tIn, tOut, matchTerm, params)
                   } else {
                       throw MacroError(s"FunctionType expected, we have ${tp}", term.seal) 
                   }
@@ -131,7 +146,6 @@ trait ApplyArgRecordScope[F[_], CT]:
                   println(s"term.body = ${term}") 
                   println(s"mt = ${other}") 
                   throw MacroError(s"methodType expected for ${term.seal.show}, we have $other",term.seal)
-            Lambda(mt, args => changeArgs(params,args,cpsBody.transformed))
          else 
             term
 
@@ -139,21 +153,209 @@ trait ApplyArgRecordScope[F[_], CT]:
 
        def append(a: CpsTree): CpsTree = a
 
+       private def createAsyncPartialFunction(from: TypeOrBounds, 
+                                                to: TypeOrBounds, 
+                                                body: Match,
+                                                params: List[ValDef]): Term = 
+         val toInF = typeInMonad(to)
+         val fromType = typeOrBoundsToType(from)
+         val matchVar = body.scrutinee
+         val paramNames = params.map(_.name)
+
+         def newCheck():Term = 
+
+            val casePattern = '{
+                 ${matchVar.seal} match
+                    case _ => false
+            }.unseal
+
+            @tailrec
+            def transformCases(rest:List[CaseDef], 
+                               acc:List[CaseDef], 
+                               wasDefault: Boolean):List[CaseDef]=
+              rest match 
+                case h::t => val nh = CaseDef.copy(h)(h.pattern,h.guard,Literal(Constant(true)))
+                             transformCases(t, nh::acc, wasDefault)
+                case Nil =>  
+                      val lastCase = casePattern match 
+                        case Inlined(_,List(),Match(x,cases)) => cases.head
+                        case Match(x,cases) => cases.head
+                        case _ => 
+                            throw MacroError("Internal error: case pattern should be Inlined(_,_,Match), we have $casePattern",posExpr(term))
+                      ;
+                      (lastCase::acc).reverse
+
+            val nBody = Match.copy(body)(matchVar, transformCases(body.cases,Nil,false))
+            val mt = MethodType(paramNames)(_ => List(fromType), _ => defn.BooleanType)
+            Lambda(mt, args => changeArgs(params,args,nBody))
+            
+         def newBody():Term = 
+            val mt = MethodType(paramNames)( _ => List(fromType), _ => toInF)
+            createAsyncLambda(mt, params)
+
+         def termCast[E](term: Term, tp:quoted.Type[E]): Expr[E] =
+               term.seal.asInstanceOf[Expr[E]]
+
+         val caseExample = '{
+              ${matchVar.seal} match
+                case 1 => "A"
+                case 2 => "B"
+                case _ => "false"
+         }.unseal
+         println(s"caseExample=$caseExample")
+         caseExample match
+           case Match(x,cases) =>
+              println("caseExample is match")
+              val lastCase = cases.last
+              lastCase match 
+                case CaseDef(pat,guard,body) =>
+                      println("caseDef, pat=${pat}")
+           case _ =>
+              println("not match!!")
+
+         val helper = '{ cps.runtime.PartialFunctionHelper }.unseal
+         val helperSelect = Select.unique(helper,"create")
+         val checkLambda = newCheck()
+         val bodyLambda = newBody()
+
+         val fromTypeTree = Inferred(fromType)
+         println(s"fromTypeTree=${fromTypeTree}")
+         println(s"fromTypeTree=${fromTypeTree.show}")
+         val toInFTree = Inferred(toInF)
+         println(s"toInFTree=${toInFTree}")
+         // stack overflow during print
+         println(s"toInFTree=${toInFTree.show}")
+
+         val createPF = Apply(
+                          TypeApply(helperSelect,List(fromTypeTree,toInFTree)),
+                          List(checkLambda, bodyLambda)
+                        )
+         val r = createPF
+
+         def genPartial[X:quoted.Type,Y:quoted.Type](x:quoted.Type[X],y:quoted.Type[Y]):Expr[PartialFunction[X,Y]] =
+            '{ cps.runtime.PartialFunctionHelper.create[X,Y](
+                           ${checkLambda.seal.asInstanceOf[Expr[X=>Boolean]]},
+                           ${bodyLambda.seal.asInstanceOf[Expr[X=>Y]]}
+                    )
+             }
+
+         //val r = genPartial(fromType.seal, toInF.seal).unseal
+
+         println(s"checkLambda=${checkLambda.show}")
+         println(s"bodyLambda=${bodyLambda.show}")
+         //println(s"r=${r.show}")
+         println(s"r=$r")
+         val oldParamSym = params.head.symbol
+         r match {
+           case Lambda(nParams, body) =>
+             val nParamSym = nParams.head.symbol
+             body match
+               case Match(scr, caseDefs) =>
+                  println(s"Match found, scroutinee=${scr}")
+                  println(s"caseDefs=${caseDefs}")
+                  scr match 
+                     case Typed(expr,tpt) =>
+                        println(s"Match(typed), expr=$expr, tpt=$tpt")
+                        expr match
+                          case id@Ident(xxx) => println(s"idend:$xxx")
+                                if (id.symbol == nParamSym) {
+                                   println("new symbol in ident")
+                                } else if (id.symbol == oldParamSym) {
+                                   println("old symbol in ident")
+                                } else {
+                                   println(s"strange symbol in ident: $id.symbol")
+                                }
+                          case _ => println("!ident")
+                        tpt match 
+                          case Annotated(tp1, annotation) =>
+                             println(s"annotated, tp1=${tp1}")
+                          case i@Inferred() =>
+                             println(s"inferred, i=${i}")
+                          case _ =>
+                             println(s"!annotated, tpt=$tpt")
+                     case _ =>
+                          println(s"Match(!typed)")
+               case other =>   
+                  println(s"body is not Match but $body")
+           case other =>
+                println("r is not Lambda")
+         }
+         r
+ 
+       private def createAsyncLambda(mt: MethodType, params: List[ValDef]): Term =
+         val transformedBody = cpsBody.transformed
+         Lambda(mt, args => changeArgs(params,args,transformedBody))
+         
+
        private def changeArgs(params:List[ValDef], nParams:List[Tree], body: Term): Term =
          val association: Map[Symbol, Tree] = (params zip nParams).foldLeft(Map.empty){
            case (m, (oldParam, newParam)) => m.updated(oldParam.symbol, newParam)
          }
          val changes = new TreeMap() {
+
+             def lookupParamTerm(symbol:Symbol): Option[Term] =
+                association.get(symbol) match
+                  case Some(paramTree) =>
+                    paramTree match 
+                      case paramTerm: Term => Some(paramTerm)
+                      case _ => throw MacroError(s"term expected for lambda param, we have ${paramTree}",posExprs(term))
+                  case _ => None
+
              override def transformTerm(tree:Term)(using ctx: Context):Term =
                tree match
-                 case ident@Ident(name) => association.get(ident.symbol) match
-                                            case Some(paramTree) =>
-                                              paramTree match 
-                                                case paramTerm: Term => paramTerm
-                                                case _ =>
-                                                 throw MacroError(s"term expected for lambda param, we ahave ${paramTree}",term.seal)
-                                            case None => super.transformTerm(tree)
+                 case ident@Ident(name) => lookupParamTerm(ident.symbol) match
+                                             case Some(paramTerm) => paramTerm
+                                             case None => super.transformTerm(tree)
                  case _ => super.transformTerm(tree)
+
+             override def transformTypeTree(tree:TypeTree)(using ctx:Context):TypeTree =
+               tree match
+                 case Singleton(ref) => 
+                           lookupParamTerm(ref.symbol) match
+                               case Some(paramTerm) => Singleton(paramTerm)
+                               case None => super.transformTypeTree(tree)
+                 case a@Annotated(tp,annotation) => 
+                           // bug in default TreeTransform, should process Annotated
+                           Annotated.copy(a)(transformTypeTree(tp),transformTerm(annotation))
+                 case i@Inferred() =>
+                           Inferred(transformType(i.tpe))
+                 case _ => super.transformTypeTree(tree)
+
+             def transformType(tp: Type)(using ctx: Context): Type =
+               tp match
+                 case ConstantType(c) => tp
+                 case tref@TermRef(qual, name) => 
+                         lookupParamTerm(tref.termSymbol) match
+                           case Some(paramTerm) => paramTerm.tpe
+                           case None => tp
+                 case tp: TypeRef =>
+                         // it is impossible to create typeRef, so pass is itself  
+                         // TODO: add constructor to CompilerReflection
+                         tp
+                 case SuperType(thisTpe,superTpe) =>
+                         SuperType(transformType(thisTpe),transformType(superTpe))
+                 case Refinement(parent,name,info) => 
+                         Refinement(transformType(parent),name,transformTypeOrBounds(info))
+                 case AppliedType(tycon, args) =>
+                         AppliedType(transformType(tycon), args.map(x => transformTypeOrBounds(x)))
+                 case AnnotatedType(underlying, annot) =>
+                         AnnotatedType(transformType(underlying), transformTerm(annot))
+                 case AndType(rhs,lhs) => AndType(transformType(rhs),transformType(lhs))
+                 case OrType(rhs,lhs) => OrType(transformType(rhs),transformType(lhs))
+                 case MatchType(bound,scrutinee,cases) => 
+                            MatchType(transformType(bound),transformType(scrutinee),
+                                                        cases.map(x => transformType(x))) 
+                 case ByNameType(tp1) => ByNameType(transformType(tp1))
+                 case ParamRef(x) => tp
+                 case _ => tp  //  hope nobody will put termRef inside recursive type
+
+             def transformTypeOrBounds(tpb: TypeOrBounds)(using ctx: Context): TypeOrBounds =
+                   tpb match
+                     case NoPrefix() => tpb
+                     case TypeBounds(low,hi) => TypeBounds(transformType(low),transformType(hi))
+                     case tp: Type => transformType(tp)
+                     
+ 
          }
          changes.transformTerm(body)
          
