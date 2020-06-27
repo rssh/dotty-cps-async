@@ -127,17 +127,18 @@ class TestBS1ShiftIterableOps:
      val l1 = l.get.run()
      assert(l1 == Success(10)) 
 
-/*
   @Test def testCollectFind(): Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
-     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //printCode will stackOverflow because of https://github.com/lampepfl/dotty/issues/9251
+     //implicit val printCode = cps.macroFlags.PrintCode
+     implicit val printTree = cps.macroFlags.PrintTree
+     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
           val c = List(1,2,3,4)
-          val r = c.collectFirst{ case x if x > 0 => x + await(T1.cbi(1)) > 3 }
+          val r: Option[Int] = c.collectFirst{ case x if x > 2 => x + await(T1.cbi(1)) }
+          //val r: Option[Int] = await(T1.cbt(Some(4)))
           r
      }
-     assert(c.run() == Success(Some(3)))
-*/
+     assert(c.run() == Success(Some(4)))
 
 
 

@@ -17,6 +17,8 @@ object T1 {
 
   def cbs(s:String): ComputationBound[String] = Done(s)
 
+  def cbt[T](v:T): ComputationBound[T] = Done(v)
+
 }
 
 

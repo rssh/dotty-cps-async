@@ -126,7 +126,6 @@ trait ApplyArgRecordScope[F[_], CT]:
                       val mt = shiftedMethodType(paramNames, paramTypes, resType)
                       createAsyncLambda(mt, params)
                   } else if (tp <:< partialFunctionType ) {
-                      println(s"partial-function, body=$body")
                       val (tIn, tOut) = tparams match
                          case tIn::tOut::Nil => (tIn, tOut)
                          case _ =>
@@ -218,68 +217,19 @@ trait ApplyArgRecordScope[F[_], CT]:
          val checkLambda = newCheck()
          val bodyLambda = newBody()
 
-         val fromTypeTree = Inferred(fromType)
-         println(s"fromTypeTree=${fromTypeTree}")
-         println(s"fromTypeTree=${fromTypeTree.show}")
-         val toInFTree = Inferred(toInF)
-         println(s"toInFTree=${toInFTree}")
-         // stack overflow during print
-         println(s"toInFTree=${toInFTree.show}")
-
          val createPF = Apply(
-                          TypeApply(helperSelect,List(fromTypeTree,toInFTree)),
+                          TypeApply(helperSelect,List(Inferred(fromType),Inferred(toInF))),
                           List(checkLambda, bodyLambda)
                         )
          val r = createPF
 
-         def genPartial[X:quoted.Type,Y:quoted.Type](x:quoted.Type[X],y:quoted.Type[Y]):Expr[PartialFunction[X,Y]] =
-            '{ cps.runtime.PartialFunctionHelper.create[X,Y](
-                           ${checkLambda.seal.asInstanceOf[Expr[X=>Boolean]]},
-                           ${bodyLambda.seal.asInstanceOf[Expr[X=>Y]]}
-                    )
-             }
-
-         //val r = genPartial(fromType.seal, toInF.seal).unseal
-
          println(s"checkLambda=${checkLambda.show}")
          println(s"bodyLambda=${bodyLambda.show}")
+         println(s"fromType=${fromType.show}")
+         println(s"toType (unwrapped) =${to.show}")
          //println(s"r=${r.show}")
          println(s"r=$r")
-         val oldParamSym = params.head.symbol
-         r match {
-           case Lambda(nParams, body) =>
-             val nParamSym = nParams.head.symbol
-             body match
-               case Match(scr, caseDefs) =>
-                  println(s"Match found, scroutinee=${scr}")
-                  println(s"caseDefs=${caseDefs}")
-                  scr match 
-                     case Typed(expr,tpt) =>
-                        println(s"Match(typed), expr=$expr, tpt=$tpt")
-                        expr match
-                          case id@Ident(xxx) => println(s"idend:$xxx")
-                                if (id.symbol == nParamSym) {
-                                   println("new symbol in ident")
-                                } else if (id.symbol == oldParamSym) {
-                                   println("old symbol in ident")
-                                } else {
-                                   println(s"strange symbol in ident: $id.symbol")
-                                }
-                          case _ => println("!ident")
-                        tpt match 
-                          case Annotated(tp1, annotation) =>
-                             println(s"annotated, tp1=${tp1}")
-                          case i@Inferred() =>
-                             println(s"inferred, i=${i}")
-                          case _ =>
-                             println(s"!annotated, tpt=$tpt")
-                     case _ =>
-                          println(s"Match(!typed)")
-               case other =>   
-                  println(s"body is not Match but $body")
-           case other =>
-                println("r is not Lambda")
-         }
+         println(s"r.tpe=${r.tpe}")
          r
  
        private def createAsyncLambda(mt: MethodType, params: List[ValDef]): Term =
