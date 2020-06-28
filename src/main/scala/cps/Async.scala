@@ -6,14 +6,15 @@ trait CpsMonad[F[_]]
 
 trait ComputationBound[T] 
 
-implicit object ComputationBoundMonad extends CpsMonad[ComputationBound] 
+implicit object ComputationBoundMonad extends CpsMonad[ComputationBound] {
+  def pure[T](x:T):ComputationBound[T] = ???
+}
 
 inline def async[F[_]](using am:CpsMonad[F]): Async.InferAsyncArg[F] =
    new Async.InferAsyncArg[F]
 
-object PFHelpr
-{
-  def create[X,Y](x:String):PartialFunction[X,Y]=???
+object PFHelper {
+  def create[X,Y](x:Boolean):PartialFunction[X,Y] = ???
 }
 
 object Async {
@@ -22,7 +23,7 @@ object Async {
 
        inline def apply[T](inline expr: T):Unit =
        ${
-         Async.checkPrintTypeImpl[F,T]('expr)
+         Async.transformImpl[F,T]('expr)
         }
 
   }
@@ -38,22 +39,22 @@ object Async {
 
     val fu = uninline(f.unseal)
     fu match 
-              case Block(_,Apply(TypeApply(Select(q,n),tparams),List(param))) =>
-                   param.tpe match
-                      case AppliedType(tp,tparams1) =>
-                        val fType = summon[quoted.Type[F]]
-                        val ptp = tparams1.tail.head
-                        val ptpWrapped = AppliedType(fType.unseal.tpe,List(ptp))
-                        val nothingType = defn.NothingType
-
-                        if (nothingType <:< ptpWrapped) 
-                           println("ok")
-                        else
-                           println("not ok")
-                      case None => 
-                        println(s"tpe=${param.tpe} is not AppliedType")
-                   '{ () }
-              case _ => ???
+      case Block(_,Apply(TypeApply(Select(q,n),tparams),List(param))) =>
+        param.tpe match
+          case AppliedType(tp,tparams1) =>
+            val fromType = tparams1.head
+            val toType = tparams1.tail.head
+            val fType = summon[quoted.Type[F]]
+            val toWrapped = AppliedType(fType.unseal.tpe,List(toType))
+            val helper = '{ cps.PFHelper }.unseal
+            val helperSelect = Select.unique(helper,"create")
+            val createPF = Apply(
+                             TypeApply(helperSelect,List(Inferred(fromType),Inferred(toInF))),
+                             //List(bodyLambda)
+                             List(Literal(Constant(true)))
+                           )
+            val createPfApply = Apply(createPF,List(q))
+            createPfApply
 
 
 }
