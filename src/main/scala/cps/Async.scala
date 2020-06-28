@@ -29,7 +29,7 @@ object Async {
   }
 
 
-  def checkPrintTypeImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[Unit] = 
+  def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[Unit] = 
     import qctx.tasty.{_,given _}
 
     def uninline(t:Term):Term =
@@ -42,19 +42,23 @@ object Async {
       case Block(_,Apply(TypeApply(Select(q,n),tparams),List(param))) =>
         param.tpe match
           case AppliedType(tp,tparams1) =>
-            val fromType = tparams1.head
+            val fromTypeOrBounds = tparams1.head
+            val fromType = fromTypeOrBounds match
+                 case bounds: TypeBounds => bounds.low
+                 case tp: Type => tp
+                 case np: NoPrefix => ???
             val toType = tparams1.tail.head
             val fType = summon[quoted.Type[F]]
             val toWrapped = AppliedType(fType.unseal.tpe,List(toType))
             val helper = '{ cps.PFHelper }.unseal
             val helperSelect = Select.unique(helper,"create")
             val createPF = Apply(
-                             TypeApply(helperSelect,List(Inferred(fromType),Inferred(toInF))),
+                             TypeApply(helperSelect,List(Inferred(fromType),Inferred(toWrapped))),
                              //List(bodyLambda)
                              List(Literal(Constant(true)))
                            )
-            val createPfApply = Apply(createPF,List(q))
-            createPfApply
+            val createPfApply = Apply(Select.unique(createPF,"apply"),List(Literal(Constant(1))))
+            Block(List(createPfApply),Literal(Constant(()))).seal.asInstanceOf[Expr[Unit]]
 
 
 }
