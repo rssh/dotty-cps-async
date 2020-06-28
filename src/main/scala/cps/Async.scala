@@ -6,9 +6,7 @@ trait CpsMonad[F[_]]
 
 trait ComputationBound[T] 
 
-implicit object ComputationBoundMonad extends CpsMonad[ComputationBound] {
-  def pure[T](x:T):ComputationBound[T] = ???
-}
+implicit object ComputationBoundMonad extends CpsMonad[ComputationBound] 
 
 inline def async[F[_]](using am:CpsMonad[F]): Async.InferAsyncArg[F] =
    new Async.InferAsyncArg[F]
@@ -54,7 +52,6 @@ object Async {
             val helperSelect = Select.unique(helper,"create")
             val createPF = Apply(
                              TypeApply(helperSelect,List(Inferred(fromType),Inferred(toWrapped))),
-                             //List(bodyLambda)
                              List(Literal(Constant(true)))
                            )
             val createPfApply = Apply(Select.unique(createPF,"apply"),List(Literal(Constant(1))))
