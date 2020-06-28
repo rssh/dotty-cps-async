@@ -11,6 +11,11 @@ implicit object ComputationBoundMonad extends CpsMonad[ComputationBound]
 inline def async[F[_]](using am:CpsMonad[F]): Async.InferAsyncArg[F] =
    new Async.InferAsyncArg[F]
 
+object PFHelpr
+{
+  def create[X,Y](x:String):PartialFunction[X,Y]=???
+}
+
 object Async {
 
   class InferAsyncArg[F[_]](using am:CpsMonad[F]) {
@@ -40,6 +45,7 @@ object Async {
                         val ptp = tparams1.tail.head
                         val ptpWrapped = AppliedType(fType.unseal.tpe,List(ptp))
                         val nothingType = defn.NothingType
+
                         if (nothingType <:< ptpWrapped) 
                            println("ok")
                         else
