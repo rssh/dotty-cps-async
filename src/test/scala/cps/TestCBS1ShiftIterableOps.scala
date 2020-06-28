@@ -127,7 +127,6 @@ class TestBS1ShiftIterableOps:
      val l1 = l.get.run()
      assert(l1 == Success(10)) 
 
-/*
   @Test def testCollectFind(): Unit =
      //printCode will stackOverflow because of https://github.com/lampepfl/dotty/issues/9251
      //implicit val printCode = cps.macroFlags.PrintCode
@@ -140,7 +139,6 @@ class TestBS1ShiftIterableOps:
           r
      }
      assert(c.run() == Success(Some(4)))
-*/
 
 
 
