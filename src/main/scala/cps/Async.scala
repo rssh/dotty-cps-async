@@ -38,8 +38,12 @@ object Async {
                       case AppliedType(tp,tparams1) =>
                         val fType = summon[quoted.Type[F]]
                         val ptp = tparams1.tail.head
-                        val ptpTree = Inferred(AppliedType(fType.unseal.tpe,List(ptp)))
-                        println("res:"+ptpTree.show)
+                        val ptpWrapped = AppliedType(fType.unseal.tpe,List(ptp))
+                        val nothingType = defn.NothingType
+                        if (nothingType <:< ptpWrapped) 
+                           println("ok")
+                        else
+                           println("not ok")
                       case None => 
                         println(s"tpe=${param.tpe} is not AppliedType")
                    '{ () }
