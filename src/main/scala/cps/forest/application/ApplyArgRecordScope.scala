@@ -161,10 +161,10 @@ trait ApplyArgRecordScope[F[_], CT]:
          val matchVar = body.scrutinee
          val paramNames = params.map(_.name)
 
-         def newCheck():Term = 
+         def newCheckBody(inputVal:Term):Term = 
 
             val casePattern = '{
-                 ${matchVar.seal} match
+                 ${inputVal.seal} match
                     case _ => false
             }.unseal
 
@@ -173,20 +173,24 @@ trait ApplyArgRecordScope[F[_], CT]:
                                acc:List[CaseDef], 
                                wasDefault: Boolean):List[CaseDef]=
               rest match 
-                case h::t => val nh = CaseDef.copy(h)(h.pattern,h.guard,Literal(Constant(true)))
-                             transformCases(t, nh::acc, wasDefault)
+                case h::t => 
+                     val nh = rebindCaseDef(h, Literal(Constant(true)), Map.empty, false)
+                     transformCases(t, nh::acc, wasDefault)
                 case Nil =>  
                       val lastCase = casePattern match 
                         case Inlined(_,List(),Match(x,cases)) => cases.head
                         case Match(x,cases) => cases.head
                         case _ => 
-                            throw MacroError("Internal error: case pattern should be Inlined(_,_,Match), we have $casePattern",posExpr(term))
+                            throw MacroError("Internal error: case pattern should be Inlined(_,_,Match) pr Match, we have $casePattern",posExpr(term))
                       ;
                       (lastCase::acc).reverse
 
-            val nBody = Match.copy(body)(matchVar, transformCases(body.cases,Nil,false))
+            Match.copy(body)(inputVal, transformCases(body.cases,Nil,false))
+            //Match(inputVal, transformCases(body.cases,Nil,false))
+
+         def newCheck(): Term =
             val mt = MethodType(paramNames)(_ => List(fromType), _ => defn.BooleanType)
-            Lambda(mt, args => changeArgs(params,args,nBody))
+            Lambda(mt, args => changeArgs(params,args,newCheckBody(matchVar)))
             
          def newBody():Term = 
             val mt = MethodType(paramNames)( _ => List(fromType), _ => toInF)
@@ -212,6 +216,8 @@ trait ApplyArgRecordScope[F[_], CT]:
            case _ =>
               println("not match!!")
 
+         /*
+          // blocked by 
          val helper = '{ cps.runtime.PartialFunctionHelper }.unseal
          val helperSelect = Select.unique(helper,"create")
          val checkLambda = newCheck()
@@ -222,25 +228,90 @@ trait ApplyArgRecordScope[F[_], CT]:
                           List(checkLambda, bodyLambda)
                         )
          val r = createPF
+         */
+         val r = fromType.seal match 
+           case '[$ft] =>
+             toInF.seal match 
+               case '[$tt] =>
+                  '{ new PartialFunction[$ft,$tt] {
+                       override def isDefinedAt(x1:$ft):Boolean =
+                          ${ newCheckBody('x1.unseal ).seal.asInstanceOf[Expr[Boolean]] } 
+                       override def apply(x2:$ft): $tt =
+                          ${ val nBody = cpsBody.transformed
+                             nBody match
+                               case m@Match(scr,caseDefs) =>
+                                 val b0 = Map(matchVar.symbol -> 'x2.unseal)
+                                 val nCaseDefs = caseDefs.map( cd =>
+                                                    rebindCaseDef(cd, cd.rhs, b0, true))
+                                 val nTerm = Match.copy(m)('x2.unseal, nCaseDefs)
+                                 termCast(nTerm,tt)
+                               case _ =>
+                                 throw MacroError(
+                                   s"assumed that transformed match is Match, we have $nBody",
+                                   posExprs(term)
+                                 )
+                           }
+                     }
+                   }.unseal
+               case _ =>
+                  throw MacroError("Can't skolemize $toInF", posExprs(term) )
+           case _ =>
+             throw MacroError("Can't skolemize $fromType", posExprs(term) )
 
-         println(s"checkLambda=${checkLambda.show}")
-         println(s"bodyLambda=${bodyLambda.show}")
-         println(s"fromType=${fromType.show}")
-         println(s"toType (unwrapped) =${to.show}")
+         //println(s"checkLambda=${checkLambda.show}")
+         //println(s"bodyLambda=${bodyLambda.show}")
+         //println(s"fromType=${fromType.show}")
+         //println(s"toType (unwrapped) =${to.show}")
          //println(s"r=${r.show}")
          println(s"r=$r")
-         println(s"r.tpe=${r.tpe}")
+         //println(s"r.tpe=${r.tpe}")
          r
  
        private def createAsyncLambda(mt: MethodType, params: List[ValDef]): Term =
          val transformedBody = cpsBody.transformed
          Lambda(mt, args => changeArgs(params,args,transformedBody))
          
+       private def rebindCaseDef(caseDef:CaseDef, 
+                                 body: Term, 
+                                 assoc: Map[Symbol, Term],
+                                 processBody: Boolean): CaseDef = {
+         
+         def rebindPatterns(pattern: Tree, map:Map[Symbol,Term]): (Tree, Map[Symbol, Term]) = {
+           pattern match
+             case bd@Bind(name,pat1) =>
+                val bSym = bd.symbol
+                val nBSym = Symbol.newBind(rootContext.owner,name,bSym.flags, Ref(bSym).tpe.widen)
+                val nMap = map.updated(bSym, Ref(nBSym))
+                val (nPat1, nMap1) = rebindPatterns(pat1, nMap)
+                (Bind(nBSym,nPat1), nMap1)
+             case u@Unapply(fun, implicits, patterns) =>
+                val s0: (List[Tree], Map[Symbol,Term]) = (List.empty, Map.empty)
+                val sR = patterns.foldLeft(s0){ (s,e) =>
+                   val (ep, em) = rebindPatterns(e,s._2)
+                   (ep::s._1, em)
+                }
+                val nPatterns = sR._1.reverse
+                (Unapply.copy(u)(fun, implicits, nPatterns), sR._2)
+             case other =>
+                (other, map) 
+         }
+         
+         val (nPattern, newBindings) = rebindPatterns(caseDef.pattern, assoc)
+         val nGuard = caseDef.guard.map( changeSyms(newBindings, _ ) )
+         val nBody = if (processBody) changeSyms(newBindings, body) else body
+         CaseDef(nPattern, nGuard, nBody)
+       }
 
        private def changeArgs(params:List[ValDef], nParams:List[Tree], body: Term): Term =
          val association: Map[Symbol, Tree] = (params zip nParams).foldLeft(Map.empty){
-           case (m, (oldParam, newParam)) => m.updated(oldParam.symbol, newParam)
+             case (m, (oldParam, newParam)) => m.updated(oldParam.symbol, newParam)
          }
+         changeSyms(association, body)
+
+       private def changeIdent(body:Term, oldSym: Symbol, newSym: Symbol): Term =
+         changeSyms(Map(oldSym->Ref(newSym)), body)
+
+       private def changeSyms(association: Map[Symbol,Tree], body: Term): Term =
          val changes = new TreeMap() {
 
              def lookupParamTerm(symbol:Symbol): Option[Term] =
