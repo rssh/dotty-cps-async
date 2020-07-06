@@ -22,7 +22,8 @@ class TestFutureBasic:
      p.success(3)
      val r = Await.result(c, 10 seconds)
      assert(r==4)
-     
+
+
   @Test def futureBasic2(): Unit = 
      def fun(x:Int):Future[Int] = 
        Future successful (x+1)
@@ -33,7 +34,9 @@ class TestFutureBasic:
        s
      }
      val r = Await.result(c, 10 seconds)
+     println(s"r=$r")
      assert(r==(2+3+4))
+
 
 
 

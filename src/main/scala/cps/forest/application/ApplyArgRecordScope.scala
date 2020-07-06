@@ -199,23 +199,6 @@ trait ApplyArgRecordScope[F[_], CT]:
          def termCast[E](term: Term, tp:quoted.Type[E]): Expr[E] =
                term.seal.asInstanceOf[Expr[E]]
 
-         val caseExample = '{
-              ${matchVar.seal} match
-                case 1 => "A"
-                case 2 => "B"
-                case _ => "false"
-         }.unseal
-         println(s"caseExample=$caseExample")
-         caseExample match
-           case Match(x,cases) =>
-              println("caseExample is match")
-              val lastCase = cases.last
-              lastCase match 
-                case CaseDef(pat,guard,body) =>
-                      println("caseDef, pat=${pat}")
-           case _ =>
-              println("not match!!")
-
          /*
           // blocked by 
          val helper = '{ cps.runtime.PartialFunctionHelper }.unseal
@@ -258,13 +241,6 @@ trait ApplyArgRecordScope[F[_], CT]:
            case _ =>
              throw MacroError("Can't skolemize $fromType", posExprs(term) )
 
-         //println(s"checkLambda=${checkLambda.show}")
-         //println(s"bodyLambda=${bodyLambda.show}")
-         //println(s"fromType=${fromType.show}")
-         //println(s"toType (unwrapped) =${to.show}")
-         //println(s"r=${r.show}")
-         println(s"r=$r")
-         //println(s"r.tpe=${r.tpe}")
          r
  
        private def createAsyncLambda(mt: MethodType, params: List[ValDef]): Term =

@@ -86,11 +86,45 @@ trait ApplyTreeTransform[F[_],CT]:
          else
             throw MacroError("Unexpected multiple parameters lists for await",posExpr(applyTerm))
       else
-         cpsCtx.log(s"targs.head.tpe    = ${targs.head.tpe.show}")
-         cpsCtx.log(s"monadTypeTree.tpe = ${monadTypeTree.tpe.show}")
-         throw MacroError(s"Interpolation of await between ${targs.head.tpe} and ${monadTypeTree.tpe} is not supported yet", cpsCtx.patternCode )
-         
-
+        /*
+         // TODO: report to dotty as error
+         val conversion = TypeIdent(Symbol.classSymbol("scala.Conversion")).tpe
+         val inOtherMonad = AppliedType(targs.head.tpe.widen,List(applyTerm.tpe.widen))
+         val inMyMonad = AppliedType(monadTypeTree.tpe.widen,List(applyTerm.tpe.widen))
+         val taConversion = AppliedType(conversion,List(inOtherMonad, inMyMonad))
+        */
+         /*
+         val otherMonad = targs.head.tpe.widen.seal match
+               case '[$o] => o
+               case _ =>
+                 throw MacroError("can't match type for ${targs.head.tpe}",posExpr(applyTerm))
+         val t = applyTerm.tpe.widen.seal match 
+               case '[$t] => t
+               case _ =>
+                 throw MacroError("can't match type for ${applyTerm.tpe.widen}",posExpr(applyTerm))
+         val inOtherMonad = AppliedType(o.unseal.tpe,List(t.unseal.tpe)) // '[$o[$t]]
+         val omt = inOtherMonad.seal match 
+              case '[$x] => x
+              case _ =>
+                 throw MacroError("can't match constructed AppliedType",posExpr(applyTerm))
+         val inMyMonad = '[F[$t]].unseal
+         val taConversion = '[scala.Conversion[$omt,F[$t]]].unseal.tpe
+         */
+         val conversion = TypeIdent(Symbol.classSymbol("scala.Conversion")).tpe
+         val inOtherMonad = args.head.tpe.widen
+         val inMyMonad = AppliedType(monadTypeTree.tpe,List(applyTerm.tpe.widen))
+         val taConversion = AppliedType(conversion,List(inOtherMonad, inMyMonad))
+         //val taConversion = '[scala.Conversion[$inOtherMonad,$inMyMonad]].unseal.tpe
+         searchImplicit(taConversion) match
+           case implSuccess: ImplicitSearchSuccess =>
+             if (!args.tail.isEmpty)
+                throw MacroError("unexpected multiply arguments in await", posExpr(applyTerm))
+             val convertedAwait = Apply(implSuccess.tree, args)
+             AwaitCpsTree(convertedAwait, applyTerm.tpe )
+           case implFailure: ImplicitSearchFailure =>
+             println("!!!after searchImplicit [not found]")
+             throw MacroError(s"Can't find Conversion from ${inOtherMonad.show} to ${inMyMonad.show} (${implFailure.explanation}) ",posExprs(applyTerm))
+ 
  
   /**
    *applyTerm = Apply(fun, args)
@@ -100,6 +134,7 @@ trait ApplyTreeTransform[F[_],CT]:
                          fun:Term, 
                          args: List[Term], 
                          obj:Term, 
+      
                          targs:List[TypeTree],
                          tails:List[Seq[ApplyArgRecord]]): CpsTree =
      if (cpsCtx.flags.debugLevel >= 10)
