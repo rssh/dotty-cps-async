@@ -29,102 +29,22 @@ trait ApplyTreeTransform[F[_],CT]:
      // try to omit things, which should be eta-expanded,
      fun match 
        case TypeApply(obj,targs) =>
-          // check - maybe this is await
-          obj match {
-            case Ident(name) if (name=="await") =>
-                   if ( obj.symbol == awaitSymbol ) 
-                     if (targs.head.tpe =:= monadTypeTree.tpe) 
-                         // TODO: check, that args have one element
-                        val awaitArg = args.head
-                        if (tails.isEmpty)
-                          runAwait(applyTerm, awaitArg)
-                        else
-                          throw MacroError("call of await with multiple parameter lists", posExpr(applyTerm))
-                     else
-                        // not my await [?]
-                        if (cpsCtx.flags.debugLevel >= 10)
-                           cpsCtx.log("Not-my-await") 
-                        // ??  TODO: apply conversion if exists or touch unchanged
-                        handleFunTypeAwaitApply(applyTerm,fun,args,obj,targs, tails)
-                   else
-                     handleFunTypeApply(applyTerm,fun,args,obj,targs, tails)
-            case Select(obj1, name) if (name=="await") =>
-                   if ( obj.symbol == awaitSymbol ) 
-                     if (targs.head.tpe =:= monadTypeTree.tpe) 
-                        if (tails.isEmpty)
-                          runAwait(applyTerm, args.head)
-                        else
-                          throw MacroError("Call of await with multiple param lists",posExpr(applyTerm))
-                     else
-                        handleFunTypeAwaitApply(applyTerm,fun,args,obj,targs,tails)
-                   else
-                     handleFunTypeApply(applyTerm, fun, args, obj, targs, tails)
-            case _ => handleFunTypeApply(applyTerm, fun, args, obj, targs, tails)
-          }
+            handleFunTypeApply(applyTerm,fun,args,obj,targs, tails)
        case Select(obj,method) =>
             handleFunSelect(applyTerm, fun, args, obj, method, tails)
        case Ident(name) =>
             handleFunIdent(applyTerm, fun, args, name, tails)
+       case Apply(fun1@TypeApply(obj2,targs2), args1) if obj2.symbol == awaitSymbol =>
+             // catch await early
+             if (targs2.head.tpe =:= monadTypeTree.tpe)
+                runMyAwait(applyTerm, args1.head)
+             else
+                runOtherAwait(applyTerm, args1.head, targs2.head.tpe, args.head)
        case Apply(fun1, args1) => 
             handleFunApply(applyTerm, fun, args, fun1, args1, tails)
        case _ =>
             handleFun(applyTerm, fun, args, tails)
 
-  def handleFunTypeAwaitApply(applyTerm: Term, 
-                              awaitFun:Term, 
-                              args: List[Term], 
-                              obj:Term, 
-                              targs:List[TypeTree],
-                              tails:List[Seq[ApplyArgRecord]]): CpsTree =
-      if (cpsCtx.flags.debugLevel >= 10)
-        cpsCtx.log( "runApply:handleFunTypeAwaitApply")
-      if (targs.head.tpe =:= monadTypeTree.tpe) 
-         if (cpsCtx.flags.debugLevel >= 10)
-            cpsCtx.log( "our monad")
-         if (tails.isEmpty)
-            runAwait(applyTerm, args.head)
-         else
-            throw MacroError("Unexpected multiple parameters lists for await",posExpr(applyTerm))
-      else
-        /*
-         // TODO: report to dotty as error
-         val conversion = TypeIdent(Symbol.classSymbol("scala.Conversion")).tpe
-         val inOtherMonad = AppliedType(targs.head.tpe.widen,List(applyTerm.tpe.widen))
-         val inMyMonad = AppliedType(monadTypeTree.tpe.widen,List(applyTerm.tpe.widen))
-         val taConversion = AppliedType(conversion,List(inOtherMonad, inMyMonad))
-        */
-         /*
-         val otherMonad = targs.head.tpe.widen.seal match
-               case '[$o] => o
-               case _ =>
-                 throw MacroError("can't match type for ${targs.head.tpe}",posExpr(applyTerm))
-         val t = applyTerm.tpe.widen.seal match 
-               case '[$t] => t
-               case _ =>
-                 throw MacroError("can't match type for ${applyTerm.tpe.widen}",posExpr(applyTerm))
-         val inOtherMonad = AppliedType(o.unseal.tpe,List(t.unseal.tpe)) // '[$o[$t]]
-         val omt = inOtherMonad.seal match 
-              case '[$x] => x
-              case _ =>
-                 throw MacroError("can't match constructed AppliedType",posExpr(applyTerm))
-         val inMyMonad = '[F[$t]].unseal
-         val taConversion = '[scala.Conversion[$omt,F[$t]]].unseal.tpe
-         */
-         val conversion = TypeIdent(Symbol.classSymbol("scala.Conversion")).tpe
-         val inOtherMonad = args.head.tpe.widen
-         val inMyMonad = AppliedType(monadTypeTree.tpe,List(applyTerm.tpe.widen))
-         val taConversion = AppliedType(conversion,List(inOtherMonad, inMyMonad))
-         //val taConversion = '[scala.Conversion[$inOtherMonad,$inMyMonad]].unseal.tpe
-         searchImplicit(taConversion) match
-           case implSuccess: ImplicitSearchSuccess =>
-             if (!args.tail.isEmpty)
-                throw MacroError("unexpected multiply arguments in await", posExpr(applyTerm))
-             val convertedAwait = Apply(implSuccess.tree, args)
-             AwaitCpsTree(convertedAwait, applyTerm.tpe )
-           case implFailure: ImplicitSearchFailure =>
-             println("!!!after searchImplicit [not found]")
-             throw MacroError(s"Can't find Conversion from ${inOtherMonad.show} to ${inMyMonad.show} (${implFailure.explanation}) ",posExprs(applyTerm))
- 
  
   /**
    *applyTerm = Apply(fun, args)
