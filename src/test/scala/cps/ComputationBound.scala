@@ -109,6 +109,8 @@ object ComputationBound {
 
 implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBound] {
 
+   type WF[T] = ComputationBound[T]
+
    def pure[T](value:T): ComputationBound[T] = ComputationBound.pure(value)
 
    def finalAwait[T](t:ComputationBound[T]):Try[T] = t.run()

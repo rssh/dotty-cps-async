@@ -7,30 +7,32 @@ import scala.language.implicitConversions
 import scala.concurrent._
 import scala.util._
 
-given future2ComputationBound[T](using ExecutionContext) as Conversion[Future[T],ComputationBound[T]] = 
-   future => 
-          ComputationBound.asyncCallback( listener => future.onComplete(listener) )
    
+given cbsFutureConversion(using ExecutionContext) as CpsMonadConversion[Future,ComputationBound] = 
+   new CpsMonadConversion[Future, ComputationBound] {
+     override def apply[T](mf: CpsMonad[Future], mg: CpsMonad[ComputationBound], ft:Future[T]):
+        ComputationBound[T] =
+           ComputationBound.asyncCallback( listener => ft.onComplete(listener) )
+   }
 
 
 class TestCBSFutureIntegration:
 
-  //given future2ComputationBound[T] as Conversion[Future[T],ComputationBound[T]] = ???
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  @Test @Ignore def futureBasic2(): Unit =
+  @Test def futureBasic2(): Unit =
      def fun(x:Int):Future[Int] =
        Future successful (x+1)
      
-     //val c = async[ComputationBound]{
-     //  val a = await(fun(10))
-     //  a
-     //}
+     val c = async[ComputationBound]{
+       val a = await(fun(10))
+       a
+     }
      
      //val af = fun(10)
      //val cb = summon[Conversion[Future[Int],ComputationBound[Int]]].apply(af)
-     //assert(c.run()==Success(11))
+     assert(c.run()==Success(11))
 
 
 

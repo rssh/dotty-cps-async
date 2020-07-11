@@ -6,6 +6,8 @@ import scala.concurrent.duration._
 
 trait CpsMonad[F[_]] {
 
+   type WF[X] = F[X]
+
    def pure[T](t:T):F[T]
 
    def map[A,B](fa:F[A])(f: A=>B):F[B]
@@ -13,6 +15,7 @@ trait CpsMonad[F[_]] {
    def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B]
 
 }
+
 
 
 trait CpsTryMonad[F[_]] extends CpsMonad[F] {

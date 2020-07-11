@@ -9,7 +9,9 @@ given FutureAsyncMonad(using ExecutionContext) as CpsAsyncMonad[Future]:
 
    type F[+T] = Future[T]
 
-   def pure[T](t:T):F[T] = Future(t)
+   override type WF[T] = F[T]
+
+   def pure[T](t:T):Future[T] = Future(t)
 
    def map[A,B](fa:F[A])(f: A=>B):F[B] =
         fa.map(f)
@@ -41,5 +43,6 @@ given FutureAsyncMonad(using ExecutionContext) as CpsAsyncMonad[Future]:
         catch
           case ex: TimeoutException => t.value
 
+   def executionContext = summon[ExecutionContext]
 
       
