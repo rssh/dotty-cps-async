@@ -25,17 +25,19 @@ class TestFutureBasic:
 
 
   @Test def futureBasic2(): Unit = 
+     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      def fun(x:Int):Future[Int] = 
        Future successful (x+1)
      val c = async[Future]{ 
-       var s = 0
-       for( i <- 1 to 3 )
+       @volatile var s = 0
+       for( i <- 1 to 100 )
           s += await(fun(i))
        s
      }
      val r = Await.result(c, 10 seconds)
      println(s"r=$r")
-     assert(r==(2+3+4))
+     assert(r==(5050+100))
 
 
 

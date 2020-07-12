@@ -7,14 +7,17 @@ import scala.collection.mutable.ArrayBuilder
 
 class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
 
+  /**
+   * sequentially do action. each action is started after prev. is finished
+   */
   def shiftedFold[F[_],S,B,R](c:CA, monad:CpsMonad[F])(
                                       prolog:S, 
                                       action: A=>F[B],
                                       acc: (S,A,B)=> S, 
                                       epilog:S=>R):F[R] =
    val r = c.foldLeft(monad.pure(prolog)){(ms,a) =>
-      val mb = action(a)
       monad.flatMap(ms){ s=>
+        val mb = action(a)
         monad.map(mb){ b=> acc(s,a,b) }
       }
    }
