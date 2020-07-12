@@ -49,7 +49,7 @@ m.flatMap(openConnection())(a => {
 
 Note, that monad can be any trait, for which it is possible to implement ```AsyncMonad``` typeclass. 
 You can provide those methods for your favorite monad. Look at our implementation for 
-ComputationBounds (https://github.com/rssh/dotty-cps-async/blob/master/src/test/scala/cps/ComputationBound.scala) and Future (https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/FutureAsyncMonad.scala) for example.
+ComputationBounds (https://github.com/rssh/dotty-cps-async/blob/master/src/test/scala/cps/ComputationBound.scala ComputationBounds.scala) and Future (https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/FutureAsyncMonad.scala Future.scala) for example.
 
 Currently, doty-cps-async is at an early stage and not ready for production use.  Not all language constructions are handled. There are many things, which not work yet.   You can help to develop by providing test cases and implementing missing parts.  
 
