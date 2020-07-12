@@ -4,17 +4,32 @@ import cps._
 import scala.collection._
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayBuilder
+import java.util.concurrent.atomic.AtomicReference
 
 class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
 
   // TODO: think about default semantics for foreach.
-  def foreach[F[_],U](arrayOps: ArrayOps[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] = {
-     var r:F[Unit] = monad.pure(())
+  def foreachParallel[F[_],U](arrayOps: ArrayOps[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] = {
+     val r = new AtomicReference[F[Unit]](monad.pure(()))
      arrayOps.foreach{ a =>
        val b = f(a)
-       r = monad.flatMap(r)(_ => monad.map(b)(_ =>()) )   
+       r.getAndUpdate(currR => monad.flatMap(currR)(_ => monad.map(b)(_ =>())))
      }
-     r
+     r.get
+  }
+
+  def foreachSequential[F[_],U](arrayOps: ArrayOps[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] =  {
+     import cps.CpsMonad.ForComprehensionSyntax._
+     given CpsMonad[F] = monad
+     arrayOps.foldLeft[F[Unit]](monad.pure(())){ (s,e) =>
+        // use run f(e) only when prev. is evaluated
+        s.flatMap(_ => f(e).map(_ =>()))
+     }
+  }
+
+  def foreach[F[_],U](arrayOps: ArrayOps[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] =  {
+      // TODO: thing about right parallel model
+      foreachSequential(arrayOps, monad)(f)  
   }
 
   def map[F[_]:CpsMonad,B:ClassTag](arr: ArrayOps[A], monad: CpsMonad[F])(f: A=> F[B]):F[Array[B]] = {
