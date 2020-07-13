@@ -13,7 +13,7 @@ import cps.misc._
 // erased def await[F[_],T](f:F[T]):T = ???
 
 @compileTimeOnly("await should be inside async block")
-def await[F[_],T](f:F[T]):T = ???
+def await[F[_],T](f:F[T])(using am:CpsMonad[F]):T = ???
 
 inline def async[F[_]](using am:CpsMonad[F]): Async.InferAsyncArg[F] =
    new Async.InferAsyncArg[F]
@@ -94,7 +94,8 @@ object Async {
      val cpsCtx = TransformationContext[F,T](f,tType,dm,flags,exprMarker,nesting)
      f match 
          case Const(c) =>   ConstTransform(cpsCtx)
-         case '{ _root_.cps.await[F,$sType]($fs) } => 
+         case '{ _root_.cps.await[F,$sType]($fs)(using $m) } => 
+                            // TODO: pass instance?
                             AwaitTransform(cpsCtx, sType, fs)
          // looks like matching error in dotty.
          // case '{ _root_.cps.await[$mType,$sType]($mst) } => 

@@ -13,8 +13,27 @@ trait AwaitTreeTransform[F[_],CT]:
   import qctx.tasty.{_, given _}
 
 
-  def runAwait(awaitTerm: Term, args: Term): CpsTree =
-      AwaitCpsTree(args, awaitTerm.tpe) 
+  def runMyAwait(awaitTerm: Term, arg: Term): CpsTree =
+      AwaitCpsTree(arg, awaitTerm.tpe) 
       
+  def runOtherAwait(awaitTerm: Term, arg: Term, targ: Type, otherCpsMonad: Term): CpsTree =
+      val myCpsMonad = cpsCtx.monad.unseal
+      val myCpsMonadTpe = myCpsMonad.tpe
+      val myF = fType.unseal.tpe
+      val otherF = targ
+      val conversion = TypeIdent(Symbol.classSymbol("cps.CpsMonadConversion")).tpe
+      val taConversion = AppliedType(conversion,List(otherF, myF))
+      searchImplicit(taConversion) match
+           case implSuccess: ImplicitSearchSuccess =>
+             val convertedAwait = Apply(
+                    TypeApply(Select.unique(implSuccess.tree, "apply"), 
+                              List(Inferred(arg.tpe.widen))),
+                    List(otherCpsMonad, myCpsMonad, arg))
+             AwaitCpsTree(convertedAwait, awaitTerm.tpe )
+           case implFailure: ImplicitSearchFailure =>
+             println("!!!after searchImplicit [not found]")
+             throw MacroError(s"Can't find MonadConversion: ${implFailure.explanation}",posExprs(awaitTerm))
+
+  
 
 

@@ -12,7 +12,7 @@ trait KnownTreeFragments[F[_], CT]:
   
   import qctx.tasty.{_, given _}
 
-  lazy val awaitPure = '{ _root_.cps.await[F,Int](${cpsCtx.monad}.pure(3)) }.unseal
+  lazy val awaitPure = '{ _root_.cps.await[F,Int](${cpsCtx.monad}.pure(3))(using ${cpsCtx.monad}) }.unseal
 
   lazy val awaitSymbol = TransformUtil.find(awaitPure,
                            { case v@Select(x,m) if m == "await" => Some(v)
@@ -54,4 +54,9 @@ trait KnownTreeFragments[F[_], CT]:
   }
 
   
+  lazy val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
+
+  lazy val partialFunctionType = TypeIdent(Symbol.classSymbol("scala.PartialFunction")).tpe
+
+
 

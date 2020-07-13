@@ -12,7 +12,7 @@ trait LambdaTreeTransform[F[_], CT]:
 
   import qctx.tasty.{_, given _}
 
-  def typeInMonad(tp:Type): Type =
+  def typeInMonad(tp:TypeOrBounds): Type =
        AppliedType(fType.unseal.tpe, List(tp))
 
   // case lambdaTree @ Lambda(params,body) 
@@ -44,6 +44,7 @@ trait LambdaTreeTransform[F[_], CT]:
 
   def shiftedMethodType(paramNames: List[String], paramTypes:List[Type], otpe: Type): MethodType =
      MethodType(paramNames)(_ => paramTypes, _ => typeInMonad(otpe))
+     
      
 
 

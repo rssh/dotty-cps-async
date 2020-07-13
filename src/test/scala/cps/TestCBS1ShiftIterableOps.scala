@@ -8,7 +8,7 @@ import scala.util.Success
 import scala.util.Failure
 
 
-class TestBS1ShiftCollectionOps:
+class TestBS1ShiftIterableOps:
 
 
   @Test def testMapList(): Unit = 
@@ -24,6 +24,15 @@ class TestBS1ShiftCollectionOps:
   @Test def testMapSeq(): Unit = 
      val c = async[ComputationBound]{
         Seq(1,2,3).map{ x =>
+           await(T1.cbi(3)) + x
+        }
+     }
+     assert(c.run() == Success(Seq(4,5,6)))
+
+  @Test def testMapSeqVal(): Unit = 
+     val c = async[ComputationBound]{
+        val seq = Seq(1,2,3)
+        seq.map{ x =>
            await(T1.cbi(3)) + x
         }
      }
@@ -117,5 +126,21 @@ class TestBS1ShiftCollectionOps:
      val l = c.run()
      val l1 = l.get.run()
      assert(l1 == Success(10)) 
+
+
+  @Test def testCollectFind(): Unit =
+     //printCode will stackOverflow because of https://github.com/lampepfl/dotty/issues/9251
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async[ComputationBound]{
+          val c = List(1,2,3,4)
+          val r: Option[Int] = c.collectFirst{ case x if x > 2 => x + await(T1.cbi(1)) }
+          //val r: Option[Int] = await(T1.cbt(Some(4)))
+          r
+     }
+     assert(c.run() == Success(Some(4)))
+
+
 
 

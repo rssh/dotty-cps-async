@@ -20,7 +20,7 @@ trait MatchTreeTransform[F[_], CT]:
      val asyncCases = cpsCases.exists( _.isAsync )
      val nCases = if (asyncCases) {
                       (matchTerm.cases zip cpsCases).map{(old,cpstree) =>
-                         CaseDef(old.pattern, old.guard, cpstree.transformed)
+                         CaseDef.copy(old)(old.pattern, old.guard, cpstree.transformed)
                       }   
                    } else {
                       matchTerm.cases
@@ -29,7 +29,7 @@ trait MatchTreeTransform[F[_], CT]:
         if (!asyncCases) 
            CpsTree.pure(matchTerm)
         else 
-           val nTree = Match(scrutinee, nCases)
+           val nTree = Match.copy(matchTerm)(scrutinee, nCases)
            CpsTree.impure(nTree, matchTerm.tpe)
      else
         if (!asyncCases) 
