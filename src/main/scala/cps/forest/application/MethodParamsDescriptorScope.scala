@@ -36,7 +36,7 @@ trait MethodParamsDescriptorScope[F[_], CT]:
          case mt@MethodType(_,_,_) =>
                    MethodTypeBasedParamsDescriptor(mt)
          case other =>
-                   Reporting.warning(s"apply to non-method, tpe=${fun.tpe}",posExpr(fun))
+                   report.warning(s"apply to non-method, tpe=${fun.tpe}",posExpr(fun))
                    EmptyParamsDescriptor
 
 

@@ -59,7 +59,7 @@ object Async {
              throw MacroError(s"Can't find async monad for ${ft.show}", f)
     catch
       case ex: MacroError =>
-           Reporting.error(ex.msg, ex.posExpr)
+           report.error(ex.msg, ex.posExpr)
            '{???}
 
 
