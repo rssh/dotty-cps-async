@@ -2,7 +2,7 @@ package cps.forest
 
 import scala.quoted._
 
-import cps._
+import cps.{TransformationContextMarker=>TCM,_}
 import cps.misc._
 
 
@@ -16,13 +16,13 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                     finalizer: Option[qctx.tasty.Term]): CpsExpr[F,T] = 
      import qctx.tasty.{_, given _}
      val cpsBody = Async.nestTransform(body.seal.asInstanceOf[Expr[T]],
-                                            cpsCtx, "B")    
+                                            cpsCtx, TCM.TryBody)    
      val cpsCaseDefs = cases.zipWithIndex.map((cd,i) => Async.nestTransform(
                                                   cd.rhs.seal.asInstanceOf[Expr[T]],
-                                                  cpsCtx, i.toString))
+                                                  cpsCtx, TCM.TryCase(i)))
      val isCaseDefsAsync = cpsCaseDefs.exists(_.isAsync)
      val optCpsFinalizer = finalizer.map( x => Async.nestTransform[F,T,Unit](
-                                        x.seal.asInstanceOf[Expr[Unit]], cpsCtx, "F"))
+                                        x.seal.asInstanceOf[Expr[Unit]], cpsCtx, TCM.TryFinally))
      val isFinalizerAsync = optCpsFinalizer.exists(_.isAsync)
      val isAsync = cpsBody.isAsync || isCaseDefsAsync || isFinalizerAsync
 

@@ -14,7 +14,10 @@ trait AwaitTreeTransform[F[_],CT]:
 
 
   def runMyAwait(awaitTerm: Term, arg: Term): CpsTree =
-      AwaitCpsTree(arg, awaitTerm.tpe) 
+      val cpsArg = runRoot(arg, TransformationContextMarker.Await)
+      cpsArg.syncOrigin match
+        case Some(sync) => AwaitCpsTree(sync, awaitTerm.tpe) 
+        case None => cpsArg
       
   def runOtherAwait(awaitTerm: Term, arg: Term, targ: Type, otherCpsMonad: Term): CpsTree =
       val myCpsMonad = cpsCtx.monad.unseal
@@ -25,15 +28,12 @@ trait AwaitTreeTransform[F[_],CT]:
       val taConversion = AppliedType(conversion,List(otherF, myF))
       searchImplicit(taConversion) match
            case implSuccess: ImplicitSearchSuccess =>
-             val convertedAwait = Apply(
+             val convertedArg = Apply(
                     TypeApply(Select.unique(implSuccess.tree, "apply"), 
                               List(Inferred(arg.tpe.widen))),
                     List(otherCpsMonad, myCpsMonad, arg))
-             AwaitCpsTree(convertedAwait, awaitTerm.tpe )
+             runMyAwait(awaitTerm, convertedArg)
            case implFailure: ImplicitSearchFailure =>
-             println("!!!after searchImplicit [not found]")
              throw MacroError(s"Can't find MonadConversion: ${implFailure.explanation}",posExprs(awaitTerm))
 
   
-
-

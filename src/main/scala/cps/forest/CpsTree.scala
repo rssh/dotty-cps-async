@@ -289,18 +289,20 @@ trait CpsTreeScope[F[_], CT] {
     override def isAsync = rightPart.isAsync || nested.isAsync
 
     override def transformed: Term = 
-       if (rightPart.isAsync)
-         if (nested.isAsync) 
+       rightPart.syncOrigin match
+         case Some(rhs) =>
+           appendValDef(rhs)
+         case None =>
+           // TODO: instead check for cpsCtx.marker make special entry for await apply call.
+           if (nested.isAsync || cpsCtx.marker == TransformationContextMarker.Await) 
              rightPart.monadFlatMap(v => appendValDef(v) , nested.otpe).transformed
-         else
+           else
              rightPart.monadMap(v => appendValDef(v) , nested.otpe).transformed
-       else
-         appendValDef(valDef.rhs.get)
 
     override def syncOrigin: Option[Term] = 
        for{
            rhs <- rightPart.syncOrigin
-           next <- rightPart.syncOrigin
+           next <- nested.syncOrigin
        } yield appendValDef(rhs)
           
     override def applyTerm(f: Term => Term, ntpe: Type): CpsTree = 

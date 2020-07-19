@@ -25,7 +25,7 @@ class TestFutureBasic:
 
 
   @Test def futureBasic2(): Unit = 
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      def fun(x:Int):Future[Int] = 
        Future successful (x+1)

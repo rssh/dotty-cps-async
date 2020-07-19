@@ -20,6 +20,8 @@ inline def async[F[_]](using am:CpsMonad[F]): Async.InferAsyncArg[F] =
 
 object Async {
 
+  //class CurrentCpsMonad[F[_]](m:CpsMonad[F])
+
   class InferAsyncArg[F[_]](using am:CpsMonad[F]) {
 
        inline def apply[T](inline expr: T):F[T] =
@@ -36,7 +38,8 @@ object Async {
      } 
 
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[F[T]] = 
-    import qctx.tasty.{_,given _}
+    import qctx.tasty._
+    import TransformationContextMarker._
     val flags = adoptFlags(f)
     try
       Expr.summon[CpsMonad[F]] match 
@@ -45,7 +48,7 @@ object Async {
                 println(s"before transformed: ${f.show}")
              if (flags.printTree)
                 println(s"value: ${f.unseal}")
-             val r = rootTransform[F,T](f,dm,flags,"",0).transformed
+             val r = rootTransform[F,T](f,dm,flags,TopLevel,0, None).transformed
              if (flags.printCode)
                 println(s"transformed value: ${r.show}")
              if (flags.printTree)
@@ -86,20 +89,23 @@ object Async {
 
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]], 
                                       flags: AsyncMacroFlags,
-                                      exprMarker: String, nesting: Int)(
+                                      exprMarker: TransformationContextMarker, 
+                                      nesting: Int,
+                                      parent: Option[TransformationContext[_,_]])(
                                            using qctx: QuoteContext): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import qctx.tasty.{_, given _}
      import util._
-     val cpsCtx = TransformationContext[F,T](f,tType,dm,flags,exprMarker,nesting)
+     val cpsCtx = TransformationContext[F,T](f,tType,dm,flags,exprMarker,nesting,parent)
      f match 
          case Const(c) =>   ConstTransform(cpsCtx)
-         case '{ _root_.cps.await[F,$sType]($fs)(using $m) } => 
+         //case '{ _root_.cps.await[F,$sType]($fs)(using $m) } => 
                             // TODO: pass instance?
-                            AwaitTransform(cpsCtx, sType, fs)
+         //                   AwaitTransform(cpsCtx, sType, fs)
          // looks like matching error in dotty.
-         // case '{ _root_.cps.await[$mType,$sType]($mst) } => 
-         //                    AwaitTransformOtherMonad(cpsCtx, mType, sType, mst.asInstanceOf[Expr[Any]])
+         //case '{ _root_.cps.await[$mType,$sType]($fs)(using $m) } => 
+         //                   throw MacroError("MyAwait!!!", f)
+                            //AwaitTransform(cpsCtx, mType, sType, mst.asInstanceOf[Expr[Any]])
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
          case '{ while ($cond) { $repeat }  } =>
@@ -150,9 +156,9 @@ object Async {
    
   def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S], 
                                       cpsCtx: TransformationContext[F,T], 
-                                      marker:String)(using qctx:QuoteContext):CpsExpr[F,S]=
+                                      marker: TransformationContextMarker)(using qctx:QuoteContext):CpsExpr[F,S]=
         rootTransform(f,cpsCtx.monad,
-                      cpsCtx.flags,cpsCtx.exprMarker+marker,cpsCtx.nesting+1)
+                      cpsCtx.flags,marker,cpsCtx.nesting+1, Some(cpsCtx))
 
 
 }

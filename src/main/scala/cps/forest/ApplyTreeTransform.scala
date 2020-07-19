@@ -2,8 +2,9 @@ package cps.forest
 
 import scala.quoted._
 
-import cps._
+import cps.{TransformationContextMarker=>TCM, _}
 import cps.misc._
+
 
 
 trait ApplyTreeTransform[F[_],CT]:
@@ -27,7 +28,7 @@ trait ApplyTreeTransform[F[_],CT]:
        cpsCtx.log(s"runApply, appyTerm=${safeShow(applyTerm)}")
      val monad = cpsCtx.monad
      // try to omit things, which should be eta-expanded,
-     fun match 
+     val r = fun match 
        case TypeApply(obj,targs) =>
             handleFunTypeApply(applyTerm,fun,args,obj,targs, tails)
        case Select(obj,method) =>
@@ -36,14 +37,22 @@ trait ApplyTreeTransform[F[_],CT]:
             handleFunIdent(applyTerm, fun, args, name, tails)
        case Apply(fun1@TypeApply(obj2,targs2), args1) if obj2.symbol == awaitSymbol =>
              // catch await early
-             if (targs2.head.tpe =:= monadTypeTree.tpe)
-                runMyAwait(applyTerm, args1.head)
+             if (cpsCtx.flags.debugLevel > 10)
+               cpsCtx.log(s"determinated await: ${args1.head.show}")
+             val r = if (targs2.head.tpe =:= monadTypeTree.tpe)
+               runMyAwait(applyTerm, args1.head)
              else
-                runOtherAwait(applyTerm, args1.head, targs2.head.tpe, args.head)
+               runOtherAwait(applyTerm, args1.head, targs2.head.tpe, args.head)
+             if (cpsCtx.flags.debugLevel > 10)
+               cpsCtx.log(s"await result: ${r.transformed.show}")
+             r
        case Apply(fun1, args1) => 
             handleFunApply(applyTerm, fun, args, fun1, args1, tails)
        case _ =>
             handleFun(applyTerm, fun, args, tails)
+     if (cpsCtx.flags.debugLevel >= 10)
+       cpsCtx.log(s"runApply result = ${r}")
+     r
 
  
   /**
@@ -66,7 +75,7 @@ trait ApplyTreeTransform[F[_],CT]:
        cpsCtx.log(s"targs=${targs}")
      obj match {
         case Select(obj1,method) =>
-          val cpsObj1 = runRoot(obj1)
+          val cpsObj1 = runRoot(obj1, TCM.ApplyTypeApplySelect)
           if (cpsObj1.isAsync) 
               val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
               handleArgs1(applyTerm, fun, cpsObj, args, tails)
@@ -75,7 +84,7 @@ trait ApplyTreeTransform[F[_],CT]:
         case Ident(name) =>
           handleArgs1(applyTerm, fun, CpsTree.pure(fun), args, tails)
         case _ =>
-          val cpsObj = runRoot(obj)  
+          val cpsObj = runRoot(obj, TCM.ApplyTypeApply)  
           handleArgs1(applyTerm, fun, cpsObj, args, tails)
      }
 
@@ -91,7 +100,7 @@ trait ApplyTreeTransform[F[_],CT]:
        cpsCtx.log(s"obj=${obj}")
        cpsCtx.log(s"obj.symbol=${obj.symbol}")
        cpsCtx.log(s"methodName=${methodName}")
-     val cpsObj = runRoot(obj)
+     val cpsObj = runRoot(obj, TCM.ApplySelect)
      if (cpsObj.isAsync) 
         handleArgs1(applyTerm, fun, cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe), args, tails)
      else
@@ -110,7 +119,7 @@ trait ApplyTreeTransform[F[_],CT]:
                  
 
   def handleFun(applyTerm: Term, fun:Term, args:List[Term], tails: List[Seq[ApplyArgRecord]]):CpsTree =
-       val cpsFun = runRoot(fun)
+       val cpsFun = runRoot(fun, TCM.ApplyFun)
        handleArgs1(applyTerm, fun, cpsFun, args, tails)
 
 
@@ -186,18 +195,6 @@ trait ApplyTreeTransform[F[_],CT]:
             cpsCtx.log(s"tails.existsShiftedLambda=${tails.exists(isExistsShiftedLambda)}")
             cpsCtx.log(s"existsAsyncArg=${existsAsyncArg}")
             cpsCtx.log(s"tails.existsAsyncArg=${tails.exists(isExistsAsyncArg)}")
-            if (tails.exists(isExistsShiftedLambda)) {
-              val shiftedRecord = tails.head.find(_.hasShiftedLambda).get
-              shiftedRecord match {
-                case ApplyArgLambdaRecord(block,index,cpsBody, shifted) =>
-                     cpsCtx.log(s"block=${block.seal.show}")
-                     cpsCtx.log(s"let's recalculate runRoot(block)")
-                     val cpsBlock = runRoot(block)
-                     cpsCtx.log(s"cpsBlock = $cpsBlock")
-                case _ =>
-                     cpsCtx.log("not lambda record")
-              }
-            }
 
         if (!existsAsyncArg && !existsShiftedLambda) {
            if (!cpsFun.isAsync)
@@ -220,7 +217,7 @@ trait ApplyTreeTransform[F[_],CT]:
            if cpsCtx.flags.debugLevel >= 15 then
                cpsCtx.log(s"handleArgs: runFold=$runFold")
            if (runFold) 
-              (applyRecords::tails).foldRight(lastCpsTree){(pa,sa) =>
+              val retval = (applyRecords::tails).foldRight(lastCpsTree){(pa,sa) =>
                  pa.foldRight(sa){ (p,s) =>
                    if (p.useIdent)
                       p.append(s)
@@ -228,6 +225,9 @@ trait ApplyTreeTransform[F[_],CT]:
                       s
                  }
               }
+              if (cpsCtx.flags.debugLevel >= 15)
+                  cpsCtx.log(s"handleArgs: runFold result = ${retval}")
+              retval
            else
               lastCpsTree
         }
@@ -285,19 +285,21 @@ trait ApplyTreeTransform[F[_],CT]:
           cpsCtx.log(s"buildApplyArgRecord: pos=${acc.posIndex}, t=${safeShow(t)} ")
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) => 
-            val accRepeated = O.buildApplyArgsRecordsAcc(fun, paramsDescriptor, rargs, cpsCtx.nestSame("r"), 
+            val accRepeated = O.buildApplyArgsRecordsAcc(fun, paramsDescriptor, 
+                               rargs, cpsCtx.nestSame(TCM.Repeated), 
                                acc.copy(inRepeat=true,records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case r@Repeated(rargs, tpt) => 
-            val accRepeated = O.buildApplyArgsRecordsAcc(fun, paramsDescriptor, rargs, cpsCtx.nestSame("r"), 
+            val accRepeated = O.buildApplyArgsRecordsAcc(fun, paramsDescriptor, 
+                               rargs, cpsCtx.nestSame(TCM.Repeated), 
                                acc.copy(inRepeat=true, records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case lambda@Lambda(params, body) => 
             // mb, this will not work, for expressions, which return block.
             //  look's like somewhere in future, better add 'shifted' case to CpsExpr
-            val cpsBody = runRoot(body)
+            val cpsBody = runRoot(body, TCM.ApplyArg(acc.posIndex))
             val nextRecord = if (paramsDescriptor.isByName(acc.paramIndex)) {
                                throw MacroError("passing lamda as byName params is not supported yet",posExpr(t))
                              } else {
@@ -328,7 +330,11 @@ trait ApplyTreeTransform[F[_],CT]:
             if cpsCtx.flags.debugLevel >= 15 then
                cpsCtx.log(s"paramType=${paramsDescriptor.paramType(acc.paramIndex)}")
                cpsCtx.log(s"byName=${paramsDescriptor.isByName(acc.paramIndex)}")
-            val termCpsTree = runRoot(t)
+            val termCpsTree = runRoot(t, TCM.ApplyArg(acc.posIndex) )
+            if cpsCtx.flags.debugLevel >= 15 then
+               cpsCtx.log(s"termCpsTree = ${termCpsTree}")
+               cpsCtx.log(s"termCpsTree.isAsync = ${termCpsTree.isAsync}")
+               
             if (paramsDescriptor.isByName(acc.paramIndex))
                acc.advance(ApplyArgByNameRecord(t,acc.posIndex,termCpsTree,termCpsTree.isAsync))
             else
@@ -512,11 +518,23 @@ object ApplyTreeTransform:
          implicit val ctType = tmpCTtype
 
          def bridge(): CpsExpr[F,T] =
-            runApply(applyTerm.asInstanceOf[qctx.tasty.Term],
-                         fun.asInstanceOf[qctx.tasty.Term],
-                         args.asInstanceOf[List[qctx.tasty.Term]],
-                         Nil
-                        ).toResult[T]
+            val treeResult = runApply(applyTerm.asInstanceOf[qctx.tasty.Term],
+                                fun.asInstanceOf[qctx.tasty.Term],
+                                args.asInstanceOf[List[qctx.tasty.Term]],
+                                Nil
+                             )
+            if (cpsCtx.flags.debugLevel>=15)
+                cpsCtx.log(s"apply:treeResult=$treeResult")
+                cpsCtx.log(s"apply:treeResult.isAsync=${treeResult.isAsync}")
+                treeResult match
+                   case ValCpsTree(vd,r,n) => cpsCtx.log("apply: ValCpsTree")
+                     cpsCtx.log(s"syncOrigin=${treeResult.syncOrigin}")
+                   case _ => cpsCtx.log("apply: !Val")
+          
+            val exprResult = treeResult.toResult[T]
+            if (cpsCtx.flags.debugLevel>=15)
+                cpsCtx.log(s"apply:exprResut=$exprResult")
+            exprResult
 
      }
      (new Bridge(cpsCtx1)).bridge()
