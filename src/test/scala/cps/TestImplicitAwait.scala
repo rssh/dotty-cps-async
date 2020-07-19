@@ -6,6 +6,7 @@ import org.junit.Assert._
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.language.implicitConversions
 import scala.quoted._
 import scala.util.Success
 
@@ -22,9 +23,11 @@ class TestImplicitAwait:
      def retrieveDMPInfo(url:String, theme: Int, userId: String): Future[String] =
            Future successful s"${url}:${theme}:${userId}"
   
-/*
 
   @Test def withImplicitAwait(): Unit = 
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val api = ApiEmulator
      val c = async[Future]{ 
         import cps.implicitAwait.{given _}
@@ -36,12 +39,11 @@ class TestImplicitAwait:
      }
      val r = Await.result(c, 10 seconds)
      assert(r=="http://www.example.com:0:1")
-*/
 
 
   @Test def withExplicitAwait(): Unit = 
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val api = ApiEmulator
      val c = async[Future]{ 
         val url = "http://www.example.com"

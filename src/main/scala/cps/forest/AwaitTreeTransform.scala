@@ -12,6 +12,12 @@ trait AwaitTreeTransform[F[_],CT]:
   
   import qctx.tasty.{_, given _}
 
+  def runAwait(term: Term, arg: Term, awaitCpsMonadType: Type, awaitCpsMonad: Term): CpsTree =
+      if awaitCpsMonadType =:= monadTypeTree.tpe then
+        runMyAwait(term, arg)
+      else
+        runOtherAwait(term, arg, awaitCpsMonadType, awaitCpsMonad)
+
 
   def runMyAwait(awaitTerm: Term, arg: Term): CpsTree =
       val cpsArg = runRoot(arg, TransformationContextMarker.Await)

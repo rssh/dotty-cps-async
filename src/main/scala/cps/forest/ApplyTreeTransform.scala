@@ -5,8 +5,6 @@ import scala.quoted._
 import cps.{TransformationContextMarker=>TCM, _}
 import cps.misc._
 
-
-
 trait ApplyTreeTransform[F[_],CT]:
 
   thisTreeTransform: TreeTransformScope[F,CT] =>
@@ -37,15 +35,7 @@ trait ApplyTreeTransform[F[_],CT]:
             handleFunIdent(applyTerm, fun, args, name, tails)
        case Apply(fun1@TypeApply(obj2,targs2), args1) if obj2.symbol == awaitSymbol =>
              // catch await early
-             if (cpsCtx.flags.debugLevel > 10)
-               cpsCtx.log(s"determinated await: ${args1.head.show}")
-             val r = if (targs2.head.tpe =:= monadTypeTree.tpe)
-               runMyAwait(applyTerm, args1.head)
-             else
-               runOtherAwait(applyTerm, args1.head, targs2.head.tpe, args.head)
-             if (cpsCtx.flags.debugLevel > 10)
-               cpsCtx.log(s"await result: ${r.transformed.show}")
-             r
+             runAwait(applyTerm, args1.head, targs2.head.tpe, args.head)
        case Apply(fun1, args1) => 
             handleFunApply(applyTerm, fun, args, fun1, args1, tails)
        case _ =>
@@ -100,11 +90,25 @@ trait ApplyTreeTransform[F[_],CT]:
        cpsCtx.log(s"obj=${obj}")
        cpsCtx.log(s"obj.symbol=${obj.symbol}")
        cpsCtx.log(s"methodName=${methodName}")
-     val cpsObj = runRoot(obj, TCM.ApplySelect)
-     if (cpsObj.isAsync) 
-        handleArgs1(applyTerm, fun, cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe), args, tails)
-     else
-        handleArgs1(applyTerm, fun, CpsTree.pure(fun), args, tails)
+     obj match
+       case Inlined(_,_,
+              Typed(
+                 Lambda(List(xValDef), 
+                   Block(List(),Apply(Apply(TypeApply(obj3,targs3),List(x)),args1))),
+                 cv)
+              ) if (obj3.symbol == awaitSymbol
+                   && xValDef.symbol == x.symbol) =>
+                  // here we catch await, inserted by implicit conversion.
+                  // this code is likey depends from implementation details of a compiler
+                  // mb create compiler-level API ?
+                  runAwait(applyTerm, args.head, targs3.head.tpe, args1.head)
+       case _ =>
+         val cpsObj = runRoot(obj, TCM.ApplySelect)
+         if (cpsObj.isAsync) 
+            handleArgs1(applyTerm, fun, 
+                        cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe), args, tails)
+         else
+            handleArgs1(applyTerm, fun, CpsTree.pure(fun), args, tails)
    
 
   def handleFunIdent(applyTerm: Term, fun:Term, args:List[Term], name: String, tails: List[Seq[ApplyArgRecord]]):CpsTree =

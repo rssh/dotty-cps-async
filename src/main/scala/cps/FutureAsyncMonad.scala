@@ -45,4 +45,5 @@ given FutureAsyncMonad(using ExecutionContext) as CpsAsyncMonad[Future]:
 
    def executionContext = summon[ExecutionContext]
 
-      
+given implicitAwait.IsPossible[Future]
+
