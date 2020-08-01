@@ -45,11 +45,24 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
     **/
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A]
 
+   /**
+    * schedule execution of op somewhere.
+    * Note, that characteristics of scheduler can vary.
+    **/
    def spawn[A](op: =>F[A]): F[A]
 
+}
+
+trait CpsFulfillingMonad[F[_]] extends CpsAsyncMonad[F] {
+
+   /**
+    * block until monad will be finished or timeout will be expired.
+    * Note, that using this operation inside async is dangerous.
+    **/
    def fulfill[T](t:F[T], timeout: Duration): Option[Try[T]]
 
 }
+
 
 object CpsMonad:
 
