@@ -13,17 +13,23 @@ trait AwaitTreeTransform[F[_],CT]:
   import qctx.tasty.{_, given _}
 
   def runAwait(term: Term, arg: Term, awaitCpsMonadType: Type, awaitCpsMonad: Term): CpsTree =
-      if awaitCpsMonadType =:= monadTypeTree.tpe then
+      if cpsCtx.flags.debugLevel >= 10 then
+          cpsCtx.log(s"runAwait, arg=${arg.show}")
+      val r = if awaitCpsMonadType =:= monadTypeTree.tpe then
         runMyAwait(term, arg)
       else
         runOtherAwait(term, arg, awaitCpsMonadType, awaitCpsMonad)
+      if cpsCtx.flags.debugLevel >= 10 then
+          cpsCtx.log(s"runAwait result=${r}")
+      r
 
 
   def runMyAwait(awaitTerm: Term, arg: Term): CpsTree =
       val cpsArg = runRoot(arg, TransformationContextMarker.Await)
       cpsArg.syncOrigin match
-        case Some(sync) => AwaitCpsTree(sync, awaitTerm.tpe) 
-        case None => cpsArg
+        case Some(sync) => AwaitSyncCpsTree(sync, awaitTerm.tpe) 
+        case None => 
+             AwaitAsyncCpsTree(cpsArg, awaitTerm.tpe)
       
   def runOtherAwait(awaitTerm: Term, arg: Term, targ: Type, otherCpsMonad: Term): CpsTree =
       val myCpsMonad = cpsCtx.monad.unseal

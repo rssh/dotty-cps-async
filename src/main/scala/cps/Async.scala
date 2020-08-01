@@ -9,8 +9,6 @@ import scala.compiletime._
 import cps.forest._
 import cps.misc._
 
-// erased disabled in current version
-// erased def await[F[_],T](f:F[T]):T = ???
 
 @compileTimeOnly("await should be inside async block")
 def await[F[_],T](f:F[T])(using am:CpsMonad[F]):T = ???
@@ -99,13 +97,6 @@ object Async {
      val cpsCtx = TransformationContext[F,T](f,tType,dm,flags,exprMarker,nesting,parent)
      f match 
          case Const(c) =>   ConstTransform(cpsCtx)
-         //case '{ _root_.cps.await[F,$sType]($fs)(using $m) } => 
-                            // TODO: pass instance?
-         //                   AwaitTransform(cpsCtx, sType, fs)
-         // looks like matching error in dotty.
-         //case '{ _root_.cps.await[$mType,$sType]($fs)(using $m) } => 
-         //                   throw MacroError("MyAwait!!!", f)
-                            //AwaitTransform(cpsCtx, mType, sType, mst.asInstanceOf[Expr[Any]])
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
          case '{ while ($cond) { $repeat }  } =>

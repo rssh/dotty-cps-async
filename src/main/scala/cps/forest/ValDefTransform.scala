@@ -14,13 +14,12 @@ object ValDefTransform:
                            valDef: qctx.tasty.ValDef): CpsExpr[F,Unit] = {
      import qctx.tasty.{_, given _}
      import cpsCtx._
-     if (cpsCtx.flags.debugLevel >= 10) {
+     if (cpsCtx.flags.debugLevel >= 15) 
        cpsCtx.log(s"ValDefExpr:fromBlock, valDef=$valDef")
-     }
      val rhs = valDef.rhs.getOrElse(
              throw MacroError(s"val $valDef without right part in block ", cpsCtx.patternCode)
      )
-     rhs.seal match {
+     rhs.seal match 
         case '{ $e: $et } =>
             if (cpsCtx.flags.debugLevel > 15) 
                cpsCtx.log(s"rightPart is ${e.show}")
@@ -39,7 +38,6 @@ object ValDefTransform:
             }
         case other =>
             throw MacroError(s"Can't concretize type of right-part $rhs ", cpsCtx.patternCode)
-     }
 
      
   }

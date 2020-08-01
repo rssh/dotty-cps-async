@@ -30,9 +30,10 @@ trait RootTreeTransform[F[_], CT]:
                   case '{ $e: $et } =>
                      val rCpsExpr = Async.nestTransform(e, cpsCtx, marker)
                      val r = exprToTree(rCpsExpr, term)
-                     if (cpsCtx.flags.debugLevel >= 10) 
-                         cpsCtx.log(s"runRoot: rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
-                         cpsCtx.log(s"runRoot: r=$r, async=${r.isAsync}, origin=$term")
+                     if cpsCtx.flags.debugLevel >= 10 then
+                        cpsCtx.log(s"runRoot: rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
+                        if cpsCtx.flags.debugLevel >= 15 then
+                           cpsCtx.log(s"runRoot: r=$r, async=${r.isAsync}, origin=$term")
                      r
                   case _ =>
                      throw MacroError("Can't determinate exact type for term", expr)
@@ -82,7 +83,7 @@ trait RootTreeTransform[F[_], CT]:
   def exprToTree(expr: CpsExpr[F,_], e: Term): CpsTree =
      if (expr.isAsync)
          val transformed = expr.transformed.unseal
-         AwaitCpsTree(transformed, e.tpe)
+         AwaitSyncCpsTree(transformed, e.tpe)
      else
          PureCpsTree(e)
 
