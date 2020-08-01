@@ -199,7 +199,10 @@ trait CpsTreeScope[F[_], CT] {
 
     override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
           // this.map(f) = prev.map(op).map(f) = prev.map(op*f)
-          MappedCpsTree(prev, t => f(op(t)), ntpe)
+          //  
+          //MappedCpsTree(prev, t => f(op(t)), ntpe)
+          //  disabled due 
+          MappedCpsTree(this, t=>f(t) , ntpe)
 
     override def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
           // this.flatMap(f) = prev.map(op).flatMap(f) = prev.flatMap(op*f)
