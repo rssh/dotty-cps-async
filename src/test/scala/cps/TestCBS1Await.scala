@@ -65,6 +65,7 @@ class TestCBS1Await:
      assert(c.run() == Success(3))
   }
   
+
   @Test def apply_fun_await_0_1_1(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
@@ -77,4 +78,15 @@ class TestCBS1Await:
   }
   
 
+  @Test def nested_await_3(): Unit = {
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async{
+       val fffx = T1.cbt(T1.cbt(T1.cbi(2)))
+       val x:Int = await(await(await(fffx))) + 1
+       x
+     }
+     assert(c.run() == Success(3))
+  }
+  
 
