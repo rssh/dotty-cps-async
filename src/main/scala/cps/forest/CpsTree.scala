@@ -5,6 +5,7 @@ import scala.quoted._
 import cps._
 import cps.misc._
 
+
 trait CpsTreeScope[F[_], CT] {
 
   cpsTreeScope: TreeTransformScope[F, CT] =>
@@ -39,31 +40,13 @@ trait CpsTreeScope[F[_], CT] {
      def prepend(prev: CpsTree): CpsTree =
           prev.append(this)
 
-     def applyAwait(): CpsTree
+     def applyAwait(newOtpe: Type): CpsTree
 
 
      /**
       * type which is 'inside ' monad, i.e. T for F[T].
       **/
      def otpe: Type
-
-     /**
-      * otpe: F[T] => T
-      **/
-     def awaitOtpe: Type =
-         otpe match
-           case AppliedType(tycon,args) =>
-             args match
-              case arg::Nil => 
-                arg match
-                  case NoPrefix =>
-                    throw MacroError(s"F[T]-like type expectedm we see ${arg}", posExprs(syncOrigin.toList:_*) )
-                  case TypeBounds(low,hi) => hi
-                  case tp: Type => tp
-              case _ =>
-                throw MacroError("In F[T] should be one type argument", posExprs(syncOrigin.toList:_*) )
-           case _ => 
-             throw MacroError(s"AppliedTyoe for F[T] expected, we have ${otpe.show}", posExprs(syncOrigin.toList:_*) )
 
      def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
@@ -134,8 +117,8 @@ trait CpsTreeScope[F[_], CT] {
           val r = tpureTerm.appliedTo(origin)
           r
 
-    def applyAwait(): CpsTree =
-          AwaitSyncCpsTree(origin, awaitOtpe)
+    def applyAwait(newOtpe: Type): CpsTree =
+          AwaitSyncCpsTree(origin, newOtpe)
       
 
   abstract class AsyncCpsTree extends CpsTree:
@@ -161,6 +144,9 @@ trait CpsTreeScope[F[_], CT] {
                     case Some(syncTerm) => monadMap(_ => syncTerm, next.otpe)
                     case None => monadFlatMap(_ => blockNext.transformed, next.otpe)
 
+    def applyAwait(newOtpe: Type): CpsTree =
+          AwaitAsyncCpsTree(this, newOtpe)
+
 
   class AwaitSyncCpsTree(val origin: Term, val otpe: Type) extends AsyncCpsTree:
                      
@@ -168,10 +154,6 @@ trait CpsTreeScope[F[_], CT] {
 
     def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
           AwaitSyncCpsTree(f(transformed), ntpe)
-
-    def applyAwait(): CpsTree =
-          val ntpe = awaitOtpe
-          AwaitAsyncCpsTree(this, ntpe)
 
 
   class AwaitAsyncCpsTree(val nested: CpsTree, val otpe: Type) extends AsyncCpsTree:
@@ -188,9 +170,6 @@ trait CpsTreeScope[F[_], CT] {
     override def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
           FlatMappedCpsTree(this, f, ntpe)
 
-    def applyAwait(): CpsTree =
-          AwaitAsyncCpsTree(this, awaitOtpe)
-
 
   case class MappedCpsTree(prev: CpsTree, op: Term => Term, otpe: Type) extends AsyncCpsTree:
 
@@ -199,14 +178,16 @@ trait CpsTreeScope[F[_], CT] {
 
     override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
           // this.map(f) = prev.map(op).map(f) = prev.map(op*f)
-          //  
-          //MappedCpsTree(prev, t => f(op(t)), ntpe)
-          //  disabled due 
-          MappedCpsTree(this, t=>f(t) , ntpe)
+          // TODO: rethink. Mb add val if t have multiple entries in f
+          MappedCpsTree(prev, t => f(op(t)), ntpe)
+          //  disabled due to https://github.com/lampepfl/dotty/issues/9254 
+          //MappedCpsTree(this, t=>f(t) , ntpe)
 
     override def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
           // this.flatMap(f) = prev.map(op).flatMap(f) = prev.flatMap(op*f)
-          FlatMappedCpsTree(prev, t => f(op(t)), ntpe)
+          // FlatMappedCpsTree(prev, t => f(op(t)), ntpe)
+          //  disabled due to https://github.com/lampepfl/dotty/issues/9254 
+          FlatMappedCpsTree(this, f, ntpe)
 
     def transformed: Term = {
           val prevType = prev.otpe
@@ -230,8 +211,8 @@ trait CpsTreeScope[F[_], CT] {
           r 
     }
 
-    override def applyAwait(): CpsTree = 
-       FlatMappedCpsTree(prev, op, awaitOtpe)
+    override def applyAwait(newOtpe: Type): CpsTree = 
+       FlatMappedCpsTree(prev, op, newOtpe)
        
 
       
@@ -271,8 +252,6 @@ trait CpsTreeScope[F[_], CT] {
         r
     }
 
-    override def applyAwait(): CpsTree = 
-          AwaitAsyncCpsTree(this, awaitOtpe)
 
   end FlatMappedCpsTree
 
@@ -314,8 +293,8 @@ trait CpsTreeScope[F[_], CT] {
 
     def otpe: Type = last.otpe
 
-    override def applyAwait(): CpsTree = 
-        BlockCpsTree(prevs, last.applyAwait())
+    override def applyAwait(newOtpe: Type): CpsTree = 
+        BlockCpsTree(prevs, last.applyAwait(newOtpe))
 
   end BlockCpsTree
   
@@ -343,8 +322,8 @@ trait CpsTreeScope[F[_], CT] {
 
     def otpe: Type = nested.otpe
 
-    override def applyAwait(): CpsTree = 
-         InlinedCpsTree(origin, nested.applyAwait())
+    override def applyAwait(newOtpe:Type): CpsTree = 
+         InlinedCpsTree(origin, nested.applyAwait(newOtpe))
 
   end InlinedCpsTree
 
@@ -385,9 +364,8 @@ trait CpsTreeScope[F[_], CT] {
 
     override def otpe: Type = nested.otpe
 
-    override def applyAwait(): CpsTree =
-        ValCpsTree(valDef, rightPart, nested.applyAwait())
-        
+    override def applyAwait(newOtpe: Type): CpsTree =
+        ValCpsTree(valDef, rightPart, nested.applyAwait(newOtpe))
 
     def appendValDef(right: Term):Term =
        val nValDef = ValDef.copy(valDef)(name = valDef.name, tpt=valDef.tpt, rhs=Some(right))
@@ -455,9 +433,9 @@ trait CpsTreeScope[F[_], CT] {
     override def appendFinal(next: CpsTree): CpsTree =
          frs.appendFinal(snd.appendFinal(next))
 
-    override def applyAwait(): CpsTree =
+    override def applyAwait(newOtpe: Type): CpsTree =
          // TODO: insert optimization
-         AppendCpsTree(frs, snd.applyAwait())
+         AppendCpsTree(frs, snd.applyAwait(newOtpe))
 
     override def otpe: Type = snd.otpe
 
