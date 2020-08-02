@@ -64,6 +64,13 @@ Currently, doty-cps-async is at an early stage and not ready for production use.
 * Is exists a version for scala-2?
     * No
 
+## Presentations
+
+### Can we free concurrent programming from the monadic style:
+#### ScalaR:  https://www.youtube.com/watch?v=ImlUuTQUeaQ  (Jun 2020)
+#### ScalaUA: https://www.youtube.com/watch?v=w-noRPLxYoA&t=3s  (Apr. 2020)
+   (slides: https://www.slideshare.net/rssh1/can-concurrent-functional-programming-be-liberated-from-monadic-style )
+
 ## Related works
 
 - Scala-continuations.  paper:  http://infoscience.epfl.ch/record/149136/files/icfp113-rompf.pdf
