@@ -58,7 +58,7 @@ class TestFutureBasic:
   @Test def futureFetchList(): Unit = 
      val c = async[Future]{ 
         val l = List("ürl1","url2", "url3")
-        l.map(FetchEmulator.retrieve(_,100)).map(await(_))
+        l.map(FetchEmulator.retrieve(_,50)).map(await(_))
      }
      val r = Await.result(c, 10 seconds)
      assert(r==List("OK","OK","OK"))
