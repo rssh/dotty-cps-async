@@ -74,6 +74,5 @@ object CpsMonad:
     def map(f: T=>S): F[S] =
          m.map(x)(f)
 
-  trait AwaitCanBeImplict[F]
 
 
