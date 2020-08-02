@@ -4,6 +4,11 @@ import scala.quoted._
 import scala.util.Try
 import scala.concurrent.duration._
 
+/**
+ * Basic CpsMonad operations.
+ * Implementing this typeclass is enough to use async/await with supports of
+ * basic control-flow constructions (if, loops, but no exceptions).
+ **/
 trait CpsMonad[F[_]] {
 
    type WF[X] = F[X]
@@ -17,7 +22,10 @@ trait CpsMonad[F[_]] {
 }
 
 
-
+/**
+ * If you monad supports this typeclass, than
+ * you can use try/catch/finally inside await.
+ **/
 trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
    def error[A](e: Throwable): F[A]
@@ -36,7 +44,9 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
 }
 
-
+/**
+ * Monad, interpolable with Future.
+ **/
 trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
    /**
