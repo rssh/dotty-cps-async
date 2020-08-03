@@ -55,11 +55,18 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
     **/
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A]
 
+}
+
+
+trait CpsSchedulingMonad[F[_]] extends CpsAsyncMonad[F] {
+
+
    /**
     * schedule execution of op somewhere.
     * Note, that characteristics of scheduler can vary.
     **/
    def spawn[A](op: =>F[A]): F[A]
+
 
 }
 
