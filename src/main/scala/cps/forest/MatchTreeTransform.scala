@@ -2,7 +2,7 @@ package cps.forest
 
 import scala.quoted._
 
-import cps._
+import cps.{TransformationContextMarker=>TCM, _}
 import cps.misc._
 
 
@@ -15,8 +15,8 @@ trait MatchTreeTransform[F[_], CT]:
   // case selectTerm @ Select(qualifier,name) 
   def runMatch( matchTerm: Match ): CpsTree =
      val scrutinee = matchTerm.scrutinee
-     val cpsScrutinee = runRoot(scrutinee)
-     val cpsCases = matchTerm.cases.map( caseDef => runRoot(caseDef.rhs) )
+     val cpsScrutinee = runRoot(scrutinee, TCM.MatchScrutinee)
+     val cpsCases = matchTerm.cases.map( caseDef => runRoot(caseDef.rhs, TCM.MatchCase ) )
      val asyncCases = cpsCases.exists( _.isAsync )
      val nCases = if (asyncCases) {
                       (matchTerm.cases zip cpsCases).map{(old,cpstree) =>

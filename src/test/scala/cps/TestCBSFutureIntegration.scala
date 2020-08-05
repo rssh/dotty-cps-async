@@ -7,13 +7,6 @@ import scala.language.implicitConversions
 import scala.concurrent._
 import scala.util._
 
-   
-given cbsFutureConversion(using ExecutionContext) as CpsMonadConversion[Future,ComputationBound] = 
-   new CpsMonadConversion[Future, ComputationBound] {
-     override def apply[T](mf: CpsMonad[Future], mg: CpsMonad[ComputationBound], ft:Future[T]):
-        ComputationBound[T] =
-           ComputationBound.asyncCallback( listener => ft.onComplete(listener) )
-   }
 
 
 class TestCBSFutureIntegration:

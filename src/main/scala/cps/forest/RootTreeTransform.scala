@@ -12,7 +12,7 @@ trait RootTreeTransform[F[_], CT]:
   
   import qctx.tasty._
 
-  def runRoot(term: qctx.tasty.Term): CpsTree =
+  def runRoot(term: qctx.tasty.Term, marker: TransformationContextMarker): CpsTree =
      if (cpsCtx.flags.debugLevel >= 15)
         cpsCtx.log(s"runRoot: term=$safeShow(term)")
      val r = term.tpe.widen match {
@@ -20,19 +20,20 @@ trait RootTreeTransform[F[_], CT]:
                //  in such case, we can't transform tree to expr
                //  without eta-expansion.  
                //    from other side - we don't want do eta-expand now, it can be performed early.
-                runRootUneta(term)
+                runRootUneta(term, marker)
        case _ : PolyType =>
-                runRootUneta(term)
+                runRootUneta(term, marker)
        case _ =>
                 val expr = term.seal
                 val monad = cpsCtx.monad
                 expr match {
                   case '{ $e: $et } =>
-                     val rCpsExpr = Async.nestTransform(e, cpsCtx, "_")
+                     val rCpsExpr = Async.nestTransform(e, cpsCtx, marker)
                      val r = exprToTree(rCpsExpr, term)
-                     if (cpsCtx.flags.debugLevel >= 10) 
-                         cpsCtx.log(s"rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
-                         cpsCtx.log(s"r=$r, async=${r.isAsync}")
+                     if cpsCtx.flags.debugLevel >= 10 then
+                        cpsCtx.log(s"runRoot: rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
+                        if cpsCtx.flags.debugLevel >= 15 then
+                           cpsCtx.log(s"runRoot: r=$r, async=${r.isAsync}, origin=$term")
                      r
                   case _ =>
                      throw MacroError("Can't determinate exact type for term", expr)
@@ -43,13 +44,14 @@ trait RootTreeTransform[F[_], CT]:
      r
 
 
-  def runRootUneta(term: qctx.tasty.Term): CpsTree = {
+  def runRootUneta(term: qctx.tasty.Term, marker: TransformationContextMarker): CpsTree = {
+     // TODO: change cpsCtx to show nesting
      if (cpsCtx.flags.debugLevel >= 15)
         cpsCtx.log(s"runRootUneta, term=$term")
      val monad = cpsCtx.monad
      val r = term match {
        case Select(qual, name) =>
-           runRoot(qual) match 
+           runRoot(qual, TransformationContextMarker.Select) match 
               case rq: AsyncCpsTree =>
                   val cTransformed = rq.transformed.asInstanceOf[qctx.tasty.Term]
                   CpsTree.impure(Select(cTransformed,term.symbol),term.tpe)
@@ -58,7 +60,18 @@ trait RootTreeTransform[F[_], CT]:
        case Ident(name) =>
              CpsTree.pure(term)
        case Apply(x, args) =>
-             runApply(term,x,args,Nil)
+             val thisScope = this
+             val nestContext = cpsCtx.nestSame(marker)
+             val nestScope = new TreeTransformScope[F,CT] {
+                override val cpsCtx = nestContext
+                override implicit val qctx = thisScope.qctx
+                override val fType = thisScope.fType
+                override val ctType = thisScope.ctType
+             }
+             nestScope.runApply(term.asInstanceOf[nestScope.qctx.tasty.Term],
+                                x.asInstanceOf[nestScope.qctx.tasty.Term],
+                                args.asInstanceOf[List[nestScope.qctx.tasty.Term]],
+                                Nil).asInstanceOf[CpsTree]
        case _ =>
              throw MacroError(s"cps tree transform is not supported yet to ${term}",cpsCtx.patternCode)
      }
@@ -70,7 +83,7 @@ trait RootTreeTransform[F[_], CT]:
   def exprToTree(expr: CpsExpr[F,_], e: Term): CpsTree =
      if (expr.isAsync)
          val transformed = expr.transformed.unseal
-         AwaitCpsTree(transformed, e.tpe)
+         AwaitSyncCpsTree(transformed, e.tpe)
      else
          PureCpsTree(e)
 

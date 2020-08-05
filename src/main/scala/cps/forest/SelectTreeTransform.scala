@@ -15,7 +15,7 @@ trait SelectTreeTransform[F[_], CT]:
   // case selectTerm @ Select(qualifier,name) 
   def runSelect( selectTerm: Select ): CpsTree =
      val symbol = selectTerm.symbol
-     runRoot(selectTerm.qualifier).applyTerm(_.select(symbol), selectTerm.tpe)
+     runRoot(selectTerm.qualifier, TransformationContextMarker.Select).applyTerm(_.select(symbol), selectTerm.tpe)
 
 
 object SelectTreeTransform:
