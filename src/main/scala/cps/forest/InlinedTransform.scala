@@ -10,17 +10,16 @@ import cps.misc._
 
 class InlinedTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 
-  import cpsCtx._
 
   // case Inlined(call, binding, expansion)
   def run(using qctx: QuoteContext)(inlinedTerm: qctx.tasty.Inlined): CpsExpr[F,T] =
-    val bodyExpr = inlinedTerm.body.seal.asInstanceOf[Expr[T]]
-    val nested = Async.rootTransform(bodyExpr,monad,flags,exprMarker,nesting+1)
+    val bodyExpr = inlinedTerm.body.seal.cast[T]
+    val nested = Async.nestTransform(bodyExpr, cpsCtx, TransformationContextMarker.InlinedBody)
     if (inlinedTerm.bindings.isEmpty)
       nested
     else
-      InlinedCpsExpr(using qctx)(monad, Seq(), inlinedTerm, nested)
-  
+      InlinedCpsExpr(using qctx)(cpsCtx.monad, Seq(), inlinedTerm, nested)
+
 
 class InlinedCpsExpr[F[_]:Type,T:Type](using qctx0: QuoteContext)(
                      monad: Expr[CpsMonad[F]],
@@ -33,32 +32,31 @@ class InlinedCpsExpr[F[_]:Type,T:Type](using qctx0: QuoteContext)(
    override def fLast(using qctx: QuoteContext): Expr[F[T]] =
       import qctx.tasty._
       val qctxOldInlined = oldInlined.asInstanceOf[qctx.tasty.Inlined]
-      val t = Inlined.copy(qctxOldInlined)(qctxOldInlined.call, 
-                               qctxOldInlined.bindings, 
+      val t = Inlined.copy(qctxOldInlined)(qctxOldInlined.call,
+                               qctxOldInlined.bindings,
                                nested.transformed.unseal)
-      t.seal.asInstanceOf[Expr[F[T]]]
+      t.seal.cast[F[T]]
 
    override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
       new InlinedCpsExpr(using qctx0)(monad, exprs ++: prev, oldInlined, nested)
 
    override def append[A:Type](chunk: CpsExpr[F,A])(using QuoteContext): CpsExpr[F,A] =
-      if (nested.isAsync) 
+      if (nested.isAsync)
          InlinedCpsExpr(using qctx0)(monad, prev, oldInlined, nested.append(chunk))
-      else 
+      else
          chunk.prependExprs(Seq(StatementExprTreeGen(using qctx0)(oldInlined)))
 
    def syncOrigin(using QuoteContext): Option[Expr[T]] =
-      if (nested.isAsync) 
+      if (nested.isAsync)
         None
       else
-        val expr = oldInlined.seal.asInstanceOf[Expr[T]]
+        val expr = oldInlined.seal.cast[T]
         Some(expr)
 
    override def map[A:Type](f: Expr[T => A])(using QuoteContext): CpsExpr[F,A] =
-      syncOrigin match 
+      syncOrigin match
          case None => MappedCpsExpr(monad,Seq(),this,f)
-         case Some(origin) => CpsExpr.sync(monad, Expr.betaReduce(f)(origin))
-         
+         case Some(origin) => CpsExpr.sync(monad, Expr.betaReduce('{ $f($origin) }))
 
 }
 

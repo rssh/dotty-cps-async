@@ -12,7 +12,7 @@ trait Connection[F[_]:CpsTryMonad]:
 
 
 
-trait Handler[F[_]:CpsTryMonad] {
+trait Handler[F[_]:CpsTryMonad]:
 
    trait Command:
      def isShutdown: Boolean
@@ -42,4 +42,3 @@ trait Handler[F[_]:CpsTryMonad] {
    }
 
 
-}

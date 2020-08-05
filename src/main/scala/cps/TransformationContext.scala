@@ -7,21 +7,23 @@ case class TransformationContext[F[_],T](
    patternType: Type[T],
    monad: Expr[CpsMonad[F]],
    flags: AsyncMacroFlags,
-   exprMarker: String,
-   nesting: Int
+   marker: TransformationContextMarker,
+   nesting: Int,
+   parent: Option[TransformationContext[_,_]],
 )  {
 
-  def nestSame(s:String): TransformationContext[F,T] = 
-           copy(exprMarker=exprMarker+s, nesting=nesting+1)
+  def nestSame(marker: TransformationContextMarker): TransformationContext[F,T] = 
+           copy(marker=marker, nesting=nesting+1, parent=Some(this))
 
-  def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], s: String): 
+  def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], marker: TransformationContextMarker): 
              TransformationContext[F,S] =
       TransformationContext(newPatternCode, newPatternType, monad, flags, 
-                             exprMarker+s, nesting + 1 )
+                             marker, nesting + 1, parent=Some(this) )
 
   def log(message:String): Unit =
        print("  "*nesting)   
        println(message)   
+
 
 }
 
