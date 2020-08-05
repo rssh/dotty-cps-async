@@ -206,7 +206,7 @@ trait CpsTreeScope[F[_], CT] {
               List(
                 Lambda(
                   MethodType(List("x"))(mt => List(prev.otpe),
-                                        mt => AppliedType(fType.unseal.tpe,List(otpe))),
+                                        mt => AppliedType(fType.asTypeTree.tpe,List(otpe))),
                   opArgs => opm(opArgs.head.asInstanceOf[Term])
                 )
              )

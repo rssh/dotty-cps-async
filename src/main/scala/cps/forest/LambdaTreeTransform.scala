@@ -13,7 +13,7 @@ trait LambdaTreeTransform[F[_], CT]:
   import qctx.tasty.{_, given _}
 
   def typeInMonad(tp:TypeOrBounds): Type =
-       AppliedType(fType.unseal.tpe, List(tp))
+       AppliedType(fType.asTypeTree.tpe, List(tp))
 
   // case lambdaTree @ Lambda(params,body)
   def runLambda(lambdaTerm: Term, params: List[ValDef], expr: Term ): CpsTree =

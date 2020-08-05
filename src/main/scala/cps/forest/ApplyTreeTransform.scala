@@ -129,10 +129,10 @@ trait ApplyTreeTransform[F[_],CT]:
       case MethodType(paramNames, paramTypes, resType) =>
                // currently no support for path-dependend lambdas.
                MethodType(paramNames)( mt => paramTypes,
-                                       mt => AppliedType(fType.unseal.tpe, List(resType)))
+                                       mt => AppliedType(fType.asTypeTree.tpe, List(resType)))
       case PolyType(paramNames,paramBounds,resType) =>
                PolyType(paramNames)(pt => paramBounds,
-                                    pt => AppliedType(fType.unseal.tpe, List(resType)))
+                                    pt => AppliedType(fType.asTypeTree.tpe, List(resType)))
       case _ => throw MacroError("Not supported type for shifting: ${tpe}",cpsCtx.patternCode)
     }
 
@@ -370,11 +370,11 @@ trait ApplyTreeTransform[F[_],CT]:
     val tpe = e.tpe.widen
     val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
     val tpTree = AppliedType(objAsyncShift,List(tpe))
-    //val tpTree = AppliedType('[ObjectAsyncShift].unseal.tpe,List(tpe)).simplified
+    //val tpTree = AppliedType('[ObjectAsyncShift].asTypeTree.tpe,List(tpe)).simplified
     if cpsCtx.flags.debugLevel >= 15 then
       cpsCtx.log(s"searchImplicits: tpTree=$tpTree")
       cpsCtx.log(s"tpe=$tpe")
-      cpsCtx.log(s"'[ObjectAsyncShift].unseal.tpe=${'[ObjectAsyncShift].unseal.tpe}")
+      cpsCtx.log(s"'[ObjectAsyncShift].asTypeTree.tpe=${'[ObjectAsyncShift].asTypeTree.tpe}")
     searchImplicit(tpTree)
 
 
@@ -392,7 +392,7 @@ trait ApplyTreeTransform[F[_],CT]:
                cpsCtx.log(s"objectShift.tpe = ${objectShift.tpe}")
 
            val shiftedExpr = Apply(
-                               TypeApply(Select.unique(objectShift, "apply"),fType.unseal::Nil),
+                               TypeApply(Select.unique(objectShift, "apply"),fType.asTypeTree::Nil),
                                List(qual,monad)
                              )
 
@@ -407,7 +407,7 @@ trait ApplyTreeTransform[F[_],CT]:
            findAsyncShiftTerm(qual) match
              case success2: ImplicitSearchSuccess =>
                val newSelect = Select.unique(success2.tree, x.name)
-               TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+               TypeApply(newSelect, fType.asTypeTree::targs).appliedTo(qual,monad)
              case failure2: ImplicitSearchFailure =>
                throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or ObjectAsyncShift (${failure1.explanation}) for qual=${qual} ",posExpr(x))
 
@@ -431,10 +431,10 @@ trait ApplyTreeTransform[F[_],CT]:
                       throw new MacroError("Unimplemented shift for CpsMonad", posExpr(term))
                   else
                     //val newSelect = shiftSelect(s)
-                    //TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+                    //TypeApply(newSelect, fType.asTypeTree::targs).appliedTo(qual,monad)
                     shiftSelectTypeApply(s, targs)
           case s@Select(qual,name) =>
-                  //TypeApply(shiftSelect(s), fType.unseal::Nil).appliedTo(qual, monad)
+                  //TypeApply(shiftSelect(s), fType.asTypeTree::Nil).appliedTo(qual, monad)
                   shiftSelectTypeApply(s, Nil)
           case TypeApply(x, targs) =>
                   TypeApply(shiftCaller(x),targs)

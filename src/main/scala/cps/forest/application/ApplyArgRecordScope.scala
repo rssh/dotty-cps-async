@@ -212,9 +212,9 @@ trait ApplyArgRecordScope[F[_], CT]:
                         )
          val r = createPF
          */
-         val r = fromType.seal match
+         val r = fromType.asQuotedType match
            case '[$ft] =>
-             toInF.seal match
+             toInF.asQuotedType match
                case '[$tt] =>
                   '{ new PartialFunction[$ft,$tt] {
                        override def isDefinedAt(x1:$ft):Boolean =

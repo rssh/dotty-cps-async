@@ -19,7 +19,7 @@ trait AwaitTreeTransform[F[_],CT]:
   def runOtherAwait(awaitTerm: Term, arg: Term, targ: Type, otherCpsMonad: Term): CpsTree =
       val myCpsMonad = cpsCtx.monad.asTerm
       val myCpsMonadTpe = myCpsMonad.tpe
-      val myF = fType.unseal.tpe
+      val myF = fType.asTypeTree.tpe
       val otherF = targ
       val conversion = TypeIdent(Symbol.classSymbol("cps.CpsMonadConversion")).tpe
       val taConversion = AppliedType(conversion,List(otherF, myF))
