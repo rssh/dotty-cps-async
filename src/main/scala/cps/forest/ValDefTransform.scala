@@ -53,9 +53,9 @@ object ValDefTransform:
                                     extends AsyncCpsExpr[F,T](monad, prev) {
 
        override def fLast(using qctx: QuoteContext) = 
-          import qctx.tasty.{_, given _}
+          import qctx.tasty._
 
-          def appendBlockExpr[A](rhs: qctx.tasty.Term, expr: Expr[A]):Expr[A] =
+          def appendBlockExpr[A:quoted.Type](rhs: qctx.tasty.Term, expr: Expr[A]):Expr[A] =
                 buildAppendBlockExpr(oldValDef.asInstanceOf[qctx.tasty.ValDef],
                                      rhs, expr)
 
@@ -100,9 +100,9 @@ object ValDefTransform:
 
        }
 
-       private def buildAppendBlockExpr[A](using qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, rhs: qctx.tasty.Term, expr:Expr[A]):Expr[A] = 
+       private def buildAppendBlockExpr[A:Type](using qctx: QuoteContext)(oldValDef: qctx.tasty.ValDef, rhs: qctx.tasty.Term, expr:Expr[A]):Expr[A] = 
           import qctx.tasty._
-          buildAppendBlock(oldValDef,rhs,expr.unseal).seal.asInstanceOf[Expr[A]]
+          buildAppendBlock(oldValDef,rhs,expr.unseal).seal.cast[A]
 
   }
 
@@ -124,7 +124,7 @@ object ValDefTransform:
                    Block( prevStats ++: (valDef +: statements), last)
             case other => 
                    Block( prevStats ++: List(valDef), other)
-         outputTerm.seal.asInstanceOf[Expr[T]]
+         outputTerm.seal.cast[T]
        }
        
 
@@ -139,7 +139,7 @@ object ValDefTransform:
                  Block( prev.map(_.extract) ++: valDef +: stats, e)
              case other =>
                  Block( prev.map(_.extract) ++: List(valDef) , other) 
-          block.seal.asInstanceOf[Expr[F[T]]]
+          block.seal.cast[F[T]]
 
        }
 

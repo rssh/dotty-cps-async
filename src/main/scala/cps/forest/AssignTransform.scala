@@ -47,7 +47,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
         else    // !cpsLeft.isAsync && cpsRight.isAsync
             CpsExpr.async(monad,
                    cpsRight.map[T]( 
-                         '{ (x:R) => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]] } 
+                         '{ (x:R) => ${Assign(left,'x.unseal).seal.cast[T] } 
                           }).transformed )
      } else { // (cpsLeft.isAsync) {
         left match 
@@ -71,8 +71,8 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      if (!cpsRight.isAsync) {
           CpsExpr.async[F,T](monad,
                cpsLu.map[T]('{ x => 
-                    ${Assign('x.unseal.select(left.symbol), right).seal.
-                                          asInstanceOf[Expr[T]] } }).transformed
+                    ${Assign('x.unseal.select(left.symbol), right).seal.cast[T]
+                                                                       } }).transformed
          )
      } else {
          CpsExpr.async[F,T](monad,
@@ -81,7 +81,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                         '{ r => ${
                                                Assign('l.unseal.select(left.symbol),
                                                       'r.unseal
-                                               ).seal.asInstanceOf[Expr[F[T]]]
+                                               ).seal.cast[F[T]]
                                          }}
                                       ).transformed  }
                                  }).transformed

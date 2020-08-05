@@ -197,7 +197,11 @@ trait ApplyArgRecordScope[F[_], CT]:
             createAsyncLambda(mt, params)
 
          def termCast[E](term: Term, tp:quoted.Type[E]): Expr[E] =
-               term.seal.asInstanceOf[Expr[E]]
+            // changing to cast break compilation of test
+            //given quoted.Type[E] = tp
+            //term.seal.cast[E]
+            term.seal.asInstanceOf[Expr[E]]
+
 
          /*
           // blocked by 

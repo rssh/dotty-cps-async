@@ -60,8 +60,9 @@ trait CpsTreeScope[F[_], CT] {
 
        syncOrigin match
          case Some(syncTerm) =>
-             CpsExpr.sync(monad,safeSeal(syncTerm).asInstanceOf[Expr[T]])
+             CpsExpr.sync(monad,safeSeal(syncTerm).cast[T])
          case None =>
+             // TODO: bug reprot to dotty, switch to cast break test TestCBSFutureIntegration.scala
              val sealedTransformed = safeSeal(transformed).asInstanceOf[Expr[F[T]]]
              CpsExpr.async[F,T](monad, sealedTransformed)
 
