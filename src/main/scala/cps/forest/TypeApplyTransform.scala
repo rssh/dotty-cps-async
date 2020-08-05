@@ -9,9 +9,9 @@ class TypeApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
-  // case TypeApply(fun,targs) 
+  // case TypeApply(fun,targs)
   def run(using qctx: QuoteContext)(fun: qctx.tasty.Term, targs: List[qctx.tasty.TypeTree]): CpsExpr[F,T] =
      import qctx.tasty.{_, given _}
-     TypeApplyTreeTransform.run(cpsCtx,patternCode.unseal, fun, targs)
-     
+     TypeApplyTreeTransform.run(cpsCtx,patternCode.asTerm, fun, targs)
+
 

@@ -44,12 +44,12 @@ object Async {
              if (flags.printCode)
                 println(s"before transformed: ${f.show}")
              if (flags.printTree)
-                println(s"value: ${f.unseal}")
+                println(s"value: ${f.asTerm}")
              val r = rootTransform[F,T](f,dm,flags,"",0).transformed
              if (flags.printCode)
                 println(s"transformed value: ${r.show}")
              if (flags.printTree)
-                println(s"transformed tree: ${r.unseal}")
+                println(s"transformed tree: ${r.asTerm}")
              r
         case None =>
              val ft = summon[quoted.Type[F]]
@@ -108,7 +108,7 @@ object Async {
          case '{ throw $ex } =>
                             ThrowTransform.run(cpsCtx, ex)
          case _ =>
-             val fTree = f.unseal
+             val fTree = f.asTerm
              fTree match {
                 case Apply(fun,args) =>
                    ApplyTransform(cpsCtx).run(fun,args)

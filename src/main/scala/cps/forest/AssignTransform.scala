@@ -10,28 +10,28 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
-  // case Assign(left,right) 
-  def run(using qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsExpr[F,T] = 
+  // case Assign(left,right)
+  def run(using qctx: QuoteContext)(left: qctx.tasty.Term, right: qctx.tasty.Term): CpsExpr[F,T] =
      import qctx.tasty.{_, given _}
-     left.seal match 
+     left.asExpr match
         case '{ $le: $lt } =>
             val cpsLeft = Async.nestTransform(le,cpsCtx,"L")
             // shpuld have to structure in such waym as workarround against
-            //  
+            //
             runWithLeft(left,right,cpsLeft)
         case _ =>
-            throw MacroError("Can't determinate type",left.seal)
+            throw MacroError("Can't determinate type",left.asExpr)
 
 
   def runWithLeft[L:Type](using qctx: QuoteContext)(
        left: qctx.tasty.Term, right: qctx.tasty.Term, cpsLeft:CpsExpr[F,L]): CpsExpr[F,T] = {
      import qctx.tasty.{_, given _}
-     right.seal match {
+     right.asExpr match {
         case '{ $re: $rt } =>
             val cpsRight = Async.nestTransform(re,cpsCtx,"R")
             run1(left,right,cpsLeft,cpsRight)
         case _ =>
-            throw MacroError("Can't determinate type",right.seal)
+            throw MacroError("Can't determinate type",right.asExpr)
      }
   }
 
@@ -42,22 +42,22 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                 cpsLeft: CpsExpr[F,L], cpsRight: CpsExpr[F,R]): CpsExpr[F,T] =
      import qctx.tasty.{_, given _}
      if (!cpsLeft.isAsync) {
-        if (!cpsRight.isAsync) 
+        if (!cpsRight.isAsync)
             CpsExpr.sync(monad, patternCode)
         else    // !cpsLeft.isAsync && cpsRight.isAsync
             CpsExpr.async(monad,
-                   cpsRight.map[T]( 
-                         '{ (x:R) => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]] } 
+                   cpsRight.map[T](
+                         '{ (x:R) => ${Assign(left,'x.asTerm).asExprOf[T] }
                           }).transformed )
      } else { // (cpsLeft.isAsync) {
-        left match 
-          case Select(obj,sym) => 
-              obj.seal match 
+        left match
+          case Select(obj,sym) =>
+              obj.asExpr match
                  case '{ $o: $ot } =>
                     val lu = Async.nestTransform(o,cpsCtx,"S")
                     run2(left,right,cpsLeft,cpsRight,lu)
                  case _ =>
-                    throw MacroError("Can't determinate type",obj.seal)
+                    throw MacroError("Can't determinate type",obj.asExpr)
           case _ =>  // non-assignable entity ?
               throw MacroError("assign to async non-select is impossible",patternCode)
      }
@@ -70,18 +70,18 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import qctx.tasty.{_, given _}
      if (!cpsRight.isAsync) {
           CpsExpr.async[F,T](monad,
-               cpsLu.map[T]('{ x => 
-                    ${Assign('x.unseal.select(left.symbol), right).seal.
+               cpsLu.map[T]('{ x =>
+                    ${Assign('x.asTerm.select(left.symbol), right).asExpr.
                                           asInstanceOf[Expr[T]] } }).transformed
          )
      } else {
          CpsExpr.async[F,T](monad,
                cpsLu.flatMap[T]('{ l =>
-                                     ${cpsRight.flatMap[T]( 
+                                     ${cpsRight.flatMap[T](
                                         '{ r => ${
-                                               Assign('l.unseal.select(left.symbol),
-                                                      'r.unseal
-                                               ).seal.asInstanceOf[Expr[F[T]]]
+                                               Assign('l.asTerm.select(left.symbol),
+                                                      'r.asTerm
+                                               ).asExprOf[F[T]]
                                          }}
                                       ).transformed  }
                                  }).transformed

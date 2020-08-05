@@ -7,8 +7,8 @@ import cps._
 
 object TransformUtil:
 
-  
-  def find(using qctx:QuoteContext)(term: qctx.tasty.Term, 
+
+  def find(using qctx:QuoteContext)(term: qctx.tasty.Term,
                        cond: qctx.tasty.Tree=> Option[qctx.tasty.Tree]) :Option[qctx.tasty.Tree] = {
      import qctx.tasty.{_,given _}
      import util._
@@ -18,9 +18,9 @@ object TransformUtil:
                  foldOverTree(x,tree)
 
         override def foldOverTree(x: Option[Tree], tree: Tree)(using ctx: Context): Option[Tree] = {
-           if (x.isDefined) 
+           if (x.isDefined)
              x
-           else 
+           else
              cond(tree) orElse super.foldOverTree(x,tree)
         }
      }
@@ -35,18 +35,18 @@ object TransformUtil:
            case _ => None
          }).isDefined
 
- 
+
   /**
    * substitute identifier with the origin symbol to new tree
    **/
-  def substituteIdent(using qctx:QuoteContext)(tree: qctx.tasty.Term, 
-                           origin: qctx.tasty.Symbol, 
+  def substituteIdent(using qctx:QuoteContext)(tree: qctx.tasty.Term,
+                           origin: qctx.tasty.Symbol,
                            newTerm: qctx.tasty.Term): qctx.tasty.Term =
      import qctx.tasty.{_,given _}
      import util._
      val changes = new TreeMap() {
         override def transformTerm(tree:Term)(using ctx: Context):Term =
-          tree match 
+          tree match
             case ident@Ident(name) => if (ident.symbol == origin) {
                                          newTerm
                                       } else {
@@ -62,18 +62,18 @@ object TransformUtil:
     import scala.internal.quoted.showName
     import scala.quoted.QuoteContext
     import scala.quoted.Expr
-    val expr = (rhs.seal: @unchecked) match {
+    val expr = (rhs.asExpr: @unchecked) match {
       case '{ $rhsExpr: $t } =>
         '{
           @showName(${Expr(name)})
           val x = $rhsExpr
           ${
-            val id = ('x).unseal.asInstanceOf[Ident]
-            body(id).seal
+            val id = ('x).asTerm.asInstanceOf[Ident]
+            body(id).asExpr
           }
         }
     }
-    expr.unseal
+    expr.asTerm
   }
 
 

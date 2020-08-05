@@ -14,7 +14,7 @@ class InlinedTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 
   // case Inlined(call, binding, expansion)
   def run(using qctx: QuoteContext)(inlinedTerm: qctx.tasty.Inlined): CpsExpr[F,T] =
-    val bodyExpr = inlinedTerm.body.seal.asInstanceOf[Expr[T]]
+    val bodyExpr = inlinedTerm.body.asExprOf[T]
     val nested = Async.rootTransform(bodyExpr,monad,flags,exprMarker,nesting+1)
     if (inlinedTerm.bindings.isEmpty)
       nested
@@ -35,8 +35,8 @@ class InlinedCpsExpr[F[_]:Type,T:Type](using qctx0: QuoteContext)(
       val qctxOldInlined = oldInlined.asInstanceOf[qctx.tasty.Inlined]
       val t = Inlined.copy(qctxOldInlined)(qctxOldInlined.call,
                                qctxOldInlined.bindings,
-                               nested.transformed.unseal)
-      t.seal.asInstanceOf[Expr[F[T]]]
+                               nested.transformed.asTerm)
+      t.asExprOf[F[T]]
 
    override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
       new InlinedCpsExpr(using qctx0)(monad, exprs ++: prev, oldInlined, nested)
@@ -51,7 +51,7 @@ class InlinedCpsExpr[F[_]:Type,T:Type](using qctx0: QuoteContext)(
       if (nested.isAsync)
         None
       else
-        val expr = oldInlined.seal.asInstanceOf[Expr[T]]
+        val expr = oldInlined.asExprOf[T]
         Some(expr)
 
    override def map[A:Type](f: Expr[T => A])(using QuoteContext): CpsExpr[F,A] =

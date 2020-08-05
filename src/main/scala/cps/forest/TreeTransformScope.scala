@@ -32,40 +32,40 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
          case MethodType(_,_,_) | PolyType(_,_,_) =>
            val etaExpanded = t.etaExpand
            try
-             etaExpanded.seal
+             etaExpanded.asExpr
            catch
              case ex: Exception =>
                 // TODO: via reporting
                 // println(s"etaExpanding not help, t.tpe.widen=${t.tpe.widen}")
                 //ex.printStackTrace
                 cpsCtx.patternCode
-         case _ => t.seal
+         case _ => t.asExpr
 
    def posExprs(terms: qctx.tasty.Term*): Expr[Any] =
        import qctx.tasty._
        var rest = terms
        var retval: Option[Expr[Any]] = None
-       while(!retval.isDefined && !rest.isEmpty) 
+       while(!retval.isDefined && !rest.isEmpty)
          val t = rest.head
          rest = rest.tail
          t.tpe.widen match
            case MethodType(_,_,_) | PolyType(_,_,_) =>
               val etaExpanded = t.etaExpand
               try
-                retval = Some(etaExpanded.seal)
+                retval = Some(etaExpanded.asExpr)
               catch
                 case ex: Exception =>
                    //do nothing
-           case _ => retval = Some(t.seal)
+           case _ => retval = Some(t.asExpr)
        retval.getOrElse(cpsCtx.patternCode)
-         
+
 
 
    def safeShow(t: qctx.tasty.Term): String =
        import qctx.tasty._
-       try 
-         t.seal.show
-       catch 
+       try
+         t.asExpr.show
+       catch
          case ex: Exception =>
             t.toString
 

@@ -12,7 +12,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
-  // case Block(prevs,last) 
+  // case Block(prevs,last)
   def run(using qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
      if (cpsCtx.flags.debugLevel >= 10) then
         cpsCtx.log(s"Block transform, last=${last.show}")
@@ -26,22 +26,22 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                 ValDefTransform.fromBlock(using qctx)(cpsCtx.copy(exprMarker=exprMarker+i.toString), v)
               case _ =>
                 DefCpsExpr(using qctx)(cpsCtx.monad,Seq(),d)
-            } 
+            }
           case t: Term =>
             // TODO: rootTransform
-            t.seal match 
+            t.asExpr match
                 case '{ $p:$tp } =>
                         Async.nestTransform(p, cpsCtx, i.toString)
                 case other =>
                         printf(other.show)
-                        throw MacroError(s"can't handle term in block: $other",t.seal)
+                        throw MacroError(s"can't handle term in block: $other",t.asExpr)
           case i:Import =>
                    ImportTransform.fromBlock(using qctx)(cpsCtx.copy(exprMarker=exprMarker+"i"),i)
           case other =>
                 printf(other.show)
                 throw MacroError(s"unknown tree type in block: $other",patternCode)
      }
-     val rLast = Async.nestTransform(last.seal.asInstanceOf[Expr[T]],cpsCtx,"B")
+     val rLast = Async.nestTransform(last.asExprOf[T],cpsCtx,"B")
      val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
      // wrap yet in one Expr, to avoid unrolling during append in enclosing block).
      val retval = CpsExpr.wrap(blockResult)
@@ -55,7 +55,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
          }
 
      retval
-  
+
 
 class DefCpsExpr[F[_]:Type](using qctx: QuoteContext)(
                      monad: Expr[CpsMonad[F]],
@@ -65,7 +65,7 @@ class DefCpsExpr[F[_]:Type](using qctx: QuoteContext)(
   def last(using QuoteContext): Expr[Unit] = '{ () }
 
   def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,Unit] =
-       if (exprs.isEmpty) 
+       if (exprs.isEmpty)
          this
        else
          new DefCpsExpr(using qctx)(monad,exprs ++: prev,definition)
