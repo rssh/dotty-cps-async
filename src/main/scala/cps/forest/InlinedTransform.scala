@@ -18,7 +18,7 @@ class InlinedTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
     if (inlinedTerm.bindings.isEmpty)
       nested
     else
-      InlinedCpsExpr(using qctx)(monad, Seq(), inlinedTerm, nested)
+      InlinedCpsExpr(using qctx)(cpsCtx.monad, Seq(), inlinedTerm, nested)
 
 
 class InlinedCpsExpr[F[_]:Type,T:Type](using qctx0: QuoteContext)(
