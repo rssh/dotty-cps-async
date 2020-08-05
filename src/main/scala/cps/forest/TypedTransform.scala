@@ -11,8 +11,8 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   def run(using qctx: QuoteContext)(t: qctx.tasty.Term, tp: qctx.tasty.TypeTree): CpsExpr[F,T] =
      import qctx.tasty.{_, given _}
-     val r = Async.nestTransform(t.asExprOf[T], cpsCtx, "T")
-     if (!r.isAsync)
+     val r = Async.nestTransform(t.asExprOf[T], cpsCtx, TransformationContextMarker.Typed)
+     if (!r.isAsync) 
        CpsExpr.sync(monad, patternCode)
      else
        // TODO:  create Typed with F[$tp] as type ?

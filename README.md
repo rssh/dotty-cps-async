@@ -47,7 +47,7 @@ m.flatMap(openConnection())(a => {
 })
 ```
 
-Note, that monad can be any trait, for which it is possible to implement ```AsyncMonad``` typeclass. 
+Note, that monad can be any trait, for which it is possible to implement [CpsAsyncMonad](https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala) typeclass. 
 You can provide those methods for your favorite monad. Look at our implementation for 
 [ComputationBounds](https://github.com/rssh/dotty-cps-async/blob/master/src/test/scala/cps/ComputationBound.scala) and [Future](https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/FutureAsyncMonad.scala) for example.
 
@@ -56,13 +56,20 @@ Currently, doty-cps-async is at an early stage and not ready for production use.
 ## FAQ
 
 * What are the current limitations?
-    * Only basic constructions can be inside an async block:  if, while, try/catch, val definition.  Submit patches if you want more.
+    * all scala constructions are supported in async block. 
 * Can we use await inside the argument of the high-order function? (like map or filter).
     * Yes, application developer or library author can provide ‘shifted’  implementation of the high-order function, which accepts  X=>M[Y] instead X=>Y.  This was implemented in the limited form in scala-gopher (paper: https://arxiv.org/abs/1611.00602)  for scala-2 and in practice, even in limited form, works quite well.
 * I want to help with development. Where to start?
     * Open an issue (or select existing unassigned)  on GitHub and provide a preliminary plan for your work.  If you want to consult before choosing a task - ping me directly via e-mail or twitter.
 * Is exists a version for scala-2?
     * No
+
+## Presentations
+
+### Can we free concurrent programming from the monadic style:
+#### ScalaR:  https://www.youtube.com/watch?v=ImlUuTQUeaQ  (Jun 2020)
+#### ScalaUA: https://www.youtube.com/watch?v=w-noRPLxYoA&t=3s  (Apr. 2020)
+   (slides: https://www.slideshare.net/rssh1/can-concurrent-functional-programming-be-liberated-from-monadic-style )
 
 ## Related works
 

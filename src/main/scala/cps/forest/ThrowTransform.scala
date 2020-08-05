@@ -18,7 +18,7 @@ object ThrowTransform:
      import qctx.tasty.{_, given _}
      import util._
      import cpsCtx._
-     val cpsEx = Async.nestTransform(ex, cpsCtx, "E")
+     val cpsEx = Async.nestTransform(ex, cpsCtx, TransformationContextMarker.ThrowException)
 
      if (cpsCtx.monad.asTerm.tpe <:< '[CpsTryMonad[F]].asTypeTree.tpe)
        val errorMonad = monad.asInstanceOf[Expr[CpsTryMonad[F]]]

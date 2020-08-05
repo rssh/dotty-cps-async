@@ -45,4 +45,11 @@ given FutureAsyncMonad(using ExecutionContext) as CpsAsyncMonad[Future]:
 
    def executionContext = summon[ExecutionContext]
 
-      
+given implicitAwait.IsPossible[Future]
+
+given fromFutureConversion[G[_]](using ExecutionContext, CpsAsyncMonad[G]) as CpsMonadConversion[Future,G] =
+   new CpsMonadConversion[Future, G] {
+     override def apply[T](mf: CpsMonad[Future], mg: CpsMonad[G], ft:Future[T]): G[T] =
+           summon[CpsAsyncMonad[G]].adoptCallbackStyle(
+                                         listener => ft.onComplete(listener) )
+   }

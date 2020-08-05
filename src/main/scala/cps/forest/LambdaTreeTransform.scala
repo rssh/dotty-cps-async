@@ -20,7 +20,7 @@ trait LambdaTreeTransform[F[_], CT]:
      if (cpsCtx.flags.debugLevel >= 10)
        cpsCtx.log(s"runLambda, lambda=${safeShow(lambdaTerm)}")
        cpsCtx.log(s"runLambda, expr=${safeShow(expr)}")
-     val cpsBody = runRoot(expr)
+     val cpsBody = runRoot(expr,TransformationContextMarker.Lambda)
      val retval = if (cpsBody.isAsync) {
         // in general, shifted lambda
         if (cpsCtx.flags.allowShiftedLambda) then

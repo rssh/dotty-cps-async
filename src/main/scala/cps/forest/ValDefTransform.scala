@@ -9,22 +9,21 @@ import cps.misc._
 object ValDefTransform:
 
 
-  def fromBlock[F[_]:Type,T:Type](using qctx:QuoteContext)(cpsCtx: TransformationContext[F,T],
+  def fromBlock[F[_]:Type](using qctx:QuoteContext)(
+                           cpsCtx: TransformationContext[F,Unit],
                            valDef: qctx.tasty.ValDef): CpsExpr[F,Unit] = {
      import qctx.tasty.{_, given _}
      import cpsCtx._
-     if (cpsCtx.flags.debugLevel >= 10) {
+     if (cpsCtx.flags.debugLevel >= 15) 
        cpsCtx.log(s"ValDefExpr:fromBlock, valDef=$valDef")
-     }
-     val posExpr = Block(List(valDef),Literal(Constant(()))).asExpr
      val rhs = valDef.rhs.getOrElse(
-                  throw MacroError(s"val $valDef without right part in block ", posExpr)
-               )
-     rhs.asExpr match {
+             throw MacroError(s"val $valDef without right part in block ", cpsCtx.patternCode)
+     )
+     rhs.asExpr match 
         case '{ $e: $et } =>
             if (cpsCtx.flags.debugLevel > 15)
                cpsCtx.log(s"rightPart is ${e.show}")
-            val cpsRight = Async.nestTransform(e,cpsCtx,"R")
+            val cpsRight = Async.nestTransform(e,cpsCtx,TransformationContextMarker.ValDefRight)
             if (cpsRight.isAsync) {
                if (cpsCtx.flags.debugLevel > 15) {
                   cpsCtx.log(s"rightPart is async")
@@ -38,8 +37,7 @@ object ValDefTransform:
                                                 CpsExpr.unit(monad) )
             }
         case other =>
-            throw MacroError(s"Can't concretize type of right-part $rhs ", posExpr)
-     }
+            throw MacroError(s"Can't concretize type of right-part $rhs ", cpsCtx.patternCode)
 
 
   }
