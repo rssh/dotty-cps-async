@@ -222,7 +222,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                case '[$tt] =>
                   '{ new PartialFunction[$ft,$tt] {
                        override def isDefinedAt(x1:$ft):Boolean =
-                          ${ newCheckBody('x1.unseal ).seal.asInstanceOf[Expr[Boolean]] } 
+                          ${ newCheckBody('x1.unseal ).seal.cast[Boolean] } 
                        override def apply(x2:$ft): $tt =
                           ${ val nBody = cpsBody.transformed
                              nBody match

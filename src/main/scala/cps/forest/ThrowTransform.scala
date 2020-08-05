@@ -21,7 +21,7 @@ object ThrowTransform:
      val cpsEx = Async.nestTransform(ex, cpsCtx, TransformationContextMarker.ThrowException)
 
      if (cpsCtx.monad.unseal.tpe <:< '[CpsTryMonad[F]].unseal.tpe)
-       val errorMonad = monad.asInstanceOf[Expr[CpsTryMonad[F]]]
+       val errorMonad = monad.cast[CpsTryMonad[F]]
        if (!cpsEx.isAsync)
             // TODO: think, mb leave as is...
             CpsExpr.async[F,T](monad,  '{  ${errorMonad}.error(${ex}) })

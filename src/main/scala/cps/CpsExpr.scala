@@ -26,7 +26,7 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
      if (prev.isEmpty)
        fLast
      else
-       Block(prev.toList.map(_.extract), fLast.unseal).seal.asInstanceOf[Expr[F[T]]]
+       Block(prev.toList.map(_.extract), fLast.unseal).seal.cast[F[T]]
 
   def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T]
 

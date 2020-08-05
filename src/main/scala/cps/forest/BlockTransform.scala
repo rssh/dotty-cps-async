@@ -24,7 +24,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
          case d: Definition =>
            d match {
              case v@ValDef(vName,vtt,optRhs) =>
-               val valDefExpr = Block(List(v),Literal(Constant(()))).seal.asInstanceOf[Expr[Unit]]
+               val valDefExpr = Block(List(v),Literal(Constant(()))).seal.cast[Unit]
                val nestCtx = cpsCtx.nest(valDefExpr, uType, 
                                          TransformationContextMarker.BlockInside(i))
                ValDefTransform.fromBlock(using qctx)(nestCtx, v)
@@ -50,7 +50,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
             printf(other.show)
             throw MacroError(s"unknown tree type in block: $other",patternCode)
      }
-     val rLast = Async.nestTransform(last.seal.asInstanceOf[Expr[T]],cpsCtx,TransformationContextMarker.BlockLast)
+     val rLast = Async.nestTransform(last.seal.cast[T],cpsCtx,TransformationContextMarker.BlockLast)
      val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
      // wrap yet in one Expr, to avoid unrolling during append in enclosing block).
      val retval = CpsExpr.wrap(blockResult)
