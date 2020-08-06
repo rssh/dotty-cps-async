@@ -15,7 +15,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import qctx.tasty.{_, given _}
      left.seal match 
         case '{ $le: $lt } =>
-            val cpsLeft = Async.nestTransform(le,cpsCtx,"L")
+            val cpsLeft = Async.nestTransform(le,cpsCtx,TransformationContextMarker.AssignLeft)
             // shpuld have to structure in such waym as workarround against
             //  
             runWithLeft(left,right,cpsLeft)
@@ -28,7 +28,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import qctx.tasty.{_, given _}
      right.seal match {
         case '{ $re: $rt } =>
-            val cpsRight = Async.nestTransform(re,cpsCtx,"R")
+            val cpsRight = Async.nestTransform(re,cpsCtx,TransformationContextMarker.AssignRight)
             run1(left,right,cpsLeft,cpsRight)
         case _ =>
             throw MacroError("Can't determinate type",right.seal)
@@ -47,14 +47,14 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
         else    // !cpsLeft.isAsync && cpsRight.isAsync
             CpsExpr.async(monad,
                    cpsRight.map[T]( 
-                         '{ (x:R) => ${Assign(left,'x.unseal).seal.asInstanceOf[Expr[T]] } 
+                         '{ (x:R) => ${Assign(left,'x.unseal).seal.cast[T] } 
                           }).transformed )
      } else { // (cpsLeft.isAsync) {
         left match 
           case Select(obj,sym) => 
               obj.seal match 
                  case '{ $o: $ot } =>
-                    val lu = Async.nestTransform(o,cpsCtx,"S")
+                    val lu = Async.nestTransform(o,cpsCtx,TransformationContextMarker.AssignSelect)
                     run2(left,right,cpsLeft,cpsRight,lu)
                  case _ =>
                     throw MacroError("Can't determinate type",obj.seal)
@@ -71,8 +71,8 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      if (!cpsRight.isAsync) {
           CpsExpr.async[F,T](monad,
                cpsLu.map[T]('{ x => 
-                    ${Assign('x.unseal.select(left.symbol), right).seal.
-                                          asInstanceOf[Expr[T]] } }).transformed
+                    ${Assign('x.unseal.select(left.symbol), right).seal.cast[T]
+                                                                       } }).transformed
          )
      } else {
          CpsExpr.async[F,T](monad,
@@ -81,7 +81,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                         '{ r => ${
                                                Assign('l.unseal.select(left.symbol),
                                                       'r.unseal
-                                               ).seal.asInstanceOf[Expr[F[T]]]
+                                               ).seal.cast[F[T]]
                                          }}
                                       ).transformed  }
                                  }).transformed

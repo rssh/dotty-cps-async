@@ -17,8 +17,8 @@ object WhileTransform:
      import qctx.tasty.{_, given _}
      import util._
      import cpsCtx._
-     val cpsCond = Async.nestTransform(cond, cpsCtx, "C")
-     val cpsRepeat = Async.nestTransform(repeat, cpsCtx, "W")
+     val cpsCond = Async.nestTransform(cond, cpsCtx, TransformationContextMarker.WhileCond)
+     val cpsRepeat = Async.nestTransform(repeat, cpsCtx, TransformationContextMarker.WhileBody)
      val isAsync = cpsCond.isAsync || cpsRepeat.isAsync
 
      val unitBuilder = {
