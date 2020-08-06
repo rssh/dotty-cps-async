@@ -31,17 +31,17 @@ object Async {
           new InferAsyncArg[F]
 
   inline def transform[F[_], T](inline expr: T): F[T] =
-    ${ 
+    ${
         Async.transformImpl[F,T]('expr)
-     } 
+     }
 
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[F[T]] = 
     import qctx.tasty._
     import TransformationContextMarker._
     val flags = adoptFlags(f)
     try
-      Expr.summon[CpsMonad[F]] match 
-        case Some(dm) => 
+      Expr.summon[CpsMonad[F]] match
+        case Some(dm) =>
              if (flags.printCode)
                 println(s"before transformed: ${f.show}")
              if (flags.printTree)
@@ -52,25 +52,24 @@ object Async {
              if (flags.printTree)
                 println(s"transformed tree: ${r.unseal}")
              r
-        case None => 
+        case None =>
              val ft = summon[quoted.Type[F]]
              throw MacroError(s"Can't find async monad for ${ft.show}", f)
     catch
       case ex: MacroError =>
-           report.error(ex.msg, ex.posExpr)
-           '{???}
+           report.throwError(ex.msg, ex.posExpr)
 
 
-  def adoptFlags(f: Expr[_])(using qctx: QuoteContext): AsyncMacroFlags = 
+  def adoptFlags(f: Expr[_])(using qctx: QuoteContext): AsyncMacroFlags =
     import qctx.tasty.{_,given _}
     Expr.summon[AsyncMacroFlags] match
       case Some(flagsExpr) =>
         flagsExpr match
           case Unlifted(flags) => flags
-          case _  => 
+          case _  =>
             throw MacroError(
                     s"AsyncMacroFlags ($flagsExpr) is not a compile-time value", flagsExpr )
-      case None => 
+      case None =>
             import cps.macroFlags.{_, given _}
             val printTree = Expr.summon[PrintTree.type].isDefined
             val printCode = Expr.summon[PrintCode.type].isDefined
@@ -78,14 +77,14 @@ object Async {
                  case Some(expr) =>
                    expr match
                       case Unlifted(v) => v.value
-                      case other  => 
+                      case other  =>
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0
             AsyncMacroFlags(printCode,printTree,debugLevel)
-  
 
 
-  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]], 
+
+  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]],
                                       flags: AsyncMacroFlags,
                                       exprMarker: TransformationContextMarker, 
                                       nesting: Int,
@@ -105,7 +104,7 @@ object Async {
          //                  can't be determinated inside matching
          case '{ throw $ex } =>
                             ThrowTransform.run(cpsCtx, ex)
-         case _ => 
+         case _ =>
              val fTree = f.unseal
              fTree match {
                 case Apply(fun,args) =>
