@@ -67,7 +67,7 @@ abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[CpsMonad[F]],
          if prev.isEmpty then
             last
          else
-            qctx.tasty.Block(prev.toList.map(_.extract), last.unseal).seal.asInstanceOf[Expr[T]]
+            qctx.tasty.Block(prev.toList.map(_.extract), last.unseal).seal.cast[T]
      )
 
 
