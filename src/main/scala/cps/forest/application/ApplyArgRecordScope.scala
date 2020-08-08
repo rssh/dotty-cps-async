@@ -156,10 +156,15 @@ trait ApplyArgRecordScope[F[_], CT]:
                                                 to: TypeOrBounds, 
                                                 body: Match,
                                                 params: List[ValDef]): Term = 
+
          val toInF = typeInMonad(to)
          val fromType = typeOrBoundsToType(from)
          val matchVar = body.scrutinee
          val paramNames = params.map(_.name)
+
+         if (cpsCtx.flags.debugLevel >= 15)
+             println(s"createAsyncPartialFunction: from = $from, to=$to") 
+             println(s"toInF=$toInF") 
 
          def newCheckBody(inputVal:Term):Term = 
 
@@ -197,25 +202,12 @@ trait ApplyArgRecordScope[F[_], CT]:
             createAsyncLambda(mt, params)
 
          def termCast[E](term: Term, tp:quoted.Type[E]): Expr[E] =
-            // changing to cast break compilation of test
+            // changing to cast trigger https://github.com/lampepfl/dotty/issues/9518
             //given quoted.Type[E] = tp
             //term.seal.cast[E]
             term.seal.asInstanceOf[Expr[E]]
 
 
-         /*
-          // blocked by 
-         val helper = '{ cps.runtime.PartialFunctionHelper }.unseal
-         val helperSelect = Select.unique(helper,"create")
-         val checkLambda = newCheck()
-         val bodyLambda = newBody()
-
-         val createPF = Apply(
-                          TypeApply(helperSelect,List(Inferred(fromType),Inferred(toInF))),
-                          List(checkLambda, bodyLambda)
-                        )
-         val r = createPF
-         */
          val r = fromType.seal match 
            case '[$ft] =>
              toInF.seal match 
@@ -230,7 +222,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                  val b0 = Map(matchVar.symbol -> 'x2.unseal)
                                  val nCaseDefs = caseDefs.map( cd =>
                                                     rebindCaseDef(cd, cd.rhs, b0, true))
-                                 val nTerm = Match.copy(m)('x2.unseal, nCaseDefs)
+                                 val nTerm = Match('x2.unseal, nCaseDefs)
                                  termCast(nTerm,tt)
                                case _ =>
                                  throw MacroError(
