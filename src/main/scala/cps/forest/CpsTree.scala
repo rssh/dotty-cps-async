@@ -62,8 +62,7 @@ trait CpsTreeScope[F[_], CT] {
          case Some(syncTerm) =>
              CpsExpr.sync(monad,safeSeal(syncTerm).cast[T])
          case None =>
-             // TODO: bug reprot to dotty, switch to cast break test TestCBSFutureIntegration.scala
-             val sealedTransformed = safeSeal(transformed).asInstanceOf[Expr[F[T]]]
+             val sealedTransformed = safeSeal(transformed).cast[F[T]]
              CpsExpr.async[F,T](monad, sealedTransformed)
 
      def toResultWithType[T](qt: quoted.Type[T]): CpsExpr[F,T] = 
@@ -149,7 +148,7 @@ trait CpsTreeScope[F[_], CT] {
           AwaitAsyncCpsTree(this, newOtpe)
 
 
-  class AwaitSyncCpsTree(val origin: Term, val otpe: Type) extends AsyncCpsTree:
+  case class AwaitSyncCpsTree(val origin: Term, val otpe: Type) extends AsyncCpsTree:
                      
     def transformed: Term = origin
 
@@ -157,7 +156,7 @@ trait CpsTreeScope[F[_], CT] {
           AwaitSyncCpsTree(f(transformed), ntpe)
 
 
-  class AwaitAsyncCpsTree(val nested: CpsTree, val otpe: Type) extends AsyncCpsTree:
+  case class AwaitAsyncCpsTree(val nested: CpsTree, val otpe: Type) extends AsyncCpsTree:
 
     def transformed: Term = 
       FlatMappedCpsTree(nested, (t:Term)=>t, otpe).transformed
