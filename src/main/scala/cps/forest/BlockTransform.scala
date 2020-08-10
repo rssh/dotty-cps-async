@@ -36,9 +36,10 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
            t.seal match 
                case '{ $p:$tp } =>
                        // TODO: check 'discard' typeclass
+                       // TODO: enable/disable feature flag
                        if (!(t.tpe =:= defn.UnitType) && !(t.tpe =:= defn.NothingType) )
                           // bug in dotty: show cause match error in test
-                          // TODO: minimise and submit 
+                          // TODO: minimise and submit bug to dotty
                           def safeShow[T](tp:quoted.Type[T]):String =
                             try
                               tp.show
