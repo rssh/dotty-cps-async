@@ -73,8 +73,6 @@ class TestCBS1Apply:
 
   object Zzz {
 
-    given shiftedZzz[F[_]](using m:CpsMonad[F]) as Conversion[Zzz,AsyncShifted[Zzz,F]] =
-          zzz => zzz.shifted[F](m)
 
     class ZzzAsyncShift extends ObjectAsyncShift[Zzz] {
           def apply[F[_]](zzz:Zzz, cpsMonad: CpsMonad[F]):zzz.InternalAsyncShifted[F] = 
@@ -102,7 +100,7 @@ class TestCBS1Apply:
        val zzz = new Zzz(3)
        val zzzAsyncShift = summon[ObjectAsyncShift[Zzz]]
        var x = 0;
-       zzz.byNameInt(await({ x=x+1; T1.cbi(2)}))
+       zzz.byNameInt(await({ x=x+1; T1.cbi(2)})):Unit
        x
      }
      assert(c.run() == Success(2))

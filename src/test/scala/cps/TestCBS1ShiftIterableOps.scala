@@ -129,9 +129,9 @@ class TestBS1ShiftIterableOps:
 
 
   @Test def testCollectFind(): Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
           val c = List(1,2,3,4)
           val r: Option[Int] = c.collectFirst{ case x if x > 2 => x + await(T1.cbi(1)) }

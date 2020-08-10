@@ -35,7 +35,17 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
            // TODO: rootTransform
            t.seal match 
                case '{ $p:$tp } =>
-                       // TODO: warn if tp is not unit.
+                       // TODO: check 'discard' typeclass
+                       if (!(t.tpe =:= defn.UnitType) && !(t.tpe =:= defn.NothingType) )
+                          // bug in dotty: show cause match error in test
+                          // TODO: minimise and submit 
+                          def safeShow[T](tp:quoted.Type[T]):String =
+                            try
+                              tp.show
+                            catch
+                              case ex: Throwable => //ex.printStackTrace()
+                                tp.unseal.toString
+                          warning(s"discarding non-unit value ${safeShow(tp)}", t.pos)
                        Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
                case other =>
                        printf(other.show)
