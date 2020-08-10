@@ -1,0 +1,11 @@
+
+dotty-cps-async
+https://github.com/rssh/dotty-cps-async
+
+Copyright (C) 2020 Ruslan Shevchenko. <ruslan@shevchenko.kiev.ua>  
+
+  
+can include 
+     - patches, submitted by individual contributors.
+     - tests, developed by EPFL/Lightbend.
+
