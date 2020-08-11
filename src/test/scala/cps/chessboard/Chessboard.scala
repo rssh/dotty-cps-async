@@ -14,7 +14,7 @@ object Chessboard:
    def empty = Map.empty
    val size = 8
 
-   extension chessboardOps on (board: Chessboard):
+   extension (board: Chessboard):
 
        def put(x:Int, y:Int, chessman: Chessman): Option[Chessboard] = 
          require(board.isInside(x,y))
