@@ -1,3 +1,8 @@
+/*
+ * dotty-cps-async: https://github.com/rssh/dotty-cps-async
+ *
+ * (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, Kyiv, 2020
+ */
 package cps
 
 import scala.language.implicitConversions
@@ -13,7 +18,8 @@ import cps.misc._
 @compileTimeOnly("await should be inside async block")
 def await[F[_],T](f:F[T])(using am:CpsMonad[F]):T = ???
 
-inline def async[F[_]](using am:CpsMonad[F]): Async.InferAsyncArg[F] =
+
+inline def async[F[_]](using inline am: CpsMonad[F]): Async.InferAsyncArg[F] =
    new Async.InferAsyncArg[F]
 
 object Async {
@@ -23,41 +29,53 @@ object Async {
   class InferAsyncArg[F[_]](using am:CpsMonad[F]) {
 
        inline def apply[T](inline expr: T):F[T] =
-            transform[F,T](expr)
+            transform[F,T](expr)(using am)
 
   }
 
   inline def async[F[_]](using am:CpsMonad[F]): InferAsyncArg[F] =
           new InferAsyncArg[F]
 
-  inline def transform[F[_], T](inline expr: T): F[T] =
+  inline def transform[F[_], T](inline expr: T)(using inline m: CpsMonad[F]): F[T] =
     ${
         Async.transformImpl[F,T]('expr)
      }
 
+  /**
+   * transform expression and get monad from context.
+   **/
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[F[T]] = 
+    import qctx.tasty._
+    Expr.summon[CpsMonad[F]] match
+       case Some(dm) =>
+          transformMonad[F,T](f,dm)
+       case None =>
+          val ft = summon[quoted.Type[F]]
+          report.throwError(s"Can't find async monad for ${ft.show}", f)
+
+
+  /**
+   * transform expression within given monad.  Use this function is you need to force async-transform
+   * from other macros
+   **/
+  def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using qctx: QuoteContext): Expr[F[T]] = 
     import qctx.tasty._
     import TransformationContextMarker._
     val flags = adoptFlags(f)
     try
-      Expr.summon[CpsMonad[F]] match
-        case Some(dm) =>
-             if (flags.printCode)
-                println(s"before transformed: ${f.show}")
-             if (flags.printTree)
-                println(s"value: ${f.unseal}")
-             val r = rootTransform[F,T](f,dm,flags,TopLevel,0, None).transformed
-             if (flags.printCode)
-                println(s"transformed value: ${r.show}")
-             if (flags.printTree)
-                println(s"transformed tree: ${r.unseal}")
-             r
-        case None =>
-             val ft = summon[quoted.Type[F]]
-             throw MacroError(s"Can't find async monad for ${ft.show}", f)
+      if (flags.printCode)
+        println(s"before transformed: ${f.show}")
+      if (flags.printTree)
+        println(s"value: ${f.unseal}")
+      val r = rootTransform[F,T](f,dm,flags,TopLevel,0, None).transformed
+      if (flags.printCode)
+        println(s"transformed value: ${r.show}")
+        if (flags.printTree)
+          println(s"transformed tree: ${r.unseal}")
+      r
     catch
       case ex: MacroError =>
-           report.throwError(ex.msg, ex.posExpr)
+        report.throwError(ex.msg, ex.posExpr)
 
 
   def adoptFlags(f: Expr[_])(using qctx: QuoteContext): AsyncMacroFlags =

@@ -44,6 +44,7 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
 }
 
+
 /**
  * Monad, interpolable with Future.
  **/
