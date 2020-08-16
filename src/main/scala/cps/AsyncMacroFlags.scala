@@ -6,7 +6,9 @@ case class AsyncMacroFlags(
    printCode: Boolean = false,
    printTree: Boolean = false,
    debugLevel: Int = 0,
-   allowShiftedLambda: Boolean = true
+   allowShiftedLambda: Boolean = true,
+   customValueDiscard: Boolean = false,
+   warnValueDiscard: Boolean = true
 )
 
 given Unliftable[AsyncMacroFlags]:

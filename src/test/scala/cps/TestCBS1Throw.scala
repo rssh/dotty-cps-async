@@ -12,7 +12,7 @@ class TestBS1Throw:
 
   @Test def try_00n(): Unit = 
      //implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
         throw new RuntimeException("AAA")
      }

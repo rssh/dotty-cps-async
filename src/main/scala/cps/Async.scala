@@ -24,8 +24,6 @@ inline def async[F[_]](using inline am: CpsMonad[F]): Async.InferAsyncArg[F] =
 
 object Async {
 
-  //class CurrentCpsMonad[F[_]](m:CpsMonad[F])
-
   class InferAsyncArg[F[_]](using am:CpsMonad[F]) {
 
        inline def apply[T](inline expr: T):F[T] =
@@ -98,7 +96,9 @@ object Async {
                       case other  =>
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0
-            AsyncMacroFlags(printCode,printTree,debugLevel)
+            val customValueDiscard = Expr.summon[cps.features.customValueDiscard].isDefined
+            val warnValueDiscard = Expr.summon[cps.features.customValueDiscard].isDefined
+            AsyncMacroFlags(printCode,printTree,debugLevel, customValueDiscard, warnValueDiscard)
 
 
 

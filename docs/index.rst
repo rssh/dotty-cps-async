@@ -11,6 +11,8 @@ Welcome to dotty-cps-async's documentation!
    :caption: Contents:
 
    BasicUsage
+   MonadsInteroperability
+   HighOrderFunctions
 
 
 Indices and tables

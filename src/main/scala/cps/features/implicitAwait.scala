@@ -1,5 +1,6 @@
-package cps
+package cps.features
 
+import cps._
 
 object implicitAwait:
 
