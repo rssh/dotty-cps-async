@@ -10,8 +10,7 @@ import scala.language.implicitConversions
 import scala.quoted._
 import scala.util.Success
 
-import cps.features.customValueDiscard.{_, given _}
-import cps.features.ValueDiscard
+import cps.features.customValueDiscard.{given _}
 
 class TestCustomValueDiscard:
 
@@ -49,5 +48,26 @@ class TestCustomValueDiscard:
      assert(r1.isSuccess)
      assert(x == 3)
 
+  class API(dryResult: Boolean) {
+     def fetch(url:String): Future[String] = Future.successful(url)
+     def dryRun(data:String): Future[Unit] =
+           if (dryResult)
+             Future successful ()
+           else
+             Future failed (new RuntimeException("be-be-be"))
+     def process(data:String): Future[String] = Future successful data
+  }
 
+  @Test def apiInsideSeq(): Unit = 
+     import cps.features.warnValueDiscard.{given _}
+     val api = API(false)
+     val dryRunEnabled = true
+     implicit val printCode = cps.macroFlags.PrintCode
+     implicit val debugLevel = cps.macroFlags.DebugLevel(10)
+     val r = async[Future] {
+       val data = await(api.fetch("http://www.example.com"))
+       //if (dryRunEnabled)
+       api.dryRun(data)
+       await(api.process(data))
+     }
 

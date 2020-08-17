@@ -49,7 +49,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                                tp.unseal.toString
 
                            if (cpsCtx.flags.customValueDiscard) 
-                             val valueDiscard = TypeIdent(Symbol.classSymbol("cps.features.ValueDiscard")).tpe
+                             val valueDiscard = TypeIdent(Symbol.classSymbol("cps.ValueDiscard")).tpe
                              val tpe = t.tpe.widen.dealias
                              val tpTree = AppliedType(valueDiscard,List(tpe))
                              searchImplicit(tpTree) match

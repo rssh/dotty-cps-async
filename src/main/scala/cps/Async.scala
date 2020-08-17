@@ -65,6 +65,8 @@ object Async {
         println(s"before transformed: ${f.show}")
       if (flags.printTree)
         println(s"value: ${f.unseal}")
+      if (flags.debugLevel > 5) 
+        println(s"customValueDiscard=${flags.customValueDiscard}, warnValueDiscard=${flags.warnValueDiscard}")
       val r = rootTransform[F,T](f,dm,flags,TopLevel,0, None).transformed
       if (flags.printCode)
         println(s"transformed value: ${r.show}")
@@ -96,9 +98,9 @@ object Async {
                       case other  =>
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0
-            val customValueDiscard = Expr.summon[cps.features.customValueDiscard].isDefined
-            val warnValueDiscard = Expr.summon[cps.features.customValueDiscard].isDefined
-            AsyncMacroFlags(printCode,printTree,debugLevel, customValueDiscard, warnValueDiscard)
+            val customValueDiscard = Expr.summon[cps.features.CustomValueDiscardTag].isDefined
+            val warnValueDiscard = Expr.summon[cps.features.WarnValueDiscardTag].isDefined
+            AsyncMacroFlags(printCode,printTree,debugLevel, true, customValueDiscard, warnValueDiscard)
 
 
 

@@ -13,6 +13,7 @@ Welcome to dotty-cps-async's documentation!
    BasicUsage
    MonadsInteroperability
    HighOrderFunctions
+   Features
 
 
 Indices and tables

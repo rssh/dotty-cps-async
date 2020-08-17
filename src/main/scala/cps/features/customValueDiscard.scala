@@ -2,9 +2,12 @@ package cps.features
 
 import cps._
 
-
+// bug in dotty: 
 trait customValueDiscard
-trait warnValueDiscard
+trait warningValueDiscard
+
+trait CustomValueDiscardTag
+trait WarnValueDiscardTag
 
 /**
  * marker object for value discarding.
@@ -14,33 +17,17 @@ trait warnValueDiscard
  **/
 object customValueDiscard:
 
-  given tag as customValueDiscard
+  given tag as CustomValueDiscardTag
 
 
+
+/**
+ * marker object for warning about value discarding.
+ **/
 object warnValueDiscard:
 
-  given tag as warnValueDiscard
+  given tag as WarnValueDiscardTag
   
-
-
-trait ValueDiscard[T]:
-
-  def apply(value:T): Unit
-
-
-
-object ValueDiscard:
-
-  class EmptyValueDiscard[T] extends ValueDiscard[T]:
-
-    inline override def apply(value: T): Unit = {}
-
-
-  transparent inline given intValueDiscard as ValueDiscard[Int] = EmptyValueDiscard[Int]
-  transparent inline given longValueDiscard as ValueDiscard[Long] = EmptyValueDiscard[Long]
-  transparent inline given booleanValueDiscard as ValueDiscard[Boolean] = EmptyValueDiscard[Boolean]
-  transparent inline given stringValueDiscard as ValueDiscard[String] = EmptyValueDiscard[String]
-    
 
 
 
