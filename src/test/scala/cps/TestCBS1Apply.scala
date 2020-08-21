@@ -50,14 +50,14 @@ class TestCBS1Apply:
 
           def znt[T <: Any](x:()=>F[T]): F[String] =
             given CpsMonad[F] = m
-            import CpsMonad.ForComprehensionSyntax._
+            import CpsMonad.ForSyntax._
             for{ fx1 <- x()
                 fx2 <- x()
             } yield fx1.toString + fx2.toString
 
           def zntCurried[T <: Any](x: ()=>F[T])(y: ()=>F[T]): F[String] =
             given CpsMonad[F] = m
-            import CpsMonad.ForComprehensionSyntax._
+            import CpsMonad.ForSyntax._
             for{ fx1 <- x()
                  fy1 <- y()
                  fx2 <- x()

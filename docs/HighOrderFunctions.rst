@@ -27,9 +27,9 @@ If we want all requests to run in parallel, we can start them in one map and whe
 
        urls.map( httpClient.fetchData(_) ).map(await(_))
 
-During async transform, dotty-cps-async substitute method map of you List  wth signature  
-   `List[A].map[B](f: A=>B)`  
-to  
+During async transform, dotty-cps-async substitute method map of you List with signature  
+   ``List[A].map[B](f: A=>B)`` to  
+
 
 .. code-block:: scala
 
