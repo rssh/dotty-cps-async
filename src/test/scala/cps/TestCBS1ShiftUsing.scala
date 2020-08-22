@@ -64,13 +64,13 @@ class TestBS1ShiftUsing:
      assert(svR2.get.isClosed == true)
 
   @Test def testUsingResources2Complex(): Unit = 
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      var svR2: Option[TestResource] = None;
      val c = async[ComputationBound]{
          val r1 = new TestResource("r1")
          Using.resources(r1, new TestResource("r2")){ (r1, r2) =>
-             val q =  await(T1.cbs(r1.label)) //+ await(T1.cbs(r2.label))
+             val q =  await(T1.cbs(r1.label)) + await(T1.cbs(r2.label))
              //r1.log(q)
              svR2 = Some(r2)
              // TODO: bug in dotty during unpickling.
@@ -80,4 +80,23 @@ class TestBS1ShiftUsing:
      }
      assert(c.run() == Success(false))
      assert(svR2.get.isClosed == true)
+
+  @Test def testUsingResources3(): Unit = 
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(15)
+     var svR2: Option[TestResource] = None;
+     var svR3: Option[TestResource] = None;
+     val c = async[ComputationBound]{
+         val r1 = new TestResource("r1")
+         val r3 = new TestResource("r3")
+         Using.resources(r1, new TestResource("r2"), r3){ (r1, r2, r3) =>
+             svR2 = Some(r2)
+             svR3 = Some(r3)
+             await(T1.cbs(r1.label)) + r2.label + r3.label
+         }
+     }
+     assert(c.run() == Success("r1r2r3"))
+     assert(svR2.get.isClosed == true)
+     assert(svR3.get.isClosed == true)
+
 
