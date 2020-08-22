@@ -62,8 +62,8 @@ class TestCustomValueDiscard:
      import cps.features.warnValueDiscard.{given _}
      val api = API(false)
      val dryRunEnabled = true
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(10)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(10)
      val r = async[Future] {
        val data = await(api.fetch("http://www.example.com"))
        //if (dryRunEnabled)
