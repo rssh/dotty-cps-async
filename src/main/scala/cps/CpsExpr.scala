@@ -38,6 +38,8 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
   @Deprecated()
   def asyncMonad: Expr[CpsMonad[F]] = monad
 
+  def tType: Type[T] = summon[Type[T]]
+
   //def pure[A:Type](t: Expr[A])(using QuoteContext): CpsExpr[F,A] =
   //                     CpsExpr.sync(monad, t)
 
@@ -147,7 +149,7 @@ case class MappedCpsExpr[F[_]:Type, S:Type, T:Type](
 
 
   override def fLast(using QuoteContext): Expr[F[T]] =
-                             '{ $monad.map(${point.transformed})($mapping) }
+                           '{ $monad.map(${point.transformed})($mapping) }
 
   override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
         if (exprs.isEmpty)
@@ -178,19 +180,6 @@ case class FlatMappedCpsExpr[F[_]:Type, S:Type, T:Type](
     override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
            copy(prev = exprs ++: prev)
 
-/*
-case class AwaitAsyncCpsExpr[F[_]:Type,T:Type](
-                              monad: Expr[CpsMonad[F]],
-                              prev: Seq[ExprTreeGen],
-                              nested: CpsExpr[F,F[T]]
-                              ) extends AsyncCpsExpr[F,T](monad, prev):
-
-    override def fLast(using QuoteContext) = ???
-
-    override def map[A:Type](f: Expr[T => A])(using QuoteContext): CpsExpr[F,A] =
-           CpsExpr.impure()
-*/
-       
 
 
 case class UnitCpsExpr[F[_]:Type](monad: Expr[CpsMonad[F]],

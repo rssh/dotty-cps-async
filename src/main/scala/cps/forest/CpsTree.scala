@@ -75,7 +75,7 @@ trait CpsTreeScope[F[_], CT] {
     def pure(origin:Term): CpsTree = PureCpsTree(origin)
 
     def impure(transformed:Term, tpe: Type): CpsTree = 
-                   AwaitSyncCpsTree(transformed, tpe)
+                   AwaitSyncCpsTree(transformed, tpe.widen)
 
   case class PureCpsTree(origin: qctx.tasty.Term) extends CpsTree:
 
@@ -190,14 +190,15 @@ trait CpsTreeScope[F[_], CT] {
           FlatMappedCpsTree(this, f, ntpe)
 
     def transformed: Term = {
-          val prevType = prev.otpe
           val untmapTerm = cpsCtx.monad.unseal.select(mapSymbol)
-          val tmapTerm = untmapTerm.appliedToTypes(List(prev.otpe,otpe))
+          val wPrevOtpe = prev.otpe.widen
+          val wOtpe = otpe.widen
+          val tmapTerm = untmapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
           val r = tmapTerm.appliedToArgss(
                      List(List(prev.transformed),
                           List(
                             Lambda(
-                              MethodType(List("x"))(mt => List(prev.otpe), mt => otpe),
+                              MethodType(List("x"))(mt => List(wPrevOtpe), mt => wOtpe),
                               opArgs => op(opArgs.head.asInstanceOf[Term])
                             )
                           )
@@ -236,14 +237,16 @@ trait CpsTreeScope[F[_], CT] {
         // ${cpsCtx.monad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
         val monad = cpsCtx.monad.unseal
         val untpFlatMapTerm = monad.select(flatMapSymbol)
-        val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(prev.otpe,otpe))
+        val wPrevOtpe = prev.otpe.widen
+        val wOtpe = otpe.widen
+        val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
         val r = tpFlatMapTerm.appliedToArgss(
             List(
               List(prev.transformed),
               List(
                 Lambda(
-                  MethodType(List("x"))(mt => List(prev.otpe), 
-                                        mt => AppliedType(fType.unseal.tpe,List(otpe))),
+                  MethodType(List("x"))(mt => List(wPrevOtpe), 
+                                        mt => AppliedType(fType.unseal.tpe,List(wOtpe))),
                   opArgs => opm(opArgs.head.asInstanceOf[Term])
                 )
              )
@@ -336,13 +339,10 @@ trait CpsTreeScope[F[_], CT] {
          case Some(rhs) =>
            appendValDef(rhs)
          case None =>
-           // TODO: instead check for cpsCtx.marker make special entry for await apply call.
-           //   (current workarround is a hack which is work only because we have only one
-           //     call of transformed in Await point).
-           if (nested.isAsync /*|| cpsCtx.marker == TransformationContextMarker.Await */ ) 
-             rightPart.monadFlatMap(v => appendValDef(v) , nested.otpe).transformed
+           if (nested.isAsync) 
+              rightPart.monadFlatMap(v => appendValDef(v) , nested.otpe).transformed
            else
-             rightPart.monadMap(v => appendValDef(v) , nested.otpe).transformed
+              rightPart.monadMap(v => appendValDef(v) , nested.otpe).transformed
 
     override def syncOrigin: Option[Term] = 
        for{

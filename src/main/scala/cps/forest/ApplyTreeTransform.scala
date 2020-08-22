@@ -424,8 +424,20 @@ trait ApplyTreeTransform[F[_],CT]:
          case failure1: ImplicitSearchFailure =>
            findAsyncShiftTerm(qual) match
              case success2: ImplicitSearchSuccess =>
-               val newSelect = Select.unique(success2.tree, x.name)
-               TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+               val shiftType = success2.tree.tpe
+               val shiftSymbol = if (shiftType.isSingleton) {
+                                    shiftType.termSymbol
+                                 } else {
+                                    shiftType.typeSymbol
+                                 }
+               shiftSymbol.method(x.name) match
+                    case Nil => 
+                        throw MacroError(s"Method (${x.name}) is not defined in asyncShift, qual=${qual} ",posExpr(x))
+                    case m::Nil => 
+                        val newSelect = Select.unique(success2.tree, x.name)
+                        TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+                    case other =>
+                        Select.overloaded(success2.tree, x.name, (fType.unseal::targs).map(_.tpe), List(qual,monad))
              case failure2: ImplicitSearchFailure =>
                throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or ObjectAsyncShift (${failure1.explanation}) for qual=${qual} ",posExpr(x))
 
