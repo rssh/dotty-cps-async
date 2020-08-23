@@ -1,4 +1,4 @@
-package cps.runtime
+package cps.runtime.util
 
 import scala.util._
 import cps._
