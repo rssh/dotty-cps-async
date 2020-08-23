@@ -100,3 +100,27 @@ class TestBS1ShiftUsing:
      assert(svR3.get.isClosed == true)
 
 
+  @Test def testUsingResources4(): Unit = 
+     var svR2: Option[TestResource] = None;
+     var svR3: Option[TestResource] = None;
+     var svR4: Option[TestResource] = None;
+     val c = async[ComputationBound]{
+         val r1 = new TestResource("r1")
+         val r3 = new TestResource("r3")
+         val r4 = new TestResource("r4")
+         Using.resources(r1, new TestResource("r2"), r3, r4){ (r1, r2, r3, r4) =>
+             svR2 = Some(r2)
+             svR3 = Some(r3)
+             svR4 = Some(r4)
+             await(T1.cbs(r1.label)) + r2.label + r3.label + r4.label
+         }
+     }
+     assert(c.run() == Success("r1r2r3r4"))
+     assert(svR2.get.isClosed == true)
+     assert(svR3.get.isClosed == true)
+     assert(svR4.get.isClosed == true)
+
+
+
+
+
