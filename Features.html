@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Additional Features &#8212; dotty-cps-async 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Random Notes" href="random-notes/index.html" />
+    <link rel="prev" title="Monads interoperability." href="MonadsInteroperability.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="random-notes/index.html" title="Random Notes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="MonadsInteroperability.html" title="Monads interoperability."
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="additional-features">
+<h1>Additional Features<a class="headerlink" href="#additional-features" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="implicit-await">
+<h2>Implicit await<a class="headerlink" href="#implicit-await" title="Permalink to this headline">¶</a></h2>
+<p>Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  Also, we should remember what functions we should call as async and what - not.  It is known as ‘async coloring problem’ (see <a class="reference external" href="http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/</a>  )</p>
+<p>In scala we have types, so why not to ask the compiler to do async coloring automatically?
+So, next code:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]{</span>
+   <span class="k">val</span> <span class="n">url</span> <span class="k">=</span> <span class="s">&quot;http://www.example.com&quot;</span>
+   <span class="k">val</span> <span class="n">data</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">fetchUrl</span><span class="o">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="o">))</span>
+   <span class="k">val</span> <span class="n">theme</span> <span class="k">=</span> <span class="n">api</span><span class="o">.</span><span class="n">classifyText</span><span class="o">(</span><span class="n">data</span><span class="o">)</span>
+   <span class="k">val</span> <span class="n">dmpInfo</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">retrieveDMPInfo</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">await</span><span class="o">(</span><span class="n">theme</span><span class="o">),</span> <span class="s">&quot;1&quot;</span><span class="o">))</span>
+   <span class="n">dmpInfo</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>Can be written without await as:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">c</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]{</span>
+     <span class="k">import</span> <span class="nn">cps.features.implicitAwait.</span><span class="o">{</span><span class="n">given</span> <span class="k">_</span><span class="o">}</span>
+     <span class="k">val</span> <span class="n">url</span> <span class="k">=</span> <span class="s">&quot;http://www.example.com&quot;</span>
+     <span class="k">val</span> <span class="n">data</span> <span class="k">=</span> <span class="n">api</span><span class="o">.</span><span class="n">fetchUrl</span><span class="o">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="o">)</span>
+     <span class="k">val</span> <span class="n">theme</span> <span class="k">=</span> <span class="n">api</span><span class="o">.</span><span class="n">classifyText</span><span class="o">(</span><span class="n">data</span><span class="o">)</span>
+     <span class="k">val</span> <span class="n">dmpInfo</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">retrieveDMPInfo</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">theme</span><span class="o">,</span> <span class="s">&quot;1&quot;</span><span class="o">)</span>
+     <span class="n">dmpInfo</span>
+  <span class="o">}</span>
+</pre></div>
+</div>
+<p>Looks at special syntax for enabling: <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">given</span> <span class="pre">_}</span></code>.
+For using this feature, the underlying monad should support execution caching:  i.e., two awaits on the same expression should not cause reevaluation.</p>
+<p>To mark your monad as supporting this feature, you should define <code class="docutils literal notranslate"><span class="pre">given</span> <span class="pre">feature.implicitAwait.IsPossible[M]</span></code>.</p>
+</div>
+<div class="section" id="custom-value-discard">
+<h2>Custom value discard<a class="headerlink" href="#custom-value-discard" title="Permalink to this headline">¶</a></h2>
+<p>Common developers mistakes during the writing of asynchronous code are to forget to handle something connected with discarded values, like error processing or awaiting.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cps.feature.customValueDiscard</span></code>  limit the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types T, for which exists an implementation of a special ValueDiscard[T]. If given ValueDiscard[T] is not found in the current scope, then dropping values of this type is prohibited.  If found - ValueDiscard.apply(t) is called. It’s defined as no-op for primitive types and can be extended by developer for own types.</p>
+<p>Example:</p>
+<p>Assume we have next api:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">object</span> <span class="nc">api</span><span class="k">:</span>
+  <span class="kt">def</span>  <span class="kt">fetch</span><span class="o">(</span><span class="kt">url:</span> <span class="kt">string</span><span class="o">)</span><span class="kt">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
+  <span class="k">def</span>  <span class="n">dryRun</span><span class="o">(</span><span class="n">data</span><span class="k">:</span><span class="kt">string</span><span class="o">)</span><span class="k">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span>
+  <span class="k">def</span>  <span class="n">processData</span><span class="o">(</span><span class="n">data</span><span class="k">:</span><span class="kt">string</span><span class="o">)</span><span class="k">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
+</pre></div>
+</div>
+<p>Where the semantics of dryRun is a raise error if it is impossible to run processData().</p>
+<p>Let’s look at the next code:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.features.customValueDiscard.</span><span class="o">{</span><span class="n">given</span> <span class="k">_</span><span class="o">}</span>
+
+<span class="k">val</span> <span class="n">c</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]</span> <span class="o">{</span>
+   <span class="k">val</span> <span class="n">data</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">fetch</span><span class="o">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="o">))</span>
+   <span class="n">dryRun</span><span class="o">(</span><span class="n">data</span><span class="o">)</span>
+   <span class="n">await</span><span class="o">(</span><span class="n">process</span><span class="o">(</span><span class="n">data</span><span class="o">))</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>Here developer forgott to wrap <code class="docutils literal notranslate"><span class="pre">dryRun</span></code> in <code class="docutils literal notranslate"><span class="pre">await.</span></code>  But <code class="docutils literal notranslate"><span class="pre">customValueDiscard</span></code> feature is enabled and value discard operation is not defined for <code class="docutils literal notranslate"><span class="pre">`Future</span></code>, so this code will not compile.</p>
+<p>If you want to see warning instead error, you can import <cite>warnValueDiscard</cite> feature:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.features.warnValueDiscard.</span><span class="o">{</span><span class="n">given</span> <span class="k">_</span><span class="o">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="sip22-compatible-interface">
+<h2>SIP22-compatible interface<a class="headerlink" href="#sip22-compatible-interface" title="Permalink to this headline">¶</a></h2>
+<p>This feature provides a compatibility layer for Scala2 SIP-22 async.
+When migrating your program from legacy SIP22 to dotty, you can change the headers, from</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">scala.async.Async.</span><span class="o">{</span><span class="n">async</span><span class="o">,</span><span class="n">await</span><span class="o">}</span>
+</pre></div>
+</div>
+<p>to</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.compat.sip22.</span><span class="o">{</span><span class="n">async</span><span class="o">,</span><span class="n">await</span><span class="o">}</span>
+</pre></div>
+</div>
+<p>and use Future based async/await.</p>
+<dl class="simple">
+<dt>All test cases from original Scala-Async distribution are passed with a change of imports only,</dt><dd><p>and included in our regression suite.</p>
+</dd>
+</dl>
+<p>Note that compatibility was not a primary goal during the development of dotty-cps-async. Generated code is quite different, so if you need a bug-to-bug compatible version of scala2 async, then you should use the port of the original -XAsync compiler interface.</p>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Additional Features</a><ul>
+<li><a class="reference internal" href="#implicit-await">Implicit await</a></li>
+<li><a class="reference internal" href="#custom-value-discard">Custom value discard</a></li>
+<li><a class="reference internal" href="#sip22-compatible-interface">SIP22-compatible interface</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="MonadsInteroperability.html"
+                        title="previous chapter">Monads interoperability.</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="random-notes/index.html"
+                        title="next chapter">Random Notes</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Features.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="random-notes/index.html" title="Random Notes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="MonadsInteroperability.html" title="Monads interoperability."
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Ruslan Shevchenko.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>

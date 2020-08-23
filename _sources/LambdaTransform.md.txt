@@ -1,0 +1,16 @@
+
+
+
+```
+
+  f(x->y,g) = async( ...  )
+
+  f(x->fy,g) = f( x => await y, g) = f'(x ->fy, g)
+
+in f body:
+  f(x) => await(f'(x))
+  g(f) => g'(f)
+  
+```
+
+ 

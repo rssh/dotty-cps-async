@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Basic Usage &#8212; dotty-cps-async 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="High-order functions." href="HighOrderFunctions.html" />
+    <link rel="prev" title="Welcome to dotty-cps-async’s documentation!" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="HighOrderFunctions.html" title="High-order functions."
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to dotty-cps-async’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Basic Usage</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="basic-usage">
+<h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
+<p>Usage is obvious: we have two ‘pseudo-functions’ <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> <a class="footnote-reference brackets" href="#f1" id="id1">1</a> :</p>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="n">async</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">T</span><span class="o">](</span><span class="n">using</span> <span class="n">am</span><span class="k">:</span><span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span><span class="o">(</span><span class="kt">expr:</span> <span class="kt">T</span><span class="o">)=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span>
+
+<span class="k">def</span>  <span class="n">await</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">T</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">T</span><span class="o">])(</span><span class="n">using</span> <span class="nc">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span> <span class="kt">T</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Inside the async block, we can use await pseudo-function.</p>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps._</span>
+
+<span class="k">def</span>  <span class="n">myFun</span><span class="o">(</span><span class="n">params</span><span class="o">)</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">MyMonad</span><span class="o">]</span> <span class="o">{</span>
+     <span class="c1">// ... here is possible to use await:</span>
+     <span class="k">val</span> <span class="n">x</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">something</span><span class="o">)</span>
+     <span class="c1">// ...</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><cite>MyMonad</cite> should be a type for which we have implemented <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala">CpsMonad</a> or <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala#L25">CpsTryMonad</a> (the latest supports try/catch) typeclass.</p>
+<p>Monad can-be abstracted out as in next example:</p>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">Hanlder</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">CpsTryMonad</span><span class="o">]</span><span class="k">:</span>
+
+  <span class="kt">def</span> <span class="kt">run</span><span class="o">()</span><span class="kt">:F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">F</span><span class="o">]{</span>
+    <span class="k">val</span> <span class="n">connection</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">openConnection</span><span class="o">())</span>
+    <span class="k">try</span>
+      <span class="k">while</span>
+        <span class="k">val</span> <span class="n">command</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">readCommand</span><span class="o">(</span><span class="n">connection</span><span class="o">))</span>
+        <span class="n">logCommand</span><span class="o">(</span><span class="n">command</span><span class="o">)</span>
+        <span class="k">val</span> <span class="n">reply</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">handle</span><span class="o">(</span><span class="n">command</span><span class="o">))</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">reply</span><span class="o">.</span><span class="n">isMuted</span><span class="o">)</span>
+           <span class="n">await</span><span class="o">(</span><span class="n">connection</span><span class="o">.</span><span class="n">send</span><span class="o">(</span><span class="n">reply</span><span class="o">.</span><span class="n">toBytes</span><span class="o">))</span>
+        <span class="o">!</span><span class="n">command</span><span class="o">.</span><span class="n">isShutdown</span>
+      <span class="k">do</span> <span class="o">()</span>
+    <span class="k">finally</span>
+      <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="o">()</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Async macro will transform code inside async to something like</p>
+<blockquote>
+<div><details>
+ <summary><a>code</a></summary><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">openConnection</span><span class="o">())(</span><span class="n">a</span> <span class="k">=&gt;</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">connection</span><span class="k">:</span> <span class="kt">Connection</span><span class="o">[</span><span class="kt">F</span><span class="o">]</span> <span class="k">=</span> <span class="n">a</span>
+  <span class="n">m</span><span class="o">.</span><span class="n">withAction</span><span class="o">({</span>
+    <span class="k">def</span> <span class="nc">_whilefun</span><span class="o">()</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
+      <span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">readCommand</span><span class="o">(</span><span class="n">connection</span><span class="o">))((</span><span class="n">a</span><span class="k">:</span> <span class="kt">Command</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">{</span>
+          <span class="k">val</span> <span class="n">command</span><span class="k">:</span> <span class="kt">Command</span> <span class="o">=</span> <span class="n">a</span>
+          <span class="n">logCommand</span><span class="o">(</span><span class="n">command</span><span class="o">)</span>
+          <span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">handle</span><span class="o">(</span><span class="n">command</span><span class="o">))((</span><span class="n">a</span><span class="k">:</span> <span class="kt">Reply</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">{</span>
+             <span class="k">val</span> <span class="n">reply</span><span class="k">:</span> <span class="kt">Reply</span> <span class="o">=</span> <span class="n">a</span>
+             <span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span>
+               <span class="k">if</span> <span class="o">(!</span><span class="n">reply</span><span class="o">.</span><span class="n">isMuted</span><span class="o">)</span>
+                 <span class="n">connection</span><span class="o">.</span><span class="n">send</span><span class="o">(</span><span class="n">reply</span><span class="o">.</span><span class="n">toBytes</span><span class="o">)</span>
+               <span class="k">else</span>
+                  <span class="n">m</span><span class="o">.</span><span class="n">pure</span><span class="o">(())</span>
+             <span class="o">)(</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">pure</span><span class="o">(!</span><span class="n">command</span><span class="o">.</span><span class="n">isShutdown</span><span class="o">))</span>
+          <span class="o">})</span>
+        <span class="o">}))(</span><span class="n">c</span> <span class="k">=&gt;</span> <span class="k">if</span> <span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="nc">_whilefun</span><span class="o">()</span> <span class="k">else</span> <span class="n">m</span><span class="o">.</span><span class="n">pure</span><span class="o">(()))</span>
+    <span class="nc">_whilefun</span><span class="o">()</span>
+  <span class="o">})(</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="o">())</span>
+  <span class="o">)</span>
+<span class="o">})</span>
+</pre></div>
+</div>
+</details></div></blockquote>
+<p>As transformation technique we use optimized monadic transform, the number of monadic brackets is the
+same as the numer of <code class="docutils literal notranslate"><span class="pre">await</span></code> s in code.
+You can read the <a class="reference internal" href="random-notes/index.html#random-notes"><span class="std std-ref">notes about implementation details</span></a>.</p>
+<p class="rubric">Footnotes</p>
+<dl class="footnote brackets">
+<dt class="label" id="f1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>the definitions are simplified, in reality they are more complex, because we want infer the type of expression independently from the type of monad.</p>
+</dd>
+</dl>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to dotty-cps-async’s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="HighOrderFunctions.html"
+                        title="next chapter">High-order functions.</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/BasicUsage.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="HighOrderFunctions.html" title="High-order functions."
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to dotty-cps-async’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Basic Usage</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Ruslan Shevchenko.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>
