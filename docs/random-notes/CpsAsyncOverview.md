@@ -1,5 +1,7 @@
 
-* CPS-Async transformations: overview.
+## CPS-Async transformations: 
+
+### Overview.
 
 CPS - stand for continuation-passing style. (https://en.wikipedia.org/wiki/Continuation-passing_style ).
 
@@ -12,9 +14,9 @@ Let’s look an example:
 Direct-style:
 
 ```
-Val  connection = openConnection()
-Val  command = connection.readCommand()
-Val  result = engine.evaluateCommand(command)
+val  connection = openConnection()
+val  command = connection.readCommand()
+val  result = engine.evaluateCommand(command)
 result
 ```
 
@@ -71,14 +73,15 @@ I.e. operations with concurrent API  often return ```M[F]```, and you can work w
 Async apply monad CPS to it’s argument.  Note, that the transformation of ```await(expr)``` will be ```expr```.  (i.e. all occurrences of await will be erased).  And we can use direct style instead monadic compositions, leaving work of aligning compositions to a computer.  This is exactly wat dotty-cps-async do.
 
 
-* Optimizations:
+### Optimizations.
 
 Traditional CPS async transforms all code (even sequential) to monadic compositions.
 We want to keep sequential parts to be left sequential, so the number of flatMap operations inside async block is equal to the number of the really concurrent operations.
  To achieve this, we maintain data structures (```CpsExpr``` and ```CpsTree```) which ‘remember’ that block of code is sequential and compose sequential parts without wrapping all in monad.
 
 
-* Implementation notes:
+### Implementation notes.
+
    * We don't do ANF transform preprocessing, but transform code as is, by providing implementation along with some micoroptimization, as the same way, as human will transform those expressions 'by hands'.
    * For chunks of code, which can be deconstructed with help of dotty 'quote' expressions, we use representation of block as 'CpsExpr'. Other expressions, deconstructed as tasty trees and represented as 'CpsTree'.
  

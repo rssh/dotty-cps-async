@@ -11,9 +11,13 @@ Welcome to dotty-cps-async's documentation!
    :caption: Contents:
 
    BasicUsage
-   MonadsInteroperability
    HighOrderFunctions
+   MonadsInteroperability
    Features
+   random-notes/index.rst
+   FAQ
+   References
+
 
 
 Indices and tables

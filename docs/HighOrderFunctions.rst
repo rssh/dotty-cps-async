@@ -21,7 +21,7 @@ Then we can fetch data from all servers just by using ``await`` in the ``map`` a
 
 Note that the default ``map`` will run all operations sequentially. Sequential order of evaluation is needed to allow the code, like updating the multidimensional array in for loop, works correctly in an asynchronous case.
 
-If we want all requests to run in parallel, we can start them in one map and when all started - wait for end of requests:
+If we want all requests to run in parallel, we can start them in one map and when all started - wait for the end of requests:
 
 .. code-block:: scala
 
@@ -57,7 +57,9 @@ Suppose you want to make high-order methods of your class ``C`` be able to accep
 In that case, you should implement ``given AsynsShift[C]`` typeclass with a shifted version of your high-order methods.  
 Such a 'shifted' version has an additional type parameter: ``F[_]``  and an additional list of arguments, inserted first, which contains the original object instance and an appropriative ``CpsMonad[F]``.  
 
+
 Parameters should be changed in the following way:
+
 * If the origin parameter has type  ``A=>B``, then changed: ``A => F[B]``
 * If the origin parameter is called by name with type ``=>A``, then changed: ``()=>F[A]``
 * Otherwise, the changed parameter has the same type as the origin.
@@ -123,6 +125,6 @@ Then we can define given instance for conversion:
 
 
 Note that you should carefully decide whether you need async function support and how to deal with concurrent modifications.  For example, in the code snippet below, different changes will interleave with each other.
- Usually, low-level constructs not need in async counterparts.
+ Usually, low-level constructs do not need async counterparts.
 
 

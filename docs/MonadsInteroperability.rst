@@ -9,7 +9,7 @@ Future Examples
 ``async[F]{ await[Future](.. ) }``
 ..................................
 
-Here is an example of implementation of ``CpsMonadConversioni`` from ``Future`` to any async monad ``G[_]`` :
+Here is an example of implementation of ``CpsMonadConversion`` from ``Future`` to any async monad ``G[_]`` :
 
 
 .. code-block:: scala
@@ -22,7 +22,7 @@ Here is an example of implementation of ``CpsMonadConversioni`` from ``Future`` 
    }
 
 
-Here 'async monad' for ```G[_]`` means that it is possible to receive ``G[T]`` from a callback, which returns ``T``.
+Here 'async monad' for ``G[_]`` means that it is possible to receive ``G[T]`` from a callback, which returns ``T``.
 
 
 .. code-block:: scala
@@ -55,7 +55,7 @@ After making this definition available, we can await Future into any async monad
 ``async[Future]{ await[F](.. ) }``
 ..................................
 
-And how about inserting ``await[F]``` into  ``async[Future]``` ?.
+And how about inserting ``await[F]`` into  ``async[Future]`` ?.
  For this it should mean, that our ``F`` should be able to schedule operation:
 
 .. code-block:: scala
@@ -75,7 +75,7 @@ This can be immediatly evaluation for imperative monads, or for monads with dela
 like haskell-like IO -- submittiong op to a pull, which should be evaluated during ```unsafePerformIO``` 
 at the end of the world.
 
-You can read implementation of conversion of scheduled monad to ```Future`` in  `FutureAsyncMonad.scala <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/FutureAsyncMonad.scala>`_ 
+You can read implementation of conversion of scheduled monad to ``Future`` in  `FutureAsyncMonad.scala <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/FutureAsyncMonad.scala>`_ 
 
 Of course, it is is possible to create other conversions between you monads, based on other principles.
 

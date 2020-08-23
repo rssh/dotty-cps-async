@@ -29,7 +29,7 @@ Inside the async block, we can use await pseudo-function.
 `MyMonad` should be a type for which we have implemented `CpsMonad <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala>`_ or `CpsTryMonad <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala#L25>`_ (the latest supports try/catch) typeclass.
 
 
-Monad can-be abstracted out as in next example:::
+Monad can-be abstracted out as in next example:
 
 
  .. code-block:: scala
@@ -41,6 +41,7 @@ Monad can-be abstracted out as in next example:::
         try
           while
             val command = await(readCommand(connection))
+            logCommand(command)
             val reply = await(handle(command))
             if (!reply.isMuted)
                await(connection.send(reply.toBytes))
@@ -49,9 +50,50 @@ Monad can-be abstracted out as in next example:::
         finally
           connection.close()
 
+Async macro will transform code inside async to something like
+
+ .. raw:: html
+
+  <details>
+   <summary><a>code</a></summary>
+
+ .. code-block:: scala
+
+   m.flatMap(openConnection())(a => {
+     val connection: Connection[F] = a
+     m.withAction({
+       def _whilefun(): F[Unit] = 
+         m.flatMap(
+           m.flatMap(readCommand(connection))((a: Command) => {
+             val command: Command = a
+             logCommand(command)
+             m.flatMap(handle(command))((a: Reply) => {
+                val reply: Reply = a
+                m.flatMap(
+                  if (!reply.isMuted)
+                    connection.send(reply.toBytes) 
+                  else 
+                     m.pure(())
+                )( _ => m.pure(!command.isShutdown))
+             })
+           }))(c => if (c) _whilefun() else m.pure(()))
+       _whilefun()
+     })(
+       m.pure(connection.close())
+     )
+   })
+
+ .. raw:: html
+
+  </details>
+
+As transformation technique we use optimized monadic transform, the number of monadic brackets is the 
+same as the numer of ``await`` s in code.  
+You can read the :ref:`notes about implementation details <random-notes>`.
 
 
 .. rubric:: Footnotes
 
 .. [#f1]  the definitions are simplified, in reality they are more complex, because we want infer the type of expression independently from the type of monad.
  
+
