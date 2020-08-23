@@ -2,7 +2,9 @@
 val dottyVersion = dottyLatestNightlyBuild.get
 
 enablePlugins(SphinxPlugin)
+enablePlugins(GhpagesPlugin)
 
+git.remoteRepo := "git@github.com:rssh/dotty-cps-async.git"
 
 lazy val root = project
   .in(file("."))

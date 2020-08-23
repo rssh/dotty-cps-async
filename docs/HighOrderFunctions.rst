@@ -16,7 +16,7 @@ Then we can fetch data from all servers just by using ``await`` in the ``map`` a
 
 .. code-block:: scala
 
-     urls.map( await httpClient fetchData(_) )
+     urls.map( await(httpClient.fetchData(_)) )
 
 
 Note that the default ``map`` will run all operations sequentially. Sequential order of evaluation is needed to allow the code, like updating the multidimensional array in for loop, works correctly in an asynchronous case.
