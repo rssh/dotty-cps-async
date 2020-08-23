@@ -103,7 +103,7 @@ to
 and use Future based async/await.
 
 All test cases from original Scala-Async distribution are passed with a change of imports only,
- and included in our regression suite.
+and included in our regression suite.
 
 Note that compatibility was not a primary goal during the development of dotty-cps-async. Generated code is quite different, so if you need a bug-to-bug compatible version of scala2 async, then you should use the port of the original -XAsync compiler interface.
 
