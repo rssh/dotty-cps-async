@@ -1,6 +1,10 @@
-//val dottyVersion = "0.25.0-RC2"
-//val dottyVersion = "0.26.0-bin-20200627-50df4d2-NIGHTLY"
+//val dottyVersion = "0.26.0-RC1"
 val dottyVersion = dottyLatestNightlyBuild.get
+
+enablePlugins(SphinxPlugin)
+enablePlugins(GhpagesPlugin)
+
+git.remoteRepo := "git@github.com:rssh/dotty-cps-async.git"
 
 lazy val root = project
   .in(file("."))
@@ -10,10 +14,14 @@ lazy val root = project
     scalaVersion := dottyVersion,
 
     //scalacOptions ++= Seq( "-Ydebug:implicits", "-Ydebug-trace", "-Ydebug-names", "-Ylog:typer", "-Yplain-printer" ),
-    scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-explain-types", "-Xprint-types", "-Ydebug-type-error"  ),
+    scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", "-Ydebug-type-error"  ),
+        // -explain-types
 
     //libraryDependencies += "ch.epfl.lamp" %% "dotty-staging" % dottyVersion,
-    libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
+    libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
+
+    Sphinx / sourceDirectory := baseDirectory.value / "docs"
+
   )
 
 

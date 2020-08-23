@@ -129,7 +129,6 @@ class TestBS1ShiftIterableOps:
 
 
   @Test def testCollectFind(): Unit =
-     //printCode will stackOverflow because of https://github.com/lampepfl/dotty/issues/9251
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)

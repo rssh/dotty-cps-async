@@ -28,11 +28,20 @@ object AsyncShift extends AsyncShiftLowPriority1 {
 
  transparent inline given shiftedCpsMonad[F[_], M <: CpsMonad[F]](using CpsMonad[F]) as AsyncShift[M] = new cps.runtime.CpsMonadSelfAsyncShift[F,M]
 
- transparent inline given shiftedTry[A] as AsyncShift[scala.util.Try[A]] =
-      new cps.runtime.TryAsyncShift[A]()
-
  transparent inline given shiftedOption[A] as AsyncShift[Option[A]] =
       new cps.runtime.OptionAsyncShift[A]()
+
+ transparent inline given shiftedTry[A] as AsyncShift[scala.util.Try[A]] =
+      new cps.runtime.util.TryAsyncShift[A]()
+
+ transparent inline given shiftedUsing as AsyncShift[scala.util.Using.type] =
+       cps.runtime.util.UsingAsyncShift
+
+ transparent inline given shiftedEither[A,B] as AsyncShift[Either[A,B]] =
+      cps.runtime.util.EitherAsyncShift[A,B]()
+
+ transparent inline given shiftedEitherLeftProjection[A,B] as AsyncShift[Either.LeftProjection[A,B]] =
+      cps.runtime.util.EitherLeftProjectionAsyncShift[A,B]()
 
 }
 

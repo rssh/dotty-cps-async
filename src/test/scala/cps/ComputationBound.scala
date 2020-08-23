@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
 
 
-trait ComputationBound[T] {
+trait ComputationBound[+T] {
  
   def run(timeout: Duration = Duration.Inf): Try[T] =
     fulfill(timeout) match 

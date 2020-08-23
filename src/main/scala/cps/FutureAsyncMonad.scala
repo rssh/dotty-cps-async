@@ -45,7 +45,7 @@ given FutureAsyncMonad(using ExecutionContext) as CpsAsyncMonad[Future]:
 
    def executionContext = summon[ExecutionContext]
 
-given implicitAwait.IsPossible[Future]
+given cps.features.implicitAwait.IsPossible[Future]
 
 given fromFutureConversion[G[_]](using ExecutionContext, CpsAsyncMonad[G]) as CpsMonadConversion[Future,G] =
    new CpsMonadConversion[Future, G] {

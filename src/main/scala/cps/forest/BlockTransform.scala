@@ -14,11 +14,14 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 
   // case Block(prevs,last) 
   def run(using qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
+
      if (cpsCtx.flags.debugLevel >= 10) then
         cpsCtx.log(s"Block transform, last=${last.show}")
      val tType = summon[Type[T]]
      val uType = summon[Type[Unit]]
      import qctx.tasty._
+
+
      val rPrevs = prevs.zipWithIndex.map{ (p,i) =>
        p match
          case d: Definition =>
@@ -35,8 +38,37 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
            // TODO: rootTransform
            t.seal match 
                case '{ $p:$tp } =>
-                       // TODO: warn if tp is not unit.
-                       Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
+                       if (checkValueDiscarded(using qctx)(t)) 
+                           // TODO: minimise and submit bug to dotty
+                           // bug in dotty: show cause match error in test
+                           def safeShow(): String =
+                             try
+                               tp.show
+                             catch
+                               case ex: Throwable => //ex.printStackTrace()
+                               tp.unseal.toString
+
+                           if (cpsCtx.flags.customValueDiscard) 
+                             val valueDiscard = TypeIdent(Symbol.classSymbol("cps.ValueDiscard")).tpe
+                             val tpe = t.tpe.widen.dealias
+                             val tpTree = AppliedType(valueDiscard,List(tpe))
+                             searchImplicit(tpTree) match
+                               case sc: ImplicitSearchSuccess =>
+                                  val pd = Apply(Select.unique(sc.tree,"apply"),List(t)).seal.cast[Unit]
+                                  Async.nestTransform(pd, cpsCtx, TransformationContextMarker.BlockInside(i))
+                               case fl: ImplicitSearchFailure =>
+                                  val tps = safeShow()
+                                  val msg = s"discarding non-unit value without custom discard $tps (${fl.explanation})"
+                                  if (cpsCtx.flags.warnValueDiscard) 
+                                      warning(msg, t.pos)
+                                  else
+                                      error(msg, t.pos)
+                                  Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
+                           else
+                             warning(s"discarding non-unit value ${safeShow()}", t.pos)
+                             Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
+                       else
+                         Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
                case other =>
                        printf(other.show)
                        throw MacroError(s"can't handle term in block: $other",t.seal)
@@ -64,7 +96,16 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
          }
 
      retval
-  
+
+
+  def checkValueDiscarded(using qctx: QuoteContext)(t: qctx.tasty.Term): Boolean =
+     import qctx.tasty._
+     ( (cpsCtx.flags.customValueDiscard || cpsCtx.flags.warnValueDiscard) 
+      &&
+       ( !(t.tpe =:= defn.UnitType) && !(t.tpe =:= defn.NothingType) ) 
+     )
+
+
 
 class DefCpsExpr[F[_]:Type](using qctx: QuoteContext)(
                      monad: Expr[CpsMonad[F]],

@@ -19,13 +19,24 @@ trait ApplyArgRecordScope[F[_], CT]:
   sealed trait ApplyArgRecord:
     def term: Term
     def index: Int
-    def identArg: Term
+    def identArg(existAsync:Boolean): Term
     def isAsync: Boolean
     def hasShiftedLambda: Boolean
+
+    // means, that the value of argument is independed from the order of evaluation of aguments in a function.
     def noOrderDepended: Boolean
-    def useIdent: Boolean = isAsync || !noOrderDepended
+
+    // usePrepend: means that args is collected as 'append(...append(...  funcall(..ident...)))`
+    //  when some of arguments is async, we should in 'first part'(i.e. in append) - calculate
+    //  argument itself, to preserve order of evaluation.  When we have no async arguments, than
+    //  we can use unchanged term to be an argument
+    def usePrepend(existsAsync:Boolean): Boolean = isAsync || (existsAsync && !noOrderDepended)
+
+    // means, that the value of argument can depend from the order of evaluation of aguments in a function.
     def isOrderDepended = !noOrderDepended
+
     def shift(): ApplyArgRecord
+
     def append(tree: CpsTree): CpsTree
 
   case class ApplyArgRepeatRecord(
@@ -33,12 +44,12 @@ trait ApplyArgRecordScope[F[_], CT]:
        index: Int,
        elements: List[ApplyArgRecord],
   ) extends ApplyArgRecord {
-    override def useIdent: Boolean = (elements.exists(x => x.isAsync || x.isOrderDepended))
-    override def identArg: Term = 
-      if (useIdent)
-          Repeated(elements.map(_.identArg),term.elemtpt)
+    override def usePrepend(existsAsync:Boolean): Boolean = elements.exists(_.usePrepend(existsAsync))
+    override def identArg(existsAsync:Boolean): Term = 
+      if (usePrepend(existsAsync))
+          Repeated(elements.map(_.identArg(existsAsync)),term.elemtpt)
       else if (hasShiftedLambda)
-          Repeated(elements.map(_.identArg),shiftedLambdaTypeTree(term.elemtpt))
+          Repeated(elements.map(_.identArg(existsAsync)),shiftedLambdaTypeTree(term.elemtpt))
       else
           term
     override def isAsync = elements.exists(_.isAsync)
@@ -72,7 +83,7 @@ trait ApplyArgRecordScope[F[_], CT]:
      def isAsync = false
      def hasShiftedLambda: Boolean = false
      def noOrderDepended = termIsNoOrderDepended(term)
-     def identArg: Term = term
+     def identArg(existsAsync: Boolean): Term = term
      def shift(): ApplyArgRecord = this
      override def append(tree: CpsTree): CpsTree = tree
   }
@@ -88,7 +99,8 @@ trait ApplyArgRecordScope[F[_], CT]:
      def isAsync = termCpsTree.isAsync
      def hasShiftedLambda: Boolean = false
      def noOrderDepended = termIsNoOrderDepended(term)
-     def identArg: Term = ident
+     def identArg(existsAsync: Boolean): Term = 
+            if (existsAsync) ident else term
      def shift(): ApplyArgRecord = this
      override def append(tree: CpsTree): CpsTree =
         ValCpsTree(valDef, termCpsTree, tree)
@@ -108,7 +120,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
        def noOrderDepended: Boolean = true
 
-       def identArg: Term = 
+       def identArg(existsAsync:Boolean): Term = 
          if (hasShiftedLambda || shifted) 
             val (params, body) = term match
               case Lambda(params, body) => (params, body)
@@ -156,10 +168,15 @@ trait ApplyArgRecordScope[F[_], CT]:
                                                 to: TypeOrBounds, 
                                                 body: Match,
                                                 params: List[ValDef]): Term = 
+
          val toInF = typeInMonad(to)
          val fromType = typeOrBoundsToType(from)
          val matchVar = body.scrutinee
          val paramNames = params.map(_.name)
+
+         if (cpsCtx.flags.debugLevel >= 15)
+             println(s"createAsyncPartialFunction: from = $from, to=$to") 
+             println(s"toInF=$toInF") 
 
          def newCheckBody(inputVal:Term):Term = 
 
@@ -197,25 +214,12 @@ trait ApplyArgRecordScope[F[_], CT]:
             createAsyncLambda(mt, params)
 
          def termCast[E](term: Term, tp:quoted.Type[E]): Expr[E] =
-            // changing to cast break compilation of test
+            // changing to cast trigger https://github.com/lampepfl/dotty/issues/9518
             //given quoted.Type[E] = tp
             //term.seal.cast[E]
             term.seal.asInstanceOf[Expr[E]]
 
 
-         /*
-          // blocked by 
-         val helper = '{ cps.runtime.PartialFunctionHelper }.unseal
-         val helperSelect = Select.unique(helper,"create")
-         val checkLambda = newCheck()
-         val bodyLambda = newBody()
-
-         val createPF = Apply(
-                          TypeApply(helperSelect,List(Inferred(fromType),Inferred(toInF))),
-                          List(checkLambda, bodyLambda)
-                        )
-         val r = createPF
-         */
          val r = fromType.seal match 
            case '[$ft] =>
              toInF.seal match 
@@ -230,7 +234,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                  val b0 = Map(matchVar.symbol -> 'x2.unseal)
                                  val nCaseDefs = caseDefs.map( cd =>
                                                     rebindCaseDef(cd, cd.rhs, b0, true))
-                                 val nTerm = Match.copy(m)('x2.unseal, nCaseDefs)
+                                 val nTerm = Match('x2.unseal, nCaseDefs)
                                  termCast(nTerm,tt)
                                case _ =>
                                  throw MacroError(
@@ -370,7 +374,7 @@ trait ApplyArgRecordScope[F[_], CT]:
        def hasShiftedLambda: Boolean = nested.hasShiftedLambda
        def isAsync: Boolean = nested.isAsync
        def noOrderDepended = nested.noOrderDepended
-       def identArg: Term = NamedArg(name, nested.identArg)
+       def identArg(existsAsync: Boolean): Term = NamedArg(name, nested.identArg(existsAsync))
        def shift(): ApplyArgRecord = copy(nested=nested.shift())
        def append(a: CpsTree): CpsTree = nested.append(a)
 
@@ -384,7 +388,7 @@ trait ApplyArgRecordScope[F[_], CT]:
        def hasShiftedLambda: Boolean = nested.hasShiftedLambda
        def isAsync: Boolean = nested.isAsync
        def noOrderDepended = nested.noOrderDepended
-       def identArg: Term = nested.identArg
+       def identArg(existsAsync:Boolean): Term = nested.identArg(existsAsync)
        def shift(): ApplyArgRecord = copy(nested=nested.shift())
        def append(a: CpsTree): CpsTree =
              val na = nested.append(a)
@@ -401,7 +405,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                   index: Int, 
                                   cpsTree: CpsTree,
                                   shifted: Boolean) extends ApplyArgRecord:
-    def identArg: Term = 
+    def identArg(existsAsync: Boolean): Term = 
       if !shifted then
          term
       else

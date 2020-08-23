@@ -46,7 +46,7 @@ trait AwaitTreeTransform[F[_],CT]:
            case implSuccess: ImplicitSearchSuccess =>
              val convertedArg = Apply(
                     TypeApply(Select.unique(implSuccess.tree, "apply"), 
-                              List(Inferred(arg.tpe.widen))),
+                              List(Inferred(awaitTerm.tpe))),
                     List(otherCpsMonad, myCpsMonad, arg))
              runMyAwait(awaitTerm, convertedArg)
            case implFailure: ImplicitSearchFailure =>

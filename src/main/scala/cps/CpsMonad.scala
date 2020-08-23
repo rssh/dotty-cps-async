@@ -44,6 +44,7 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
 }
 
+
 /**
  * Monad, interpolable with Future.
  **/
@@ -83,12 +84,14 @@ trait CpsFulfillingMonad[F[_]] extends CpsAsyncMonad[F] {
 
 object CpsMonad:
 
-  extension ForComprehensionSyntax on [F[_],T,S](x:F[T])(using m:CpsMonad[F]):
+  object ForSyntax:
 
-    def flatMap(f: T=>F[S]): F[S] =
+    extension [F[_],T,S](x:F[T])(using m:CpsMonad[F]):
+
+      def flatMap(f: T=>F[S]): F[S] =
          m.flatMap(x)(f)
 
-    def map(f: T=>S): F[S] =
+      def map(f: T=>S): F[S] =
          m.map(x)(f)
 
 

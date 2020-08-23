@@ -30,10 +30,8 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
         val nCaseDefs = (cases lazyZip cpsCaseDefs) map { (frs,snd) =>
            CaseDef(frs.pattern, frs.guard, snd.transformed.unseal)
         }
-        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs.toList).seal} }
-        // TODO: doty bug, changing to cast break tests.
-        //restoreExpr.cast[Throwable => F[T]]
-        restoreExpr.asInstanceOf[Expr[Throwable => F[T]]]
+        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs.toList).seal.cast[F[T]]} }
+        restoreExpr.cast[Throwable => F[T]]
 
      
 

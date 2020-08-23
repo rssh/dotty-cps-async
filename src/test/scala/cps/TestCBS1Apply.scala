@@ -50,14 +50,14 @@ class TestCBS1Apply:
 
           def znt[T <: Any](x:()=>F[T]): F[String] =
             given CpsMonad[F] = m
-            import CpsMonad.ForComprehensionSyntax._
+            import CpsMonad.ForSyntax._
             for{ fx1 <- x()
                 fx2 <- x()
             } yield fx1.toString + fx2.toString
 
           def zntCurried[T <: Any](x: ()=>F[T])(y: ()=>F[T]): F[String] =
             given CpsMonad[F] = m
-            import CpsMonad.ForComprehensionSyntax._
+            import CpsMonad.ForSyntax._
             for{ fx1 <- x()
                  fy1 <- y()
                  fx2 <- x()
@@ -73,8 +73,6 @@ class TestCBS1Apply:
 
   object Zzz {
 
-    given shiftedZzz[F[_]](using m:CpsMonad[F]) as Conversion[Zzz,AsyncShifted[Zzz,F]] =
-          zzz => zzz.shifted[F](m)
 
     class ZzzAsyncShift extends ObjectAsyncShift[Zzz] {
           def apply[F[_]](zzz:Zzz, cpsMonad: CpsMonad[F]):zzz.InternalAsyncShifted[F] = 
@@ -87,8 +85,8 @@ class TestCBS1Apply:
 
 
   @Test def apply_fun2(): Unit = {
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async{
        await(T1.cbi(2).map(new Zzz(_))).ta("qqq")
      }
@@ -102,7 +100,7 @@ class TestCBS1Apply:
        val zzz = new Zzz(3)
        val zzzAsyncShift = summon[ObjectAsyncShift[Zzz]]
        var x = 0;
-       zzz.byNameInt(await({ x=x+1; T1.cbi(2)}))
+       zzz.byNameInt(await({ x=x+1; T1.cbi(2)})):Unit
        x
      }
      assert(c.run() == Success(2))
