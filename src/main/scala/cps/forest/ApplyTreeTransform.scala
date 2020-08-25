@@ -9,7 +9,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
   thisTreeTransform: TreeTransformScope[F,CT] =>
 
-  import qctx.tasty.{_, given _}
+  import qctx.tasty._
 
 
   /**
