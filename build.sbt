@@ -11,6 +11,7 @@ lazy val root = project
   .settings(
     name := "dotty-cps",
     version := "0.1.0",
+    organization := "com.github.rssh",
     scalaVersion := dottyVersion,
 
     //scalacOptions ++= Seq( "-Ydebug:implicits", "-Ydebug-trace", "-Ydebug-names", "-Ylog:typer", "-Yplain-printer" ),
