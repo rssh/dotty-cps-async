@@ -58,6 +58,7 @@ trait CpsTreeScope[F[_], CT] {
              ext.seal
            case _ => t.seal
 
+
        syncOrigin match
          case Some(syncTerm) =>
              CpsExpr.sync(monad,safeSeal(syncTerm).cast[T])
@@ -76,6 +77,7 @@ trait CpsTreeScope[F[_], CT] {
 
     def impure(transformed:Term, tpe: Type): CpsTree = 
                    AwaitSyncCpsTree(transformed, tpe.widen)
+
 
   case class PureCpsTree(origin: qctx.tasty.Term) extends CpsTree:
 
@@ -441,5 +443,54 @@ trait CpsTreeScope[F[_], CT] {
 
   end AppendCpsTree
 
+  case class AsyncLambdaCpsTree(originLambda: Term,params:List[ValDef], body:CpsTree) extends CpsTree:
+
+    override def isAsync = body.isAsync
+
+    def rLambda: Term =
+      val paramNames = params.map(_.name)
+      val paramTypes = params.map(_.tpt.tpe)
+      val shiftedType = shiftedMethodType(paramNames, paramTypes, body.otpe)
+       // TODO: think, maybe exists case, where we need substitute Ident(param) for x[i] (?)
+       //       because otherwise it's quite strange why we have such interface in compiler
+
+       //  r: (X1 .. XN) => F[R] = (x1 .. xN) => cps(f(x1,... xN)).   
+      Lambda(shiftedType, (x: List[Tree]) => body.transformed )
+
+    override def otpe = originLambda.tpe.widen
+
+    override def transformed: Term = 
+      // note, that type is not F[x1...xN => R]  but F[x1...xN => F[R]]
+      CpsTree.pure(rLambda).transformed
+    
+    override def syncOrigin: Option[Term] = Some(rLambda)
+
+    // TODO: eliminate applyTerm in favor of 'Select', typeApply, Apply
+    def applyTerm(x: Term => Term, ntpe: Type): CpsTree = 
+         ???
+
+     //  m.map(pure(x=>cosBody))(f) =  ???
+    def monadMap(f: Term => Term, ntpe: Type): CpsTree =
+      PureCpsTree(f(rLambda))
+
+    //  m.flatMap(pure(x=>cpsBody))(f)
+    def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
+      FlatMappedCpsTree(this,f, ntpe)
+
+    //  (x1,.. xM) => F[R]  can't be F[_]
+    // (i.e. fixed point for F[X] = (A=>F[B]) not exists)
+    override def applyAwait(newOtpe: Type): CpsTree =
+       throw MacroError("async lambda can't be an await argument", posExprs(originLambda) )
+
+    // here value is discarded. 
+    def appendFinal(next: CpsTree): CpsTree =
+      next match
+        case BlockCpsTree(statements,last) =>  //dott warn here.  TODO: research
+             BlockCpsTree(statements.prepended(rLambda), last)
+        case _ =>
+             BlockCpsTree(Queue(rLambda), next)
+      
+
+  end AsyncLambdaCpsTree
 
 }
