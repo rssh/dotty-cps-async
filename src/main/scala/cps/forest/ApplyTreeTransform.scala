@@ -511,7 +511,7 @@ trait ApplyTreeTransform[F[_],CT]:
           val tailArgss = tails.map(_.map(_.identArg(withAsync)).toList)
           val argss = args::tailArgss
           if (cpsFun.isSync)
-            cpsFun.applyTerm(x => x.appliedToArgss(argss), applyTpe)
+            cpsFun.applyTerm1(x => x.appliedToArgss(argss), applyTpe)
           else
             cpsFun.monadMap(x => x.appliedToArgss(argss), applyTpe)
 

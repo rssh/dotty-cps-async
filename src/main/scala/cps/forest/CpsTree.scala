@@ -23,9 +23,9 @@ trait CpsTreeScope[F[_], CT] {
      def syncOrigin: Option[Term]
 
      def typeApply(targs: List[qctx.tasty.TypeTree], ntpe: Type): CpsTree =
-            applyTerm(_.appliedToTypeTrees(targs), ntpe)
+            applyTerm1(_.appliedToTypeTrees(targs), ntpe)
 
-     def applyTerm(f: Term => Term, ntpe: Type): CpsTree
+     def applyTerm1(f: Term => Term, ntpe: Type): CpsTree
 
      def monadMap(f: Term => Term, ntpe:Type): CpsTree
 
@@ -86,7 +86,7 @@ trait CpsTreeScope[F[_], CT] {
     def typeApply(targs: List[qctx.tasty.TypeTree]) =
                 PureCpsTree(origin.appliedToTypeTrees(targs))
 
-    def applyTerm(x: Term => Term, ntpe: Type): CpsTree =
+    def applyTerm1(x: Term => Term, ntpe: Type): CpsTree =
       PureCpsTree(x(origin))
 
      //  pure(x).map(f) = pure(f(x))
@@ -154,7 +154,7 @@ trait CpsTreeScope[F[_], CT] {
                      
     def transformed: Term = origin
 
-    def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
+    def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
           AwaitSyncCpsTree(f(transformed), ntpe)
 
 
@@ -163,8 +163,8 @@ trait CpsTreeScope[F[_], CT] {
     def transformed: Term = 
       FlatMappedCpsTree(nested, (t:Term)=>t, otpe).transformed
 
-    def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
-          AwaitAsyncCpsTree(nested.applyTerm(f,ntpe), ntpe)
+    def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
+          AwaitAsyncCpsTree(nested.applyTerm1(f,ntpe), ntpe)
 
     override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
           FlatMappedCpsTree(nested, f, ntpe)
@@ -175,7 +175,7 @@ trait CpsTreeScope[F[_], CT] {
 
   case class MappedCpsTree(prev: CpsTree, op: Term => Term, otpe: Type) extends AsyncCpsTree:
 
-    def applyTerm(f: Term => Term, npte: Type): CpsTree =
+    def applyTerm1(f: Term => Term, npte: Type): CpsTree =
           MappedCpsTree(prev, t => f(op(t)), npte)
 
     override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
@@ -224,7 +224,7 @@ trait CpsTreeScope[F[_], CT] {
                       opm: Term => Term,
                       otpe: Type) extends AsyncCpsTree:
 
-    def applyTerm(f: Term => Term, npte: Type): CpsTree =
+    def applyTerm1(f: Term => Term, npte: Type): CpsTree =
           FlatMappedCpsTree(prev, t => f(opm(t)), npte)
 
     override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
@@ -282,8 +282,8 @@ trait CpsTreeScope[F[_], CT] {
       else 
         last.syncOrigin map (l => Block(prevs.toList,l))
 
-    def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
-       toLast(_.applyTerm(f,ntpe))
+    def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
+       toLast(_.applyTerm1(f,ntpe))
 
     def monadMap(f: Term => Term, ntpe: Type): CpsTree =
        toLast(_.monadMap(f,ntpe))
@@ -313,8 +313,8 @@ trait CpsTreeScope[F[_], CT] {
     override def syncOrigin: Option[Term] = 
                   nested.syncOrigin.map(Inlined(origin.call, origin.bindings, _ ))
 
-    def applyTerm(f: Term => Term, ntpe: Type): CpsTree =
-         InlinedCpsTree(origin, nested.applyTerm(f, ntpe))
+    def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
+         InlinedCpsTree(origin, nested.applyTerm1(f, ntpe))
 
     def monadMap(f: Term => Term, ntpe: Type): CpsTree =
          InlinedCpsTree(origin, nested.monadMap(f, ntpe))
@@ -352,8 +352,8 @@ trait CpsTreeScope[F[_], CT] {
            next <- nested.syncOrigin
        } yield appendValDef(rhs)
           
-    override def applyTerm(f: Term => Term, ntpe: Type): CpsTree = 
-        ValCpsTree(valDef, rightPart, nested.applyTerm(f,ntpe))
+    override def applyTerm1(f: Term => Term, ntpe: Type): CpsTree = 
+        ValCpsTree(valDef, rightPart, nested.applyTerm1(f,ntpe))
        
     override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
         ValCpsTree(valDef, rightPart, nested.monadMap(f,ntpe))
@@ -423,8 +423,8 @@ trait CpsTreeScope[F[_], CT] {
           }
     }
 
-    def applyTerm(x: Term => Term, ntpe: Type): CpsTree =
-         AppendCpsTree(frs, snd.applyTerm(x, ntpe))
+    def applyTerm1(x: Term => Term, ntpe: Type): CpsTree =
+         AppendCpsTree(frs, snd.applyTerm1(x, ntpe))
     
     override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
          AppendCpsTree(frs, snd.monadMap(f, ntpe))
@@ -466,7 +466,7 @@ trait CpsTreeScope[F[_], CT] {
     override def syncOrigin: Option[Term] = Some(rLambda)
 
     // TODO: eliminate applyTerm in favor of 'Select', typeApply, Apply
-    def applyTerm(x: Term => Term, ntpe: Type): CpsTree = 
+    def applyTerm1(x: Term => Term, ntpe: Type): CpsTree = 
          ???
 
      //  m.map(pure(x=>cosBody))(f) =  ???
