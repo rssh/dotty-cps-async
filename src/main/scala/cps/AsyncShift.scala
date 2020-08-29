@@ -31,6 +31,9 @@ object AsyncShift extends AsyncShiftLowPriority1 {
  transparent inline given shiftedOption[A] as AsyncShift[Option[A]] =
       new cps.runtime.OptionAsyncShift[A]()
 
+ transparent inline given shiftedFunction1[A,B] as AsyncShift[Function1[A,B]] =
+      cps.runtime.Function1AsyncShift[A,B]()
+
  transparent inline given shiftedTry[A] as AsyncShift[scala.util.Try[A]] =
       new cps.runtime.util.TryAsyncShift[A]()
 

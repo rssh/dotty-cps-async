@@ -53,8 +53,6 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
          flatMap( '{ _ => $t } )
 
 
-
-
 abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[CpsMonad[F]],
                                       prev: Seq[ExprTreeGen]) extends CpsExpr[F,T](dm, prev):
 
