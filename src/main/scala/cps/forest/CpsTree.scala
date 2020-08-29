@@ -6,6 +6,7 @@ import cps._
 import cps.misc._
 
 
+
 trait CpsTreeScope[F[_], CT] {
 
   cpsTreeScope: TreeTransformScope[F, CT] =>
@@ -26,6 +27,8 @@ trait CpsTreeScope[F[_], CT] {
             applyTerm1(_.appliedToTypeTrees(targs), ntpe)
 
      def applyTerm1(f: Term => Term, ntpe: Type): CpsTree
+
+     def select(symbol: Symbol, ntpe: Type): CpsTree
 
      def monadMap(f: Term => Term, ntpe:Type): CpsTree
 
@@ -88,6 +91,9 @@ trait CpsTreeScope[F[_], CT] {
 
     def applyTerm1(x: Term => Term, ntpe: Type): CpsTree =
       PureCpsTree(x(origin))
+
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+       PureCpsTree(origin.select(symbol))
 
      //  pure(x).map(f) = pure(f(x))
     def monadMap(f: Term => Term, ntpe: Type): CpsTree =
@@ -157,11 +163,17 @@ trait CpsTreeScope[F[_], CT] {
     def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
           AwaitSyncCpsTree(f(transformed), ntpe)
 
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+          AwaitSyncCpsTree(origin.select(symbol), ntpe)
+
 
   case class AwaitAsyncCpsTree(val nested: CpsTree, val otpe: Type) extends AsyncCpsTree:
 
     def transformed: Term = 
       FlatMappedCpsTree(nested, (t:Term)=>t, otpe).transformed
+
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+       AwaitAsyncCpsTree(nested.select(symbol, ntpe), ntpe)
 
     def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
           AwaitAsyncCpsTree(nested.applyTerm1(f,ntpe), ntpe)
@@ -177,6 +189,9 @@ trait CpsTreeScope[F[_], CT] {
 
     def applyTerm1(f: Term => Term, npte: Type): CpsTree =
           MappedCpsTree(prev, t => f(op(t)), npte)
+
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+          MappedCpsTree(prev, t => op(t).select(symbol), ntpe)
 
     override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
           // this.map(f) = prev.map(op).map(f) = prev.map(op*f)
@@ -223,6 +238,9 @@ trait CpsTreeScope[F[_], CT] {
                       val prev: CpsTree,
                       opm: Term => Term,
                       otpe: Type) extends AsyncCpsTree:
+
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+          FlatMappedCpsTree(prev, t => opm(t).select(symbol), ntpe)
 
     def applyTerm1(f: Term => Term, npte: Type): CpsTree =
           FlatMappedCpsTree(prev, t => f(opm(t)), npte)
@@ -282,6 +300,9 @@ trait CpsTreeScope[F[_], CT] {
       else 
         last.syncOrigin map (l => Block(prevs.toList,l))
 
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+       toLast(_.select(symbol,ntpe))
+
     def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
        toLast(_.applyTerm1(f,ntpe))
 
@@ -315,6 +336,9 @@ trait CpsTreeScope[F[_], CT] {
 
     def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
          InlinedCpsTree(origin, nested.applyTerm1(f, ntpe))
+
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+         InlinedCpsTree(origin, nested.select(symbol, ntpe))
 
     def monadMap(f: Term => Term, ntpe: Type): CpsTree =
          InlinedCpsTree(origin, nested.monadMap(f, ntpe))
@@ -352,6 +376,10 @@ trait CpsTreeScope[F[_], CT] {
            next <- nested.syncOrigin
        } yield appendValDef(rhs)
           
+
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+        ValCpsTree(valDef, rightPart, nested.select(symbol,ntpe))
+
     override def applyTerm1(f: Term => Term, ntpe: Type): CpsTree = 
         ValCpsTree(valDef, rightPart, nested.applyTerm1(f,ntpe))
        
@@ -423,9 +451,13 @@ trait CpsTreeScope[F[_], CT] {
           }
     }
 
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+         AppendCpsTree(frs, snd.select(symbol, ntpe))
+
     def applyTerm1(x: Term => Term, ntpe: Type): CpsTree =
          AppendCpsTree(frs, snd.applyTerm1(x, ntpe))
     
+
     override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
          AppendCpsTree(frs, snd.monadMap(f, ntpe))
 
@@ -443,7 +475,11 @@ trait CpsTreeScope[F[_], CT] {
 
   end AppendCpsTree
 
-  case class AsyncLambdaCpsTree(originLambda: Term,params:List[ValDef], body:CpsTree) extends CpsTree:
+  case class AsyncLambdaCpsTree(originLambda: Term,
+                                params:List[ValDef], 
+                                body:CpsTree,
+                                op: Term=>Term,
+                                otpe: Type ) extends CpsTree:
 
     override def isAsync = body.isAsync
 
@@ -457,17 +493,21 @@ trait CpsTreeScope[F[_], CT] {
        //  r: (X1 .. XN) => F[R] = (x1 .. xN) => cps(f(x1,... xN)).   
       Lambda(shiftedType, (x: List[Tree]) => body.transformed )
 
-    override def otpe = originLambda.tpe.widen
-
     override def transformed: Term = 
       // note, that type is not F[x1...xN => R]  but F[x1...xN => F[R]]
-      CpsTree.pure(rLambda).transformed
+      op(CpsTree.pure(rLambda).transformed)
     
     override def syncOrigin: Option[Term] = Some(rLambda)
 
+    // this is select, which is applied to Function[A,B]
+    // direct transforma
+    def select(symbol: Symbol, ntpe: Type): CpsTree =
+          AsyncLambdaCpsTree(originLambda, params, body, t => op(t).select(symbol), ntpe)
+       
+
     // TODO: eliminate applyTerm in favor of 'Select', typeApply, Apply
     def applyTerm1(x: Term => Term, ntpe: Type): CpsTree = 
-         ???
+          AsyncLambdaCpsTree(originLambda, params, body, t => x(op(t)), ntpe)
 
      //  m.map(pure(x=>cosBody))(f) =  ???
     def monadMap(f: Term => Term, ntpe: Type): CpsTree =
