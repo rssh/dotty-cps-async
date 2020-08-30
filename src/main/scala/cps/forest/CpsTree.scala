@@ -51,6 +51,13 @@ trait CpsTreeScope[F[_], CT] {
       **/
      def otpe: Type
 
+     /**
+      * type which we see outside. i.e. F[T] for near all 'normal' trees or X=>F[T]
+      * for async lambda.
+      **/
+     def rtpe: Type =
+        AppliedType(fType.unseal.tpe, List(otpe))
+
      def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
 
@@ -313,6 +320,8 @@ trait CpsTreeScope[F[_], CT] {
 
     def otpe: Type = last.otpe
 
+    override def rtpe: Type = last.rtpe
+
     override def applyAwait(newOtpe: Type): CpsTree = 
         BlockCpsTree(prevs, last.applyAwait(newOtpe))
 
@@ -344,6 +353,8 @@ trait CpsTreeScope[F[_], CT] {
          InlinedCpsTree(origin, nested.appendFinal(next))
 
     def otpe: Type = nested.otpe
+
+    override def rtpe: Type = nested.rtpe
 
     override def applyAwait(newOtpe:Type): CpsTree = 
          InlinedCpsTree(origin, nested.applyAwait(newOtpe))
@@ -387,6 +398,8 @@ trait CpsTreeScope[F[_], CT] {
         ValCpsTree(valDef, rightPart, nested.appendFinal(next))
 
     override def otpe: Type = nested.otpe
+
+    override def rtpe: Type = nested.rtpe
 
     override def applyAwait(newOtpe: Type): CpsTree =
         ValCpsTree(valDef, rightPart, nested.applyAwait(newOtpe))
@@ -467,6 +480,8 @@ trait CpsTreeScope[F[_], CT] {
 
     override def otpe: Type = snd.otpe
 
+    override def rtpe: Type = snd.rtpe
+
   end AppendCpsTree
 
   case class AsyncLambdaCpsTree(originLambda: Term,
@@ -476,6 +491,21 @@ trait CpsTreeScope[F[_], CT] {
                                 otpe: Type ) extends CpsTree:
 
     override def isAsync = body.isAsync
+
+    override def rtpe =
+      val resType = AppliedType(fType.unseal.tpe,List(otpe))
+      val paramTypes = params.map(_.tpt.tpe)
+      if (params.length==0)
+         val f0 = TypeIdent(Symbol.classSymbol("scala.Function0")).tpe
+         AppliedType(f0,List(resType))
+      else if (params.length==1)
+         val f1 = TypeIdent(Symbol.classSymbol("scala.Function1")).tpe
+         AppliedType(f1, paramTypes :+ resType )
+      else if (params.length==2)
+         val f2 = TypeIdent(Symbol.classSymbol("scala.Function2")).tpe
+         AppliedType(f2,paramTypes :+ resType )
+      else
+         throw MacroError("Sorry, functions with more than 2 parameters are not supported yet", posExprs(originLambda))
 
     def rLambda: Term =
       val paramNames = params.map(_.name)
@@ -489,7 +519,7 @@ trait CpsTreeScope[F[_], CT] {
 
     override def transformed: Term = 
       // note, that type is not F[x1...xN => R]  but F[x1...xN => F[R]]
-      op(CpsTree.pure(rLambda).transformed)
+      CpsTree.pure(op(rLambda)).transformed
     
     override def syncOrigin: Option[Term] = Some(rLambda)
 
