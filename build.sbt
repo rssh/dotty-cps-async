@@ -1,6 +1,6 @@
-val dottyVersion = "0.27.0-RC1"
+//val dottyVersion = "0.27.0-RC1"
 //val dottyVersion = "0.27.0-bin-20200826-2e58a66-NIGHTLY"
-//val dottyVersion = dottyLatestNightlyBuild.get
+val dottyVersion = dottyLatestNightlyBuild.get
 
 enablePlugins(SphinxPlugin)
 enablePlugins(GhpagesPlugin)
@@ -11,7 +11,7 @@ lazy val root = project
   .in(file("."))
   .settings(
     name := "dotty-cps-async",
-    version := "0.2.0-RC1",
+    version := "0.3.0-SNAPSHOT",
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
 
