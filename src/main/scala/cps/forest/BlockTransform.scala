@@ -39,14 +39,14 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
            t.seal match 
                case '{ $p:$tp } =>
                        if (checkValueDiscarded(using qctx)(t)) 
-                           // TODO: minimise and submit bug to dotty
                            // bug in dotty: show cause match error in test
+                           // see https://github.com/lampepfl/dotty/issues/9684
                            def safeShow(): String =
                              try
                                tp.show
                              catch
                                case ex: Throwable => //ex.printStackTrace()
-                               tp.unseal.toString
+                               tp.unseal.toString + " [exception during print]"
 
                            if (cpsCtx.flags.customValueDiscard) 
                              val valueDiscard = TypeIdent(Symbol.classSymbol("cps.ValueDiscard")).tpe
