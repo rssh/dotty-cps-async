@@ -11,7 +11,7 @@ lazy val root = project
   .in(file("."))
   .settings(
     name := "dotty-cps",
-    version := "0.1.0",
+    version := "0.2.0-SNAPSHOT",
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
 
@@ -22,7 +22,7 @@ lazy val root = project
     //libraryDependencies += "ch.epfl.lamp" %% "dotty-staging" % dottyVersion,
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
 
-    Sphinx / sourceDirectory := baseDirectory.value / "docs"
+    Sphinx / sourceDirectory := baseDirectory.value / "docs",
 
   )
 
