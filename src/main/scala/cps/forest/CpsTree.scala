@@ -173,16 +173,10 @@ trait CpsTreeScope[F[_], CT] {
       FlatMappedCpsTree(nested, (t:Term)=>t, otpe).transformed
 
     def select(symbol: Symbol, ntpe: Type): CpsTree =
-       AwaitAsyncCpsTree(nested.select(symbol, ntpe), ntpe)
+       AwaitSyncCpsTree(transformed.select(symbol), ntpe)
 
     def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
-          AwaitAsyncCpsTree(nested.applyTerm1(f,ntpe), ntpe)
-
-    override def monadMap(f: Term => Term, ntpe: Type): CpsTree =
-          FlatMappedCpsTree(nested, f, ntpe)
-
-    override def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
-          FlatMappedCpsTree(this, f, ntpe)
+          AwaitSyncCpsTree(f(transformed), ntpe)
 
 
   case class MappedCpsTree(prev: CpsTree, op: Term => Term, otpe: Type) extends AsyncCpsTree:

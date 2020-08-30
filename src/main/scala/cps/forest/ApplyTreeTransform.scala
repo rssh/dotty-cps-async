@@ -178,6 +178,7 @@ trait ApplyTreeTransform[F[_],CT]:
                   tails: List[Seq[ApplyArgRecord]]): CpsTree =  {
         if cpsCtx.flags.debugLevel >= 15 then
             cpsCtx.log(s"handleArgs1, fun=${safeShow(fun)}")
+            cpsCtx.log(s" cpsFun=${cpsFun}")
             cpsCtx.log(s" fun.symbol=${fun.symbol}")
             cpsCtx.log(s" fun.tpe=${fun.tpe}")
             cpsCtx.log(s" args=${args}")
@@ -213,7 +214,12 @@ trait ApplyTreeTransform[F[_],CT]:
               CpsTree.pure(applyTerm)
            else
               val tailArgss = tails.map(_.map(_.term).toList)
-              cpsFun.monadMap(x => x.appliedToArgss(args::tailArgss), applyTerm.tpe)
+              if (cpsCtx.flags.debugLevel >= 15) then
+                  cpsCtx.log(s"before monad-map")
+              val r = cpsFun.monadMap(x => x.appliedToArgss(args::tailArgss), applyTerm.tpe)
+              if (cpsCtx.flags.debugLevel >= 15) then
+                  cpsCtx.log(s"after monad-map, r=$r")
+              r
         } else {
            var runFold = true
            val lastCpsTree: CpsTree = if (!existsPrependArg && cpsFun.isSync) {

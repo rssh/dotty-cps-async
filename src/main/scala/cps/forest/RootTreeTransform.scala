@@ -24,20 +24,40 @@ trait RootTreeTransform[F[_], CT]:
        case _ : PolyType =>
                 runRootUneta(term, marker)
        case _ =>
-                val expr = term.seal
-                val monad = cpsCtx.monad
-                expr match {
-                  case '{ $e: $et } =>
-                     val rCpsExpr = Async.nestTransform(e, cpsCtx, marker)
-                     val r = exprToTree(rCpsExpr, term)
-                     if cpsCtx.flags.debugLevel >= 10 then
-                        cpsCtx.log(s"runRoot: rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
-                        if cpsCtx.flags.debugLevel >= 15 then
-                           cpsCtx.log(s"runRoot: r=$r, async=${r.isAsync}, origin=$term")
-                     r
-                  case _ =>
-                     throw MacroError("Can't determinate exact type for term", expr)
-                }
+                term match
+                  case lambdaTerm@Lambda(params, body) => 
+                                 // type of cps[x => y]  is  x=>F[y], not F[X=>Y]
+                                 //  and if it violate CpsExpr contract (which require F[X=>Y]), let's
+                                 //  work with lambda on the tree level.
+                                 runLambda(lambdaTerm, params, body)
+                  case applyTerm@Apply(fun,args)  =>
+                            val tree = B2.inNestedContext(applyTerm, marker, scope =>
+                               scope.runApply(applyTerm.asInstanceOf[scope.qctx.tasty.Term],
+                                              fun.asInstanceOf[scope.qctx.tasty.Term],
+                                              args.asInstanceOf[List[scope.qctx.tasty.Term]],
+                                              Nil).asInstanceOf[CpsTree]
+                            )
+                            tree
+                  case _ =>  // TODO: elimi
+                    val expr = term.seal
+                    val monad = cpsCtx.monad
+                    expr match 
+                      case '{ $e: $et } =>
+                        val rCpsExpr = try {
+                             Async.nestTransform(e, cpsCtx, marker)
+                        } catch {
+                             case e: Throwable =>
+                                println(s"can't translate tree: $term" )
+                                throw e;
+                        }
+                        val r = exprToTree(rCpsExpr, term)
+                        if cpsCtx.flags.debugLevel >= 10 then
+                           cpsCtx.log(s"runRoot: rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
+                           if cpsCtx.flags.debugLevel >= 15 then
+                             cpsCtx.log(s"runRoot: r=$r, async=${r.isAsync}, origin=$term")
+                        r
+                      case _ =>
+                        throw MacroError("Can't determinate exact type for term", expr)
      }
      if (cpsCtx.flags.debugLevel >= 15)
         cpsCtx.log(s"runRoot result: $r")
@@ -86,6 +106,35 @@ trait RootTreeTransform[F[_], CT]:
          AwaitSyncCpsTree(transformed, e.tpe)
      else
          PureCpsTree(e)
+
+  object B2{
+
+   def inNestedContext(term: Term, 
+                      marker: TransformationContextMarker,
+                      op: TreeTransformScope[F,?] => CpsTree): CpsTree =
+        val nScope = if (false && term.isExpr) {
+           term.seal match
+             case '{ $e: $et} =>
+                nestScope(e, marker)
+             case _ =>
+                throw MacroError("Can't determinate type for ${e.show}",posExprs(term))
+        } else {
+           nestScope(cpsCtx.patternCode, marker)
+        }
+        op(nScope)
+
+
+   def nestScope[E:quoted.Type](e: Expr[E], marker: TransformationContextMarker): TreeTransformScope[F,E] =
+       val et = summon[quoted.Type[E]]
+       val nContext = cpsCtx.nest(e, et, marker)
+       new TreeTransformScope[F,E] {
+            override val cpsCtx = nContext
+            override implicit val qctx = thisTransform.qctx
+            override val fType = thisTransform.fType
+            override val ctType = et
+       }
+
+  }
 
 
 

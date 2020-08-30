@@ -128,6 +128,7 @@ class TestBS1ShiftIterableOps:
      assert(l1 == Success(10)) 
 
 
+
   @Test def testCollectFind(): Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
