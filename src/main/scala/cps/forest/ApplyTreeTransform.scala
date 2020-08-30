@@ -466,11 +466,8 @@ trait ApplyTreeTransform[F[_],CT]:
                     else
                       throw new MacroError("Unimplemented shift for CpsMonad", posExpr(term))
                   else
-                    //val newSelect = shiftSelect(s)
-                    //TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
                     shiftSelectTypeApply(s, targs)
           case s@Select(qual,name) =>
-                  //TypeApply(shiftSelect(s), fType.unseal::Nil).appliedTo(qual, monad)
                   shiftSelectTypeApply(s, Nil)
           case TypeApply(x, targs) =>
                   TypeApply(shiftCaller(x),targs)
@@ -489,6 +486,7 @@ trait ApplyTreeTransform[F[_],CT]:
                   val errorExpr = posExpr(term)
                   throw MacroError(s"Can't shift caller ${term}",errorExpr)
 
+    
     Apply(shiftCaller(term),args)
 
   end shiftedApply
@@ -506,10 +504,7 @@ trait ApplyTreeTransform[F[_],CT]:
             cpsCtx.log(s"tails.length=${tails.length}")
         if (withShiftedLambda)
           if (cpsFun.isSync)
-            if (cpsCtx.marker == TCM.Await)
-               CpsTree.pure(buildShiftedApply(fun, argRecords, withAsync, tails))
-            else
-               CpsTree.impure(buildShiftedApply(fun, argRecords, withAsync, tails), applyTpe)
+            CpsTree.impure(buildShiftedApply(fun, argRecords, withAsync, tails), applyTpe)
           else
             cpsFun.monadFlatMap(x => buildShiftedApply(x, argRecords, withAsync, tails),applyTpe)
         else
