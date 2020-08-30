@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Basic Usage &#8212; dotty-cps-async 0.1.0 documentation</title>
+    <title>Dependency &#8212; dotty-cps-async 0.2.0-RC1 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="High-order functions." href="HighOrderFunctions.html" />
-    <link rel="prev" title="Welcome to dotty-cps-async’s documentation!" href="index.html" /> 
+    <link rel="prev" title="User Manual" href="index.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -28,10 +28,10 @@
           <a href="HighOrderFunctions.html" title="High-order functions."
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to dotty-cps-async’s documentation!"
+          <a href="index.html" title="User Manual"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">Basic Usage</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.2.0-RC1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>  
 
@@ -40,11 +40,21 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="basic-usage">
+  <div class="section" id="dependency">
+<h1>Dependency<a class="headerlink" href="#dependency" title="Permalink to this headline">¶</a></h1>
+<p>The current prerelease is 0.2.0-RC1 for using with dotty-0.27-RC1.</p>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">&quot;0.27.0-RC1&quot;</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.2.0-RC1&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="basic-usage">
 <h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
 <p>Usage is obvious: we have two ‘pseudo-functions’ <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> <a class="footnote-reference brackets" href="#f1" id="id1">1</a> :</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="n">async</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">T</span><span class="o">](</span><span class="n">using</span> <span class="n">am</span><span class="k">:</span><span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span><span class="o">(</span><span class="kt">expr:</span> <span class="kt">T</span><span class="o">)=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span>
+<div><span class="target" id="index-0"></span><div class="highlight-scala notranslate" id="index-1"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="n">async</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">T</span><span class="o">](</span><span class="n">using</span> <span class="n">am</span><span class="k">:</span><span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span><span class="o">(</span><span class="kt">expr:</span> <span class="kt">T</span><span class="o">)=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span>
 
 <span class="k">def</span>  <span class="n">await</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">T</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">T</span><span class="o">])(</span><span class="n">using</span> <span class="nc">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span> <span class="kt">T</span>
 </pre></div>
@@ -61,8 +71,8 @@
 <span class="o">}</span>
 </pre></div>
 </div>
-</div></blockquote>
-<p><cite>MyMonad</cite> should be a type for which we have implemented <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala">CpsMonad</a> or <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala#L25">CpsTryMonad</a> (the latest supports try/catch) typeclass.</p>
+<span class="target" id="index-2"></span></div></blockquote>
+<p id="index-3"><cite>MyMonad</cite> should be a type for which we have implemented <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala">CpsMonad</a> or <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala#L25">CpsTryMonad</a> (the latest supports try/catch) typeclass.</p>
 <p>Monad can-be abstracted out as in next example:</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">Hanlder</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">CpsTryMonad</span><span class="o">]</span><span class="k">:</span>
@@ -130,9 +140,15 @@ You can read the <a class="reference internal" href="random-notes/index.html#ran
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Dependency</a></li>
+<li><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
-                        title="previous chapter">Welcome to dotty-cps-async’s documentation!</a></p>
+                        title="previous chapter">User Manual</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="HighOrderFunctions.html"
                         title="next chapter">High-order functions.</a></p>
@@ -167,10 +183,10 @@ You can read the <a class="reference internal" href="random-notes/index.html#ran
           <a href="HighOrderFunctions.html" title="High-order functions."
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to dotty-cps-async’s documentation!"
+          <a href="index.html" title="User Manual"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">Basic Usage</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.2.0-RC1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

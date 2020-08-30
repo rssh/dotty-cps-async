@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Additional Features &#8212; dotty-cps-async 0.1.0 documentation</title>
+    <title>Additional Features &#8212; dotty-cps-async 0.2.0-RC1 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -30,7 +30,7 @@
         <li class="right" >
           <a href="MonadsInteroperability.html" title="Monads interoperability."
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.2.0-RC1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>  
@@ -69,11 +69,11 @@ So, next code:</p>
 </div>
 <p>Looks at special syntax for enabling: <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">given</span> <span class="pre">_}</span></code>.
 For using this feature, the underlying monad should support execution caching:  i.e., two awaits on the same expression should not cause reevaluation.</p>
-<p>To mark your monad as supporting this feature, you should define <code class="docutils literal notranslate"><span class="pre">given</span> <span class="pre">feature.implicitAwait.IsPossible[M]</span></code>.</p>
+<p>To mark your monad as supporting this feature, you should define <code class="docutils literal notranslate"><span class="pre">given</span> <span class="pre">cps.feature.implicitAwait.IsPossible[M]</span></code>.</p>
 </div>
 <div class="section" id="custom-value-discard">
 <h2>Custom value discard<a class="headerlink" href="#custom-value-discard" title="Permalink to this headline">¶</a></h2>
-<p>Common developers mistakes during the writing of asynchronous code are to forget to handle something connected with discarded values, like error processing or awaiting.</p>
+<p id="index-0">Common developers mistakes during the writing of asynchronous code are to forget to handle something connected with discarded values, like error processing or awaiting.</p>
 <p><code class="docutils literal notranslate"><span class="pre">cps.feature.customValueDiscard</span></code>  limit the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types T, for which exists an implementation of a special ValueDiscard[T]. If given ValueDiscard[T] is not found in the current scope, then dropping values of this type is prohibited.  If found - ValueDiscard.apply(t) is called. It’s defined as no-op for primitive types and can be extended by developer for own types.</p>
 <p>Example:</p>
 <p>Assume we have next api:</p>
@@ -95,14 +95,15 @@ For using this feature, the underlying monad should support execution caching:  
 </pre></div>
 </div>
 <p>Here developer forgott to wrap <code class="docutils literal notranslate"><span class="pre">dryRun</span></code> in <code class="docutils literal notranslate"><span class="pre">await.</span></code>  But <code class="docutils literal notranslate"><span class="pre">customValueDiscard</span></code> feature is enabled and value discard operation is not defined for <code class="docutils literal notranslate"><span class="pre">`Future</span></code>, so this code will not compile.</p>
-<p>If you want to see warning instead error, you can import <cite>warnValueDiscard</cite> feature:</p>
+<p id="index-1">If you want to see warning instead error, you can import <cite>warnValueDiscard</cite> feature:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.features.warnValueDiscard.</span><span class="o">{</span><span class="n">given</span> <span class="k">_</span><span class="o">}</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="sip22-compatible-interface">
 <h2>SIP22-compatible interface<a class="headerlink" href="#sip22-compatible-interface" title="Permalink to this headline">¶</a></h2>
-<p>This feature provides a compatibility layer for Scala2 SIP-22 async.
+<p id="index-2">This feature provides a compatibility layer for Scala2 <a class="reference external" href="https://docs.scala-lang.org/sips/async.html">SIP-22</a>
+<a class="reference external" href="https://github.com/scala/scala-async">async</a>.
 When migrating your program from legacy SIP22 to dotty, you can change the headers, from</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">scala.async.Async.</span><span class="o">{</span><span class="n">async</span><span class="o">,</span><span class="n">await</span><span class="o">}</span>
 </pre></div>
@@ -112,10 +113,8 @@ When migrating your program from legacy SIP22 to dotty, you can change the heade
 </pre></div>
 </div>
 <p>and use Future based async/await.</p>
-<dl class="simple">
-<dt>All test cases from original Scala-Async distribution are passed with a change of imports only,</dt><dd><p>and included in our regression suite.</p>
-</dd>
-</dl>
+<p>All test cases from original Scala-Async distribution are passed with a change of imports only,
+and included in our regression suite.</p>
 <p>Note that compatibility was not a primary goal during the development of dotty-cps-async. Generated code is quite different, so if you need a bug-to-bug compatible version of scala2 async, then you should use the port of the original -XAsync compiler interface.</p>
 </div>
 </div>
@@ -176,7 +175,7 @@ When migrating your program from legacy SIP22 to dotty, you can change the heade
         <li class="right" >
           <a href="MonadsInteroperability.html" title="Monads interoperability."
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.2.0-RC1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>
