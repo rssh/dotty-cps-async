@@ -10,8 +10,8 @@ git.remoteRepo := "git@github.com:rssh/dotty-cps-async.git"
 lazy val root = project
   .in(file("."))
   .settings(
-    name := "dotty-cps",
-    version := "0.2.0-SNAPSHOT",
+    name := "dotty-cps-async",
+    version := "0.2.0-RC1",
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
 
