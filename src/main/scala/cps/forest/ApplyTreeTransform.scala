@@ -143,10 +143,10 @@ trait ApplyTreeTransform[F[_],CT]:
       case MethodType(paramNames, paramTypes, resType) =>
                // currently no support for path-dependend lambdas.
                MethodType(paramNames)( mt => paramTypes,
-                                       mt => AppliedType(fType.unseal.tpe, List(resType)))
+                                       mt => fType.unseal.tpe.appliedTo(resType))
       case PolyType(paramNames,paramBounds,resType) =>
                PolyType(paramNames)(pt => paramBounds,
-                                    pt => AppliedType(fType.unseal.tpe, List(resType)))
+                                    pt => fType.unseal.tpe.appliedTo(resType))
       case _ => throw MacroError("Not supported type for shifting: ${tpe}",cpsCtx.patternCode)
     }
 
@@ -381,14 +381,14 @@ trait ApplyTreeTransform[F[_],CT]:
   def findAsyncShiftTerm(e:Term):ImplicitSearchResult =
     val tpe = e.tpe.widen
     val asyncShift = TypeIdent(Symbol.classSymbol("cps.AsyncShift")).tpe
-    val tpTree = AppliedType(asyncShift,List(tpe))
+    val tpTree = asyncShift.appliedTo(tpe)
     searchImplicit(tpTree)
 
   def findObjectAsyncShiftTerm(e:Term):ImplicitSearchResult =
     val tpe = e.tpe.widen
     val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
-    val tpTree = AppliedType(objAsyncShift,List(tpe))
-    //val tpTree = AppliedType('[ObjectAsyncShift].unseal.tpe,List(tpe)).simplified
+    val tpTree = objAsyncShift.appliedTo(tpe)
+    //val tpTree = '[ObjectAsyncShift].unseal.tpe.appliedTo(tpe).simplified
     if cpsCtx.flags.debugLevel >= 15 then
       cpsCtx.log(s"searchImplicits: tpTree=$tpTree")
       cpsCtx.log(s"tpe=$tpe")

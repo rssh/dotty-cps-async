@@ -342,7 +342,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                  case Refinement(parent,name,info) =>
                          Refinement(transformType(parent),name,transformTypeOrBounds(info))
                  case AppliedType(tycon, args) =>
-                         AppliedType(transformType(tycon), args.map(x => transformTypeOrBounds(x)))
+                         transformType(tycon).appliedTo(args.map(x => transformTypeOrBounds(x)))
                  case AnnotatedType(underlying, annot) =>
                          AnnotatedType(transformType(underlying), transformTerm(annot))
                  case AndType(rhs,lhs) => AndType(transformType(rhs),transformType(lhs))
