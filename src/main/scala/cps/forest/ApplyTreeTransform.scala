@@ -354,7 +354,7 @@ trait ApplyTreeTransform[F[_],CT]:
                 acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex))
               else
                 val argName: String = "a" + acc.posIndex // TODO: get name from params
-                val symbol = Symbol.newVal(Symbol.currentOwner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
+                val symbol = Symbol.newVal(Owner.current.symbol,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
                 val valDef = symbol.tree match
                   case v@ValDef(_,_,_) => v
                   case _ =>

@@ -260,7 +260,7 @@ trait ApplyArgRecordScope[F[_], CT]:
            pattern match
              case bd@Bind(name,pat1) =>
                 val bSym = bd.symbol
-                val nBSym = Symbol.newBind(Symbol.currentOwner, name,bSym.flags, Ref(bSym).tpe.widen)
+                val nBSym = Symbol.newBind(Owner.current.symbol, name,bSym.flags, Ref(bSym).tpe.widen)
                 val nMap = map.updated(bSym, Ref(nBSym))
                 val (nPat1, nMap1) = rebindPatterns(pat1, nMap)
                 (Bind(nBSym,nPat1), nMap1)
@@ -302,14 +302,14 @@ trait ApplyArgRecordScope[F[_], CT]:
                       case _ => throw MacroError(s"term expected for lambda param, we have ${paramTree}",posExprs(term))
                   case _ => None
 
-             override def transformTerm(tree:Term)(using ctx: Context):Term =
+             override def transformTerm(tree:Term)(using Owner):Term =
                tree match
                  case ident@Ident(name) => lookupParamTerm(ident.symbol) match
                                              case Some(paramTerm) => paramTerm
                                              case None => super.transformTerm(tree)
                  case _ => super.transformTerm(tree)
 
-             override def transformTypeTree(tree:TypeTree)(using ctx:Context):TypeTree =
+             override def transformTypeTree(tree:TypeTree)(using Owner):TypeTree =
                tree match
                  case Singleton(ref) =>
                            lookupParamTerm(ref.symbol) match
@@ -322,7 +322,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                            Inferred(transformType(i.tpe))
                  case _ => super.transformTypeTree(tree)
 
-             def transformType(tp: Type)(using ctx: Context): Type =
+             def transformType(tp: Type)(using Owner): Type =
                tp match
                  case ConstantType(c) => tp
                  case tref@TermRef(qual, name) =>
