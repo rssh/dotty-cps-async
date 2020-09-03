@@ -12,7 +12,7 @@ trait LambdaTreeTransform[F[_], CT]:
 
   import qctx.tasty.{_, given _}
 
-  def typeInMonad(tp:TypeOrBounds): Type =
+  def typeInMonad(tp:Type): Type =
        fType.unseal.tpe.appliedTo(tp)
 
   // case lambdaTree @ Lambda(params,body)

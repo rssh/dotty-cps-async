@@ -164,11 +164,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
        def append(a: CpsTree): CpsTree = a
 
-       private def createAsyncPartialFunction(from: TypeOrBounds,
-                                                to: TypeOrBounds,
-                                                body: Match,
-                                                params: List[ValDef]): Term =
-
+       private def createAsyncPartialFunction(from: Type, to: Type, body: Match, params: List[ValDef]): Term =
          val toInF = typeInMonad(to)
          val fromType = typeOrBoundsToType(from)
          val matchVar = body.scrutinee
@@ -340,9 +336,9 @@ trait ApplyArgRecordScope[F[_], CT]:
                  case SuperType(thisTpe,superTpe) =>
                          SuperType(transformType(thisTpe),transformType(superTpe))
                  case Refinement(parent,name,info) =>
-                         Refinement(transformType(parent),name,transformTypeOrBounds(info))
+                         Refinement(transformType(parent),name,transformType(info))
                  case AppliedType(tycon, args) =>
-                         transformType(tycon).appliedTo(args.map(x => transformTypeOrBounds(x)))
+                         transformType(tycon).appliedTo(args.map(x => transformType(x)))
                  case AnnotatedType(underlying, annot) =>
                          AnnotatedType(transformType(underlying), transformTerm(annot))
                  case AndType(rhs,lhs) => AndType(transformType(rhs),transformType(lhs))
@@ -352,13 +348,9 @@ trait ApplyArgRecordScope[F[_], CT]:
                                                         cases.map(x => transformType(x)))
                  case ByNameType(tp1) => ByNameType(transformType(tp1))
                  case ParamRef(x) => tp
+                 case NoPrefix() => tp
+                 case TypeBounds(low,hi) => TypeBounds(transformType(low),transformType(hi))
                  case _ => tp  //  hope nobody will put termRef inside recursive type
-
-             def transformTypeOrBounds(tpb: TypeOrBounds)(using ctx: Context): TypeOrBounds =
-                   tpb match
-                     case NoPrefix() => tpb
-                     case TypeBounds(low,hi) => TypeBounds(transformType(low),transformType(hi))
-                     case tp: Type => transformType(tp)
 
 
          }
