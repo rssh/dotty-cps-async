@@ -103,6 +103,7 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 </div>
 <div class="section" id="object-oriented-interface">
 <h3>Object oriented interface<a class="headerlink" href="#object-oriented-interface" title="Permalink to this headline">¶</a></h3>
+<p id="index-0">Sometimes, we can use classes, defines in the object-oriented manner, where data is private inside class.  If the developer of such class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement AsyncShifted[F:CpsMonad] version inside  you class, which will accept methods with shifted parameters, and made a given ObjectAsync which should create instance of AsyncShifted from object and CpsMonad.</p>
 <p>Example:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span>  <span class="nc">MyIntController</span><span class="k">:</span>
    <span class="kt">private</span> <span class="kt">var</span> <span class="kt">x:</span>  <span class="kt">Int</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
