@@ -1,8 +1,21 @@
+Dependency
+===========
+
+The current prerelease is 0.2.0-RC1 for using with dotty-0.27-RC1.
+
+ .. code-block:: scala
+
+   scalaVersion := "0.27.0-RC1"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.2.0-RC1"
+
+
 Basic Usage
 ===========
 
 Usage is obvious: we have two 'pseudo-functions' ``async`` and ``await`` [#f1]_ : 
 
+ .. index:: async
+ .. index:: await
 
  .. code-block:: scala
 
@@ -25,6 +38,9 @@ Inside the async block, we can use await pseudo-function.
          // ...
     }
 
+
+ .. index:: CpsMonad
+ .. index:: CpsTryMonad
 
 `MyMonad` should be a type for which we have implemented `CpsMonad <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala>`_ or `CpsTryMonad <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala#L25>`_ (the latest supports try/catch) typeclass.
 

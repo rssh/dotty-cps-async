@@ -26,7 +26,7 @@ object Async {
 
   class InferAsyncArg[F[_]](using am:CpsMonad[F]) {
 
-       inline def apply[T](inline expr: T):F[T] =
+       transparent inline def apply[T](inline expr: T) =
             transform[F,T](expr)(using am)
 
   }
@@ -34,7 +34,7 @@ object Async {
   inline def async[F[_]](using am:CpsMonad[F]): InferAsyncArg[F] =
           new InferAsyncArg[F]
 
-  inline def transform[F[_], T](inline expr: T)(using inline m: CpsMonad[F]): F[T] =
+  transparent inline def transform[F[_], T](inline expr: T)(using inline m: CpsMonad[F]) =
     ${
         Async.transformImpl[F,T]('expr)
      }
@@ -165,8 +165,8 @@ object Async {
      
    
   def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S], 
-                                      cpsCtx: TransformationContext[F,T], 
-                                      marker: TransformationContextMarker)(using qctx:QuoteContext):CpsExpr[F,S]=
+                              cpsCtx: TransformationContext[F,T], 
+                              marker: TransformationContextMarker)(using qctx:QuoteContext):CpsExpr[F,S]=
         rootTransform(f,cpsCtx.monad,
                       cpsCtx.flags,marker,cpsCtx.nesting+1, Some(cpsCtx))
 

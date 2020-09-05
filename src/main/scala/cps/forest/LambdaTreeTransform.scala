@@ -24,22 +24,13 @@ trait LambdaTreeTransform[F[_], CT]:
      val retval = if (cpsBody.isAsync) {
         // in general, shifted lambda
         if (cpsCtx.flags.allowShiftedLambda) then
-            asyncBodyShiftedLambda(lambdaTerm, params, cpsBody)
+            AsyncLambdaCpsTree(lambdaTerm, params, cpsBody, lambdaTerm.tpe)
         else
             throw MacroError("await inside lambda functions without enclosing async block", lambdaTerm.seal)
      } else {
         CpsTree.pure(lambdaTerm)
      }
      retval
-
-  def asyncBodyShiftedLambda(lambdaTerm: Term, params: List[ValDef], cpsBody: CpsTree): CpsTree =
-     val paramNames = params.map(_.name)
-     val paramTypes = params.map(_.tpt.tpe)
-     val shiftedType = shiftedMethodType(paramNames, paramTypes, cpsBody.otpe)
-     // TODO: think, maybe exists case, where we need substitute Ident(param) for x[i] (?)
-     //       because otherwise it's quite strange why we have such interface in compiler
-     val rLambda = Lambda(shiftedType, (x: List[Tree]) => cpsBody.transformed )
-     CpsTree.pure(rLambda)
 
 
   def shiftedMethodType(paramNames: List[String], paramTypes:List[Type], otpe: Type): MethodType =
