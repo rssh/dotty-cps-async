@@ -1,6 +1,6 @@
-//val dottyVersion = "0.27.0-RC1"
+val dottyVersion = "0.27.0-RC1"
 //val dottyVersion = "0.27.0-bin-20200826-2e58a66-NIGHTLY"
-val dottyVersion = dottyLatestNightlyBuild.get
+//val dottyVersion = dottyLatestNightlyBuild.get
 
 enablePlugins(SphinxPlugin)
 enablePlugins(GhpagesPlugin)

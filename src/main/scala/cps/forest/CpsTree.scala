@@ -487,7 +487,6 @@ trait CpsTreeScope[F[_], CT] {
   case class AsyncLambdaCpsTree(originLambda: Term,
                                 params:List[ValDef], 
                                 body:CpsTree,
-                                op: Term=>Term,
                                 otpe: Type ) extends CpsTree:
 
     override def isAsync = body.isAsync
@@ -519,23 +518,25 @@ trait CpsTreeScope[F[_], CT] {
 
     override def transformed: Term = 
       // note, that type is not F[x1...xN => R]  but F[x1...xN => F[R]]
-      CpsTree.pure(op(rLambda)).transformed
+      rLambda
     
     override def syncOrigin: Option[Term] = Some(rLambda)
 
     // this is select, which is applied to Function[A,B]
     // direct transforma
+    //  TODO: change API to supports correct reporting
     def select(symbol: Symbol, ntpe: Type): CpsTree =
-          AsyncLambdaCpsTree(originLambda, params, body, t => op(t).select(symbol), ntpe)
+           throw MacroError("select for async lambdas is not supported yet", posExprs(originLambda) )
        
 
     // TODO: eliminate applyTerm in favor of 'Select', typeApply, Apply
     def applyTerm1(x: Term => Term, ntpe: Type): CpsTree = 
-          AsyncLambdaCpsTree(originLambda, params, body, t => x(op(t)), ntpe)
+          // TODO: generate other lambda.
+          throw MacroError("async lambda can't be an apply1 argument", posExprs(originLambda) )
 
      //  m.map(pure(x=>cosBody))(f) =  ???
     def monadMap(f: Term => Term, ntpe: Type): CpsTree =
-      PureCpsTree(f(rLambda))
+      MappedCpsTree(this, f, ntpe)
 
     //  m.flatMap(pure(x=>cpsBody))(f)
     def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
