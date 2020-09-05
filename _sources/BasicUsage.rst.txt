@@ -6,7 +6,7 @@ The current prerelease is 0.2.0-RC1 for using with dotty-0.27-RC1.
  .. code-block:: scala
 
    scalaVersion := "0.27.0-RC1"
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.2.0-RC1"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.2.1-RC2"
 
 
 Basic Usage
