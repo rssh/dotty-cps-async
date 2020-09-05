@@ -10,14 +10,16 @@ object TransformUtil:
 
   def find(using qctx:QuoteContext)(term: qctx.tasty.Term,
                        cond: qctx.tasty.Tree=> Option[qctx.tasty.Tree]) :Option[qctx.tasty.Tree] = {
-     import qctx.tasty.{_,given _}
+     import qctx.tasty._
      import util._
      val search = new TreeAccumulator[Option[Tree]] {
 
-        def foldTree(x: Option[Tree], tree: Tree)(using Owner): Option[Tree] =
+        //def foldTree(x: Option[Tree], tree: Tree)(using Owner): Option[Tree] =
+        def foldTree(x: Option[Tree], tree: Tree)(using ctx:Context): Option[Tree] =
                  foldOverTree(x,tree)
 
-        override def foldOverTree(x: Option[Tree], tree: Tree)(using Owner): Option[Tree] = {
+        //override def foldOverTree(x: Option[Tree], tree: Tree)(using Owner): Option[Tree] = {
+        override def foldOverTree(x: Option[Tree], tree: Tree)(using Context): Option[Tree] = {
            if (x.isDefined)
              x
            else
@@ -45,7 +47,7 @@ object TransformUtil:
      import qctx.tasty.{_,given _}
      import util._
      val changes = new TreeMap() {
-        override def transformTerm(tree:Term)(using Owner):Term =
+        override def transformTerm(tree:Term)(using Context):Term =
           tree match
             case ident@Ident(name) => if (ident.symbol == origin) {
                                          newTerm

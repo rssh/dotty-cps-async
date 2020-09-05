@@ -56,7 +56,7 @@ trait CpsTreeScope[F[_], CT] {
       * for async lambda.
       **/
      def rtpe: Type =
-        AppliedType(fType.unseal.tpe, List(otpe))
+        fType.unseal.tpe.appliedTo(List(otpe))
 
      def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
@@ -491,17 +491,17 @@ trait CpsTreeScope[F[_], CT] {
     override def isAsync = body.isAsync
 
     override def rtpe =
-      val resType = AppliedType(fType.unseal.tpe,List(otpe))
+      val resType = fType.unseal.tpe.appliedTo(List(otpe))
       val paramTypes = params.map(_.tpt.tpe)
       if (params.length==0)
          val f0 = TypeIdent(Symbol.classSymbol("scala.Function0")).tpe
-         AppliedType(f0,List(resType))
+         f0.appliedTo(List(resType))
       else if (params.length==1)
          val f1 = TypeIdent(Symbol.classSymbol("scala.Function1")).tpe
-         AppliedType(f1, paramTypes :+ resType )
+         f1.appliedTo( paramTypes :+ resType )
       else if (params.length==2)
          val f2 = TypeIdent(Symbol.classSymbol("scala.Function2")).tpe
-         AppliedType(f2,paramTypes :+ resType )
+         f2.appliedTo( paramTypes :+ resType )
       else
          throw MacroError("Sorry, functions with more than 2 parameters are not supported yet", posExprs(originLambda))
 
