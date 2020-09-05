@@ -12,7 +12,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
-  // case Block(prevs,last) 
+  // case Block(prevs,last)
   def run(using qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
 
      if (cpsCtx.flags.debugLevel >= 10) then
@@ -28,15 +28,15 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
            d match {
              case v@ValDef(vName,vtt,optRhs) =>
                val valDefExpr = Block(List(v),Literal(Constant(()))).seal.cast[Unit]
-               val nestCtx = cpsCtx.nest(valDefExpr, uType, 
+               val nestCtx = cpsCtx.nest(valDefExpr, uType,
                                          TransformationContextMarker.BlockInside(i))
                ValDefTransform.fromBlock(using qctx)(nestCtx, v)
              case _ =>
                DefCpsExpr(using qctx)(cpsCtx.monad,Seq(),d)
-           } 
+           }
          case t: Term =>
            // TODO: rootTransform
-           t.seal match 
+           t.seal match
                case '{ $p:$tp } =>
                        if (checkValueDiscarded(using qctx)(t)) 
                            // bug in dotty: show cause match error in test
@@ -48,10 +48,10 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                                case ex: Throwable => //ex.printStackTrace()
                                tp.unseal.toString + " [exception during print]"
 
-                           if (cpsCtx.flags.customValueDiscard) 
+                           if (cpsCtx.flags.customValueDiscard)
                              val valueDiscard = TypeIdent(Symbol.classSymbol("cps.ValueDiscard")).tpe
                              val tpe = t.tpe.widen.dealias
-                             val tpTree = AppliedType(valueDiscard,List(tpe))
+                             val tpTree = valueDiscard.appliedTo(tpe)
                              searchImplicit(tpTree) match
                                case sc: ImplicitSearchSuccess =>
                                   val pd = Apply(Select.unique(sc.tree,"apply"),List(t)).seal.cast[Unit]
@@ -59,7 +59,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                                case fl: ImplicitSearchFailure =>
                                   val tps = safeShow()
                                   val msg = s"discarding non-unit value without custom discard $tps (${fl.explanation})"
-                                  if (cpsCtx.flags.warnValueDiscard) 
+                                  if (cpsCtx.flags.warnValueDiscard)
                                       warning(msg, t.pos)
                                   else
                                       error(msg, t.pos)
@@ -73,9 +73,9 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                        printf(other.show)
                        throw MacroError(s"can't handle term in block: $other",t.seal)
          case i:Import =>
-            // Import is not statement - so, it is impossible to create block with import 
+            // Import is not statement - so, it is impossible to create block with import
             //   in macros.
-            // From another side - all symbols on this stage are already resolved, so 
+            // From another side - all symbols on this stage are already resolved, so
             //  we can just erase import for our purpose.
             CpsExpr.unit(monad)
          case other =>
@@ -100,9 +100,9 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 
   def checkValueDiscarded(using qctx: QuoteContext)(t: qctx.tasty.Term): Boolean =
      import qctx.tasty._
-     ( (cpsCtx.flags.customValueDiscard || cpsCtx.flags.warnValueDiscard) 
+     ( (cpsCtx.flags.customValueDiscard || cpsCtx.flags.warnValueDiscard)
       &&
-       ( !(t.tpe =:= defn.UnitType) && !(t.tpe =:= defn.NothingType) ) 
+       ( !(t.tpe =:= defn.UnitType) && !(t.tpe =:= defn.NothingType) )
      )
 
 
@@ -115,7 +115,7 @@ class DefCpsExpr[F[_]:Type](using qctx: QuoteContext)(
   def last(using QuoteContext): Expr[Unit] = '{ () }
 
   def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,Unit] =
-       if (exprs.isEmpty) 
+       if (exprs.isEmpty)
          this
        else
          new DefCpsExpr(using qctx)(monad,exprs ++: prev,definition)

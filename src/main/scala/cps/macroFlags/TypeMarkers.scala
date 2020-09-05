@@ -8,29 +8,26 @@ object PrintTree
 case class DebugLevel(value: Int)
 
 given Unliftable[DebugLevel]:
-   
-   def apply(x: Expr[DebugLevel])(using qctx: QuoteContext): Option[DebugLevel] =
-     import qctx.tasty.{ _, given _ }
+
+   def fromExpr(x: Expr[DebugLevel]) =
+     import qctx.tasty._
      println(s"Unliftable[DebugLevel], x=${x.show}")
-     x match 
+     x match
        case '{ DebugLevel(${Unlifted(x)}) } =>
                  Some(DebugLevel(x))
        case '{ new DebugLevel(${Unlifted(x)}) } =>
                  Some(DebugLevel(x))
-       case other => 
+       case other =>
           val sym = other.unseal.symbol
           sym.tree match
-             case ValDef(name,tpt,Some(rhs)) => 
-                      apply(rhs.seal.cast[DebugLevel])
-             case DefDef(name,tps,vps,rt,Some(rhs)) => 
-                      apply(rhs.seal.cast[DebugLevel])
-             case DefDef(name,tps,vps,tp,None) => 
+             case ValDef(name,tpt,Some(rhs)) =>
+                      fromExpr(rhs.seal.cast[DebugLevel])
+             case DefDef(name,tps,vps,rt,Some(rhs)) =>
+                      fromExpr(rhs.seal.cast[DebugLevel])
+             case DefDef(name,tps,vps,tp,None) =>
                       // currently it is no-way to extract definition of given.
                       // TODO: submit request to dotty
                       None
-             case other => 
+             case other =>
                       println(s"other=${other.show}")
                       None
-           
-     
-
