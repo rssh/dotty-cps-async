@@ -11,7 +11,7 @@ lazy val root = project
   .in(file("."))
   .settings(
     name := "dotty-cps-async",
-    version := "0.2.0-RC1",
+    version := "0.2.1-RC1",
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
 
