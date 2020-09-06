@@ -8,7 +8,8 @@ case class AsyncMacroFlags(
    debugLevel: Int = 0,
    allowShiftedLambda: Boolean = true,
    customValueDiscard: Boolean = false,
-   warnValueDiscard: Boolean = true
+   warnValueDiscard: Boolean = true,
+   muted: Boolean = false,
 )
 
 given Unliftable[AsyncMacroFlags]:

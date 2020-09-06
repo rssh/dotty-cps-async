@@ -75,6 +75,8 @@ object Async {
       r
     catch
       case ex: MacroError =>
+        if (flags.debugLevel > 0)
+           ex.printStackTrace
         report.throwError(ex.msg, ex.posExpr)
 
 

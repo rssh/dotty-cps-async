@@ -59,7 +59,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
     override def append(tree: CpsTree): CpsTree =
        if (elements.isEmpty)
-        tree
+         tree
        else
          elements.foldRight(tree){(e,s) =>
            e match
@@ -121,6 +121,9 @@ trait ApplyArgRecordScope[F[_], CT]:
        def noOrderDepended: Boolean = true
 
        def identArg(existsAsync:Boolean): Term =
+         if (cpsCtx.flags.debugLevel >= 15) then
+            cpsCtx.log(s"ApplyArgLambdaRecord::identArg, cpsBody=${cpsBody}")
+            cpsCtx.log(s"ApplyArgLambdaRecord::identArg, hasShiftedLambda=${hasShiftedLambda}, shifted=${shifted}")
          if (hasShiftedLambda || shifted)
             val (params, body) = term match
               case Lambda(params, body) => (params, body)

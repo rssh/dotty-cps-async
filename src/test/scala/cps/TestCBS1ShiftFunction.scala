@@ -9,7 +9,6 @@ class TestCBS1ShiftFunction:
 
   def qqq: Int = 3
 
-/*
   @Test def testAndThen1(): Unit = 
      implicit val printCode = cps.macroFlags.PrintCode
      implicit val debugLevel = cps.macroFlags.DebugLevel(20)
@@ -19,6 +18,7 @@ class TestCBS1ShiftFunction:
      }
      assert(c.run() == Success("5"))
 
+/*
   @Test def testAndThen2(): Unit = 
      implicit val printCode = cps.macroFlags.PrintCode
      implicit val debugLevel = cps.macroFlags.DebugLevel(20)

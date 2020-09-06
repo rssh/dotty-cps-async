@@ -42,6 +42,7 @@ trait ApplyTreeTransform[F[_],CT]:
             handleFun(applyTerm, fun, args, tails)
      if (cpsCtx.flags.debugLevel > 15)
        cpsCtx.log(s"runApply result = ${r}")
+       cpsCtx.log(s"runApply result transformed = ${r.transformed.show}")
      r
 
 
@@ -67,7 +68,14 @@ trait ApplyTreeTransform[F[_],CT]:
         case Select(obj1,method) =>
           val cpsObj1 = runRoot(obj1, TCM.ApplyTypeApplySelect)
           if (cpsObj1.isAsync)
-              val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
+              cpsObj1 match
+                 case lt: AsyncLambdaCpsTree =>
+                        ???
+                 case _ =>
+                     val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
+                     handleArgs1(applyTerm, fun, cpsObj, args, tails)
+          else if (cpsObj1.isChanged)
+              val cpsObj = cpsObj1.applyTerm1(x=>TypeApply(Select(x,obj.symbol),targs), fun.tpe)
               handleArgs1(applyTerm, fun, cpsObj, args, tails)
           else
               handleArgs1(applyTerm, fun, CpsTree.pure(fun), args, tails)
@@ -89,8 +97,6 @@ trait ApplyTreeTransform[F[_],CT]:
        cpsCtx.log( "runApply:handleFunSelect")
        if (cpsCtx.flags.debugLevel >= 15)
           cpsCtx.log(s"obj=${obj}")
-       cpsCtx.log(s"obj.symbol=${obj.symbol}")
-       cpsCtx.log(s"methodName=${methodName}")
      obj match
        case Inlined(_,_,
               Typed(
@@ -105,11 +111,33 @@ trait ApplyTreeTransform[F[_],CT]:
                   runAwait(applyTerm, args.head, targs3.head.tpe, args1.head)
        case _ =>
          val cpsObj = runRoot(obj, TCM.ApplySelect)
-         if (cpsObj.isAsync)
-            handleArgs1(applyTerm, fun,
+         cpsObj match
+            // TODO: minize dotty error:  lt: AsyncLambaCpsTree not mathced in dotty,
+            case lt: AsyncLambdaCpsTree =>
+               handleArgs1(applyTerm, fun, cpsObj.select(fun.symbol, fun.tpe), args, tails)
+            case _ =>
+               if (cpsObj.isAsync)
+                  try
+                    handleArgs1(applyTerm, fun,
                         cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe), args, tails)
-         else
-            handleArgs1(applyTerm, fun, CpsTree.pure(fun), args, tails)
+                  catch
+                    case ex: MacroError =>
+                      cpsCtx.log(s"error catched: ${ex.msg}")
+                      cpsCtx.log(s"cpsObj=${cpsObj}")
+                      cpsObj match
+                        case lt: AsyncLambdaCpsTree => 
+                           cpsCtx.log("lt matched")
+                        case lt1@AsyncLambdaCpsTree(_,_,_,_) => 
+                           cpsCtx.log("lt unapply matched")
+                        case lt: AsyncLambdaCpsTree => 
+                           cpsCtx.log("lt dot-type  matched")
+                        case _ =>
+                           cpsCtx.log("lt not matched")
+                           //cpsCtx.log(s"cpsObj.cake=${cpsObj.cake }")
+                           //cpsCtx.log(s"thisScope=${thisTreeTransform}")
+                      throw ex;
+               else
+                  handleArgs1(applyTerm, fun, cpsObj.select(fun.symbol, fun.tpe), args, tails)
 
 
   def handleFunIdent(applyTerm: Term, fun:Term, args:List[Term], name: String, tails: List[Seq[ApplyArgRecord]]):CpsTree =
@@ -173,7 +201,8 @@ trait ApplyTreeTransform[F[_],CT]:
    *
   **/
   def handleArgs1(applyTerm: Term,
-                  fun: Term, cpsFun: CpsTree,
+                  fun: Term, 
+                  cpsFun: CpsTree,
                   args: List[Term],
                   tails: List[Seq[ApplyArgRecord]]): CpsTree =  {
         if cpsCtx.flags.debugLevel >= 15 then
@@ -210,21 +239,20 @@ trait ApplyTreeTransform[F[_],CT]:
             cpsCtx.log(s" tails.existsPrependArg=${tails.exists(isExistsPrependArg(_, existsAsyncArg))}")
 
         if (!existsAsyncArg && !existsShiftedLambda) {
-           if (!cpsFun.isAsync)
-              CpsTree.pure(applyTerm)
-           else
-              val tailArgss = tails.map(_.map(_.term).toList)
-              if (cpsCtx.flags.debugLevel >= 15) then
-                  cpsCtx.log(s"before monad-map")
-              val r = cpsFun.monadMap(x => x.appliedToArgss(args::tailArgss), applyTerm.tpe)
-              if (cpsCtx.flags.debugLevel >= 15) then
-                  cpsCtx.log(s"after monad-map, r=$r")
-              r
+           val tailArgss = tails.map(_.map(_.term).toList)
+           cpsFun match
+              case lt: cpsFun.cake.AsyncLambdaCpsTree =>
+                      CpsTree.impure(lt.inCake(thisTreeTransform).rLambda.appliedToArgss(args::tailArgss), applyTerm.tpe)
+              case _ =>
+                      if (!cpsFun.isAsync && !cpsFun.isChanged)
+                         CpsTree.pure(applyTerm)
+                      else
+                        cpsFun.monadMap(x => x.appliedToArgss(args::tailArgss), applyTerm.tpe)
         } else {
            var runFold = true
            val lastCpsTree: CpsTree = if (!existsPrependArg && cpsFun.isSync) {
                                     runFold = false
-                                    if (!existsShiftedLambda)
+                                    if (!existsShiftedLambda && !cpsFun.isChanged)
                                        CpsTree.pure(applyTerm)
                                     else
                                        buildApply(cpsFun, fun, applyRecords, applyTerm, existsAsyncArg, existsShiftedLambda, tails)
@@ -510,13 +538,12 @@ trait ApplyTreeTransform[F[_],CT]:
         if (cpsCtx.flags.debugLevel >= 15)
             cpsCtx.log(s"buildApply: fun=${safeShow(fun)}")
             cpsCtx.log(s"cpsFun.isSync=${cpsFun.isSync}, withShiftedLambda=${withShiftedLambda}")
-            cpsCtx.log(s"tails.length=${tails.length}")
-            cpsCtx.log(s"applyTpe=${applyTerm.tpe}")
-            cpsCtx.log(s"applyTpe.isFunctionType=${applyTerm.tpe.isFunctionType}")
         val applyTpe = applyTerm.tpe
         if (withShiftedLambda)
           if (cpsFun.isSync)
             val shifted = buildShiftedApply(fun, argRecords, withAsync, tails)
+            if (cpsCtx.flags.debugLevel >= 15)
+               cpsCtx.log(s"buildApply: shifted=${safeShow(shifted)}")
             if (shifted.tpe.isFunctionType) 
               // TODO: extract argument types. now - one experiment
               shifted.tpe match
@@ -524,9 +551,9 @@ trait ApplyTreeTransform[F[_],CT]:
                    val aType = a match
                       case TypeBounds(lo,hi) => hi
                       case t: Type => t
-                   val sym = Symbol.newVal(Symbol.currentOwner, "x", aType, Flags.EmptyFlags, Symbol.noSymbol)   
+                   val sym = Symbol.newVal(Symbol.currentOwner, "shiftedArg", aType.widen, Flags.EmptyFlags, Symbol.noSymbol)   
                    AsyncLambdaCpsTree(fun, List(ValDef(sym,None)), 
-                           CpsTree.pure(Apply(Select.unique(shifted,"apply"),List(Ref(sym)))),applyTpe)
+                           CpsTree.impure(Apply(Select.unique(shifted,"apply"),List(Ref(sym))),applyTpe),applyTpe)
                 case _ =>
                    throw MacroError("Async function with arity != 1 is not supported yet",posExprs(shifted,applyTerm))
             else
@@ -540,10 +567,14 @@ trait ApplyTreeTransform[F[_],CT]:
           val args = argRecords.map(_.identArg(withAsync)).toList
           val tailArgss = tails.map(_.map(_.identArg(withAsync)).toList)
           val argss = args::tailArgss
-          if (cpsFun.isSync)
-            cpsFun.applyTerm1(x => x.appliedToArgss(argss), applyTpe)
-          else
-            cpsFun.monadMap(x => x.appliedToArgss(argss), applyTpe)
+          cpsFun match
+             case lt:cpsFun.cake.AsyncLambdaCpsTree =>
+                     CpsTree.impure(lt.inCake(thisTreeTransform).rLambda.appliedToArgss(argss), applyTpe)
+             case _ =>
+                    if (cpsFun.isSync)
+                       cpsFun.applyTerm1(x => x.appliedToArgss(argss), applyTpe)
+                    else
+                       cpsFun.monadMap(x => x.appliedToArgss(argss), applyTpe)
 
 
   def buildShiftedApply(fun: Term,
