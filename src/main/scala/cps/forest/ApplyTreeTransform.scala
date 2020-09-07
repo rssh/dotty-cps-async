@@ -241,7 +241,7 @@ trait ApplyTreeTransform[F[_],CT]:
         if (!existsAsyncArg && !existsShiftedLambda) {
            val tailArgss = tails.map(_.map(_.term).toList)
            cpsFun match
-              case lt: cpsFun.cake.AsyncLambdaCpsTree =>
+              case lt: AsyncLambdaCpsTree =>
                       CpsTree.impure(lt.inCake(thisTreeTransform).rLambda.appliedToArgss(args::tailArgss), applyTerm.tpe)
               case _ =>
                       if (!cpsFun.isAsync && !cpsFun.isChanged)
@@ -568,8 +568,8 @@ trait ApplyTreeTransform[F[_],CT]:
           val tailArgss = tails.map(_.map(_.identArg(withAsync)).toList)
           val argss = args::tailArgss
           cpsFun match
-             case lt:cpsFun.cake.AsyncLambdaCpsTree =>
-                     CpsTree.impure(lt.inCake(thisTreeTransform).rLambda.appliedToArgss(argss), applyTpe)
+             case lt:AsyncLambdaCpsTree =>
+                     CpsTree.impure(lt.rLambda.appliedToArgss(argss), applyTpe)
              case _ =>
                     if (cpsFun.isSync)
                        cpsFun.applyTerm1(x => x.appliedToArgss(argss), applyTpe)

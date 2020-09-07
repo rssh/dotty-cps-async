@@ -41,7 +41,7 @@ trait CpsTreeScope[F[_], CT] {
          // We should delay append resolving , to allow symbolic applying of await on sequence of appends
          AppendCpsTree(this, next)
 
-     def appendFinal(next: TreeTransformScope[?,?]#CpsTree): CpsTree
+     def appendFinal(next: CpsTree): CpsTree
 
      def prepend(prev: CpsTree): CpsTree =
           prev.append(this)
@@ -82,11 +82,7 @@ trait CpsTreeScope[F[_], CT] {
              given quoted.Type[T] = qt
              toResult[T]
     
-     type QctxTerm = qctx.tasty.Term
-
-     val cake: TreeTransformScope[F,CT] = cpsTreeScope
-
-     def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.CpsTree
+     def inCake[F1[_],T1](otherScope: TreeTransformScope[F1,T1]): otherScope.CpsTree
 
 
   object CpsTree:
@@ -95,18 +91,6 @@ trait CpsTreeScope[F[_], CT] {
 
     def impure(transformed:Term, tpe: Type): CpsTree =
                    AwaitSyncCpsTree(transformed, tpe.widen)
-
-    def transformedFrom(other: TreeTransformScope[?,?]#CpsTree): Term =
-         other.transformed.asInstanceOf[Term]
-
-    def otpeFrom(other: TreeTransformScope[?,?]#CpsTree): Type =
-         other.otpe.asInstanceOf[Type]
-
-    def rtpeFrom(other: TreeTransformScope[?,?]#CpsTree): Type =
-         other.rtpe.asInstanceOf[Type]
-
-    def syncOriginFrom(other: TreeTransformScope[?,?]#CpsTree): Option[Term] =
-         other.syncOrigin.map(_.asInstanceOf[Term])
 
 
   case class PureCpsTree(origin: qctx.tasty.Term) extends CpsTree:
@@ -132,13 +116,13 @@ trait CpsTreeScope[F[_], CT] {
     def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
       FlatMappedCpsTree(this,f, ntpe)
 
-    def appendFinal(next: TreeTransformScope[?,?]#CpsTree): CpsTree =
+    def appendFinal(next: CpsTree): CpsTree =
       next match
-        case BlockCpsTree.Matcher(statements,last) =>  //dott warn here.  TODO: research
+        case BlockCpsTree(statements,last) =>  //dott warn here.  TODO: research
              BlockCpsTree(statements.prepended(origin), last)
-        case x: next.cake.AsyncCpsTree =>
+        case x: AsyncCpsTree =>
              BlockCpsTree(Queue(origin), x)
-        case y: next.cake.PureCpsTree =>
+        case y: PureCpsTree =>
              BlockCpsTree(Queue(origin), y)
         case _ =>
              BlockCpsTree(Queue(origin), next)
@@ -161,7 +145,7 @@ trait CpsTreeScope[F[_], CT] {
           otherCake.PureCpsTree(otherCake.adopt(origin))
 
     override def toString(): String =
-         s"PureCpsTree(${safeShow(origin)})"
+         s"PureCpsTree[$cpsTreeScope](${safeShow(origin)})"
 
 
 
@@ -181,16 +165,16 @@ trait CpsTreeScope[F[_], CT] {
     def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
           FlatMappedCpsTree(this,f, ntpe)
 
-    def appendFinal(next: TreeTransformScope[?,?]#CpsTree): CpsTree =
-          val nextOtpe = CpsTree.otpeFrom(next)
+    def appendFinal(next: CpsTree): CpsTree =
+          val nextOtpe = next.otpe
           next match
-            case syncNext: next.cake.PureCpsTree => 
-                            monadMap(_ => syncNext.inCake(cpsTreeScope).origin, nextOtpe)
-            case asyncNext: next.cake.AsyncCpsTree => monadFlatMap(_ => CpsTree.transformedFrom(next), nextOtpe)
-            case blockNext: next.cake.BlockCpsTree =>
-                  CpsTree.syncOriginFrom(blockNext) match
+            case syncNext: PureCpsTree => 
+                            monadMap(_ => syncNext.origin, nextOtpe)
+            case asyncNext: AsyncCpsTree => monadFlatMap(_ => next.transformed, nextOtpe)
+            case blockNext: BlockCpsTree =>
+                  blockNext.syncOrigin match
                     case Some(syncTerm) => monadMap(_ => syncTerm, nextOtpe)
-                    case None => monadFlatMap(_ => CpsTree.transformedFrom(blockNext), nextOtpe)
+                    case None => monadFlatMap(_ => blockNext.transformed, nextOtpe)
 
     def applyAwait(newOtpe: Type): CpsTree =
           AwaitAsyncCpsTree(this, newOtpe)
@@ -210,7 +194,7 @@ trait CpsTreeScope[F[_], CT] {
           otherCake.AwaitSyncCpsTree(otherCake.adopt(origin),
                                      otherCake.adoptType(otpe))
 
-  case class AwaitAsyncCpsTree(val nested: TreeTransformScope[?,?]#CpsTree, val otpe: Type) extends AsyncCpsTree:
+  case class AwaitAsyncCpsTree(val nested: CpsTree, val otpe: Type) extends AsyncCpsTree:
 
     def transformed: Term =
       FlatMappedCpsTree(nested, (t:Term)=>t, otpe).transformed
@@ -222,12 +206,12 @@ trait CpsTreeScope[F[_], CT] {
           AwaitSyncCpsTree(f(transformed), ntpe)
 
     def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.CpsTree =
-           otherCake.AwaitAsyncCpsTree(nested, otpe.asInstanceOf[otherCake.qctx.tasty.Type])
+           otherCake.AwaitAsyncCpsTree(nested.inCake(otherCake), otpe.asInstanceOf[otherCake.qctx.tasty.Type])
 
 
   
 
-  case class MappedCpsTree(prev: TreeTransformScope[?,?]#CpsTree, op: Term => Term, otpe: Type) extends AsyncCpsTree:
+  case class MappedCpsTree(prev: CpsTree, op: Term => Term, otpe: Type) extends AsyncCpsTree:
 
 
     def applyTerm1(f: Term => Term, npte: Type): CpsTree =
@@ -251,11 +235,11 @@ trait CpsTreeScope[F[_], CT] {
 
     def transformed: Term = {
           val untmapTerm = cpsCtx.monad.unseal.select(mapSymbol)
-          val wPrevOtpe = CpsTree.otpeFrom(prev).widen
+          val wPrevOtpe = prev.otpe.widen
           val wOtpe = otpe.widen
           val tmapTerm = untmapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
           val r = tmapTerm.appliedToArgss(
-                     List(List(CpsTree.transformedFrom(prev)),
+                     List(List(prev.transformed),
                           List(
                             Lambda(
                               MethodType(List("x"))(mt => List(wPrevOtpe), mt => wOtpe),
@@ -276,14 +260,14 @@ trait CpsTreeScope[F[_], CT] {
        FlatMappedCpsTree(prev, op, newOtpe)
 
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.MappedCpsTree =
-       otherCake.MappedCpsTree(prev, 
+       otherCake.MappedCpsTree(prev.inCake(otherCake), 
                                op.asInstanceOf[otherCake.qctx.tasty.Term => otherCake.qctx.tasty.Term],
                                otpe.asInstanceOf[otherCake.qctx.tasty.Type])
        
 
 
   case class FlatMappedCpsTree(
-                      val prev: TreeTransformScope[?,?]#CpsTree,
+                      val prev: CpsTree,
                       opm: Term => Term,
                       otpe: Type) extends AsyncCpsTree:
 
@@ -305,12 +289,12 @@ trait CpsTreeScope[F[_], CT] {
         // ${cpsCtx.monad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
         val monad = cpsCtx.monad.unseal
         val untpFlatMapTerm = monad.select(flatMapSymbol)
-        val wPrevOtpe = CpsTree.otpeFrom(prev).widen
+        val wPrevOtpe = prev.otpe.widen
         val wOtpe = otpe.widen
         val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
         val r = tpFlatMapTerm.appliedToArgss(
             List(
-              List(CpsTree.transformedFrom(prev)),
+              List(prev.transformed),
               List(
                 Lambda(
                   MethodType(List("x"))(mt => List(wPrevOtpe),
@@ -325,7 +309,7 @@ trait CpsTreeScope[F[_], CT] {
 
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.FlatMappedCpsTree =
         otherCake.FlatMappedCpsTree(
-          prev,
+          prev.inCake(otherCake),
           otherCake.adoptTermFun(opm),
           otherCake.adoptType(otpe)
         )
@@ -333,13 +317,13 @@ trait CpsTreeScope[F[_], CT] {
   end FlatMappedCpsTree
 
   // TODO: refactor
-  case class BlockCpsTree(prevs:Queue[Statement], last: TreeTransformScope[?,?]#CpsTree) extends CpsTree:
+  case class BlockCpsTree(prevs:Queue[Statement], last: CpsTree) extends CpsTree:
 
     override def isAsync = last.isAsync
 
     override def isChanged = last.isChanged || !prevs.isEmpty
 
-    def toLast(f: TreeTransformScope[?,?]#CpsTree=>CpsTree):CpsTree =
+    def toLast(f: CpsTree=>CpsTree):CpsTree =
       if (prevs.isEmpty)
         f(last)
       else
@@ -347,43 +331,43 @@ trait CpsTreeScope[F[_], CT] {
 
     override def transformed: Term =
       if (prevs.isEmpty)
-        CpsTree.transformedFrom(last)
+        last.transformed
       else
-        Block(prevs.toList, CpsTree.transformedFrom(last))
+        Block(prevs.toList, last.transformed)
 
     override def syncOrigin: Option[Term] =
       if prevs.isEmpty then
-        CpsTree.syncOriginFrom(last)
+        last.syncOrigin
       else
-        CpsTree.syncOriginFrom(last) map (l => Block(prevs.toList,l))
+        last.syncOrigin map (l => Block(prevs.toList,l))
 
     def select(symbol: Symbol, ntpe: Type): CpsTree =
-       toLast(_.inCake(cpsTreeScope).select(symbol,ntpe))
+       toLast(_.select(symbol,ntpe))
 
     def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
-       toLast(_.inCake(cpsTreeScope).applyTerm1(f,ntpe))
+       toLast(_.applyTerm1(f,ntpe))
 
      // TODO: pass other cake ?
     def monadMap(f: Term => Term, ntpe: Type): CpsTree =
-       toLast( _.inCake(cpsTreeScope).monadMap(f,ntpe) )
+       toLast( _.monadMap(f,ntpe) )
 
     def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
-       toLast(_.inCake(cpsTreeScope).monadFlatMap(f,ntpe))
+       toLast(_.monadFlatMap(f,ntpe))
 
-    def appendFinal(next: TreeTransformScope[?,?]#CpsTree): CpsTree =
-       CpsTree.syncOriginFrom(last) match
+    def appendFinal(next: CpsTree): CpsTree =
+       last.syncOrigin match
          case Some(syncLast) => BlockCpsTree(prevs.appended(syncLast),next)
          case None => BlockCpsTree(prevs, last.appendFinal(next))
 
-    def otpe: Type = CpsTree.otpeFrom(last)
+    def otpe: Type = last.otpe
 
-    override def rtpe: Type = CpsTree.rtpeFrom(last)
+    override def rtpe: Type = last.rtpe
 
     override def applyAwait(newOtpe: Type): CpsTree = 
-        BlockCpsTree(prevs, last.inCake(cpsTreeScope).applyAwait(newOtpe))
+        BlockCpsTree(prevs, last.applyAwait(newOtpe))
 
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.BlockCpsTree =
-        otherCake.BlockCpsTree(prevs.asInstanceOf[Queue[otherCake.qctx.tasty.Term]], last)
+        otherCake.BlockCpsTree(prevs.asInstanceOf[Queue[otherCake.qctx.tasty.Term]], last.inCake(otherCake))
 
   end BlockCpsTree
 
@@ -396,7 +380,7 @@ trait CpsTreeScope[F[_], CT] {
 
        def unapply(cpsTree: TreeTransformScope[?,?]#CpsTree): Option[(Queue[Statement], TreeTransformScope[?,?]#CpsTree)] =
             cpsTree match
-              case v: cpsTree.cake.BlockCpsTree =>
+              case v: BlockCpsTree =>
                 Some((prevsFrom(v), v.last))
               case _ => None
 
@@ -405,20 +389,20 @@ trait CpsTreeScope[F[_], CT] {
   end BlockCpsTree
 
 
-  case class InlinedCpsTree(origin: Inlined, nested: TreeTransformScope[?,?]#CpsTree) extends CpsTree:
+  case class InlinedCpsTree(origin: Inlined, nested: CpsTree) extends CpsTree:
 
     override def isAsync = nested.isAsync
 
     override def isChanged = nested.isChanged
 
     override def transformed: Term =
-                  Inlined(origin.call, origin.bindings, CpsTree.transformedFrom(nested))
+                  Inlined(origin.call, origin.bindings, nested.transformed)
 
     override def syncOrigin: Option[Term] =
-                  nested.inCake(cpsTreeScope).syncOrigin.map(Inlined(origin.call, origin.bindings, _ ))
+                  nested.syncOrigin.map(Inlined(origin.call, origin.bindings, _ ))
 
     def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
-         InlinedCpsTree(origin, nested.inCake(cpsTreeScope).applyTerm1(f, ntpe))
+         InlinedCpsTree(origin, nested.applyTerm1(f, ntpe))
 
     def select(symbol: Symbol, ntpe: Type): CpsTree =
          InlinedCpsTree(origin, nested.select(symbol, ntpe))
@@ -429,7 +413,7 @@ trait CpsTreeScope[F[_], CT] {
     def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
          InlinedCpsTree(origin, nested.monadFlatMap(f, ntpe))
 
-    def appendFinal(next: TreeTransformScope[?,?]#CpsTree): CpsTree =
+    def appendFinal(next: CpsTree): CpsTree =
          InlinedCpsTree(origin, nested.appendFinal(next))
 
     def otpe: Type = nested.otpe
@@ -438,6 +422,10 @@ trait CpsTreeScope[F[_], CT] {
 
     override def applyAwait(newOtpe:Type): CpsTree = 
          InlinedCpsTree(origin, nested.applyAwait(newOtpe))
+
+    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.InlinedCpsTree =
+         otherCake.InlinedCpsTree(origin.asInstanceOf[otherCake.qctx.tasty.Inlined], nested.inCake(otherCake))
+
 
   end InlinedCpsTree
 
@@ -476,7 +464,7 @@ trait CpsTreeScope[F[_], CT] {
     override def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
         ValCpsTree(valDef, rightPart, nested.monadFlatMap(f,ntpe))
 
-    def appendFinal(next: TreeTransformScope[?,?]#CpsTree): CpsTree =
+    def appendFinal(next: CpsTree): CpsTree =
         ValCpsTree(valDef, rightPart, nested.appendFinal(next))
 
     override def otpe: Type = nested.otpe
@@ -503,6 +491,10 @@ trait CpsTreeScope[F[_], CT] {
          case Block(stats, last) => Block(valDef::stats, last)
          case other => Block(List(valDef), other)
 
+    def inCake[F1[_],T1](otherScope: TreeTransformScope[F1,T1]): otherScope.ValCpsTree =
+       otherScope.ValCpsTree(valDef.asInstanceOf[otherScope.qctx.tasty.ValDef], 
+                             rightPart.inCake(otherScope), 
+                             nested.inCake(otherScope))
 
   end ValCpsTree
 
@@ -554,7 +546,7 @@ trait CpsTreeScope[F[_], CT] {
     override def monadFlatMap(f: Term => Term, ntpe: Type): CpsTree =
          AppendCpsTree(frs, snd.monadFlatMap(f, ntpe))
 
-    def appendFinal(next: TreeTransformScope[?,?]#CpsTree): CpsTree =
+    def appendFinal(next: CpsTree): CpsTree =
          frs.appendFinal(snd.appendFinal(next))
 
     override def applyAwait(newOtpe: Type): CpsTree =
@@ -565,11 +557,14 @@ trait CpsTreeScope[F[_], CT] {
 
     override def rtpe: Type = snd.rtpe
 
+    override def inCake[F1[_],T1](otherScope: TreeTransformScope[F1,T1]): otherScope.AppendCpsTree =
+         otherScope.AppendCpsTree(frs.inCake(otherScope), snd.inCake(otherScope))
+
   end AppendCpsTree
 
   case class AsyncLambdaCpsTree(originLambda: Term,
                                 params: List[ValDef], 
-                                body: TreeTransformScope[?,?]#CpsTree,
+                                body: CpsTree,
                                 otpe: Type ) extends CpsTree:
 
     override def isAsync = true
@@ -580,7 +575,7 @@ trait CpsTreeScope[F[_], CT] {
       otherCake.AsyncLambdaCpsTree(
         originLambda.asInstanceOf[otherCake.qctx.tasty.Term], 
         params.asInstanceOf[List[otherCake.qctx.tasty.ValDef]], 
-        body, 
+        body.inCake(otherCake), 
         otpe.asInstanceOf[otherCake.qctx.tasty.Type]
       )
 
@@ -622,7 +617,7 @@ trait CpsTreeScope[F[_], CT] {
                                         case _  => super.transformTerm(tree)
                  case _ => super.transformTerm(tree)
          }
-         argTransformer.transformTerm(body.transformed.asInstanceOf[Term])
+         argTransformer.transformTerm(body.transformed)
       })
 
     override def transformed: Term = 
@@ -662,9 +657,9 @@ trait CpsTreeScope[F[_], CT] {
        throw MacroError("async lambda can't be an await argument", posExprs(originLambda) )
 
     // here value is discarded. 
-    def appendFinal(next: TreeTransformScope[?,?]#CpsTree): CpsTree =
+    def appendFinal(next: CpsTree): CpsTree =
       next match
-        case BlockCpsTree.Matcher(statements,last) =>  //dott warn here.  TODO: research
+        case BlockCpsTree(statements,last) =>  //dott warn here.  TODO: research
              BlockCpsTree(statements.prepended(rLambda), last)
         case _ =>
              BlockCpsTree(Queue(rLambda), next)

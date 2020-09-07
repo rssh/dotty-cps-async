@@ -32,16 +32,16 @@ trait RootTreeTransform[F[_], CT]:
                             B2.inNestedContext(lambdaTerm, marker, muted, scope =>
                                  scope.runLambda(lambdaTerm.asInstanceOf[scope.qctx.tasty.Term], 
                                                  params.asInstanceOf[List[scope.qctx.tasty.ValDef]], 
-                                                 body.asInstanceOf[scope.qctx.tasty.Term]).asInstanceOf[CpsTree]
+                                                 body.asInstanceOf[scope.qctx.tasty.Term]).inCake(thisTransform)
                             )
                   case applyTerm@Apply(fun,args)  =>
                             val tree = B2.inNestedContext(applyTerm, marker, muted, scope =>
                                scope.runApply(applyTerm.asInstanceOf[scope.qctx.tasty.Term],
                                               fun.asInstanceOf[scope.qctx.tasty.Term],
                                               args.asInstanceOf[List[scope.qctx.tasty.Term]],
-                                              Nil).asInstanceOf[CpsTree]
+                                              Nil).inCake(thisTransform)
                             )
-                            tree
+                            tree.inCake(thisTransform)
                   case _ =>  // TODO: elimi
                     val expr = term.seal
                     val monad = cpsCtx.monad
