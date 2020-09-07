@@ -388,11 +388,11 @@ trait ApplyTreeTransform[F[_],CT]:
     val tpe = e.tpe.widen
     val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
     val tpTree = objAsyncShift.appliedTo(tpe)
-    //val tpTree = '[ObjectAsyncShift].unseal.tpe.appliedTo(tpe).simplified
+    //val tpTree = Type.of[ObjectAsyncShift].appliedTo(tpe).simplified
     if cpsCtx.flags.debugLevel >= 15 then
       cpsCtx.log(s"searchImplicits: tpTree=$tpTree")
       cpsCtx.log(s"tpe=$tpe")
-      cpsCtx.log(s"'[ObjectAsyncShift].unseal.tpe=${'[ObjectAsyncShift].unseal.tpe}")
+      cpsCtx.log(s"Type.of[ObjectAsyncShift]=${Type.of[ObjectAsyncShift]}")
     searchImplicit(tpTree)
 
 

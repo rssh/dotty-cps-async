@@ -10,13 +10,13 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
-  // case Try(body, cases, finalizer) 
-  def run(using qctx: QuoteContext)(body: qctx.tasty.Term, 
+  // case Try(body, cases, finalizer)
+  def run(using qctx: QuoteContext)(body: qctx.tasty.Term,
                                     cases: List[qctx.tasty.CaseDef],
-                                    finalizer: Option[qctx.tasty.Term]): CpsExpr[F,T] = 
+                                    finalizer: Option[qctx.tasty.Term]): CpsExpr[F,T] =
      import qctx.tasty._
      val cpsBody = Async.nestTransform(body.seal.cast[T],
-                                            cpsCtx, TCM.TryBody)    
+                                            cpsCtx, TCM.TryBody)
      val cpsCaseDefs = cases.zipWithIndex.map((cd,i) => Async.nestTransform(
                                                   cd.rhs.seal.cast[T],
                                                   cpsCtx, TCM.TryCase(i)))
@@ -33,21 +33,21 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
         val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs.toList).seal.cast[F[T]]} }
         restoreExpr.cast[Throwable => F[T]]
 
-     
+
 
      val builder = if (!isAsync) {
-                      CpsExpr.sync(monad, patternCode) 
+                      CpsExpr.sync(monad, patternCode)
                    } else {
-                      val errorMonad = if (monad.unseal.tpe <:< '[CpsTryMonad[F]].unseal.tpe) {
+                      val errorMonad = if (monad.unseal.tpe <:< Type.of[CpsTryMonad[F]]) {
                                           monad.cast[CpsTryMonad[F]]
                                       } else {
                                           throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)
                                       }
-                      optCpsFinalizer match 
+                      optCpsFinalizer match
                         case None =>
-                           if (cpsCaseDefs.isEmpty) 
+                           if (cpsCaseDefs.isEmpty)
                              cpsBody
-                           else 
+                           else
                              CpsExpr.async[F,T](cpsCtx.monad,
                                '{
                                  ${errorMonad}.restore(
@@ -55,7 +55,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                    )(${makeRestoreExpr()})
                                })
                         case Some(cpsFinalizer) =>
-                           if (cpsCaseDefs.isEmpty) 
+                           if (cpsCaseDefs.isEmpty)
                              CpsExpr.async[F,T](cpsCtx.monad,
                                '{
                                   ${errorMonad}.withAction(
