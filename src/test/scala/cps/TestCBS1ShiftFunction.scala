@@ -16,7 +16,8 @@ class TestCBS1ShiftFunction:
         def add1(x:Int):Int = x+1
         (add1.andThen(x => x + await(T1.cbi(2))))(3)
      }
-     assert(c.run() == Success("5"))
+     val x = c.run()
+     assert(c.run() == Success(6))
 
 /*
   @Test def testAndThen2(): Unit = 

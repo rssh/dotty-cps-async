@@ -112,8 +112,9 @@ trait ApplyTreeTransform[F[_],CT]:
        case _ =>
          val cpsObj = runRoot(obj, TCM.ApplySelect)
          cpsObj match
-            // TODO: minize dotty error:  lt: AsyncLambaCpsTree not mathced in dotty,
             case lt: AsyncLambdaCpsTree =>
+               if (cpsCtx.flags.debugLevel >= 15)
+                  cpsCtx.log("funSelect: AsyncLambdaCpsTree discovered, fun=$fun fun.tpe=${fun.tpe}")
                handleArgs1(applyTerm, fun, cpsObj.select(fun.symbol, fun.tpe), args, tails)
             case _ =>
                if (cpsObj.isAsync)
@@ -242,7 +243,7 @@ trait ApplyTreeTransform[F[_],CT]:
            val tailArgss = tails.map(_.map(_.term).toList)
            cpsFun match
               case lt: AsyncLambdaCpsTree =>
-                      CpsTree.impure(lt.inCake(thisTreeTransform).rLambda.appliedToArgss(args::tailArgss), applyTerm.tpe)
+                      CpsTree.impure(Select.unique(lt.rLambda,"apply").appliedToArgss(args::tailArgss), applyTerm.tpe)
               case _ =>
                       if (!cpsFun.isAsync && !cpsFun.isChanged)
                          CpsTree.pure(applyTerm)
@@ -547,13 +548,13 @@ trait ApplyTreeTransform[F[_],CT]:
             if (shifted.tpe.isFunctionType) 
               // TODO: extract argument types. now - one experiment
               shifted.tpe match
-                case AppliedType(f,List(a,b)) if f <:< '[Function1].unseal.tpe =>
+                case AppliedType(f,List(a,AppliedType(m,b))) if f <:< '[Function1].unseal.tpe =>
                    val aType = a match
                       case TypeBounds(lo,hi) => hi
                       case t: Type => t
                    val sym = Symbol.newVal(Symbol.currentOwner, "shiftedArg", aType.widen, Flags.EmptyFlags, Symbol.noSymbol)   
                    AsyncLambdaCpsTree(fun, List(ValDef(sym,None)), 
-                           CpsTree.impure(Apply(Select.unique(shifted,"apply"),List(Ref(sym))),applyTpe),applyTpe)
+                           CpsTree.impure(Apply(Select.unique(shifted,"apply"),List(Ref(sym))),b.head),applyTpe)
                 case _ =>
                    throw MacroError("Async function with arity != 1 is not supported yet",posExprs(shifted,applyTerm))
             else
@@ -618,8 +619,13 @@ object ApplyTreeTransform:
                                 args.asInstanceOf[List[qctx.tasty.Term]],
                                 Nil
                              )
-            val exprResult = treeResult.toResult[T]
-            exprResult
+            try
+              val exprResult = treeResult.toResult[T]
+              exprResult
+            catch
+              case ex: Throwable =>
+                ex.printStackTrace()
+                throw ex
 
      }
      (new Bridge(cpsCtx1)).bridge()

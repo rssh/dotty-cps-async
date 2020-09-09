@@ -664,8 +664,12 @@ trait CpsTreeScope[F[_], CT] {
         case _ =>
              BlockCpsTree(Queue(rLambda), next)
 
+    override def toResult[T: quoted.Type] : CpsExpr[F,T] =
+       throw MacroError("async lambda can't be result of expression", posExprs(originLambda) )
+
     override def toString():String = 
       s"AsyncLambdaCpsTree(_,$params,$body,${otpe.show})"
+
 
   end AsyncLambdaCpsTree
 
