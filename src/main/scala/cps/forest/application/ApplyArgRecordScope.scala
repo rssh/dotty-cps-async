@@ -213,10 +213,8 @@ trait ApplyArgRecordScope[F[_], CT]:
             createAsyncLambda(mt, params)
 
          def termCast[E](term: Term, tp:quoted.Type[E]): Expr[E] =
-            // changing to cast trigger https://github.com/lampepfl/dotty/issues/9518
-            //given quoted.Type[E] = tp
-            //term.seal.cast[E]
-            term.seal.asInstanceOf[Expr[E]]
+            given quoted.Type[E] = tp
+            term.seal.cast[E]
 
 
          val r = fromType.seal match
