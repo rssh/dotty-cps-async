@@ -71,6 +71,8 @@ trait ApplyTreeTransform[F[_],CT]:
               cpsObj1 match
                  case lt: AsyncLambdaCpsTree =>
                         println(s"cpsObj1=$cpsObj1")
+                        println(s"method=$method")
+                        println(s"targs=$targs")
                         ???
                  case _ =>
                      val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)

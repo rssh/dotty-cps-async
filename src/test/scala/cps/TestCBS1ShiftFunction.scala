@@ -29,6 +29,7 @@ class TestCBS1ShiftFunction:
         add1.andThen(x => x + await(T1.cbi(2))).andThen(x=>x+1)(3)
      }
      assert(c.run() == Success(7))
- */
+*/
+
 
 
