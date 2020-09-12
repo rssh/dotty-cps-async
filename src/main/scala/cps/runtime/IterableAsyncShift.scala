@@ -87,9 +87,6 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
   def forall[F[_]](c:CA, monad: CpsMonad[F])(p: A=>F[Boolean]):F[Boolean] =
     shiftedWhile(c,monad)(true, p, (s,c,a) => c, identity) 
                           
-
-
-
   def find[F[_]](c:CA, monad: CpsMonad[F])(p: A=>F[Boolean]):F[Option[A]] =
     val s0: Option[A] = None
     shiftedWhile(c,monad)(s0, 
@@ -110,6 +107,26 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
     c.foldRight(monad.pure(z)){ (e,s) =>
        monad.flatMap(s)(si => op(e, si))
     }
+
+  def groupMapReduce[F[_],K,B](c:CA, monad: CpsMonad[F])(key: (A)=>F[K])(f: A=>F[B])(reduce: (B,B) => F[B]): 
+                                                                                      F[immutable.Map[K,B]] = 
+    shiftedStateFold(c,monad)(
+      prolog = mutable.Map[K,B](),
+      acc = (s, a) => {
+         val fk = key(a); 
+         val fb = f(a)
+         monad.flatMap(fk)(k => monad.flatMap(fb){b =>  
+            s.get(k) match
+              case Some(sb) => 
+                  monad.map(reduce(sb,b)){x => 
+                    s.updated(k,x)
+                  }
+              case None => s.update(k,b)
+                  monad.pure(s)
+         })
+      },
+      epilog = _.toMap
+    )
 
 }
 
@@ -207,6 +224,7 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
       },
       epilog = _.view.mapValues(_.result).toMap
     )
+
 
 
 }
