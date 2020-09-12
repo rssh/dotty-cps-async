@@ -127,6 +127,22 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
        _.result    
     )
                           
+  def groupBy[F[_],K](c:C[A],monad: CpsMonad[F])(f: (A)=>F[K] ):F[immutable.Map[K,C[A]]] =
+    shiftedFold(c,monad)(
+      prolog = mutable.Map[K,mutable.Builder[A,C[A]]](),
+      action = f,
+      acc = (s,a,b)=> {
+        s.get(b) match
+          case Some(itb) => itb.addOne(a); 
+          case None => 
+                val itb = c.iterableFactory.newBuilder[A]
+                itb.addOne(a)
+                s.addOne(b,itb)
+        s
+      }, 
+      _.view.mapValues(_.result).toMap
+    )
+ 
 
 }
 

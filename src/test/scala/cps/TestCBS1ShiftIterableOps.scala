@@ -128,7 +128,6 @@ class TestBS1ShiftIterableOps:
      assert(l1 == Success(10)) 
 
 
-
   @Test def testCollectFind(): Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
@@ -142,5 +141,28 @@ class TestBS1ShiftIterableOps:
      assert(c.run() == Success(Some(4)))
 
 
+  @Test def testGroupByEmpty(): Unit =
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async[ComputationBound]{
+          val c:List[String] = List()
+          c.groupBy(x => await(T1.cbi(x.length)))
+     }
+     assert(c.run() == Success(Map.empty[Int,String]))
+
+  @Test def testGroupBy(): Unit =
+     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async[ComputationBound]{
+          val c:List[String] = List("","a","aa","bb","aaa","bbb","ccc")
+          c.groupBy(x => await(T1.cbi(x.length)))
+     }
+     val r = c.run().get
+     assert(r(0).toList.size == 1)
+     assert(r(1).toList.size == 1)
+     assert(r(2).toList.size == 2)
+     assert(r(3).toList.size == 3)
 
 

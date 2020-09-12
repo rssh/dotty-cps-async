@@ -16,7 +16,8 @@ lazy val root = project
     scalaVersion := dottyVersion,
 
     //scalacOptions ++= Seq( "-Ydebug:implicits", "-Ydebug-trace", "-Ydebug-names", "-Ylog:typer", "-Yplain-printer" ),
-    scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", "-Ydebug-type-error", "-uniqid"  ),
+    scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
+                            "-Ydebug-type-error", "-uniqid" ),
         // -explain-types
 
     //libraryDependencies += "ch.epfl.lamp" %% "dotty-staging" % dottyVersion,
