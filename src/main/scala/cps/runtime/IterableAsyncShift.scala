@@ -84,6 +84,11 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
              x => monad.map(p(x))(! _),
              (s,c,a) => !c, identity)
 
+  def forall[F[_]](c:CA, monad: CpsMonad[F])(p: A=>F[Boolean]):F[Boolean] =
+    shiftedWhile(c,monad)(true, p, (s,c,a) => c, identity) 
+                          
+
+
 
   def find[F[_]](c:CA, monad: CpsMonad[F])(p: A=>F[Boolean]):F[Option[A]] =
     val s0: Option[A] = None
