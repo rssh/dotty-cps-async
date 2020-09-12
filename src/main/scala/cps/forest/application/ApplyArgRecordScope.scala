@@ -404,7 +404,7 @@ trait ApplyArgRecordScope[F[_], CT]:
       if !shifted then
          term
       else
-         val mt = MethodType(List())(_ => List(), _ => typeInMonad(term.tpe))
+         val mt = MethodType(List())(_ => List(), _ => typeInMonad(term.tpe.widen))
          Lambda(mt, args => cpsTree.transformed)
 
     def isAsync: Boolean = cpsTree.isAsync

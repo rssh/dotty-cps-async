@@ -59,7 +59,7 @@ trait CpsTreeScope[F[_], CT] {
       * for async lambda.
       **/
      def rtpe: Type =
-        fType.unseal.tpe.appliedTo(List(otpe))
+        fType.unseal.tpe.appliedTo(List(otpe.widen))
 
      def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
@@ -134,7 +134,7 @@ trait CpsTreeScope[F[_], CT] {
 
     def transformed: Term =
           val untpureTerm = cpsCtx.monad.unseal.select(pureSymbol)
-          val tpureTerm = untpureTerm.appliedToType(otpe)
+          val tpureTerm = untpureTerm.appliedToType(otpe.widen)
           val r = tpureTerm.appliedTo(origin)
           r
 
@@ -580,11 +580,11 @@ trait CpsTreeScope[F[_], CT] {
       )
 
     override def rtpe =
-      val resType = fType.unseal.tpe.appliedTo(List(otpe))
+      val resType = fType.unseal.tpe.appliedTo(List(otpe.widen))
       val paramTypes = params.map(_.tpt.tpe)
       if (params.length==0)
          val f0 = TypeIdent(Symbol.classSymbol("scala.Function0")).tpe
-         f0.appliedTo(List(resType))
+         f0.appliedTo(List(resType.widen))
       else if (params.length==1)
          val f1 = TypeIdent(Symbol.classSymbol("scala.Function1")).tpe
          f1.appliedTo( paramTypes :+ resType )

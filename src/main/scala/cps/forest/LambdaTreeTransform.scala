@@ -34,7 +34,7 @@ trait LambdaTreeTransform[F[_], CT]:
 
 
   def shiftedMethodType(paramNames: List[String], paramTypes:List[Type], otpe: Type): MethodType =
-     MethodType(paramNames)(_ => paramTypes, _ => typeInMonad(otpe))
+     MethodType(paramNames)(_ => paramTypes, _ => typeInMonad(otpe.widen))
 
 
 
