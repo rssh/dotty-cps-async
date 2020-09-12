@@ -161,7 +161,7 @@ class TestBS1ShiftIterableOps:
      assert(c.run() == Success(Map.empty[Int,String]))
 
   @Test def testGroupBy(): Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
@@ -174,4 +174,40 @@ class TestBS1ShiftIterableOps:
      assert(r(2).toList.size == 2)
      assert(r(3).toList.size == 3)
 
+
+  @Test def testCorrespondsSame(): Unit =
+     //implicit val printCode = cps.macroFlags.PrintCode
+     val c = async[ComputationBound]{
+         val l1 = List(1,2,3)
+         val l2 = l1
+         l1.corresponds(l2)((a,b) => await(T1.cbt(a == b)) )
+     }
+     assert(c.run() == Success(true))
+
+  @Test def testCorrespondsNoSame(): Unit =
+     //implicit val printCode = cps.macroFlags.PrintCode
+     val c = async[ComputationBound]{
+         val l1 = List(1,2,3)
+         val l2 = List(1,4,1)
+         l1.corresponds(l2)((a,b) => await(T1.cbt(a == b)) )
+     }
+     assert(c.run() == Success(false))
+
+  @Test def testCorrespondsDiffLen1(): Unit =
+     //implicit val printCode = cps.macroFlags.PrintCode
+     val c = async[ComputationBound]{
+         val l1 = List(1,2,3)
+         val l2 = List(1,2,3,3)
+         l1.corresponds(l2)((a,b) => await(T1.cbt(a == b)) )
+     }
+     assert(c.run() == Success(false))
+
+  @Test def testCorrespondsDiffLen2(): Unit =
+     //implicit val printCode = cps.macroFlags.PrintCode
+     val c = async[ComputationBound]{
+         val l1 = List(1,2,3,3)
+         val l2 = List(1,2,3)
+         l1.corresponds(l2)((a,b) => await(T1.cbt(a == b)) )
+     }
+     assert(c.run() == Success(false))
 

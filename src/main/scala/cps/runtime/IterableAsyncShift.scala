@@ -59,6 +59,23 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
   def foreach[F[_],U](c: CA, monad: CpsMonad[F])(f: A => F[U]): F[Unit] = 
      shiftedFold(c,monad)((),f,(s,a,b)=>s,identity)
 
+  def corresponds[F[_],B](c:CA, monad: CpsMonad[F])(that: IterableOnce[B])(p: (A,B)=>F[Boolean]) =
+     def checkNext(itA:Iterator[A],itB:Iterator[B]):F[Boolean] = 
+          if itA.hasNext then
+            if itB.hasNext then
+              monad.flatMap(p(itA.next,itB.next)){ c =>
+                if (c) 
+                   checkNext(itA,itB)
+                else
+                   monad.pure(false)
+              }
+            else
+              monad.pure(false)
+          else
+            monad.pure(!itB.hasNext)
+     checkNext(c.iterator, that.iterator)
+
+
   def count[F[_]](c:CA, monad: CpsMonad[F])(p: A => F[Boolean]):F[Int] = 
     shiftedFold(c,monad)(0,p,(s,a,b)=>if (b) s+1 else s,identity)
 
@@ -156,6 +173,7 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
       }, 
       _.view.mapValues(_.result).toMap
     )
+
  
 
 }
