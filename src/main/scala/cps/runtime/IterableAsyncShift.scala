@@ -97,10 +97,24 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
     
   def flatMap[F[_], B](c: C[A], monad: CpsMonad[F])(f: A=> F[IterableOnce[B]]):F[C[B]] = 
     shiftedFold(c,monad)(
-       c.iterableFactory.newBuilder[B],
-       f,
-       (s,a,b) => s.addAll(b),
-       _.result
+      c.iterableFactory.newBuilder[B],
+      f,
+      (s,a,b) => s.addAll(b),
+      _.result
+    )
+
+  def collect[F[_], B](c: C[A], monad: CpsMonad[F])(pf: PartialFunction[A,F[B]]):F[C[B]] =
+    shiftedFold(c,monad)(
+      c.iterableFactory.newBuilder[B],
+      x => (pf.lift)(x) match {
+              case Some(v) => monad.map(v)(Some(_))
+              case None => monad.pure(None)
+      },
+      (s,a,b) => b match {
+                   case Some(v) => s.addOne(v)
+                   case None => s
+                 },
+      _.result
     )
 
 

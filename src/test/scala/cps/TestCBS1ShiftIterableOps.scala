@@ -140,6 +140,15 @@ class TestBS1ShiftIterableOps:
      }
      assert(c.run() == Success(Some(4)))
 
+  @Test def testCollect(): Unit =
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async[ComputationBound]{
+          val c = List(1,2,3,4)
+          c.collect{ case x if x % 2 == 0 => x + await(T1.cbi(1)) }
+     }
+     assert(c.run() == Success(List(3,5)))
+
 
   @Test def testGroupByEmpty(): Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
