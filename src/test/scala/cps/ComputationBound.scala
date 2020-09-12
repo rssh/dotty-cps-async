@@ -81,13 +81,17 @@ object ComputationBound {
             case None =>
                c.optComputations match
                   case Some(r) =>     
-                    val nextR = r.progress((endNanos - System.nanoTime) nanos)
-                    nextR.fulfill((endNanos - System.nanoTime) nanos) match
-                      case Some(x) =>
-                        c.ref.set(Some(x))
-                        nFinished += 1
-                      case None =>
-                        secondQueue.add(Deferred(c.ref,Some(nextR)))
+                    r match
+                       case Wait(ref1, _) if ref1.get().isEmpty  => // do nothing
+                         secondQueue.add(c)
+                       case _ =>
+                         val nextR = r.progress((endNanos - System.nanoTime) nanos)
+                         nextR.fulfill((endNanos - System.nanoTime) nanos) match
+                           case Some(x) =>
+                              c.ref.set(Some(x))
+                              nFinished += 1
+                           case None =>
+                              secondQueue.add(Deferred(c.ref,Some(nextR)))
                   case None =>
                     // wait next time
                     secondQueue.add(c)
