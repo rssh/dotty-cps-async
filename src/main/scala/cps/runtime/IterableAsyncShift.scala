@@ -185,10 +185,29 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
                 s.addOne(b,itb)
         s
       }, 
-      _.view.mapValues(_.result).toMap
+      epilog = _.view.mapValues(_.result).toMap
     )
 
  
+  def groupMap[F[_],K,B](c:C[A],monad: CpsMonad[F])(key: (A)=>F[K])(f: A=>F[B]):F[immutable.Map[K,C[B]]] =
+    shiftedStateFold(c,monad)(
+      prolog = mutable.Map[K,mutable.Builder[B,C[B]]](),
+      acc = (s, a) => {
+         val fk = key(a); 
+         val fb = f(a)
+         monad.flatMap(fk)(k => monad.map(fb){b =>  
+            s.get(k) match
+              case Some(itb) => itb.addOne(b)
+                                s               
+              case None =>
+                val itb = c.iterableFactory.newBuilder[B]
+                itb.addOne(b)
+                s.addOne(k,itb)
+         })
+      },
+      epilog = _.view.mapValues(_.result).toMap
+    )
+
 
 }
 
