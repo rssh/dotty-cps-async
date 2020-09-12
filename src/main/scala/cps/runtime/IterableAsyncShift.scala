@@ -96,6 +96,15 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
   def fold[F[_],A1 >: A](c:CA,monad: CpsMonad[F])(z:A1)(op:(A1,A1)=>F[A1]):F[A1]=
     shiftedStateFold(c,monad)(z, op, identity)
     
+  def foldLeft[F[_],B](c:CA,monad: CpsMonad[F])(z:B)(op:(B,A)=>F[B]):F[B]=
+    c.foldLeft(monad.pure(z)){ (s,e) =>
+       monad.flatMap(s)(si => op(si,e))
+    }
+
+  def foldRight[F[_],B](c:CA,monad: CpsMonad[F])(z:B)(op:(A,B)=>F[B]):F[B]=
+    c.foldRight(monad.pure(z)){ (e,s) =>
+       monad.flatMap(s)(si => op(e, si))
+    }
 
 }
 

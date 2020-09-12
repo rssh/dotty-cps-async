@@ -211,3 +211,23 @@ class TestBS1ShiftIterableOps:
      }
      assert(c.run() == Success(false))
 
+
+  @Test def testFoldLeft(): Unit =
+     val c = async[ComputationBound]{
+          Seq(1,2,3).foldLeft("")((s,e) => "(" + s + "," + await(T1.cbi(e)).toString + ")" )
+     }
+     val r = c.run()
+     println(s"!!foldLeft,r=$r")
+     assert(c.run() == Success("(((,1),2),3)"))
+
+  @Test def testFoldRight(): Unit =
+     val c = async[ComputationBound]{
+          Seq(1,2,3).foldRight("")((e,s) => "(" + await(T1.cbs(e.toString)) + "," + s + ")" )
+     }
+     val r = c.run()
+     println(s"!!foldLeft,r=$r")
+     assert(c.run() == Success("(1,(2,(3,)))"))
+
+
+
+
