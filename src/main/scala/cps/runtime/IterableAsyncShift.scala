@@ -128,6 +128,46 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
       epilog = _.toMap
     )
 
+  def maxByOpOption[F[_],B](c:CA, monad: CpsMonad[F])(f: A=>F[B])(cmp: (B, B) => Int ):  F[Option[A]] =
+     val s0: Option[(A,B)] = None
+     val r = c.foldLeft(monad.pure(s0)){(s,a) =>
+         monad.flatMap(s){si => 
+           si match
+             case None => monad.map(f(a))(x => Some((a,x)))
+             case old@Some((as,bs)) => monad.map(f(a)){ b =>
+                if (cmp(bs,b) < 0)
+                   Some((a,b)) 
+                else
+                   old
+             }
+         }
+     }
+     monad.map(r)(_.map(_._1))
+      
+         
+  def maxByOption[F[_],B](c:CA, monad: CpsMonad[F])(f: A=>F[B])(implicit cmp:math.Ordering[B]):  F[Option[A]] =
+       maxByOpOption[F,B](c, monad)(f)(cmp.compare(_,_))
+      
+       
+  def maxBy[F[_],B](c:CA, monad: CpsTryMonad[F])(f: A=>F[B])(implicit cmp:math.Ordering[B]):  F[A] =
+      monad.flatMap(maxByOption(c,monad)(f)(using cmp)){ x =>
+        x match
+           case Some(v) => monad.pure(v)
+           case None => monad.error(new UnsupportedOperationException)
+      }
+     
+  def minByOption[F[_],B](c:CA, monad: CpsMonad[F])(f: A=>F[B])(implicit cmp:math.Ordering[B]):  F[Option[A]] =
+       maxByOpOption[F,B](c, monad)(f)(- cmp.compare(_,_))
+      
+  def minBy[F[_],B](c:CA, monad: CpsTryMonad[F])(f: A=>F[B])(implicit cmp:math.Ordering[B]):  F[A] =
+      monad.flatMap(minByOption(c,monad)(f)(using cmp)){ x =>
+        x match
+           case Some(v) => monad.pure(v)
+           case None => monad.error(new UnsupportedOperationException)
+      }
+
+
+
 }
 
 class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ] 

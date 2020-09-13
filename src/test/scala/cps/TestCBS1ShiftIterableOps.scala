@@ -275,7 +275,7 @@ class TestBS1ShiftIterableOps:
 
 
   @Test def testGroupMapReduce(): Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      val c = async[ComputationBound]{
           val c:List[String] = List("","a","aa","bb","aaa","bbb","ccc")
           c.groupMapReduce(x => await(T1.cbi(x.length)))(x => await(T1.cbs(x+"1")))( _ + _ )
@@ -287,7 +287,7 @@ class TestBS1ShiftIterableOps:
      assert(r(3) == "aaa1bbb1ccc1")
 
   @Test def testGroupMapReduce1(): Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      val c = async[ComputationBound]{
           val c:List[String] = List("","a","aa","bb","aaa","bbb","ccc")
           c.groupMapReduce(x => await(T1.cbi(x.length)))(x => await(T1.cbs(x+"1")))( (w:String,v:String) => w + await(T1.cbs(v)) )
@@ -298,6 +298,21 @@ class TestBS1ShiftIterableOps:
      assert(r(2) == "aa1bb1")
      assert(r(3) == "aaa1bbb1ccc1")
 
+  @Test def testMaxBy(): Unit =
+     val c = async[ComputationBound]{
+          val x: Seq[Int] = (1 to 100).toSeq 
+          x maxBy ( _ % await(T1.cbi(77)) )
+     }
+     val r = c.run().get
+     assert(r == 76)
+
+  @Test def testMinBy(): Unit =
+     val c = async[ComputationBound]{
+          val x: Seq[Int] = (1 to 100).toSeq 
+          x minBy ( _ % await(T1.cbi(77)) )
+     }
+     val r = c.run().get
+     assert(r == 77)
 
 
 
