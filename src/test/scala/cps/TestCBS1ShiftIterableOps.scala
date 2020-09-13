@@ -322,3 +322,20 @@ class TestBS1ShiftIterableOps:
      val r = c.run().get
      assert(r == Seq(0,1,3,6,10,15))
 
+  @Test def testTakeWhile(): Unit =
+     val c = async[ComputationBound]{
+        val l = Vector(1,2,3,4,5,6,7,8,3,1)
+        l.takeWhile( _ < await(T1.cbi(5)) )
+     }
+     val r = c.run().get
+     assert(r == Vector(1,2,3,4))
+
+  @Test def testSpan(): Unit =
+     val c = async[ComputationBound]{
+        val l = Vector(1,2,3,4,5,6,7,8,3,1)
+        l.span( _ < await(T1.cbi(5)) )
+     }
+     val r = c.run().get
+     assert(r._1 == Vector(1,2,3,4))
+     assert(r._2 == Vector(5,6,7,8,3,1))
+

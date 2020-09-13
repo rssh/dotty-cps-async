@@ -207,7 +207,7 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
 
 
   def dropWhile[F[_]](c:CA, monad: CpsMonad[F])(p: A=>F[Boolean]):F[C[A]] =
-    shiftedWhile(c,monad)(c:C[A],p,(s,c,a)=>if (c) s.drop(1) else s,identity)
+    shiftedWhile(c,monad)(0,p,(s,c,a)=>if (c) s+1 else s, n => if (n>0) c.drop(n) else c)
     
 
   def filter[F[_]](c:CA, monad: CpsMonad[F])(p: A=>F[Boolean]):F[C[A]] =
@@ -282,6 +282,32 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
       epilog = _._1.result
     )
 
+  // TODO: make abstract here, different impl
+  def span[F[_]](c:CA,monad: CpsMonad[F])(p: (A) => F[Boolean]):F[(C[A],C[A])] = 
+    shiftedWhile(c, monad)( 
+       (c.iterableFactory.newBuilder[A], 0, true),
+       p,
+       (s,c,a) => {
+         if (c) 
+           s._1.addOne(a)
+           (s._1, s._2+1, true)
+         else
+            s
+       },
+       s => (s._1.result(), if (s._2 > 0)  c.drop(s._2) else c)
+    )
+
+  def takeWhile[F[_]](c:CA,monad: CpsMonad[F])(p: (A) => F[Boolean]):F[C[A]] = 
+    shiftedWhile(c, monad)( 
+       c.iterableFactory.newBuilder[A],
+       p,
+       (s,c,a) => {
+         if (c) s.addOne(a)
+         s
+       },
+       _.result
+    )
+  
 
 }
 
