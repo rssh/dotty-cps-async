@@ -472,7 +472,7 @@ trait ApplyTreeTransform[F[_],CT]:
                                  }
                shiftSymbol.method(x.name) match
                     case Nil =>
-                        throw MacroError(s"Method (${x.name}) is not defined in asyncShift, qual=${qual} ",posExpr(x))
+                        throw MacroError(s"Method (${x.name}) is not defined in [${shiftType.show}], qual=${qual} ",posExpr(x))
                     case m::Nil =>
                         val newSelect = Select.unique(success2.tree, x.name)
                         TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)

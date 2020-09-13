@@ -4,7 +4,7 @@ import cps._
 import scala.collection._
 
 
-class ListAsyncShift[A] extends IterableOpsAsyncShift[A,List] with AsyncShift[List[A]] {
+class ListAsyncShift[A] extends IterableOpsAsyncShift[A,List, List[A]] with AsyncShift[List[A]] {
 
   override def map[F[_], B](c: List[A], monad: CpsMonad[F])(f: A=> F[B]):F[List[B]] =
     c match

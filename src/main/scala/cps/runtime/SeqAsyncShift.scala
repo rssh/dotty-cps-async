@@ -5,7 +5,7 @@ import scala.collection._
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayBuilder
 
-class SeqAsyncShift[A, C[X] <: Seq[X]] extends IterableAsyncShift[A,C[A]] {
+class SeqAsyncShift[A, C[X] <: Seq[X] & SeqOps[X,C,C[X]], CA <: C[A]] extends IterableOpsAsyncShift[A,C,CA] {
 
  // TODO: move to IndexedSeq
  def aggregate[F[_], B](c:C[A], m: CpsMonad[F])(
@@ -20,3 +20,7 @@ class SeqAsyncShift[A, C[X] <: Seq[X]] extends IterableAsyncShift[A,C[A]] {
 
 
 
+class SeqOpsAsyncShift[A, C[X] <: Seq[X] & SeqOps[X,C,C[X]], CA <: C[A] ] extends IterableOpsAsyncShift[A,C, CA] {
+}
+
+class RangeAsyncShift[ R <: Range ] extends SeqAsyncShift[Int,immutable.IndexedSeq,R]

@@ -170,12 +170,12 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
 
 }
 
-class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ] 
-                                                        extends IterableAsyncShift[A,C[A]] {
+class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <: C[A] ] 
+                                                        extends IterableAsyncShift[A,CA] {
 
 
 
-  def map[F[_], B](c: C[A], monad: CpsMonad[F])(f: A=> F[B]):F[C[B]] = 
+  def map[F[_], B](c: CA, monad: CpsMonad[F])(f: A=> F[B]):F[C[B]] = 
     shiftedFold(c,monad)(
       c.iterableFactory.newBuilder[B], 
       f,
@@ -183,7 +183,7 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
       _.result
     )
     
-  def flatMap[F[_], B](c: C[A], monad: CpsMonad[F])(f: A=> F[IterableOnce[B]]):F[C[B]] = 
+  def flatMap[F[_], B](c: CA, monad: CpsMonad[F])(f: A=> F[IterableOnce[B]]):F[C[B]] = 
     shiftedFold(c,monad)(
       c.iterableFactory.newBuilder[B],
       f,
@@ -191,7 +191,7 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
       _.result
     )
 
-  def collect[F[_], B](c: C[A], monad: CpsMonad[F])(pf: PartialFunction[A,F[B]]):F[C[B]] =
+  def collect[F[_], B](c: CA, monad: CpsMonad[F])(pf: PartialFunction[A,F[B]]):F[C[B]] =
     shiftedFold(c,monad)(
       c.iterableFactory.newBuilder[B],
       x => (pf.lift)(x) match {
@@ -206,22 +206,22 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
     )
 
 
-  def dropWhile[F[_]](c:C[A], monad: CpsMonad[F])(p: A=>F[Boolean]):F[C[A]] =
-    shiftedWhile(c,monad)(c,p,(s,c,a)=>if (c) s.drop(1) else s,identity)
+  def dropWhile[F[_]](c:CA, monad: CpsMonad[F])(p: A=>F[Boolean]):F[C[A]] =
+    shiftedWhile(c,monad)(c:C[A],p,(s,c,a)=>if (c) s.drop(1) else s,identity)
     
 
-  def filter[F[_]](c:C[A], monad: CpsMonad[F])(p: A=>F[Boolean]):F[C[A]] =
+  def filter[F[_]](c:CA, monad: CpsMonad[F])(p: A=>F[Boolean]):F[C[A]] =
     shiftedFold(c,monad)(
        c.iterableFactory.newBuilder[A],p,
        (s,a,b) => if (b) s.addOne(a) else s,
        _.result
     )
 
-  def filterNot[F[_]](c:C[A], monad: CpsMonad[F])(p: A=>F[Boolean]):F[C[A]] =
+  def filterNot[F[_]](c:CA, monad: CpsMonad[F])(p: A=>F[Boolean]):F[C[A]] =
     filter(c,monad)(a => monad.map(p(a))(! _))
 
 
-  def flatten[F[_],B](c:C[A],monad: CpsMonad[F])(implicit asIterable: (A)=> F[IterableOnce[B]]):F[C[B]]=
+  def flatten[F[_],B](c:CA,monad: CpsMonad[F])(implicit asIterable: (A)=> F[IterableOnce[B]]):F[C[B]]=
     shiftedFold(c,monad)(
        c.iterableFactory.newBuilder[B],
        asIterable,
@@ -229,7 +229,7 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
        _.result    
     )
                           
-  def groupBy[F[_],K](c:C[A],monad: CpsMonad[F])(f: (A)=>F[K] ):F[immutable.Map[K,C[A]]] =
+  def groupBy[F[_],K](c:CA,monad: CpsMonad[F])(f: (A)=>F[K] ):F[immutable.Map[K,C[A]]] =
     shiftedFold(c,monad)(
       prolog = mutable.Map[K,mutable.Builder[A,C[A]]](),
       action = f,
@@ -246,7 +246,7 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
     )
 
  
-  def groupMap[F[_],K,B](c:C[A],monad: CpsMonad[F])(key: (A)=>F[K])(f: A=>F[B]):F[immutable.Map[K,C[B]]] =
+  def groupMap[F[_],K,B](c:CA,monad: CpsMonad[F])(key: (A)=>F[K])(f: A=>F[B]):F[immutable.Map[K,C[B]]] =
     shiftedStateFold(c,monad)(
       prolog = mutable.Map[K,mutable.Builder[B,C[B]]](),
       acc = (s, a) => {
@@ -265,6 +265,22 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]
       epilog = _.view.mapValues(_.result).toMap
     )
 
+  def scanLeft[F[_],B](c:CA,monad: CpsMonad[F])(z: B)(op: (B,A) => F[B]):F[C[B]] =
+    shiftedStateFold(c,monad)(
+      prolog = {
+         val s = c.iterableFactory.newBuilder[B]
+         s.addOne(z)
+         (s,z)
+      },
+      acc = (s,a) => {
+         val (it, pb) = s
+         monad.map(op(pb,a)){ b=>
+           it.addOne(b)
+           (it,b)
+         }
+      },
+      epilog = _._1.result
+    )
 
 
 }

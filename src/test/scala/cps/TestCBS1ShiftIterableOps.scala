@@ -314,5 +314,11 @@ class TestBS1ShiftIterableOps:
      val r = c.run().get
      assert(r == 77)
 
-
+  @Test def testScanLeft(): Unit =
+     val c = async[ComputationBound]{
+          val l = (1 to 5).toSeq
+          l.scanLeft(0)( (x,y) => x + await(T1.cbi(y)) )
+     }
+     val r = c.run().get
+     assert(r == Seq(0,1,3,6,10,15))
 
