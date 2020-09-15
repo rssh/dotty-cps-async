@@ -339,3 +339,54 @@ class TestBS1ShiftIterableOps:
      assert(r._1 == Vector(1,2,3,4))
      assert(r._2 == Vector(5,6,7,8,3,1))
 
+  @Test def testPartition(): Unit =
+     val c = async[ComputationBound]{
+        val l = Vector(1,2,3,4,5,6,7,8,3,1)
+        l.partition( _ < await(T1.cbi(5)) )
+     }
+     val r = c.run().get
+     assert(r._1 == Vector(1,2,3,4,3,1))
+     assert(r._2 == Vector(5,6,7,8))
+
+  @Test def testPartitionMap(): Unit =
+     val c = async[ComputationBound]{
+        val l = Vector(1,2,3,4,5,6,7,8,3,1)
+        l.partitionMap( x => if (x < await(T1.cbi(5))) Left(x) else Right(x.toString) )
+     }
+     val r = c.run().get
+     assert(r._1 == Vector(1,2,3,4,3,1))
+     assert(r._2 == Vector("5","6","7","8"))
+
+  @Test def testReduce1(): Unit =
+     val c = async[ComputationBound]{
+        val l = 1 to 10
+        l.reduce((x,y) => await(T1.cbi(x+y)))
+     }
+     val r = c.run().get
+     assert(r == (1 to 10).sum )
+
+  @Test def testReduceEmpty(): Unit =
+     val c = async[ComputationBound]{
+        val l = List.empty[Int]
+        l.reduce((x,y) => await(T1.cbi(x+y)))
+     }
+     assert( c.run().isFailure )
+
+  @Test def testReduceLeft(): Unit =
+     val c = async[ComputationBound]{
+        val l = (0 to 9).map(_.toString)
+        l.reduceLeft((x,y) => await(T1.cbs("("+x+y+")")))
+     }
+     val r = c.run().get
+     assert(r == "(((((((((01)2)3)4)5)6)7)8)9)" )
+
+  @Test def testReduceLeftEmpty(): Unit =
+     val c = async[ComputationBound]{
+        val l = List.empty[String]
+        l.reduceLeft((x,y) => await(T1.cbs("("+x+y+")")))
+     }
+     val r = c.run()
+     assert(r.isFailure)
+
+
+

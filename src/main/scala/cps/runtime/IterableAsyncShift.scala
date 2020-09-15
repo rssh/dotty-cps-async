@@ -166,6 +166,26 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
            case None => monad.error(new UnsupportedOperationException)
       }
 
+  def reduce[F[_],B>:A](c:CA, monad: CpsTryMonad[F])(op: (B,B) => F[B]): F[B] = 
+      try
+        c.view.map(monad.pure(_)).reduce( (fx,fy) => 
+          monad.flatMap(fx)(x=>monad.flatMap(fy)(y => op(x,y))) )
+      catch
+        case ex: UnsupportedOperationException =>
+          monad.error(ex)
+      
+  def reduceLeft[F[_],B>:A](c:CA, monad: CpsTryMonad[F])(op: (B,A) => F[B]): F[B] = 
+       monad.map(reduceLeftOption(c,monad)(op))(_.get)
+      
+  def reduceLeftOption[F[_],B>:A](c:CA, monad: CpsTryMonad[F])(op: (B,A) => F[B]): F[Option[B]] = 
+       val s0:F[Option[B]] = monad.pure(None)
+       c.foldLeft(s0){ (s,e) =>
+         monad.flatMap(s){ c =>
+            c match
+              case Some(b) => monad.map(op(b,e))(x => Some(x))
+              case None => monad.pure(Some(e))
+         }
+       }
 
 
 }
@@ -306,6 +326,30 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
          s
        },
        _.result
+    )
+
+  def partition[F[_]](c:CA,monad: CpsMonad[F])(p: (A) => F[Boolean]):F[(C[A],C[A])] = 
+    shiftedFold(c,monad)(
+       ( c.iterableFactory.newBuilder[A], c.iterableFactory.newBuilder[A] ), 
+       p,
+       (s,a,pb) => {
+         (if (pb) s._1 else s._2).addOne(a)
+         s
+       },
+       (s => (s._1.result, s._2.result) )
+    )
+
+  def partitionMap[F[_], A1, A2](c:CA,monad: CpsMonad[F])(f: (A) => F[Either[A1,A2]]):F[(C[A1],C[A2])] = 
+    shiftedFold(c,monad)(
+       ( c.iterableFactory.newBuilder[A1], c.iterableFactory.newBuilder[A2] ), 
+       f,
+       (s,a,e) => {
+         e match
+            case Left(a1) => s._1.addOne(a1)
+            case Right(a2) => s._2.addOne(a2)
+         s
+       },
+       s => (s._1.result, s._2.result)
     )
   
 
