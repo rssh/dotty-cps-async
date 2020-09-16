@@ -322,6 +322,16 @@ class TestBS1ShiftIterableOps:
      val r = c.run().get
      assert(r == Seq(0,1,3,6,10,15))
 
+  @Test def testScanRight(): Unit =
+     val c = async[ComputationBound]{
+          val l = (1 to 5).toSeq
+          l.scanRight(0)( (x,y) => x + await(T1.cbi(y)) )
+     }
+     val r = c.run().get
+     println(s"scanRight: r=$r")
+     assert(r == Seq(0,5,9,12,14,15))
+
+
   @Test def testTakeWhile(): Unit =
      val c = async[ComputationBound]{
         val l = Vector(1,2,3,4,5,6,7,8,3,1)
@@ -388,5 +398,20 @@ class TestBS1ShiftIterableOps:
      val r = c.run()
      assert(r.isFailure)
 
+  @Test def testReduceRight(): Unit =
+     val c = async[ComputationBound]{
+        val l = (0 to 9).map(_.toString)
+        l.reduceRight((x,y) => await(T1.cbs("("+x+y+")")))
+     }
+     val r = c.run().get
+     assert(r == "(0(1(2(3(4(5(6(7(89)))))))))" )
+
+  @Test def testReduceRightEmpty(): Unit =
+     val c = async[ComputationBound]{
+        val l = List.empty[String]
+        l.reduceRight((x,y) => await(T1.cbs("("+x+y+")")))
+     }
+     val r = c.run()
+     assert(r.isFailure)
 
 

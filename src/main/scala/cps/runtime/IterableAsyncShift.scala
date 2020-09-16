@@ -166,6 +166,16 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
            case None => monad.error(new UnsupportedOperationException)
       }
 
+  def reduceOption[F[_],B>:A](c:CA, monad: CpsTryMonad[F])(op: (B,B) => F[B]): F[Option[B]] = 
+      val s0: F[Option[B]] = monad.pure(None)
+      c.foldLeft(s0)((fs,e)=>
+        monad.flatMap(fs){ s =>
+          s match
+            case Some(v) => monad.map(op(v,e))(x => Some(x))
+            case None => monad.pure(Some(e))
+        } 
+      )
+
   def reduce[F[_],B>:A](c:CA, monad: CpsTryMonad[F])(op: (B,B) => F[B]): F[B] = 
       try
         c.view.map(monad.pure(_)).reduce( (fx,fy) => 
@@ -187,6 +197,19 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
          }
        }
 
+  def reduceRightOption[F[_],B>:A](c:CA, monad: CpsTryMonad[F])(op: (A,B) => F[B]): F[Option[B]] = 
+       val s0:F[Option[B]] = monad.pure(None)
+       c.foldRight(s0){ (e,s) =>
+         monad.flatMap(s){ c =>
+            c match
+              case Some(b) => monad.map(op(e,b))(x => Some(x))
+              case None => monad.pure(Some(e))
+         }
+       }
+
+  def reduceRight[F[_],B>:A](c:CA, monad: CpsTryMonad[F])(op: (A,B) => F[B]): F[B] = 
+       monad.map(reduceRightOption(c,monad)(op))(_.get)
+      
 
 }
 
@@ -301,6 +324,22 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
       },
       epilog = _._1.result
     )
+
+  def scanRight[F[_],B](c:CA,monad: CpsMonad[F])(z: B)(op: (A,B) => F[B]):F[C[B]] =
+    val it0 = c.iterableFactory.newBuilder[B]
+    it0.addOne(z)
+    val s0 = monad.pure((it0, z))
+    val itb = c.foldRight(s0){ (e,fs) =>
+       monad.flatMap(fs){ s =>
+          val fnb = op(e,s._2)
+          monad.map(fnb){ nb =>
+             s._1.addOne(nb)
+             (s._1,nb)
+          }
+       }
+    }
+    monad.map(itb)(_._1.result)
+
 
   // TODO: make abstract here, different impl
   def span[F[_]](c:CA,monad: CpsMonad[F])(p: (A) => F[Boolean]):F[(C[A],C[A])] = 
