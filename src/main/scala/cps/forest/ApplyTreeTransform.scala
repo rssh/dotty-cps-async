@@ -132,7 +132,7 @@ trait ApplyTreeTransform[F[_],CT]:
   def typeOrBoundsToType(x: Type, isHight: Boolean = true): Type =
     x match
       case TypeBounds(low,hight) => if (isHight) hight else low
-      case NoPrefix => if (isHight) defn.AnyType else defn.NothingType
+      case NoPrefix => if (isHight) Type.of[Any] else Type.of[Nothing]
       case _ => x
 
   def shiftedLambdaTypeTree(tpt: TypeTree): TypeTree =

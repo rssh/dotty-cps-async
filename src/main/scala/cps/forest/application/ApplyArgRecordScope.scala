@@ -202,7 +202,7 @@ trait ApplyArgRecordScope[F[_], CT]:
             //Match(inputVal, transformCases(body.cases,Nil,false))
 
          def newCheck(): Term =
-            val mt = MethodType(paramNames)(_ => List(fromType), _ => defn.BooleanType)
+            val mt = MethodType(paramNames)(_ => List(fromType), _ => Type.of[Boolean])
             Lambda(mt, args => changeArgs(params,args,newCheckBody(matchVar)))
 
          def newBody():Term =

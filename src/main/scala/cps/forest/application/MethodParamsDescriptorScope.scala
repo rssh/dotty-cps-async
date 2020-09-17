@@ -75,6 +75,6 @@ trait MethodParamsDescriptorScope[F[_], CT]:
         scala.util.Try(name.toInt).toOption
 
      override def  paramName(index: Int): Option[String] =  Some(index.toString)
-     override def  paramType(index: Int): Option[Type] = Some(defn.AnyType)
+     override def  paramType(index: Int): Option[Type] = Some(Type.of[Any])
 
 
