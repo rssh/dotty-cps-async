@@ -102,7 +102,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
      import qctx.tasty._
      ( (cpsCtx.flags.customValueDiscard || cpsCtx.flags.warnValueDiscard)
       &&
-       ( !(t.tpe =:= defn.UnitType) && !(t.tpe =:= defn.NothingType) )
+       ( !(t.tpe =:= Type.of[Unit]) && !(t.tpe =:= Type.of[Nothing]) )
      )
 
 

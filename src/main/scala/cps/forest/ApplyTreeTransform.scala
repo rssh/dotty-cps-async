@@ -164,7 +164,7 @@ trait ApplyTreeTransform[F[_],CT]:
   def typeOrBoundsToType(x: Type, isHight: Boolean = true): Type =
     x match
       case TypeBounds(low,hight) => if (isHight) hight else low
-      case NoPrefix => if (isHight) defn.AnyType else defn.NothingType
+      case NoPrefix => if (isHight) Type.of[Any] else Type.of[Nothing]
       case _ => x
 
   def shiftedLambdaTypeTree(tpt: TypeTree): TypeTree =
@@ -428,11 +428,11 @@ trait ApplyTreeTransform[F[_],CT]:
     val tpe = e.tpe.widen
     val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
     val tpTree = objAsyncShift.appliedTo(tpe)
-    //val tpTree = '[ObjectAsyncShift].unseal.tpe.appliedTo(tpe).simplified
+    //val tpTree = Type.of[ObjectAsyncShift].appliedTo(tpe).simplified
     if cpsCtx.flags.debugLevel >= 15 then
       cpsCtx.log(s"searchImplicits: tpTree=$tpTree")
       cpsCtx.log(s"tpe=$tpe")
-      cpsCtx.log(s"'[ObjectAsyncShift].unseal.tpe=${'[ObjectAsyncShift].unseal.tpe}")
+      cpsCtx.log(s"Type.of[ObjectAsyncShift]=${Type.of[ObjectAsyncShift]}")
     searchImplicit(tpTree)
 
 

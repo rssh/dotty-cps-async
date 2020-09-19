@@ -19,9 +19,9 @@ class TestBS1ShiftUsing:
   given Using.Releasable[TestResource]:
     def release(resource: TestResource):Unit =
        resource.close()
-  
 
-  @Test def testUsingResource1(): Unit = 
+
+  @Test def testUsingResource1(): Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(15)
      val c = async[ComputationBound]{
@@ -35,7 +35,7 @@ class TestBS1ShiftUsing:
      assert(c.run() == Success(true))
 
 
-  @Test def testUsingResource1throw(): Unit = 
+  @Test def testUsingResource1throw(): Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(15)
      val r = new TestResource("t2")
@@ -49,7 +49,7 @@ class TestBS1ShiftUsing:
      assert(c.run().isFailure)
      assert(r.isClosed)
 
-  @Test def testUsingResources2(): Unit = 
+  @Test def testUsingResources2(): Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(15)
      var svR2: Option[TestResource] = None;
@@ -63,7 +63,7 @@ class TestBS1ShiftUsing:
      assert(c.run() == Success(false))
      assert(svR2.get.isClosed == true)
 
-  @Test def testUsingResources2Complex(): Unit = 
+  @Test def testUsingResources2Complex(): Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      var svR2: Option[TestResource] = None;
@@ -81,7 +81,7 @@ class TestBS1ShiftUsing:
      assert(c.run() == Success(false))
      assert(svR2.get.isClosed == true)
 
-  @Test def testUsingResources3(): Unit = 
+  @Test def testUsingResources3(): Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(15)
      var svR2: Option[TestResource] = None;
@@ -89,7 +89,7 @@ class TestBS1ShiftUsing:
      val c = async[ComputationBound]{
          val r1 = new TestResource("r1")
          val r3 = new TestResource("r3")
-         Using.resources(r1, new TestResource("r2"), r3){ (r1, r2, r3) =>
+         Using.resources(r1, new TestResource("r2"), r3: TestResource){ (r1, r2, r3) => // FIXME somewhere r3 is not widen, should remove `: TestResource`
              svR2 = Some(r2)
              svR3 = Some(r3)
              await(T1.cbs(r1.label)) + r2.label + r3.label
@@ -100,7 +100,7 @@ class TestBS1ShiftUsing:
      assert(svR3.get.isClosed == true)
 
 
-  @Test def testUsingResources4(): Unit = 
+  @Test def testUsingResources4(): Unit =
      var svR2: Option[TestResource] = None;
      var svR3: Option[TestResource] = None;
      var svR4: Option[TestResource] = None;
@@ -108,7 +108,7 @@ class TestBS1ShiftUsing:
          val r1 = new TestResource("r1")
          val r3 = new TestResource("r3")
          val r4 = new TestResource("r4")
-         Using.resources(r1, new TestResource("r2"), r3, r4){ (r1, r2, r3, r4) =>
+         Using.resources(r1, new TestResource("r2"), r3: TestResource, r4: TestResource){ (r1, r2, r3, r4) => // FIXME somewhere r3 and r4 is not widen, should remove `: TestResource`
              svR2 = Some(r2)
              svR3 = Some(r3)
              svR4 = Some(r4)
