@@ -414,4 +414,15 @@ class TestBS1ShiftIterableOps:
      val r = c.run()
      assert(r.isFailure)
 
+  @Test def testTapEach(): Unit =
+     class X(val value:Int, var tapped:Boolean)
+     val v = (1 to 10).map( new X(_, false) )
+     val c = async[ComputationBound]{
+        v.tapEach( x => { await(T1.cbi(0)); x.tapped = true  })
+     }
+     val r = c.run()
+     assert(v.forall(_.tapped))
+
+
+
 

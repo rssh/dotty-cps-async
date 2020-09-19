@@ -59,6 +59,8 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
   def foreach[F[_],U](c: CA, monad: CpsMonad[F])(f: A => F[U]): F[Unit] = 
      shiftedFold(c,monad)((),f,(s,a,b)=>s,identity)
 
+
+
   def corresponds[F[_],B](c:CA, monad: CpsMonad[F])(that: IterableOnce[B])(p: (A,B)=>F[Boolean]) =
      def checkNext(itA:Iterator[A],itB:Iterator[B]):F[Boolean] = 
           if itA.hasNext then
@@ -391,6 +393,10 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
        s => (s._1.result, s._2.result)
     )
   
+  def tapEach[F[_],U](c: CA, monad: CpsMonad[F])(f: A => F[U]): F[C[A]] = 
+      monad.map(foreach(c, monad)(f))(_ => c)
+
+
 
 }
 
