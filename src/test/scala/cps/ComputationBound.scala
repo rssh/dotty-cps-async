@@ -81,13 +81,17 @@ object ComputationBound {
             case None =>
                c.optComputations match
                   case Some(r) =>     
-                    val nextR = r.progress((endNanos - System.nanoTime) nanos)
-                    nextR.fulfill((endNanos - System.nanoTime) nanos) match
-                      case Some(x) =>
-                        c.ref.set(Some(x))
-                        nFinished += 1
-                      case None =>
-                        secondQueue.add(Deferred(c.ref,Some(nextR)))
+                    r match
+                       case Wait(ref1, _) if ref1.get().isEmpty  => // do nothing
+                         secondQueue.add(c)
+                       case _ =>
+                         val nextR = r.progress((endNanos - System.nanoTime) nanos)
+                         nextR.fulfill((endNanos - System.nanoTime) nanos) match
+                           case Some(x) =>
+                              c.ref.set(Some(x))
+                              nFinished += 1
+                           case None =>
+                              secondQueue.add(Deferred(c.ref,Some(nextR)))
                   case None =>
                     // wait next time
                     secondQueue.add(c)
@@ -153,11 +157,21 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
 
 
   def progress(timeout: Duration): ComputationBound[T] = 
-        thunk() match 
-           case r@Done(t) => r
-           case r@Error(e) => r
+         val r = try {
+                   thunk() 
+                 } catch {
+                   case NonFatal(e) => Error(e)
+                 }
+         r match 
+           case Done(t) => r
+           case Error(e) => r
            case w@Wait(ref, f) => w.progress(timeout)
-           case Thunk(f1) => f1().progress(timeout)
+           case Thunk(f1) => 
+                   try {
+                     f1().progress(timeout)
+                   } catch {
+                     case NonFatal(e) => Error(e)
+                   }
 
 
   def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] =

@@ -59,7 +59,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
     override def append(tree: CpsTree): CpsTree =
        if (elements.isEmpty)
-        tree
+         tree
        else
          elements.foldRight(tree){(e,s) =>
            e match
@@ -121,6 +121,9 @@ trait ApplyArgRecordScope[F[_], CT]:
        def noOrderDepended: Boolean = true
 
        def identArg(existsAsync:Boolean): Term =
+         if (cpsCtx.flags.debugLevel >= 15) then
+            cpsCtx.log(s"ApplyArgLambdaRecord::identArg, cpsBody=${cpsBody}")
+            cpsCtx.log(s"ApplyArgLambdaRecord::identArg, hasShiftedLambda=${hasShiftedLambda}, shifted=${shifted}")
          if (hasShiftedLambda || shifted)
             val (params, body) = term match
               case Lambda(params, body) => (params, body)
@@ -210,10 +213,8 @@ trait ApplyArgRecordScope[F[_], CT]:
             createAsyncLambda(mt, params)
 
          def termCast[E](term: Term, tp:quoted.Type[E]): Expr[E] =
-            // changing to cast trigger https://github.com/lampepfl/dotty/issues/9518
-            //given quoted.Type[E] = tp
-            //term.seal.cast[E]
-            term.seal.asInstanceOf[Expr[E]]
+            given quoted.Type[E] = tp
+            term.seal.cast[E]
 
 
          val r = fromType.seal match
@@ -260,6 +261,8 @@ trait ApplyArgRecordScope[F[_], CT]:
            pattern match
              case bd@Bind(name,pat1) =>
                 val bSym = bd.symbol
+                //FUTURE:
+                //val nBSym = Symbol.newBind(Owner.current.symbol, name,bSym.flags, Ref(bSym).tpe.widen)
                 val nBSym = Symbol.newBind(Symbol.currentOwner, name,bSym.flags, Ref(bSym).tpe.widen)
                 val nMap = map.updated(bSym, Ref(nBSym))
                 val (nPat1, nMap1) = rebindPatterns(pat1, nMap)
@@ -302,14 +305,14 @@ trait ApplyArgRecordScope[F[_], CT]:
                       case _ => throw MacroError(s"term expected for lambda param, we have ${paramTree}",posExprs(term))
                   case _ => None
 
-             override def transformTerm(tree:Term)(using ctx: Context):Term =
+             override def transformTerm(tree:Term)(using Context):Term =
                tree match
                  case ident@Ident(name) => lookupParamTerm(ident.symbol) match
                                              case Some(paramTerm) => paramTerm
                                              case None => super.transformTerm(tree)
                  case _ => super.transformTerm(tree)
 
-             override def transformTypeTree(tree:TypeTree)(using ctx:Context):TypeTree =
+             override def transformTypeTree(tree:TypeTree)(using Context):TypeTree =
                tree match
                  case Singleton(ref) =>
                            lookupParamTerm(ref.symbol) match
@@ -322,7 +325,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                            Inferred(transformType(i.tpe))
                  case _ => super.transformTypeTree(tree)
 
-             def transformType(tp: Type)(using ctx: Context): Type =
+             def transformType(tp: Type)(using Context): Type =
                tp match
                  case ConstantType(c) => tp
                  case tref@TermRef(qual, name) =>
@@ -401,7 +404,7 @@ trait ApplyArgRecordScope[F[_], CT]:
       if !shifted then
          term
       else
-         val mt = MethodType(List())(_ => List(), _ => typeInMonad(term.tpe))
+         val mt = MethodType(List())(_ => List(), _ => typeInMonad(term.tpe.widen))
          Lambda(mt, args => cpsTree.transformed)
 
     def isAsync: Boolean = cpsTree.isAsync

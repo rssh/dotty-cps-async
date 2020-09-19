@@ -33,8 +33,6 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
         val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs.toList).seal.cast[F[T]]} }
         restoreExpr.cast[Throwable => F[T]]
 
-
-
      val builder = if (!isAsync) {
                       CpsExpr.sync(monad, patternCode)
                    } else {

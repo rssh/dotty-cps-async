@@ -33,7 +33,17 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
    def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A]
 
    def withAction[A](fa:F[A])(action: =>Unit):F[A] =
-      flatMap(fa){x => 
+    flatMap(
+       restore(fa){ ex => 
+         try {
+           action
+           error(ex) 
+         }catch{
+           case ex1: Throwable => ex.addSuppressed(ex1)
+             error(ex)
+         }
+       }
+      ){x => 
         try{
           action
           pure(x)

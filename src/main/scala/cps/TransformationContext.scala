@@ -12,17 +12,19 @@ case class TransformationContext[F[_],T](
    parent: Option[TransformationContext[_,_]],
 )  {
 
-  def nestSame(marker: TransformationContextMarker): TransformationContext[F,T] = 
+  def nestSame(marker: TransformationContextMarker, muted: Boolean = flags.muted): TransformationContext[F,T] = 
            copy(marker=marker, nesting=nesting+1, parent=Some(this))
 
-  def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], marker: TransformationContextMarker): 
+  def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], marker: TransformationContextMarker, 
+                                                  muted: Boolean = flags.muted): 
              TransformationContext[F,S] =
-      TransformationContext(newPatternCode, newPatternType, monad, flags, 
+      TransformationContext(newPatternCode, newPatternType, monad, flags.copy(muted=muted), 
                              marker, nesting + 1, parent=Some(this) )
 
   def log(message:String): Unit =
-       print("  "*nesting)   
-       println(message)   
+       if !flags.muted then
+         print("  "*nesting)   
+         println(message)   
 
 
 }
