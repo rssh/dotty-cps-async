@@ -89,7 +89,7 @@ class TestBS1ShiftUsing:
      val c = async[ComputationBound]{
          val r1 = new TestResource("r1")
          val r3 = new TestResource("r3")
-         Using.resources(r1, new TestResource("r2"), r3: TestResource){ (r1, r2, r3) => // FIXME somewhere r3 is not widen, should remove `: TestResource`
+         Using.resources(r1, new TestResource("r2"), r3){ (r1, r2, r3) => 
              svR2 = Some(r2)
              svR3 = Some(r3)
              await(T1.cbs(r1.label)) + r2.label + r3.label
@@ -108,7 +108,7 @@ class TestBS1ShiftUsing:
          val r1 = new TestResource("r1")
          val r3 = new TestResource("r3")
          val r4 = new TestResource("r4")
-         Using.resources(r1, new TestResource("r2"), r3: TestResource, r4: TestResource){ (r1, r2, r3, r4) => // FIXME somewhere r3 and r4 is not widen, should remove `: TestResource`
+         Using.resources(r1, new TestResource("r2"), r3, r4){ (r1, r2, r3, r4) => 
              svR2 = Some(r2)
              svR3 = Some(r3)
              svR4 = Some(r4)
