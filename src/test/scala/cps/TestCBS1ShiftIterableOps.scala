@@ -423,6 +423,14 @@ class TestBS1ShiftIterableOps:
      val r = c.run()
      assert(v.forall(_.tapped))
 
+  @Test def testWithFilterSmoke(): Unit =
+     implicit val printCode = cps.macroFlags.PrintCode
+     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async[ComputationBound]{
+        (0 to 9).withFilter(x => await(T1.cbi(0)) == x%2).map(_.toString) 
+     }
+     val r = c.run()
+     assert(r == Success(IndexedSeq("0","2","4","6","8")) )
 
 
 

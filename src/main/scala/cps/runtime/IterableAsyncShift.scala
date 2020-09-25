@@ -4,6 +4,7 @@ import cps._
 import scala.collection._
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayBuilder
+import scala.collection.mutable.Builder
 
 class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
 
@@ -397,7 +398,62 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
       monad.map(foreach(c, monad)(f))(_ => c)
 
 
+  //  currently
+  def withFilter[F[_]](c: CA, m: CpsMonad[F])(p: A => F[Boolean]): DelayedWithFilter[F,A,C,CA] =
+      DelayedWithFilter(c,m,p)
+
 
 }
+
+  
+
+
+class DelayedWithFilter[F[_],A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], CA <: C[A]](c: CA, 
+                                         m: CpsMonad[F], 
+                                         p:A=>F[Boolean], 
+                                         ) extends CallChainAsyncShiftSubst[F,WithFilter[A,C]]
+{
+
+  // return eager copy
+  def _origin: F[WithFilter[A,C]] = {
+     m.map(runScan[A]((s,a)=>s.addOne(a)))(_.withFilter(_ => true))
+  }
+
+  def runScan[B](iterateEffect: (Builder[B,C[B]],A) => Unit ): F[C[B]] =
+     val s0 = m.pure(c.iterableFactory.newBuilder[B])
+     val s = c.foldLeft(s0){(fs,e) =>
+        m.flatMap(fs){ s =>
+          m.map(p(e)){ r =>
+             if (r) iterateEffect(s,e)
+             s
+          }
+        }
+     }
+     m.map(s)(_.result)
+     
+
+  // this path (without proxy using) will be substitued
+  def map[B](f: A => B): F[C[B]] = 
+     runScan((s,a)=>s.addOne(f(a)))
+
+  def flatMap[B](f: A => IterableOnce[B]): F[C[B]] = 
+     runScan((s,a)=>s.addAll(f(a)))
+
+  def withFilter(q: A=>Boolean) = DelayedWithFilter(c, m, x => m.map(p(x))(r => r && q(x)) )
+
+  def foreach[U](f: A=>U): F[Unit] = {
+     val s0 = m.pure(())
+     c.foldLeft(s0){(fs,e) =>
+        m.flatMap(fs){ s =>
+          m.map(p(e)){ r =>
+            if (r) f(e)
+            ()
+          }
+         }
+     }
+  }
+
+}
+
 
 
