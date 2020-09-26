@@ -424,8 +424,8 @@ class TestBS1ShiftIterableOps:
      assert(v.forall(_.tapped))
 
   @Test def testWithFilterSmoke(): Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
         (0 to 9).withFilter(x => await(T1.cbi(0)) == x%2).map(_.toString) 
      }

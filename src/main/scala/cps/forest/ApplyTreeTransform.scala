@@ -477,38 +477,53 @@ trait ApplyTreeTransform[F[_],CT]:
 
   def shiftedApply(term: Term, args: List[Term], shiftedIndexes:Set[Int]): Term =
 
+
     def shiftSelectTypeApply(x:Select, targs:List[TypeTree]): Term =
+
+       def withTargs(t:Term):Term =
+         if (targs.isEmpty) 
+           t
+         else 
+           TypeApply(t, targs)
+
        val qual = x.qualifier
        val monad = cpsCtx.monad.unseal
-       findObjectAsyncShiftTerm(qual) match
-         case success1: ImplicitSearchSuccess =>
-           val objectShift = success1.tree
-           if (cpsCtx.flags.debugLevel >= 15)
+       if (qual.tpe <:< '[cps.runtime.CallChainAsyncShiftSubst[F,_]].unseal.tpe) then
+          println("!!!shiftedEmpty-here")
+          val shiftedName = x.name + "_shifted"
+          qual.tpe.typeSymbol.method(shiftedName) match
+            case Nil  => 
+               throw MacroError(s"Can't find method ${shiftedName} for qual=${qual} ",posExpr(x))
+            case m::Nil =>
+               withTargs(Select(qual,m))
+            case other =>
+               Select.overloaded(qual,shiftedName,targs.map(_.tpe),args) match
+                  case Apply(x,y) => x
+                  case _ =>
+                    throw MacroError(s"Overloaded method ${shiftedName} for qual=${qual} is not apply ",posExpr(x))
+       else
+         findObjectAsyncShiftTerm(qual) match
+           case success1: ImplicitSearchSuccess =>
+             val objectShift = success1.tree
+             if (cpsCtx.flags.debugLevel >= 15)
                cpsCtx.log(s"found objectShift, ${success1.tree}")
                cpsCtx.log(s"objectShift.tpe = ${objectShift.tpe}")
-
-           val shiftedExpr = Apply(
+             val shiftedExpr = Apply(
                                TypeApply(Select.unique(objectShift, "apply"),fType.unseal::Nil),
                                List(qual,monad)
                              )
-
-           val newSelect = Select.unique(shiftedExpr, x.name)
-
-           if targs.isEmpty then
-               newSelect
-           else
-               TypeApply(newSelect, targs)
-
-         case failure1: ImplicitSearchFailure =>
-           findAsyncShiftTerm(qual) match
-             case success2: ImplicitSearchSuccess =>
-               val shiftType = success2.tree.tpe
-               val shiftSymbol = if (shiftType.isSingleton) {
-                                    shiftType.termSymbol
-                                 } else {
-                                    shiftType.typeSymbol
-                                 }
-               shiftSymbol.method(x.name) match
+             val newSelect = Select.unique(shiftedExpr, x.name)
+             withTargs(newSelect)
+           case failure1: ImplicitSearchFailure =>
+             findAsyncShiftTerm(qual) match
+               case success2: ImplicitSearchSuccess =>
+                 val shiftType = success2.tree.tpe
+                 val shiftSymbol = if (shiftType.isSingleton) {
+                                     shiftType.termSymbol
+                                   } else {
+                                     shiftType.typeSymbol
+                                   }
+                 shiftSymbol.method(x.name) match
                     case Nil =>
                         throw MacroError(s"Method (${x.name}) is not defined in [${shiftType.show}], qual=${qual} ",posExpr(x))
                     case m::Nil =>
@@ -516,8 +531,8 @@ trait ApplyTreeTransform[F[_],CT]:
                         TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
                     case other =>
                         Select.overloaded(success2.tree, x.name, (fType.unseal::targs).map(_.tpe), List(qual,monad))
-             case failure2: ImplicitSearchFailure =>
-               throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or ObjectAsyncShift (${failure1.explanation}) for qual=${qual} ",posExpr(x))
+               case failure2: ImplicitSearchFailure =>
+                 throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or ObjectAsyncShift (${failure1.explanation}) for qual=${qual} ",posExpr(x))
 
 
     def shiftCaller(term:Term): Term =
