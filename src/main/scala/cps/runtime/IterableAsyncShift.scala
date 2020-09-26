@@ -408,10 +408,10 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
   
 
 
-class DelayedWithFilter[F[_],A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], CA <: C[A]](c: CA, 
+class DelayedWithFilter[F[_], A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], CA <: C[A]](c: CA, 
                                          m: CpsMonad[F], 
                                          p:A=>F[Boolean], 
-                                         ) extends CallChainAsyncShiftSubst[F,WithFilter[A,C]]
+                                         ) extends CallChainAsyncShiftSubst[F, WithFilter[A,C]]
 {
 
   // return eager copy
@@ -431,15 +431,54 @@ class DelayedWithFilter[F[_],A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], CA
      }
      m.map(s)(_.result)
      
+  def runScanF[B](iterateChange: (Builder[B,C[B]],A) => F[Builder[B,C[B]]] ): F[C[B]] =
+     val s0 = m.pure(c.iterableFactory.newBuilder[B])
+     val s = c.foldLeft(s0){(fs,e) =>
+        m.flatMap(fs){ s =>
+          m.flatMap(p(e)){ r =>
+             if (r) 
+               iterateChange(s,e)
+             else
+               m.pure(s)
+          }
+        }
+     }
+     m.map(s)(_.result)
+     
 
   // this path (without proxy using) will be substitued
   def map[B](f: A => B): F[C[B]] = 
      runScan((s,a)=>s.addOne(f(a)))
 
+  def map_shifted[B](f: A => F[B]): F[C[B]] =
+     runScanF((s,a)=>{ 
+       m.map(f(a))(b => {
+         s.addOne(b)
+         s
+       })
+     })
+
+
   def flatMap[B](f: A => IterableOnce[B]): F[C[B]] = 
      runScan((s,a)=>s.addAll(f(a)))
 
+  def flatMap_shifted[B](f: A => F[IterableOnce[B]]): F[C[B]] = 
+     runScanF((s,a)=>{ 
+       m.map(f(a))(b => {
+         s.addAll(b)
+         s
+       })
+     })
+
   def withFilter(q: A=>Boolean) = DelayedWithFilter(c, m, x => m.map(p(x))(r => r && q(x)) )
+
+  def withFilter_shifted(q: A=> F[Boolean]) = 
+       DelayedWithFilter(c, m, x => m.flatMap(p(x)){r => 
+                                if (r) then
+                                     q(x) 
+                                else
+                                     m.pure(false)
+                         })
 
   def foreach[U](f: A=>U): F[Unit] = {
      val s0 = m.pure(())
@@ -450,6 +489,17 @@ class DelayedWithFilter[F[_],A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], CA
             ()
           }
          }
+     }
+  }
+
+  def foreach_shifted[U](f: A=>F[U]): F[Unit] = {
+     val s0 = m.pure(())
+     c.foldLeft(s0){(fs,e) =>
+        m.flatMap(fs){ s =>
+          m.flatMap(p(e)){ r =>
+             if (r) m.map(f(e))(_ => ()) else m.pure(())
+          }
+        }
      }
   }
 
