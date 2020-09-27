@@ -495,7 +495,8 @@ trait ApplyTreeTransform[F[_],CT]:
             case Nil  => 
                throw MacroError(s"Can't find method ${shiftedName} for qual=${qual} ",posExpr(x))
             case m::Nil =>
-               withTargs(Select(qual,m))
+               //withTargs(Select(qual,m))
+               withTargs(Select.unique(qual,shiftedName))
             case other =>
                Select.overloaded(qual,shiftedName,targs.map(_.tpe),args) match
                   case Apply(x,y) => x

@@ -295,6 +295,8 @@ trait ApplyArgRecordScope[F[_], CT]:
          changeSyms(Map(oldSym->Ref(newSym)), body)
 
        private def changeSyms(association: Map[Symbol,Tree], body: Term): Term =
+         if  cpsCtx.flags.debugLevel >= 20 then
+             cpsCtx.log(s"changeSyms, association = $association")
          val changes = new TreeMap() {
 
              def lookupParamTerm(symbol:Symbol): Option[Term] =
@@ -308,7 +310,13 @@ trait ApplyArgRecordScope[F[_], CT]:
              override def transformTerm(tree:Term)(using Context):Term =
                tree match
                  case ident@Ident(name) => lookupParamTerm(ident.symbol) match
-                                             case Some(paramTerm) => paramTerm
+                                             case Some(paramTerm) => 
+                                                          if (cpsCtx.flags.debugLevel >= 20) then
+                                                              cpsCtx.log(s"changeSym, changed $ident to $paramTerm")
+                                                              cpsCtx.log(s"oldHashcode: ${ident.symbol.hashCode}, new Hash: ${paramTerm.symbol.hashCode}")
+                                                              cpsCtx.log(s"oldOwner: ${ident.symbol.owner} , newOwner: ${paramTerm.symbol.owner}")
+                                                              cpsCtx.log(s"oldOwner.hashCode: ${ident.symbol.owner.hashCode} , newOwner.hashCode: ${paramTerm.symbol.owner.hashCode}")
+                                                          paramTerm
                                              case None => super.transformTerm(tree)
                  case _ => super.transformTerm(tree)
 
