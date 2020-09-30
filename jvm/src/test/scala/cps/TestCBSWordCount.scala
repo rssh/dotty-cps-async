@@ -19,7 +19,7 @@ object CBSWordCount1:
        for(w <- words) {
          await(channel.write(CountSignal.Data(w)))
        }
-       await(channel.write(CountSignal.Finish))
+       await(channel.write(CountSignal.Finish))   // Finish() instead Finish: see https://github.com/lampepfl/dotty/issues/9809
      }
      r
   }

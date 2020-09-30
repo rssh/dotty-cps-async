@@ -31,6 +31,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
                             "-Ydebug-type-error", "-uniqid" ),
         libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
     ).jsSettings(
-        //libraryDependencies += "org.scala-js" %% "scalajs-junit-test-runtime" % "1.2.0" % Test
+        scalaJSUseMainModuleInitializer := true,
+        libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.2.0" % Test).withDottyCompat(scalaVersion.value)
     )
 
