@@ -27,7 +27,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
          case d: Definition =>
            d match {
              case v@ValDef(vName,vtt,optRhs) =>
-               val valDefExpr = Block(List(v),Literal(Constant(()))).seal.cast[Unit]
+               val valDefExpr = Block(List(v),Literal(Constant.Unit())).seal.cast[Unit]
                val nestCtx = cpsCtx.nest(valDefExpr, uType,
                                          TransformationContextMarker.BlockInside(i))
                ValDefTransform.fromBlock(using qctx)(nestCtx, v)

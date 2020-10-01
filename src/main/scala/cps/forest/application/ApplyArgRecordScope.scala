@@ -190,7 +190,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                wasDefault: Boolean):List[CaseDef]=
               rest match
                 case h::t =>
-                     val nh = rebindCaseDef(h, Literal(Constant(true)), Map.empty, false)
+                     val nh = rebindCaseDef(h, Literal(Constant.Boolean(true)), Map.empty, false)
                      transformCases(t, nh::acc, wasDefault)
                 case Nil =>
                       val lastCase = casePattern match
