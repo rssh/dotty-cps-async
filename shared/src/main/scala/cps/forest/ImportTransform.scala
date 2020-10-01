@@ -19,7 +19,7 @@ object ImportTransform:
      if (cpsCtx.flags.debugLevel >= 10) {
        println(s"Import:fromBlock, importTree=$importTree")
      }
-     val posExpr = Block(List(importTree),Literal(Constant(()))).seal
+     val posExpr = Block(List(importTree),Literal(Constant.Unit())).seal
      // Import is not statement - so, it is impossible to create block with import in macros.
      //  from other side - all symbols on this stage are already resolved, so we can
      //  just erase import for our purpose.
