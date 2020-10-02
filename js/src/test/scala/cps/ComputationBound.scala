@@ -42,9 +42,7 @@ object ComputationBound {
         val ref = new AtomicReference[Option[Try[A]]](None)
         source( r => {
           ref.set(Some(r))
-          externalAsyncNotifier.synchronized{
-             externalAsyncNotifier.notify()
-          }
+          externalAsyncNotifier.doNotifyAll()
         } )
         Wait(ref, fromTry[A] _ )
    }
@@ -68,7 +66,8 @@ object ComputationBound {
     // TODO: make private back after debug
    val deferredQueue: ConcurrentLinkedQueue[Deferred[?]] = new ConcurrentLinkedQueue()
    private val waitQuant = (100 millis).toNanos
-   private val externalAsyncNotifier = new { }
+
+   private val externalAsyncNotifier = new AsyncNotifier()
 
    def  advanceDeferredQueue(endNanos: Long): Boolean = {
       var nFinished = 0
@@ -102,10 +101,9 @@ object ComputationBound {
       if (nFinished == 0)
          val timeToWait = math.min(waitQuant, endNanos - System.nanoTime)
          val timeToWaitMillis = (timeToWait nanos).toMillis
-         if (timeToWaitMillis > 0) 
-           externalAsyncNotifier.synchronized {
-              externalAsyncNotifier.wait(timeToWaitMillis)
-           }
+         //TODO: schedule wait ?
+         //if (timeToWaitMillis > 0) 
+         //     externalAsyncNotifier.doWait(timeToWaitMillis)
       nFinished > 0
    }
 
