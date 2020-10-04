@@ -81,6 +81,16 @@ trait CpsSchedulingMonad[F[_]] extends CpsAsyncMonad[F] {
 
 }
 
+trait CpsProgressingMonad[F[_]] extends CpsAsyncMonad[F] {
+
+   /**
+    * progress and return control to user.
+    **/
+   def progress[T](t:F[T], timeout: Duration): Either[F[T],Try[T]]
+
+}
+
+
 trait CpsFulfillingMonad[F[_]] extends CpsAsyncMonad[F] {
 
    /**

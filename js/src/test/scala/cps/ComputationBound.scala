@@ -1,5 +1,6 @@
 package cps
 
+import scala.concurrent._
 import scala.concurrent.duration._
 import scala.quoted._
 import scala.language.postfixOps
@@ -8,22 +9,30 @@ import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
+import scalajs.concurrent.JSExecutionContext.Implicits.queue
 
 
 trait ComputationBound[+T] {
  
   def run(timeout: Duration = Duration.Inf): Try[T] =
-    fulfill(timeout) match 
-      case Some(v) => v
+    progress(timeout) match 
+      case Done(t) => Success(t)
+      case Error(e) => Failure(e)
       case None => Failure(new TimeoutException())
 
-  def fulfill(timeout: Duration): Option[Try[T]] = 
-        progress(timeout) match 
-           case Done(t) => Some(Success(t))
-           case Error(e) => Some(Failure(e))
-           case _ => None
-
   def progress(timeout: Duration): ComputationBound[T]
+
+  def checkProgress(timeout: Duration = Duration.Inf): Either[Try[T],ComputationBound[T]] =
+        progress(timeout) match
+           case Done(t) => Left(Success(t))
+           case Error(e) => Left(Failure(e))
+           case other => Right(other)
+
+  def runTicks(timeout: Duration): Future[T] =
+     ComputationBound.progressWithNextTicks(this, timeout)
+                            
+                
+  
 
   def map[S](f:T=>S): ComputationBound[S] =
      flatMap( x => Done(f(x)) )
@@ -65,7 +74,7 @@ object ComputationBound {
    
     // TODO: make private back after debug
    val deferredQueue: ConcurrentLinkedQueue[Deferred[?]] = new ConcurrentLinkedQueue()
-   private val waitQuant = (100 millis).toNanos
+   private val waitQuant = (100 millis)
 
    private val externalAsyncNotifier = new AsyncNotifier()
 
@@ -85,9 +94,12 @@ object ComputationBound {
                          secondQueue.add(c)
                        case _ =>
                          val nextR = r.progress((endNanos - System.nanoTime) nanos)
-                         nextR.fulfill((endNanos - System.nanoTime) nanos) match
-                           case Some(x) =>
-                              c.ref.set(Some(x))
+                         nextR match
+                           case Done(x) =>
+                              c.ref.set(Some(Success(x)))
+                              nFinished += 1
+                           case Error(x) =>
+                              c.ref.set(Some(Failure(x)))
                               nFinished += 1
                            case None =>
                               secondQueue.add(Deferred(c.ref,Some(nextR)))
@@ -98,14 +110,45 @@ object ComputationBound {
          val r = secondQueue.poll()
          if !(r eq null) then
             deferredQueue.add(r)
-      if (nFinished == 0)
-         val timeToWait = math.min(waitQuant, endNanos - System.nanoTime)
-         val timeToWaitMillis = (timeToWait nanos).toMillis
-         //TODO: schedule wait ?
-         //if (timeToWaitMillis > 0) 
-         //     externalAsyncNotifier.doWait(timeToWaitMillis)
       nFinished > 0
    }
+
+   def progressWithNextTicks[T](cb: ComputationBound[T], timeout: Duration): Future[T] =
+        val endMillis = if (timeout.isFinite) then {
+                           System.currentTimeMillis + timeout.toMillis 
+                        } else {
+                           System.currentTimeMillis + waitQuant.toMillis
+                        }
+        cb.progress(timeout) match
+           case Done(t) =>  Future successful t
+           case Error(e) => Future failed e
+           case Thunk(r) => // impossible, because thuk is handled in progress, but
+                            //  elt handle one anyway
+                            progressWithNextTicks(r(),timeout)
+           case w@Wait(ref, cont) =>
+                 ref.get() match
+                   case Some(c) =>
+                      progressWithNextTicks(cont(c),timeout)
+                   case None =>
+                      if (timeout.isFinite) then
+                        val millisToEnd = endMillis - System.currentTimeMillis
+                        if (millisToEnd < 0) then
+                          Future failed new TimeoutException()
+                        else
+                          externalAsyncNotifier.timedWait(millisToEnd millis).flatMap{ u =>
+                              val millisToEnd = endMillis - System.currentTimeMillis
+                              if (millisToEnd < 0) then
+                                 Future failed new TimeoutException()
+                              else
+                                 progressWithNextTicks(w, millisToEnd.millis)
+                          }
+                      else
+                        externalAsyncNotifier.timedWait(timeout).flatMap{ _ =>
+                          progressWithNextTicks(w, timeout)
+                        }
+                            
+                
+  
 
 }
 
@@ -145,10 +188,6 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
    def spawn[A](op: => ComputationBound[A]): ComputationBound[A] =
           ComputationBound.spawn(op)
 
-   def fulfill[T](t: ComputationBound[T], timeout: Duration): Option[Try[T]] =
-          t.fulfill(timeout)
-
-
 }
 
 case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] {
@@ -165,6 +204,7 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
            case Error(e) => r
            case w@Wait(ref, f) => w.progress(timeout)
            case Thunk(f1) => 
+                   // TODO:  Trampoline
                    try {
                      f1().progress(timeout)
                    } catch {
@@ -184,8 +224,6 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
 
 case class Done[T](value:T) extends ComputationBound[T]:
 
-  override def fulfill(timeout: Duration): Option[Try[T]] = Some(Success(value))
-
   override def progress(timeout: Duration): ComputationBound[T] = this
 
   override def flatMap[S](f: T=>ComputationBound[S] ): ComputationBound[S] =
@@ -193,8 +231,6 @@ case class Done[T](value:T) extends ComputationBound[T]:
 
 
 case class Error[T](e: Throwable) extends ComputationBound[T]:
-
-  override def fulfill(timeout: Duration): Option[Try[T]] = Some(Failure(e))
 
   override def progress(timeout: Duration): ComputationBound[T] = this
 
@@ -211,12 +247,14 @@ case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => Computa
          val beforeWait = Duration(System.nanoTime, NANOSECONDS)
          if (timeout.isFinite) 
             val endTime = (beforeWait + timeout).toNanos
-            while(ref.get().isEmpty && ( System.nanoTime < endTime ) )
-               ComputationBound.advanceDeferredQueue(endTime)
+            while(ref.get().isEmpty && 
+                  System.nanoTime < endTime  &&
+                  ComputationBound.advanceDeferredQueue(endTime)
+            ) { }
          else
-            while(ref.get().isEmpty)
-               val endTime = System.nanoTime + 1000000
-               ComputationBound.advanceDeferredQueue(endTime)
+            while(ref.get().isEmpty &&
+                 ComputationBound.advanceDeferredQueue(System.nanoTime + 100000)
+            ) { }
          ref.get.map{ r => 
              val afterWait = Duration(System.nanoTime, NANOSECONDS)
              op(r).progress(timeout - (afterWait - beforeWait)) 
