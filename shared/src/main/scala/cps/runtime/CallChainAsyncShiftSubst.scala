@@ -10,12 +10,12 @@ import cps._
  * shifted function instead F[T] and then cps engine substitute calls of
  * chanined functions if they are implemented.
  **/
-trait CallChainAsyncShiftSubst[F[_],T]:
+trait CallChainAsyncShiftSubst[F[_], T, FT]:
 
    /**
     * called when we have no calls in futher chain.
     **/
-   def _origin:  F[T]
+   def _origin:  FT 
 
    // and we assume, that for each method T which need substitution we will heve
    // appropriative method here, which accept same args and produce argument in monad.

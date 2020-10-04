@@ -150,18 +150,24 @@ trait ApplyTreeTransform[F[_],CT]:
                   runAwait(applyTerm, args.head, targs3.head.tpe, args1.head)
        case _ =>
          val cpsObj = runRoot(obj, TCM.ApplySelect)
+         if (cpsCtx.flags.debugLevel >= 15)
+            cpsCtx.log(s"funSelect: cpsObj=${cpsObj}")
          cpsObj match
             case lt: AsyncLambdaCpsTree =>
                if (cpsCtx.flags.debugLevel >= 15)
-                  cpsCtx.log("funSelect: AsyncLambdaCpsTree discovered, fun=$fun fun.tpe=${fun.tpe}")
+                  cpsCtx.log(s"funSelect: AsyncLambdaCpsTree discovered, fun=$fun fun.tpe=${fun.tpe}")
                handleArgs1(applyTerm, fun, cpsObj.select(fun.symbol, fun.tpe), args, tails)
             case cls: CallChainSubstCpsTree =>
+               if (cpsCtx.flags.debugLevel >= 15)
+                  cpsCtx.log(s"funSelect: CallChainSubstCpsTree discovered, fun=$fun fun.tpe=${fun.tpe}")
                sameSelect(cls.shifted, methodName, List.empty, args) match 
                   case None => val cpsObj1 = cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe)
                                handleArgs1(applyTerm, fun, cpsObj1, args, tails)
                   case Some(term) => val cpsObj1 = CpsTree.pure(term, isChanged = true)
                                handleArgs1(applyTerm, fun, cpsObj1, args, tails, unpure=true)
             case _ =>
+               if (cpsCtx.flags.debugLevel >= 15)
+                  cpsCtx.log(s"funSelect: ! lambda || Subst, fun=$fun fun.tpe=${fun.tpe}")
                if (cpsObj.isAsync)
                    handleArgs1(applyTerm, fun,
                         cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe), args, tails)
@@ -284,10 +290,12 @@ trait ApplyTreeTransform[F[_],CT]:
                          case Some(fun1) =>
                            if (!cpsFun.isChanged && !unpure) 
                              CpsTree.pure(applyTerm)
-                           else if (unpure)
-                             CpsTree.impure(fun1.appliedToArgss(args::tailArgss), applyTerm.tpe)
-                           else
-                             CpsTree.pure(fun1.appliedToArgss(args::tailArgss), true)
+                           else 
+                             if (unpure)
+                                val internalApply = fun1.appliedToArgss(args::tailArgss)
+                                shiftedResultCpsTree(applyTerm, internalApply)
+                             else
+                                CpsTree.pure(fun1.appliedToArgss(args::tailArgss), true)
                          case _ => 
                             cpsFun.monadMap(x => x.appliedToArgss(args::tailArgss), applyTerm.tpe)
         } else {
@@ -297,9 +305,9 @@ trait ApplyTreeTransform[F[_],CT]:
                                     if (!existsShiftedLambda && !cpsFun.isChanged && !unpure)
                                        CpsTree.pure(applyTerm)
                                     else
-                                       buildApply(cpsFun, fun, applyRecords, applyTerm, existsAsyncArg, existsShiftedLambda, tails)
+                                       buildApply(cpsFun, fun, applyRecords, applyTerm, existsAsyncArg, existsShiftedLambda, unpure, tails)
                                  } else {
-                                    buildApply(cpsFun, fun, applyRecords, applyTerm, existsAsyncArg, existsShiftedLambda, tails)
+                                    buildApply(cpsFun, fun, applyRecords, applyTerm, existsAsyncArg, existsShiftedLambda, unpure, tails)
                                  }
            if cpsCtx.flags.debugLevel >= 15 then
                cpsCtx.log(s"handleArgs: runFold=$runFold")
@@ -488,7 +496,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
        val qual = x.qualifier
        val monad = cpsCtx.monad.unseal
-       if (qual.tpe <:< '[cps.runtime.CallChainAsyncShiftSubst[F,_]].unseal.tpe) then
+       if (qual.tpe <:< '[cps.runtime.CallChainAsyncShiftSubst[F,?,?]].unseal.tpe) then
           println("!!!shiftedEmpty-here")
           val shiftedName = x.name + "_shifted"
           qual.tpe.typeSymbol.method(shiftedName) match
@@ -591,35 +599,47 @@ trait ApplyTreeTransform[F[_],CT]:
                  applyTerm: Term,
                  withAsync: Boolean,
                  withShiftedLambda: Boolean,
+                 inShiftedCallChain: Boolean,
                  tails: List[Seq[ApplyArgRecord]]
                  ): CpsTree =
         if (cpsCtx.flags.debugLevel >= 15)
             cpsCtx.log(s"buildApply: fun=${safeShow(fun)}")
-            cpsCtx.log(s"cpsFun.isSync=${cpsFun.isSync}, withShiftedLambda=${withShiftedLambda}")
+            cpsCtx.log(s"cpsFun.isSync=${cpsFun.isSync}, withShiftedLambda=${withShiftedLambda}, inShiftedCallChain=${inShiftedCallChain}")
         val applyTpe = applyTerm.tpe
         if (withShiftedLambda)
-          if (cpsFun.isSync)
+          if (cpsFun.isSync || inShiftedCallChain)
             val shifted = buildShiftedApply(fun, argRecords, withAsync, tails)
             if (cpsCtx.flags.debugLevel >= 15)
                cpsCtx.log(s"buildApply: shifted=${safeShow(shifted)}")
             shiftedResultCpsTree(applyTerm, shifted)
           else
-             //val sym = Symbol.newVal(Symbol.currentOwner, "x", t.widen, Flags.EmptyFlags, Symbol.noSymbol)   
-             //val shifted = buildShiftedApply(Ref(x), argRecords, withAsync, tails)
-             // TODO: monadFlatMap should accept lambda-expression
-             cpsFun.monadFlatMap(v => buildShiftedApply(v,argRecords, withAsync, tails), applyTpe)
+            //val sym = Symbol.newVal(Symbol.currentOwner, "x", t.widen, Flags.EmptyFlags, Symbol.noSymbol)   
+            //val shifted = buildShiftedApply(Ref(x), argRecords, withAsync, tails)
+            // TODO: monadFlatMap should accept lambda-expression
+            cpsFun.monadFlatMap(v => buildShiftedApply(v,argRecords, withAsync, tails), applyTpe)
         else
           val args = argRecords.map(_.identArg(withAsync)).toList
           val tailArgss = tails.map(_.map(_.identArg(withAsync)).toList)
           val argss = args::tailArgss
           cpsFun match
              case lt:AsyncLambdaCpsTree =>
-                     CpsTree.impure(lt.rLambda.appliedToArgss(argss), applyTpe)
+                    CpsTree.impure(lt.rLambda.appliedToArgss(argss), applyTpe)
+             case cs:CallChainSubstCpsTree =>
+                    shiftedResultCpsTree(applyTerm, cs.shifted.appliedToArgss(argss))
              case _ =>
-                    if (cpsFun.isSync)
-                       cpsFun.applyTerm1(x => x.appliedToArgss(argss), applyTpe)
-                    else
-                       cpsFun.monadMap(x => x.appliedToArgss(argss), applyTpe)
+                    cpsFun.syncOrigin match
+                       case Some(fun) =>
+                          val applied = fun.appliedToArgss(argss)
+                          if (inShiftedCallChain)
+                             shiftedResultCpsTree(applyTerm, applied)
+                          else
+                             CpsTree.pure(applied, cpsFun.isChanged)
+                       case None => 
+                          if (inShiftedCallChain)
+                             val shifted = cpsFun.transformed
+                             shiftedResultCpsTree(applyTerm, shifted.appliedToArgss(argss))
+                          else
+                             cpsFun.monadMap(x => x.appliedToArgss(argss), applyTpe)
 
 
   def shiftedResultCpsTree(origin: Term, shifted: Term): CpsTree =
@@ -632,7 +652,7 @@ trait ApplyTreeTransform[F[_],CT]:
                   CpsTree.impure(Apply(Select.unique(shifted,"apply"),List(Ref(sym))),b.head),origin.tpe)
            case _ =>
              throw MacroError("Async function with arity != 1 is not supported yet",posExprs(shifted,origin))
-      else if (shifted.tpe <:< '[cps.runtime.CallChainAsyncShiftSubst[${fType},?]].unseal.tpe ) 
+      else if (shifted.tpe <:< '[cps.runtime.CallChainAsyncShiftSubst[${fType},?,?]].unseal.tpe ) 
          println(s"!!!here, shifted.tpe=${shifted.tpe.show}")
          CallChainSubstCpsTree(origin, shifted, origin.tpe)
       else

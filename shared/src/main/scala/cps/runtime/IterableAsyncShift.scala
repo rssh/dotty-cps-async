@@ -411,7 +411,7 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
 class DelayedWithFilter[F[_], A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], CA <: C[A]](c: CA, 
                                          m: CpsMonad[F], 
                                          p:A=>F[Boolean], 
-                                         ) extends CallChainAsyncShiftSubst[F, WithFilter[A,C]]
+                                         ) extends CallChainAsyncShiftSubst[F, WithFilter[A,C], F[WithFilter[A,C]] ]
 {
 
   // return eager copy
