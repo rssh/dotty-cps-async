@@ -12,14 +12,14 @@ val sharedSettings = Seq(
     version := "0.3.0-SNAPSHOT",
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
-    name := "dotty-cps-async",
-    Sphinx / sourceDirectory := baseDirectory.value / "docs",
+    name := "dotty-cps-async"
 )
 
 lazy val root = project
   .in(file("."))
   .aggregate(cps.js, cps.jvm)
   .settings(
+    Sphinx / sourceDirectory := baseDirectory.value / "docs"
   )
 
 
