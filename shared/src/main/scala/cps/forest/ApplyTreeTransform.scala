@@ -468,7 +468,7 @@ trait ApplyTreeTransform[F[_],CT]:
     val tpe = e.tpe.widen
     val asyncShift = TypeIdent(Symbol.classSymbol("cps.AsyncShift")).tpe
     val tpTree = asyncShift.appliedTo(tpe)
-    searchImplicit(tpTree)
+    Implicits.search(tpTree)
 
   def findObjectAsyncShiftTerm(e:Term):ImplicitSearchResult =
     val tpe = e.tpe.widen
@@ -479,7 +479,7 @@ trait ApplyTreeTransform[F[_],CT]:
       cpsCtx.log(s"searchImplicits: tpTree=$tpTree")
       cpsCtx.log(s"tpe=$tpe")
       cpsCtx.log(s"Type.of[ObjectAsyncShift]=${Type.of[ObjectAsyncShift]}")
-    searchImplicit(tpTree)
+    Implicits.search(tpTree)
 
 
 

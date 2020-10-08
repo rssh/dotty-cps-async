@@ -42,7 +42,7 @@ trait AwaitTreeTransform[F[_],CT]:
       val otherF = targ
       val conversion = TypeIdent(Symbol.classSymbol("cps.CpsMonadConversion")).tpe
       val taConversion = conversion.appliedTo(List(otherF, myF))
-      searchImplicit(taConversion) match
+      Implicits.search(taConversion) match
            case implSuccess: ImplicitSearchSuccess =>
              val convertedArg = Apply(
                     TypeApply(Select.unique(implSuccess.tree, "apply"),

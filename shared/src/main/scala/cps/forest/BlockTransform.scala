@@ -52,7 +52,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                              val valueDiscard = TypeIdent(Symbol.classSymbol("cps.ValueDiscard")).tpe
                              val tpe = t.tpe.widen.dealias
                              val tpTree = valueDiscard.appliedTo(tpe)
-                             searchImplicit(tpTree) match
+                             Implicits.search(tpTree) match
                                case sc: ImplicitSearchSuccess =>
                                   val pd = Apply(Select.unique(sc.tree,"apply"),List(t)).seal.cast[Unit]
                                   Async.nestTransform(pd, cpsCtx, TransformationContextMarker.BlockInside(i))
@@ -60,12 +60,12 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                                   val tps = safeShow()
                                   val msg = s"discarding non-unit value without custom discard $tps (${fl.explanation})"
                                   if (cpsCtx.flags.warnValueDiscard)
-                                      warning(msg, t.pos)
+                                      Reporting.warning(msg, t.pos)
                                   else
-                                      error(msg, t.pos)
+                                      Reporting.error(msg, t.pos)
                                   Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
                            else
-                             warning(s"discarding non-unit value ${safeShow()}", t.pos)
+                             Reporting.warning(s"discarding non-unit value ${safeShow()}", t.pos)
                              Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
                        else
                          Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
