@@ -31,8 +31,12 @@ trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends
    def applyOrElse_shifted[A1 <:A, B1 >: B](x: A1, default: (A1)=>F[B1]): F[B1] =
                                applyContOrElse_shifted(x, x => m.pure(x), default)
 
-
    def _origin: A=>F[B] = (x => apply(x))
+
+   def lift: CallChainAsyncShiftSubst[F,A=>Option[B], A=>F[Option[B]]]  =
+      Function1AndThenCallChainSubst[F,A,A,Option[B]](identity,
+          (x:A) => applyContOrElse[A,Option[B]](x, (y:B)=>Some(y), _ => None),
+          m)
 
    def andThen[C](g: PartialFunctionCallChainSubst[F,B,C]): PartialFunctionCallChainSubst[F,A,C] =
      val r = new PartialFunctionCallChainSubst[F,A,C](m) {
@@ -113,6 +117,8 @@ trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends
               )
           
      }
+
+
 
 
 object PartialFunctionCallChainSubst:
