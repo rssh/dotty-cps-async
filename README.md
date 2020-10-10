@@ -7,7 +7,7 @@ This is the implementation of async/await transformation for Dotty (next version
 
  * Full support of all scala language constructs in async/await block.
  * Pluggable monad interface:  
-    *  An await monad can be any trait, for which it is possible to implement [CpsAsyncMonad](https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala) typeclass. You can provide those methods for your favorite monad.
+    *  An await monad can be any trait, for which it is possible to implement [CpsAsyncMonad](https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala) typeclass. You can provide those methods for your favorite monad.
  * Limited support of high-order functions:
     * ```urls.map(fetchData(_))(await _ )```  is an idiomatic way to fetch data for all items in parallel.
     * An application developer or library author can provide 'shifted' implementation of the own high-order functions.

@@ -3,10 +3,6 @@
 //val dottyVersion = "0.28.0-bin-SNAPSHOT"
 val dottyVersion = dottyLatestNightlyBuild.get
 
-enablePlugins(SphinxPlugin)
-enablePlugins(GhpagesPlugin)
-
-git.remoteRepo := "git@github.com:rssh/dotty-cps-async.git"
 
 val sharedSettings = Seq(
     version := "0.3.0-SNAPSHOT",
@@ -19,13 +15,16 @@ lazy val root = project
   .in(file("."))
   .aggregate(cps.js, cps.jvm)
   .settings(
-    Sphinx / sourceDirectory := baseDirectory.value / "docs"
-  )
+    Sphinx / sourceDirectory := baseDirectory.value / "docs",
+    git.remoteRepo := "git@github.com:rssh/dotty-cps-async.git"
+  ).enablePlugins(SphinxPlugin)
+   .enablePlugins(GhpagesPlugin)
 
 
 lazy val cps = crossProject(JSPlatform, JVMPlatform)
     .in(file("."))
     .settings(sharedSettings)
+    .disablePlugins(SitePlugin)
     .jvmSettings(
         scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
                             "-Ydebug-type-error", "-uniqid" ),
