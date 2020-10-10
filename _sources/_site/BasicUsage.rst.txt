@@ -42,7 +42,7 @@ Inside the async block, we can use await pseudo-function.
  .. index:: CpsMonad
  .. index:: CpsTryMonad
 
-`MyMonad` should be a type for which we have implemented `CpsMonad <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala>`_ or `CpsTryMonad <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L25>`_ (the latest supports try/catch) typeclass.
+`MyMonad` should be a type for which we have implemented `CpsMonad <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala>`_ or `CpsTryMonad <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonad.scala#L25>`_ (the latest supports try/catch) typeclass.
 
 
 Monad can-be abstracted out as in next example:

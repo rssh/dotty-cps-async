@@ -1,7 +1,7 @@
 Monads interoperability.
 ========================
 
-Monads in async and await can be different:  ``await[F]`` can be applied inside ``async[G]``  when exists ``CpsMonadConversion[F, G]`` (see `CpsMonadConversion.scala <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadConversion.scala>`_ ).
+Monads in async and await can be different:  ``await[F]`` can be applied inside ``async[G]``  when exists ``CpsMonadConversion[F, G]`` (see `CpsMonadConversion.scala <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonadConversion.scala>`_ ).
 
 Future Examples
 ---------------
@@ -75,7 +75,7 @@ This can be immediatly evaluation for imperative monads, or for monads with dela
 like haskell-like IO -- submittiong op to a pull, which should be evaluated during ```unsafePerformIO``` 
 at the end of the world.
 
-You can read implementation of conversion of scheduled monad to ``Future`` in  `FutureAsyncMonad.scala <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/FutureAsyncMonad.scala>`_ 
+You can read implementation of conversion of scheduled monad to ``Future`` in  `FutureAsyncMonad.scala <https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/FutureAsyncMonad.scala>`_ 
 
 Of course, it is is possible to create other conversions between you monads, based on other principles.
 

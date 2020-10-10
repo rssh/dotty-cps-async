@@ -6,31 +6,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monads interoperability. &#8212; dotty-cps-async 0.1.0-SNAPSHOT documentation</title>
-    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Additional Features" href="Features.html" />
-    <link rel="prev" title="High-order functions." href="HighOrderFunctions.html" /> 
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
+          <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="Features.html" title="Additional Features"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="HighOrderFunctions.html" title="High-order functions."
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.1.0-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monads interoperability.</a></li> 
       </ul>
     </div>  
@@ -42,7 +34,7 @@
             
   <div class="section" id="monads-interoperability">
 <h1>Monads interoperability.<a class="headerlink" href="#monads-interoperability" title="Permalink to this headline">¶</a></h1>
-<p>Monads in async and await can be different:  <code class="docutils literal notranslate"><span class="pre">await[F]</span></code> can be applied inside <code class="docutils literal notranslate"><span class="pre">async[G]</span></code>  when exists <code class="docutils literal notranslate"><span class="pre">CpsMonadConversion[F,</span> <span class="pre">G]</span></code> (see <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadConversion.scala">CpsMonadConversion.scala</a> ).</p>
+<p>Monads in async and await can be different:  <code class="docutils literal notranslate"><span class="pre">await[F]</span></code> can be applied inside <code class="docutils literal notranslate"><span class="pre">async[G]</span></code>  when exists <code class="docutils literal notranslate"><span class="pre">CpsMonadConversion[F,</span> <span class="pre">G]</span></code> (see <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonadConversion.scala">CpsMonadConversion.scala</a> ).</p>
 <div class="section" id="future-examples">
 <h2>Future Examples<a class="headerlink" href="#future-examples" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="async-f-await-future">
@@ -99,7 +91,7 @@
 <p>This can be immediatly evaluation for imperative monads, or for monads with delayed evaluation,
 like haskell-like IO – submittiong op to a pull, which should be evaluated during <code class="docutils literal notranslate"><span class="pre">`unsafePerformIO`</span></code>
 at the end of the world.</p>
-<p>You can read implementation of conversion of scheduled monad to <code class="docutils literal notranslate"><span class="pre">Future</span></code> in  <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/FutureAsyncMonad.scala">FutureAsyncMonad.scala</a></p>
+<p>You can read implementation of conversion of scheduled monad to <code class="docutils literal notranslate"><span class="pre">Future</span></code> in  <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/FutureAsyncMonad.scala">FutureAsyncMonad.scala</a></p>
 <p>Of course, it is is possible to create other conversions between you monads, based on other principles.</p>
 </div>
 </div>
@@ -112,7 +104,7 @@ at the end of the world.</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
+  <h3><a href="../index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Monads interoperability.</a><ul>
 <li><a class="reference internal" href="#future-examples">Future Examples</a><ul>
@@ -124,23 +116,17 @@ at the end of the world.</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="HighOrderFunctions.html"
-                        title="previous chapter">High-order functions.</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="Features.html"
-                        title="next chapter">Additional Features</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/MonadsInteroperability.rst.txt"
+      <li><a href="../_sources/_site/MonadsInteroperability.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
+    <form class="search" action="../search.html" method="get">
       <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
     </form>
@@ -155,15 +141,9 @@ at the end of the world.</p>
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
+          <a href="../genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="Features.html" title="Additional Features"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="HighOrderFunctions.html" title="High-order functions."
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.1.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.1.0-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monads interoperability.</a></li> 
       </ul>
     </div>
