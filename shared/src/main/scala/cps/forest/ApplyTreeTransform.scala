@@ -101,15 +101,7 @@ trait ApplyTreeTransform[F[_],CT]:
                                val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
                                handleArgs1(applyTerm, fun, cpsObj, args, tails)
                             case Some(term) =>
-                               val r = handleArgs1(applyTerm, term, CpsTree.pure(term, isChanged=true), args, tails, unpure=true)
-                               if (cpsCtx.flags.debugLevel >= 15)
-                                    cpsCtx.log(s"!!!r=$r")
-                                    cpsCtx.log(s"r.isChanged=${r.isChanged}")
-                               r
-                               /*
-                               val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
-                               handleArgs1(applyTerm, fun, cpsObj, args, tails)
-                               */
+                               handleArgs1(applyTerm, term, CpsTree.pure(term, isChanged=true), args, tails, unpure=true)
                  case _ =>
                      val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
                      handleArgs1(applyTerm, fun, cpsObj, args, tails)
@@ -497,7 +489,6 @@ trait ApplyTreeTransform[F[_],CT]:
        val qual = x.qualifier
        val monad = cpsCtx.monad.unseal
        if (qual.tpe <:< '[cps.runtime.CallChainAsyncShiftSubst[F,?,?]].unseal.tpe) then
-          println("!!!shiftedEmpty-here")
           val shiftedName = x.name + "_shifted"
           qual.tpe.typeSymbol.method(shiftedName) match
             case Nil  => 
@@ -653,7 +644,6 @@ trait ApplyTreeTransform[F[_],CT]:
            case _ =>
              throw MacroError("Async function with arity != 1 is not supported yet",posExprs(shifted,origin))
       else if (shifted.tpe <:< '[cps.runtime.CallChainAsyncShiftSubst[${fType},?,?]].unseal.tpe ) 
-         println(s"!!!here, shifted.tpe=${shifted.tpe.show}")
          CallChainSubstCpsTree(origin, shifted, origin.tpe)
       else
          CpsTree.impure(shifted, origin.tpe)

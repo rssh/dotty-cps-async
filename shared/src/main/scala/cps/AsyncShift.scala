@@ -3,6 +3,8 @@ package cps
 import scala.collection.ArrayOps
 import scala.collection.IterableOps
 import scala.collection.SeqOps
+import scala.collection.MapOps
+import scala.collection.immutable
 
 trait AsyncShift[T]
 
@@ -26,6 +28,12 @@ object AsyncShift extends AsyncShiftLowPriority1 {
 
  transparent inline given shiftedSeqOps[A,C[X] <: Seq[X] & SeqOps[X,C,C[X]] ] as AsyncShift[C[A]] =
       cps.runtime.SeqAsyncShift[A,C,C[A]]()
+
+ transparent inline given shiftedMapOps[K,V,CC[K,V] <: MapOps[K,V,CC,CC[K,V]] with Iterable[(K,V)]] as AsyncShift[CC[K,V]] =
+      cps.runtime.MapOpsAsyncShift[K,V,CC,Iterable,CC[K,V]]()
+
+ transparent inline given shiftedImmutableMapOps[K,V,CC[K,V] <: MapOps[K,V,CC,CC[K,V]] with immutable.Iterable[(K,V)]] as AsyncShift[CC[K,V]] =
+      cps.runtime.MapOpsAsyncShift[K,V,CC,immutable.Iterable,CC[K,V]]()
 
  transparent inline given shiftedList[A] as AsyncShift[scala.collection.immutable.List[A]] =
       cps.runtime.ListAsyncShift[A]()

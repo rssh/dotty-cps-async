@@ -75,8 +75,14 @@ trait CpsTreeScope[F[_], CT] {
          case Some(syncTerm) =>
              CpsExpr.sync(monad,safeSeal(syncTerm).cast[T])
          case None =>
-             val sealedTransformed = safeSeal(transformed).cast[F[T]]
-             CpsExpr.async[F,T](monad, sealedTransformed)
+             try {
+               val sealedTransformed = safeSeal(transformed).cast[F[T]]
+               CpsExpr.async[F,T](monad, sealedTransformed)
+             } catch {
+               case ex: Throwable =>
+                 println("failed seal:"+ transformed.seal.show )
+                 throw ex;
+             }
 
      def toResultWithType[T](qt: quoted.Type[T]): CpsExpr[F,T] =
              given quoted.Type[T] = qt
@@ -183,10 +189,12 @@ trait CpsTreeScope[F[_], CT] {
     def transformed: Term = origin
 
     def applyTerm1(f: Term => Term, ntpe: Type): CpsTree =
-          AwaitSyncCpsTree(f(transformed), ntpe)
+          monadMap(f, ntpe)
+          //AwaitSyncCpsTree(f(transformed), ntpe)
 
     def select(symbol: Symbol, ntpe: Type): CpsTree =
-          AwaitSyncCpsTree(origin.select(symbol), ntpe)
+          monadMap(_.select(symbol), ntpe)
+          //was: AwaitSyncCpsTree(origin.select(symbol), ntpe)
 
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.AwaitSyncCpsTree =
           otherCake.AwaitSyncCpsTree(otherCake.adopt(origin),

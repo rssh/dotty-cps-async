@@ -178,7 +178,7 @@ object PartialFunctionCallChainSubst:
 
 
 
-class PartialFunctionAsyncShift[T,R] extends AsyncShift[PartialFunction[T,R]] :
+trait PartialFunctionAsyncShiftBase[T,R, C <: PartialFunction[T,R]] extends AsyncShift[C] :
                                         
    import PartialFunctionCallChainSubst._
 
@@ -199,4 +199,6 @@ class PartialFunctionAsyncShift[T,R] extends AsyncShift[PartialFunction[T,R]] :
 
    //def runWith[F[_], U](f: PartialFunction[T,R], m: CpsMonad[F])(action: (R)=>U): A=>F[B1] = ???
 
+
+class PartialFunctionAsyncShift[T,R] extends PartialFunctionAsyncShiftBase[T,R, PartialFunction[T,R]] 
 
