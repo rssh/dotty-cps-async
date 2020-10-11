@@ -3,13 +3,6 @@ package cps.runtime
 import cps._
 
 
-
-case class UndefinedAt[T](x:T) 
-
-type OrUndefinedAt[T,R] = R | UndefinedAt[T]
-
-
-
 trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends 
                                                          CallChainAsyncShiftSubst[F,PartialFunction[A,B], A=>F[B]]:
 
@@ -189,8 +182,8 @@ class PartialFunctionAsyncShift[T,R] extends AsyncShift[PartialFunction[T,R]] :
                                         
    import PartialFunctionCallChainSubst._
 
-   def andThen[F[+_],A](f: PartialFunction[T,R], m: CpsMonad[F])(g: (R) => F[A]): PartialFunctionCallChainSubst[F,T,A] =
-        partialPlain(m, f).andThen(totalMapped(m,g))
+   //def andThen[F[+_],A](f: PartialFunction[T,R], m: CpsMonad[F])(g: (R) => F[A]): PartialFunctionCallChainSubst[F,T,A] =
+   //     partialPlain(m, f).andThen(totalMapped(m,g))
           
    def andThen[F[+_],A](f: PartialFunction[T,R], m: CpsMonad[F])(g: PartialFunction[R,F[A]]): 
                                                                       PartialFunctionCallChainSubst[F,T,A] =
