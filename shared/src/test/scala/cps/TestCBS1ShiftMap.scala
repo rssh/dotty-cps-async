@@ -21,8 +21,8 @@ class TestBS1ShiftMap:
      assert(c.run() == Success("AAA"))
 
   @Test def testMap1(): Unit = 
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
         Map(1->1,2->2,3->3).map{ x =>
            await(T1.cbi(3)) + x._1
