@@ -10,7 +10,7 @@ trait AwaitTreeTransform[F[_],CT]:
 
   thisTreeTransform: TreeTransformScope[F, CT] =>
 
-  import qctx.tasty.{_, given _}
+  import qctx.reflect._
 
   def runAwait(term: Term, arg: Term, awaitCpsMonadType: Type, awaitCpsMonad: Term): CpsTree =
       if cpsCtx.flags.debugLevel >= 10 then

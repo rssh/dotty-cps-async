@@ -43,7 +43,7 @@ object Async {
    * transform expression and get monad from context.
    **/
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using qctx: QuoteContext): Expr[F[T]] = 
-    import qctx.tasty._
+    import qctx.reflect._
     Expr.summon[CpsMonad[F]] match
        case Some(dm) =>
           transformMonad[F,T](f,dm)
@@ -57,7 +57,7 @@ object Async {
    * from other macros
    **/
   def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using qctx: QuoteContext): Expr[F[T]] = 
-    import qctx.tasty._
+    import qctx.reflect._
     import TransformationContextMarker._
     val flags = adoptFlags(f)
     try
@@ -81,7 +81,7 @@ object Async {
 
 
   def adoptFlags(f: Expr[_])(using qctx: QuoteContext): AsyncMacroFlags =
-    import qctx.tasty.{_,given _}
+    import qctx.reflect._
     Expr.summon[AsyncMacroFlags] match
       case Some(flagsExpr) =>
         flagsExpr match
@@ -113,7 +113,7 @@ object Async {
                                       parent: Option[TransformationContext[_,_]])(
                                            using qctx: QuoteContext): CpsExpr[F,T] =
      val tType = summon[Type[T]]
-     import qctx.tasty.{_, given _}
+     import qctx.reflect._
      import util._
      val cpsCtx = TransformationContext[F,T](f,tType,dm,flags,exprMarker,nesting,parent)
      f match 

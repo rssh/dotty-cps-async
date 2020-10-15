@@ -1,3 +1,5 @@
+// transform for match
+//  (C) Ruslan Shevchenko, 2019-2020, Kiev, Ukraine
 package cps.forest
 
 import scala.quoted._
@@ -10,7 +12,7 @@ trait MatchTreeTransform[F[_], CT]:
 
   thisScope: TreeTransformScope[F, CT] =>
 
-  import qctx.tasty.{_, given _}
+  import qctx.reflect._
 
   // case selectTerm @ Select(qualifier,name) 
   def runMatch( matchTerm: Match ): CpsTree =
@@ -42,7 +44,7 @@ object MatchTreeTransform:
 
 
   def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
-                         matchTerm: qctx1.tasty.Match): CpsExpr[F,T] = {
+                         matchTerm: qctx1.reflect.Match): CpsExpr[F,T] = {
                          
      val tmpFType = summon[Type[F]]
      val tmpCTType = summon[Type[T]]
@@ -54,7 +56,7 @@ object MatchTreeTransform:
          implicit val ctType: quoted.Type[T] = tmpCTType
           
          def bridge(): CpsExpr[F,T] =
-            val origin = matchTerm.asInstanceOf[qctx.tasty.Match]
+            val origin = matchTerm.asInstanceOf[qctx.reflect.Match]
             runMatch(origin).toResult[T]
                         
 

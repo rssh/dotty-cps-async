@@ -26,8 +26,8 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
 
    implicit val ctType: quoted.Type[CT]
 
-   def posExpr(t: qctx.tasty.Term): Expr[Any] =
-       import qctx.tasty._
+   def posExpr(t: qctx.reflect.Term): Expr[Any] =
+       import qctx.reflect._
        t.tpe.widen match
          case MethodType(_,_,_) | PolyType(_,_,_) =>
            val etaExpanded = t.etaExpand
@@ -41,8 +41,8 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
                 cpsCtx.patternCode
          case _ => t.seal
 
-   def posExprs(terms: qctx.tasty.Term*): Expr[Any] =
-       import qctx.tasty._
+   def posExprs(terms: qctx.reflect.Term*): Expr[Any] =
+       import qctx.reflect._
        var rest = terms
        var retval: Option[Expr[Any]] = None
        while(!retval.isDefined && !rest.isEmpty) 
@@ -61,8 +61,8 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
          
 
 
-   def safeShow(t: qctx.tasty.Term): String =
-       import qctx.tasty._
+   def safeShow(t: qctx.reflect.Term): String =
+       import qctx.reflect._
        try 
          t.seal.show
        catch 

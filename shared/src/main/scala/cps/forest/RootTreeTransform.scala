@@ -10,9 +10,9 @@ trait RootTreeTransform[F[_], CT]:
 
   thisTransform: TreeTransformScope[F, CT] =>
   
-  import qctx.tasty._
+  import qctx.reflect._
 
-  def runRoot(term: qctx.tasty.Term, marker: TransformationContextMarker, muted: Boolean = false): CpsTree =
+  def runRoot(term: qctx.reflect.Term, marker: TransformationContextMarker, muted: Boolean = false): CpsTree =
      if (cpsCtx.flags.debugLevel >= 15)
         cpsCtx.log(s"runRoot: term=$safeShow(term)")
      val r = term.tpe.widen match {
@@ -30,15 +30,15 @@ trait RootTreeTransform[F[_], CT]:
                                  //  and if it violate CpsExpr contract (which require F[X=>Y]), let's
                                  //  work with lambda on the tree level.
                             B2.inNestedContext(lambdaTerm, marker, muted, scope =>
-                                 scope.runLambda(lambdaTerm.asInstanceOf[scope.qctx.tasty.Term], 
-                                                 params.asInstanceOf[List[scope.qctx.tasty.ValDef]], 
-                                                 body.asInstanceOf[scope.qctx.tasty.Term]).inCake(thisTransform)
+                                 scope.runLambda(lambdaTerm.asInstanceOf[scope.qctx.reflect.Term], 
+                                                 params.asInstanceOf[List[scope.qctx.reflect.ValDef]], 
+                                                 body.asInstanceOf[scope.qctx.reflect.Term]).inCake(thisTransform)
                             )
                   case applyTerm@Apply(fun,args)  =>
                             val tree = B2.inNestedContext(applyTerm, marker, muted, scope =>
-                               scope.runApply(applyTerm.asInstanceOf[scope.qctx.tasty.Term],
-                                              fun.asInstanceOf[scope.qctx.tasty.Term],
-                                              args.asInstanceOf[List[scope.qctx.tasty.Term]],
+                               scope.runApply(applyTerm.asInstanceOf[scope.qctx.reflect.Term],
+                                              fun.asInstanceOf[scope.qctx.reflect.Term],
+                                              args.asInstanceOf[List[scope.qctx.reflect.Term]],
                                               Nil).inCake(thisTransform)
                             )
                             tree.inCake(thisTransform)
@@ -69,7 +69,7 @@ trait RootTreeTransform[F[_], CT]:
      r
 
 
-  def runRootUneta(term: qctx.tasty.Term, marker: TransformationContextMarker, muted: Boolean): CpsTree = {
+  def runRootUneta(term: qctx.reflect.Term, marker: TransformationContextMarker, muted: Boolean): CpsTree = {
      // TODO: change cpsCtx to show nesting
      if (cpsCtx.flags.debugLevel >= 15 && !muted)
         cpsCtx.log(s"runRootUneta, term=$term")
@@ -78,7 +78,7 @@ trait RootTreeTransform[F[_], CT]:
        case Select(qual, name) =>
            runRoot(qual, TransformationContextMarker.Select, muted) match 
               case rq: AsyncCpsTree =>
-                  val cTransformed = rq.transformed.asInstanceOf[qctx.tasty.Term]
+                  val cTransformed = rq.transformed.asInstanceOf[qctx.reflect.Term]
                   CpsTree.impure(Select(cTransformed,term.symbol),term.tpe)
               case _: PureCpsTree =>
                   CpsTree.pure(term)
@@ -93,9 +93,9 @@ trait RootTreeTransform[F[_], CT]:
                 override val fType = thisScope.fType
                 override val ctType = thisScope.ctType
              }
-             nestScope.runApply(term.asInstanceOf[nestScope.qctx.tasty.Term],
-                                x.asInstanceOf[nestScope.qctx.tasty.Term],
-                                args.asInstanceOf[List[nestScope.qctx.tasty.Term]],
+             nestScope.runApply(term.asInstanceOf[nestScope.qctx.reflect.Term],
+                                x.asInstanceOf[nestScope.qctx.reflect.Term],
+                                args.asInstanceOf[List[nestScope.qctx.reflect.Term]],
                                 Nil).asInstanceOf[CpsTree]
        case _ =>
              throw MacroError(s"cps tree transform is not supported yet to ${term}",cpsCtx.patternCode)

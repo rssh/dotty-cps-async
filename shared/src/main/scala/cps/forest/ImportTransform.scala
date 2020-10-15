@@ -13,8 +13,8 @@ object ImportTransform:
 
 
   def fromBlock[F[_]:Type,T:Type](using qctx:QuoteContext)(cpsCtx: TransformationContext[F,T],
-                           importTree: qctx.tasty.Import): CpsExpr[F,Unit] = {
-     import qctx.tasty.{_, given _}
+                           importTree: qctx.reflect.Import): CpsExpr[F,Unit] = {
+     import qctx.reflect._
      import cpsCtx._
      if (cpsCtx.flags.debugLevel >= 10) {
        println(s"Import:fromBlock, importTree=$importTree")

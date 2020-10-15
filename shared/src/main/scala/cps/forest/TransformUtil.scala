@@ -8,9 +8,9 @@ import cps._
 object TransformUtil:
 
 
-  def find(using qctx:QuoteContext)(term: qctx.tasty.Term,
-                       cond: qctx.tasty.Tree=> Option[qctx.tasty.Tree]) :Option[qctx.tasty.Tree] = {
-     import qctx.tasty._
+  def find(using qctx:QuoteContext)(term: qctx.reflect.Term,
+                       cond: qctx.reflect.Tree=> Option[qctx.reflect.Tree]) :Option[qctx.reflect.Tree] = {
+     import qctx.reflect._
      import util._
      val search = new TreeAccumulator[Option[Tree]] {
 
@@ -29,8 +29,8 @@ object TransformUtil:
      search.foldTree(None,term)
   }
 
-  def containsAwait(using qctx:QuoteContext)(term: qctx.tasty.Term): Boolean =
-    import qctx.tasty.{_,given _}
+  def containsAwait(using qctx:QuoteContext)(term: qctx.reflect.Term): Boolean =
+    import qctx.reflect._
     find(term, {
            case v@Apply(TypeApply(id@Ident("await"),targs),args) =>
                          if (id.symbol.fullName == "cps.await") Some(v) else None
@@ -41,10 +41,10 @@ object TransformUtil:
   /**
    * substitute identifier with the origin symbol to new tree
    **/
-  def substituteIdent(using qctx:QuoteContext)(tree: qctx.tasty.Term,
-                           origin: qctx.tasty.Symbol,
-                           newTerm: qctx.tasty.Term): qctx.tasty.Term =
-     import qctx.tasty.{_,given _}
+  def substituteIdent(using qctx:QuoteContext)(tree: qctx.reflect.Term,
+                           origin: qctx.reflect.Symbol,
+                           newTerm: qctx.reflect.Term): qctx.reflect.Term =
+     import qctx.reflect._
      import util._
      val changes = new TreeMap() {
         override def transformTerm(tree:Term)(using Context):Term =
@@ -59,8 +59,8 @@ object TransformUtil:
      changes.transformTerm(tree)
 
 
-  def namedLet(using qctx: QuoteContext)(name: String, rhs: qctx.tasty.Term)(body: qctx.tasty.Ident => qctx.tasty.Term): qctx.tasty.Term = {
-    import qctx.tasty.{_,given _}
+  def namedLet(using qctx: QuoteContext)(name: String, rhs: qctx.reflect.Term)(body: qctx.reflect.Ident => qctx.reflect.Term): qctx.reflect.Term = {
+    import qctx.reflect._
     import scala.internal.quoted.showName
     import scala.quoted.QuoteContext
     import scala.quoted.Expr

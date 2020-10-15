@@ -9,7 +9,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
   thisTreeTransform: TreeTransformScope[F,CT] =>
 
-  import qctx.tasty._
+  import qctx.reflect._
 
 
   /**
@@ -353,7 +353,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
   object O {  // fix arround https://github.com/lampepfl/dotty/issues/9074
 
-  def buildApplyArgsRecords(fun: qctx.tasty.Term, paramsDescriptor: MethodParamsDescriptor, args: List[qctx.tasty.Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
+  def buildApplyArgsRecords(fun: qctx.reflect.Term, paramsDescriptor: MethodParamsDescriptor, args: List[qctx.reflect.Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
      buildApplyArgsRecordsAcc(fun, paramsDescriptor, args, cpsCtx, BuildApplyArgsAcc()).records.toList
   }
 
@@ -673,9 +673,9 @@ object ApplyTreeTransform:
 
 
   def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
-                         applyTerm: qctx1.tasty.Term,
-                         fun: qctx1.tasty.Term,
-                         args: List[qctx1.tasty.Term]): CpsExpr[F,T] = {
+                         applyTerm: qctx1.reflect.Term,
+                         fun: qctx1.reflect.Term,
+                         args: List[qctx1.reflect.Term]): CpsExpr[F,T] = {
      //val tmpCpsCtx = cpsCtx
      val tmpQctx = qctx1
      val tmpFtype = summon[Type[F]]
@@ -691,9 +691,9 @@ object ApplyTreeTransform:
          val cpsCtx = cpsCtx1
 
          def bridge(): CpsExpr[F,T] =
-            val treeResult = runApply(applyTerm.asInstanceOf[qctx.tasty.Term],
-                                fun.asInstanceOf[qctx.tasty.Term],
-                                args.asInstanceOf[List[qctx.tasty.Term]],
+            val treeResult = runApply(applyTerm.asInstanceOf[qctx.reflect.Term],
+                                fun.asInstanceOf[qctx.reflect.Term],
+                                args.asInstanceOf[List[qctx.reflect.Term]],
                                 Nil
                              )
             try

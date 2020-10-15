@@ -13,13 +13,13 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
   import cpsCtx._
 
   // case Block(prevs,last)
-  def run(using qctx: QuoteContext)(prevs: List[qctx.tasty.Statement], last: qctx.tasty.Term): CpsExpr[F,T] =
+  def run(using qctx: QuoteContext)(prevs: List[qctx.reflect.Statement], last: qctx.reflect.Term): CpsExpr[F,T] =
 
      if (cpsCtx.flags.debugLevel >= 10) then
         cpsCtx.log(s"Block transform, last=${last.show}")
      val tType = summon[Type[T]]
      val uType = summon[Type[Unit]]
-     import qctx.tasty._
+     import qctx.reflect._
 
 
      val rPrevs = prevs.zipWithIndex.map{ (p,i) =>
@@ -98,8 +98,8 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
      retval
 
 
-  def checkValueDiscarded(using qctx: QuoteContext)(t: qctx.tasty.Term): Boolean =
-     import qctx.tasty._
+  def checkValueDiscarded(using qctx: QuoteContext)(t: qctx.reflect.Term): Boolean =
+     import qctx.reflect._
      ( (cpsCtx.flags.customValueDiscard || cpsCtx.flags.warnValueDiscard)
       &&
        ( !(t.tpe =:= Type.of[Unit]) && !(t.tpe =:= Type.of[Nothing]) )
@@ -110,7 +110,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 class DefCpsExpr[F[_]:Type](using qctx: QuoteContext)(
                      monad: Expr[CpsMonad[F]],
                      prev: Seq[ExprTreeGen],
-                     definition: qctx.tasty.Definition) extends SyncCpsExpr[F, Unit](monad, prev) {
+                     definition: qctx.reflect.Definition) extends SyncCpsExpr[F, Unit](monad, prev) {
 
   def last(using QuoteContext): Expr[Unit] = '{ () }
 

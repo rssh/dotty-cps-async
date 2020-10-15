@@ -4,15 +4,15 @@ import scala.quoted._
 import cps.misc._
 
 trait ExprTreeGen:
-  def extract(using qctx:QuoteContext): qctx.tasty.Statement
+  def extract(using qctx:QuoteContext): qctx.reflect.Statement
 
 case class UnsealExprTreeGen[T](expr: Expr[T]) extends ExprTreeGen:
-  def extract(using qctx:QuoteContext): qctx.tasty.Statement =
+  def extract(using qctx:QuoteContext): qctx.reflect.Statement =
     expr.unseal
 
-class StatementExprTreeGen(using qctx: QuoteContext)(stat: qctx.tasty.Statement) extends ExprTreeGen:
-  def extract(using qctx:QuoteContext): qctx.tasty.Statement =
-    stat.asInstanceOf[qctx.tasty.Statement]
+class StatementExprTreeGen(using qctx: QuoteContext)(stat: qctx.reflect.Statement) extends ExprTreeGen:
+  def extract(using qctx:QuoteContext): qctx.reflect.Statement =
+    stat.asInstanceOf[qctx.reflect.Statement]
 
 
 trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen]):
@@ -22,7 +22,7 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
   def fLast(using QuoteContext): Expr[F[T]]
 
   def transformed(using qctx: QuoteContext): Expr[F[T]] =
-     import qctx.tasty._
+     import qctx.reflect._
      if (prev.isEmpty)
        fLast
      else
@@ -67,7 +67,7 @@ abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[CpsMonad[F]],
          if prev.isEmpty then
             last
          else
-            qctx.tasty.Block(prev.toList.map(_.extract), last.unseal).seal.cast[T]
+            qctx.reflect.Block(prev.toList.map(_.extract), last.unseal).seal.cast[T]
      )
 
 

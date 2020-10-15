@@ -10,7 +10,7 @@ trait KnownTreeFragments[F[_], CT]:
 
   thisKnownTreeTransform: TreeTransformScope[F, CT] =>
   
-  import qctx.tasty.{_, given _}
+  import qctx.reflect._
 
   lazy val awaitPure = '{ _root_.cps.await[F,Int](${cpsCtx.monad}.pure(3))(using ${cpsCtx.monad}) }.unseal
 
