@@ -122,7 +122,7 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
             s.get(k) match
               case Some(sb) => 
                   monad.map(reduce(sb,b)){x => 
-                    s.updated(k,x)
+                    s.addOne((k,x))
                   }
               case None => s.update(k,b)
                   monad.pure(s)
