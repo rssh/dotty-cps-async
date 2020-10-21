@@ -629,13 +629,13 @@ trait ApplyTreeTransform[F[_],CT]:
       if (shifted.tpe.isFunctionType) 
          // TODO: extract argument types. now - one experiment
          shifted.tpe match
-           case AppliedType(f,List(a,AppliedType(m,b))) if f <:< '[Function1].unseal.tpe =>
+           case AppliedType(f,List(a,AppliedType(m,b))) if f <:< quoted.Type[Function1].unseal.tpe =>
              val sym = Symbol.newVal(Symbol.currentOwner, "shiftedArg", a.widen, Flags.EmptyFlags, Symbol.noSymbol)
              AsyncLambdaCpsTree(origin, List(ValDef(sym,None)), 
                   CpsTree.impure(Apply(Select.unique(shifted,"apply"),List(Ref(sym))),b.head),origin.tpe)
            case _ =>
              throw MacroError("Async function with arity != 1 is not supported yet",posExprs(shifted,origin))
-      else if (shifted.tpe <:< '[cps.runtime.CallChainAsyncShiftSubst[${fType},?,?]].unseal.tpe ) 
+      else if (shifted.tpe <:< quoted.Type[cps.runtime.CallChainAsyncShiftSubst[F,?,?]].unseal.tpe ) 
          CallChainSubstCpsTree(origin, shifted, origin.tpe)
       else
          CpsTree.impure(shifted, origin.tpe)
