@@ -31,8 +31,6 @@ class TestCBS1ShiftPartialFunction:
      assert(x == Success(2) )
 
 
-/*
- * [dotty bug: assert when we add overload to total function]
   @Test def testAndThen3(): Unit = 
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
@@ -42,7 +40,6 @@ class TestCBS1ShiftPartialFunction:
      }
      val x = c.run()
      assert(x == Success(3))
-*/
 
   @Test def testBeforeOrElse0(): Unit = 
      //implicit val printCode = cps.macroFlags.PrintCode
