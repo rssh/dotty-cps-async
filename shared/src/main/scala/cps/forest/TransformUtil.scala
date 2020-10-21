@@ -3,6 +3,7 @@ package cps.forest
 import scala.quoted._
 
 import cps._
+import cps.misc._
 
 
 object TransformUtil:
@@ -77,5 +78,11 @@ object TransformUtil:
     }
     expr.unseal
   }
+
+  def createFunctionType(using qctx: QuoteContext)(argTypes: List[qctx.reflect.Type], resultType: qctx.reflect.Type): qctx.reflect.Type =
+    import qctx.reflect._
+    val funSymbol = defn.FunctionClass(argTypes.size)
+    val funTypeTree: TypeTree = TypeIdent(funSymbol)
+    funTypeTree.tpe.appliedTo(argTypes.map(_.widen) :+ resultType.widen)
 
 

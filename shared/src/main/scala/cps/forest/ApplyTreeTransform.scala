@@ -474,11 +474,13 @@ trait ApplyTreeTransform[F[_],CT]:
     Implicits.search(tpTree)
 
 
+  def shiftedApply(term: Term, originArgs:List[Term], shiftedArgs: List[Term], shiftedIndexes:Set[Int]): Term =
 
-  def shiftedApply(term: Term, args: List[Term], shiftedIndexes:Set[Int]): Term =
+    val monad = cpsCtx.monad.unseal
 
+    def shiftSelectTypeApplyApply(x:Select, targs:List[TypeTree], args: List[Term]): Term =
 
-    def shiftSelectTypeApply(x:Select, targs:List[TypeTree]): Term =
+       val qual = x.qualifier
 
        def withTargs(t:Term):Term =
          if (targs.isEmpty) 
@@ -486,21 +488,18 @@ trait ApplyTreeTransform[F[_],CT]:
          else 
            TypeApply(t, targs)
 
-       val qual = x.qualifier
-       val monad = cpsCtx.monad.unseal
-       if (qual.tpe <:< '[cps.runtime.CallChainAsyncShiftSubst[F,?,?]].unseal.tpe) then
+
+       if (qual.tpe <:< quoted.Type[cps.runtime.CallChainAsyncShiftSubst[F,?,?]].unseal.tpe) then
           val shiftedName = x.name + "_shifted"
           qual.tpe.typeSymbol.method(shiftedName) match
             case Nil  => 
                throw MacroError(s"Can't find method ${shiftedName} for qual=${qual} ",posExpr(x))
             case m::Nil =>
                //withTargs(Select(qual,m))
-               withTargs(Select.unique(qual,shiftedName))
+               Apply(withTargs(Select.unique(qual,shiftedName)), args)
             case other =>
-               Select.overloaded(qual,shiftedName,targs.map(_.tpe),args) match
-                  case Apply(x,y) => x
-                  case _ =>
-                    throw MacroError(s"Overloaded method ${shiftedName} for qual=${qual} is not apply ",posExpr(x))
+               //Select.overloaded(qual,shiftedName,targs.map(_.tpe), args, wildcardTypeBounds) 
+               Select.overloaded(qual,shiftedName,targs.map(_.tpe), args) 
        else
          findObjectAsyncShiftTerm(qual) match
            case success1: ImplicitSearchSuccess =>
@@ -513,7 +512,7 @@ trait ApplyTreeTransform[F[_],CT]:
                                List(qual,monad)
                              )
              val newSelect = Select.unique(shiftedExpr, x.name)
-             withTargs(newSelect)
+             Apply(withTargs(newSelect), args)
            case failure1: ImplicitSearchFailure =>
              findAsyncShiftTerm(qual) match
                case success2: ImplicitSearchSuccess =>
@@ -528,60 +527,53 @@ trait ApplyTreeTransform[F[_],CT]:
                         throw MacroError(s"Method (${x.name}) is not defined in [${shiftType.show}], qual=${qual} ",posExpr(x))
                     case m::Nil =>
                         val newSelect = Select.unique(success2.tree, x.name)
-                        TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad)
+                        TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad).appliedToArgs(args)
                     case other =>
-                        Select.overloaded(success2.tree, x.name, (fType.unseal::targs).map(_.tpe), List(qual,monad))
+                        // enable after/if https://github.com/lampepfl/dotty/pull/10054 will be accepted
+                        //val expectedType = TransformUtil.createFunctionType(using qctx)(shiftedArgs.map(_.tpe), wildcardTypeBounds)
+                        //val shiftedCaller = Select.overloaded(success2.tree, x.name, (fType.unseal::targs).map(_.tpe), List(qual,monad), expectedType)
+                        val shiftedCaller = Select.overloaded(success2.tree, x.name, (fType.unseal::targs).map(_.tpe), List(qual,monad))
+                        Apply(shiftedCaller, args)
+                             
                case failure2: ImplicitSearchFailure =>
                  throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or ObjectAsyncShift (${failure1.explanation}) for qual=${qual} ",posExpr(x))
 
 
-    def shiftCaller(term:Term): Term =
-       if (cpsCtx.flags.debugLevel >= 15)
-           cpsCtx.log(s"shiftCaller, t=$term")
-       val monad = cpsCtx.monad.unseal
-       term match
-          case TypeApply(s@Select(qual,name),targs) =>
+    if (cpsCtx.flags.debugLevel >= 15)
+        cpsCtx.log(s"shiftCaller, t=$term")
+    term match
+       case TypeApply(s@Select(qual,name),targs) =>
                   if (qual.tpe =:= monad.tpe)
                     if (s.symbol == mapSymbol || s.symbol == flatMapSymbol)
                       // TODO: add more symbols
                       findAsyncShiftTerm(qual) match
                         case shiftQual:ImplicitSearchSuccess =>
                           val newSelect = Select.unique(shiftQual.tree,s.name)
-                          TypeApply(newSelect, targs).appliedTo(qual)
+                          Apply(TypeApply(newSelect, targs).appliedTo(qual),shiftedArgs)
                         case failure:ImplicitSearchFailure =>
                           throw new MacroError(s"Can't find asyn shift for cpsMonad: ${failure.explanation}", posExpr(term))
                     else
                       throw new MacroError("Unimplemented shift for CpsMonad", posExpr(term))
                   else
-                    shiftSelectTypeApply(s, targs)
-          case s@Select(qual,name) =>
-                  shiftSelectTypeApply(s, Nil)
-          case TypeApply(x, targs) =>
-                  TypeApply(shiftCaller(x),targs)
-          case Apply(x, args) =>
+                    shiftSelectTypeApplyApply(s, targs, shiftedArgs)
+       case s@Select(qual,name) =>
+                    shiftSelectTypeApplyApply(s, Nil, shiftedArgs)
+       //case TypeApply(x, targs) =>  // now scala hvw no multiple type params
+       //           Apply(TypeApply(shiftCaller(x),targs),args)
+       case Apply(x, args1) =>
                   // TODO: shift args
-                  Apply(shiftCaller(x),args)
-          case Lambda(params, body) =>
+                  Apply(shiftedApply(x,args1,args1,Set()),shiftedArgs)
+       case Lambda(params, body) =>
                   val shiftedSymbols = params.zipWithIndex.filter{
                       (p,i) => shiftedIndexes.contains(i)
                   }.map{ (p,i) => p.symbol }.toSet
                   val nBody = asyncShift(body, shiftedSymbols)
                   ???
-          case Block(statements, last) =>
-                  Block(statements, shiftCaller(last))
-          case _ =>
+       case Block(statements, last) =>
+                  Block(statements, shiftedApply(last, originArgs, shiftedArgs, shiftedIndexes))
+       case _ =>
                   val errorExpr = posExpr(term)
                   throw MacroError(s"Can't shift caller ${term}",errorExpr)
-
-    val shiftedCaller = shiftCaller(term)
-    if (shiftedCaller.symbol.isDefDef &&
-        shiftedCaller.symbol.flags.is(Flags.Inline)
-        ) {
-      println("shiftedCaller is inline")
-      println("defdefTree = "+shiftedCaller.symbol.tree)
-    }
-    
-    Apply(shiftedCaller,args)
 
   end shiftedApply
 
@@ -651,17 +643,19 @@ trait ApplyTreeTransform[F[_],CT]:
  
 
 
-  def buildShiftedApply(fun: Term,
+  def buildShiftedApply(
+                        fun: Term,
                         argRecords:Seq[ApplyArgRecord],
                         withAsync: Boolean,
                         tails:List[Seq[ApplyArgRecord]]): Term =
       val shiftedIndexes = argRecords.zipWithIndex.filter(_._1.hasShiftedLambda).map(_._2)
-      val args = argRecords.map(_.shift().identArg(withAsync)).toList
+      val shiftedArgs = argRecords.map(_.shift().identArg(withAsync)).toList
+      val originArgs = argRecords.map(_.term).toList
       if (cpsCtx.flags.debugLevel >= 15)
           cpsCtx.log(s"buildShiftedApply::argRecords=${argRecords}")
-          cpsCtx.log(s"buildShiftedApply::args=${args}")
+          cpsCtx.log(s"buildShiftedApply::shiftedArgs=${shiftedArgs}")
           cpsCtx.log(s"buildShiftedApply::tails=${tails}")
-      val shiftedApplyHead = shiftedApply(fun, args, shiftedIndexes.toSet)
+      val shiftedApplyHead = shiftedApply(fun, originArgs, shiftedArgs, shiftedIndexes.toSet)
       val shiftedTails = tails.map(_.map(_.shift().identArg(withAsync)).toList)
       val r = shiftedApplyHead.appliedToArgss(shiftedTails)
       if (cpsCtx.flags.debugLevel >= 15)

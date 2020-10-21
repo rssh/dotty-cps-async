@@ -1,7 +1,6 @@
 //val dottyVersion = "0.27.0-RC1"
-//val dottyVersion = "0.28.0-bin-20200907-101e620-NIGHTLY"
-//val dottyVersion = "0.28.0-bin-SNAPSHOT"
 //val dottyVersion = "3.0.0-M1-bin-20201017-c76800d-NIGHTLY"
+//val dottyVersion = "3.0.0-M1-bin-SNAPSHOT"
 val dottyVersion = dottyLatestNightlyBuild.get
 
 
