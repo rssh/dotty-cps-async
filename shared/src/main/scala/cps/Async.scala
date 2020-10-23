@@ -90,7 +90,7 @@ object Async {
             throw MacroError(
                     s"AsyncMacroFlags ($flagsExpr) is not a compile-time value", flagsExpr )
       case None =>
-            import cps.macroFlags.{_, given _}
+            import cps.macroFlags.{_, given}
             val printTree = Expr.summon[PrintTree.type].isDefined
             val printCode = Expr.summon[PrintCode.type].isDefined
             val debugLevel = Expr.summon[DebugLevel] match

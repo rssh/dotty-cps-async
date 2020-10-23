@@ -218,13 +218,13 @@ trait ApplyArgRecordScope[F[_], CT]:
 
 
          val r = fromType.seal match
-           case '[$ft] =>
+           case '[$FT] =>
              toInF.seal match
-               case '[$tt] =>
-                  '{ new PartialFunction[$ft,$tt] {
-                       override def isDefinedAt(x1:$ft):Boolean =
+               case '[$TT] =>
+                  '{ new PartialFunction[FT,TT] {
+                       override def isDefinedAt(x1:FT):Boolean =
                           ${ newCheckBody('x1.unseal ).seal.cast[Boolean] }
-                       override def apply(x2:$ft): $tt =
+                       override def apply(x2:FT): TT =
                           ${ val nBody = cpsBody.transformed
                              nBody match
                                case m@Match(scr,caseDefs) =>
@@ -232,7 +232,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                  val nCaseDefs = caseDefs.map( cd =>
                                                     rebindCaseDef(cd, cd.rhs, b0, true))
                                  val nTerm = Match('x2.unseal, nCaseDefs)
-                                 termCast(nTerm,tt)
+                                 termCast(nTerm,quoted.Type[TT])
                                case _ =>
                                  throw MacroError(
                                    s"assumed that transformed match is Match, we have $nBody",
