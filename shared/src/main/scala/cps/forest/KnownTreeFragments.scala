@@ -58,5 +58,3 @@ trait KnownTreeFragments[F[_], CT]:
 
   lazy val partialFunctionType = TypeIdent(Symbol.classSymbol("scala.PartialFunction")).tpe
 
-  lazy val wildcardTypeBounds = TypeBounds(TypeIdent(defn.NothingClass).tpe, TypeIdent(defn.AnyClass).tpe)
-

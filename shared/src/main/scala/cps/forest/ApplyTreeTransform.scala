@@ -498,7 +498,7 @@ trait ApplyTreeTransform[F[_],CT]:
                //withTargs(Select(qual,m))
                Apply(withTargs(Select.unique(qual,shiftedName)), args)
             case other =>
-               //Select.overloaded(qual,shiftedName,targs.map(_.tpe), args, wildcardTypeBounds) 
+               //TODO: possible overload in later args lists.
                Select.overloaded(qual,shiftedName,targs.map(_.tpe), args) 
        else
          findObjectAsyncShiftTerm(qual) match
@@ -529,10 +529,9 @@ trait ApplyTreeTransform[F[_],CT]:
                         val newSelect = Select.unique(success2.tree, x.name)
                         TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad).appliedToArgs(args)
                     case other =>
-                        // enable after/if https://github.com/lampepfl/dotty/pull/10054 will be accepted
-                        //val expectedType = TransformUtil.createFunctionType(using qctx)(shiftedArgs.map(_.tpe), wildcardTypeBounds)
-                        //val shiftedCaller = Select.overloaded(success2.tree, x.name, (fType.unseal::targs).map(_.tpe), List(qual,monad), expectedType)
-                        val shiftedCaller = Select.overloaded(success2.tree, x.name, (fType.unseal::targs).map(_.tpe), List(qual,monad))
+                        // TODO: other args in typebounds [?]
+                        val expectedType = TransformUtil.createFunctionType(using qctx)(shiftedArgs.map(_.tpe), TypeBounds.empty)
+                        val shiftedCaller = Select.overloaded(success2.tree, x.name, (fType.unseal::targs).map(_.tpe), List(qual,monad), expectedType)
                         Apply(shiftedCaller, args)
                              
                case failure2: ImplicitSearchFailure =>
