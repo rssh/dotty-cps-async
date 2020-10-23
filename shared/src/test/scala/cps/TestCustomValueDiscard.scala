@@ -10,7 +10,7 @@ import scala.language.implicitConversions
 import scala.quoted._
 import scala.util.Success
 
-import cps.features.customValueDiscard.{given _}
+import cps.features.customValueDiscard.given 
 
 class TestCustomValueDiscard:
 
@@ -59,7 +59,7 @@ class TestCustomValueDiscard:
   }
 
   @Test def apiInsideSeq(): Unit = 
-     import cps.features.warnValueDiscard.{given _}
+     import cps.features.warnValueDiscard.given
      val api = API(false)
      val dryRunEnabled = true
      //implicit val printCode = cps.macroFlags.PrintCode

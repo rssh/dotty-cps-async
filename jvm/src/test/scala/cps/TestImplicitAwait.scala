@@ -30,7 +30,7 @@ class TestImplicitAwait:
      //implicit val debugLevel = cps.macroFlags.DebugLevel(10)
      val api = ApiEmulator
      val c = async[Future]{ 
-        import cps.features.implicitAwait.{given _}
+        import cps.features.implicitAwait.given
         val url = "http://www.example.com"
         val data = api.fetchUrl("http://www.example.com")
         val theme = api.classifyText(data)
