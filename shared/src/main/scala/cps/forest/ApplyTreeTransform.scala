@@ -376,13 +376,13 @@ trait ApplyTreeTransform[F[_],CT]:
             val accRepeated = O.buildApplyArgsRecordsAcc(fun, paramsDescriptor,
                                rargs, cpsCtx.nestSame(TCM.Repeated),
                                acc.copy(inRepeat=true,records=IndexedSeq.empty))
-            val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
+            val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt1)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case r@Repeated(rargs, tpt) =>
             val accRepeated = O.buildApplyArgsRecordsAcc(fun, paramsDescriptor,
                                rargs, cpsCtx.nestSame(TCM.Repeated),
                                acc.copy(inRepeat=true, records=IndexedSeq.empty))
-            val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList)
+            val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case lambda@Lambda(params, body) =>
             // mb, this will not work, for expressions, which return block.

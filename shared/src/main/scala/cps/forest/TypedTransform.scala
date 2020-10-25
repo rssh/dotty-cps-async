@@ -14,13 +14,16 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
   def run(using qctx: QuoteContext)(t: qctx.tasty.Term, tp: qctx.tasty.TypeTree): CpsExpr[F,T] =
      import qctx.reflect._
      t.seal match 
-       case '{ $t1:$t1t } =>
+       case '{ $t1:$T1 } =>
          val r = Async.nestTransform(t1, cpsCtx, TransformationContextMarker.Typed)
-         if (!r.isAsync)  // TODO: add !isChanged.
-            CpsExpr.sync(monad, patternCode)
-         else
+         if (!r.isAsync)  
+            //if (!r.isChanged)
+               CpsExpr.sync(monad, patternCode)
+            //else
+            //   ???
+         else 
             val tType = summon[quoted.Type[T]]
-            r.map( '{ x => ${Typed('x.unseal, tType.unseal).asExprOf[T]} } )
+            r.map( '{ x => ${Typed('x.unseal, tType.unseal).seal.cast[T]} } )
        case _ =>
          throw MacroError("Can't determinate type for ${t}",t.seal) 
 

@@ -14,7 +14,8 @@ class MapOpsAsyncShift[K,V,+CC[KX,VX] <: MapOps[KX,VX,CC,CC[KX,VX]] with CI[(KX,
 
  //def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2]
 
- //defforeachEntry[U](f: (K, V) => U): Unit
+ def foreachEntry[F[_],U](c: CKV, m:CpsMonad[F])(f: (K, V) => F[U]): F[Unit] =
+   foreach[F,U](c, m)(x => f(x._1, x._2) )
 
  def getOrElse[F[_],V1 >: V](c: CKV, m: CpsMonad[F])(key: K, default: () => F[V1]): F[V1] =
    c.get(key) match

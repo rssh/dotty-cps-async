@@ -43,12 +43,14 @@ trait ApplyArgRecordScope[F[_], CT]:
        term: Repeated,
        index: Int,
        elements: List[ApplyArgRecord],
+       seqTypeTree: TypeTree
   ) extends ApplyArgRecord {
     override def usePrepend(existsAsync:Boolean): Boolean = elements.exists(_.usePrepend(existsAsync))
     override def identArg(existsAsync:Boolean): Term =
       if (usePrepend(existsAsync))
-          Repeated(elements.map(_.identArg(existsAsync)),term.elemtpt)
+          Typed(Repeated(elements.map(_.identArg(existsAsync)),term.elemtpt), seqTypeTree)
       else if (hasShiftedLambda)
+          // TODO: think about shifted sequence type
           Repeated(elements.map(_.identArg(existsAsync)),shiftedLambdaTypeTree(term.elemtpt))
       else
           term
