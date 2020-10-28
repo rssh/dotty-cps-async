@@ -12,7 +12,7 @@ trait AwaitTreeTransform[F[_],CT]:
 
   import qctx.reflect._
 
-  def runAwait(term: Term, arg: Term, awaitCpsMonadType: Type, awaitCpsMonad: Term): CpsTree =
+  def runAwait(term: Term, arg: Term, awaitCpsMonadType: TypeRepr, awaitCpsMonad: Term): CpsTree =
       if cpsCtx.flags.debugLevel >= 10 then
           cpsCtx.log(s"runAwait, arg=${arg.show}")
       val r = if awaitCpsMonadType =:= monadTypeTree.tpe then
@@ -35,7 +35,7 @@ trait AwaitTreeTransform[F[_],CT]:
              cpsArg.applyAwait()
       */
 
-  def runOtherAwait(awaitTerm: Term, arg: Term, targ: Type, otherCpsMonad: Term): CpsTree =
+  def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, otherCpsMonad: Term): CpsTree =
       val myCpsMonad = cpsCtx.monad.unseal
       val myCpsMonadTpe = myCpsMonad.tpe
       val myF = fType.unseal.tpe

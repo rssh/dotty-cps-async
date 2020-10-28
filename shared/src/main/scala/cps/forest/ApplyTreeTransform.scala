@@ -184,16 +184,16 @@ trait ApplyTreeTransform[F[_],CT]:
 
 
 
-  def typeOrBoundsToType(x: Type, isHight: Boolean = true): Type =
+  def typeOrBoundsToType(x: TypeRepr, isHight: Boolean = true): TypeRepr =
     x match
       case TypeBounds(low,hight) => if (isHight) hight else low
-      case NoPrefix => if (isHight) Type.of[Any] else Type.of[Nothing]
+      case NoPrefix => if (isHight) TypeRepr.of[Any] else TypeRepr.of[Nothing]
       case _ => x
 
   def shiftedLambdaTypeTree(tpt: TypeTree): TypeTree =
     Inferred(shiftedLambdaType(tpt.tpe))
 
-  def shiftedLambdaType(tpe: Type): Type =
+  def shiftedLambdaType(tpe: TypeRepr): TypeRepr =
     tpe.widen match {
       case MethodType(paramNames, paramTypes, resType) =>
                // currently no support for path-dependend lambdas.
@@ -470,7 +470,7 @@ trait ApplyTreeTransform[F[_],CT]:
     if cpsCtx.flags.debugLevel >= 15 then
       cpsCtx.log(s"searchImplicits: tpTree=$tpTree")
       cpsCtx.log(s"tpe=$tpe")
-      cpsCtx.log(s"Type.of[ObjectAsyncShift]=${Type.of[ObjectAsyncShift]}")
+      cpsCtx.log(s"Type.of[ObjectAsyncShift]=${TypeRepr.of[ObjectAsyncShift]}")
     Implicits.search(tpTree)
 
 

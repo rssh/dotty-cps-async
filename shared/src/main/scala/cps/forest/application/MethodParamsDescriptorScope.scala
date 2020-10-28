@@ -21,7 +21,7 @@ trait MethodParamsDescriptorScope[F[_], CT]:
 
      def  paramName(index: Int): Option[String]
 
-     def  paramType(index: Int): Option[Type]
+     def  paramType(index: Int): Option[TypeRepr]
 
      def  isByName(index: Int): Boolean =
            paramType(index) match
@@ -51,7 +51,7 @@ trait MethodParamsDescriptorScope[F[_], CT]:
        else
          None
 
-     override def  paramType(index: Int): Option[Type] =
+     override def  paramType(index: Int): Option[TypeRepr] =
        if (index >= 0 && index < paramTypes.size)
          Some(paramTypes(index))
        else
@@ -66,7 +66,7 @@ trait MethodParamsDescriptorScope[F[_], CT]:
 
      override def  paramIndex(name: String): Option[Int] = None
      override def  paramName(index: Int): Option[String] = None
-     override def  paramType(index: Int): Option[Type] = None
+     override def  paramType(index: Int): Option[TypeRepr] = None
 
 
   object DynaminParamsDescriptor extends MethodParamsDescriptor:
@@ -75,6 +75,6 @@ trait MethodParamsDescriptorScope[F[_], CT]:
         scala.util.Try(name.toInt).toOption
 
      override def  paramName(index: Int): Option[String] =  Some(index.toString)
-     override def  paramType(index: Int): Option[Type] = Some(Type.of[Any])
+     override def  paramType(index: Int): Option[TypeRepr] = Some(TypeRepr.of[Any])
 
 

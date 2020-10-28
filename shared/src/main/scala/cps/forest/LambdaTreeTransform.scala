@@ -12,7 +12,7 @@ trait LambdaTreeTransform[F[_], CT]:
 
   import qctx.reflect._
 
-  def typeInMonad(tp:Type): Type =
+  def typeInMonad(tp:TypeRepr): TypeRepr =
        fType.unseal.tpe.appliedTo(tp)
 
   // case lambdaTree @ Lambda(params,body)
@@ -33,7 +33,7 @@ trait LambdaTreeTransform[F[_], CT]:
      retval
 
 
-  def shiftedMethodType(paramNames: List[String], paramTypes:List[Type], otpe: Type): MethodType =
+  def shiftedMethodType(paramNames: List[String], paramTypes:List[TypeRepr], otpe: TypeRepr): MethodType =
      MethodType(paramNames)(_ => paramTypes, _ => typeInMonad(otpe.widen))
 
 
