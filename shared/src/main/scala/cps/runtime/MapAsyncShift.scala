@@ -3,7 +3,7 @@ package cps.runtime
 import cps._
 import scala.collection._
 
-class MapOpsAsyncShift[K,V,+CC[KX,VX] <: MapOps[KX,VX,CC,CC[KX,VX]] with CI[(KX,VX)], 
+class MapOpsAsyncShift[K,V, CC[KX,VX] <: MapOps[KX,VX,CC,CC[KX,VX]] with CI[(KX,VX)], 
                             CI[X] <: Iterable[X] & IterableOps[X,CI,CI[X]],
                                                                  CKV <: CC[K,V] with PartialFunction[K,V] ] extends
                                                                        IterableOpsAsyncShift[(K,V),CI,CKV]
@@ -12,7 +12,17 @@ class MapOpsAsyncShift[K,V,+CC[KX,VX] <: MapOps[KX,VX,CC,CC[KX,VX]] with CI[(KX,
                                                                       with
                                                                        AsyncShift[CKV]:
 
- //def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2]
+ def flatMap[F[_], K2, V2](c: CKV, m: CpsMonad[F])(f: ((K, V)) => F[IterableOnce[(K2, V2)]]): F[CC[K2, V2]] =
+   val s0 = m.pure(c.mapFactory.newBuilder[K2,V2])
+   val it = c.foldLeft(s0){ (s,e) =>
+      m.flatMap(s){ cc =>
+         m.map(f(e._1,e._2)){ vs =>
+           cc.addAll(vs)
+         }
+      }
+   }
+   m.map(it)(_.result)
+   
 
  def foreachEntry[F[_],U](c: CKV, m:CpsMonad[F])(f: (K, V) => F[U]): F[Unit] =
    foreach[F,U](c, m)(x => f(x._1, x._2) )
