@@ -137,8 +137,9 @@ trait ApplyArgRecordScope[F[_], CT]:
                   createAsyncLambda(mt, params)
               case ft@AppliedType(tp,tparams) =>
                   if (ft.isFunctionType) {
-                      val paramTypes = tparams.dropRight(1).map(typeOrBoundsToType(_,false))
-                      val resType = typeOrBoundsToType(tparams.last,true)
+                      //val paramTypes = tparams.dropRight(1).map(typeOrBoundsToType(_,false))
+                      val paramTypes = tparams.dropRight(1)
+                      val resType = tparams.last
                       val paramNames = params.map(_.name)
                       val mt = shiftedMethodType(paramNames, paramTypes, resType)
                       createAsyncLambda(mt, params)
@@ -171,7 +172,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
        private def createAsyncPartialFunction(from: TypeRepr, to: TypeRepr, body: Match, params: List[ValDef]): Term =
          val toInF = typeInMonad(to)
-         val fromType = typeOrBoundsToType(from)
+         val fromType = from
          val matchVar = body.scrutinee
          val paramNames = params.map(_.name)
 

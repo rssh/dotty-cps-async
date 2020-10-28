@@ -184,12 +184,6 @@ trait ApplyTreeTransform[F[_],CT]:
 
 
 
-  def typeOrBoundsToType(x: TypeRepr, isHight: Boolean = true): TypeRepr =
-    x match
-      case TypeBounds(low,hight) => if (isHight) hight else low
-      case NoPrefix => if (isHight) TypeRepr.of[Any] else TypeRepr.of[Nothing]
-      case _ => x
-
   def shiftedLambdaTypeTree(tpt: TypeTree): TypeTree =
     Inferred(shiftedLambdaType(tpt.tpe))
 
