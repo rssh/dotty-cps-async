@@ -64,8 +64,6 @@ class TestBS1ShiftMap:
      assert(sx == (1+2+3))
      assert(sy == (1+1+1))
 
-  /*
-   * looks blocked by  https://github.com/lampepfl/dotty/issues/9894
   @Test def testFlatMap(): Unit = 
      val c = async[ComputationBound]{
        val m = Map(1 -> "one", 2 -> "two", 3->"tree")
@@ -78,10 +76,8 @@ class TestBS1ShiftMap:
      assert(r(10)=='o')
      assert(r(11)=='n')
      assert(r(12)=='e')
-  */
  
-  /*
-   * Same. TODO: researh
+
   @Test def testFlatMap1(): Unit = 
 
      def xf(k:Int,s:String):ComputationBound[List[(Int,Char)]] =
@@ -97,10 +93,17 @@ class TestBS1ShiftMap:
      assert(r(10)=='o')
      assert(r(11)=='n')
      assert(r(12)=='e')
-  */
  
+/*
+ * dotty bug. TODO: decide
+  @Test def testMap2(): Unit = 
+     val m = Map(1 -> "one", 2 -> "two", 3->"tree")
+     val c = async[ComputationBound]{
+       m.map((k,v)=> (k,await(T1.cbi(v.length))))
+     }
+     val r = c.run().get
+     assert(r(1)==3)
+*/
 
-
-     
 
 

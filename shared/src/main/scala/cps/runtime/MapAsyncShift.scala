@@ -23,6 +23,17 @@ class MapOpsAsyncShift[K,V, CC[KX,VX] <: MapOps[KX,VX,CC,CC[KX,VX]] with CI[(KX,
    }
    m.map(it)(_.result)
    
+ def map[F[_], K2, V2](c: CKV, m: CpsMonad[F])(f: ((K, V)) => F[(K2, V2)]): F[CC[K2, V2]] =
+   val s0 = m.pure(c.mapFactory.newBuilder[K2,V2])
+   val it = c.foldLeft(s0){ (s,e) =>
+      m.flatMap(s){ cc =>
+         m.map(f(e._1,e._2)){ vs =>
+           cc.addOne(vs)
+         }
+      }
+   }
+   m.map(it)(_.result)
+
 
  def foreachEntry[F[_],U](c: CKV, m:CpsMonad[F])(f: (K, V) => F[U]): F[Unit] =
    foreach[F,U](c, m)(x => f(x._1, x._2) )
