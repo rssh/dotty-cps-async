@@ -11,7 +11,7 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
-  def run(using qctx: QuoteContext)(t: qctx.tasty.Term, tp: qctx.tasty.TypeTree): CpsExpr[F,T] =
+  def run(using qctx: QuoteContext)(t: qctx.reflect.Term, tp: qctx.reflect.TypeTree): CpsExpr[F,T] =
      import qctx.reflect._
      t.seal match 
        case '{ $t1:$T1 } =>

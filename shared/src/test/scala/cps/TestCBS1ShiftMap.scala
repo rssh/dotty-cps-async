@@ -94,16 +94,28 @@ class TestBS1ShiftMap:
      assert(r(11)=='n')
      assert(r(12)=='e')
  
-/*
- * dotty bug. TODO: decide
+
+  /*
+  // dotty bug : https://github.com/lampepfl/dotty/issues/10151
   @Test def testMap2(): Unit = 
+     implicit val printCode = cps.macroFlags.PrintCode
+     implicit val printTree = cps.macroFlags.PrintTree
      val m = Map(1 -> "one", 2 -> "two", 3->"tree")
      val c = async[ComputationBound]{
        m.map((k,v)=> (k,await(T1.cbi(v.length))))
      }
      val r = c.run().get
      assert(r(1)==3)
-*/
+  */
+
+
+  @Test def testMap3(): Unit = 
+     val m = Map(1 -> "one", 2 -> "two", 3->"tree")
+     val c = async[ComputationBound]{
+       m.map((k,v)=> await(T1.cbt((k,v.length))))
+     }
+     val r = c.run().get
+     assert(r(1)==3)
 
 
 

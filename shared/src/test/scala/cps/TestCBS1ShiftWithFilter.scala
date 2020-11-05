@@ -49,10 +49,10 @@ class TestCBS1ShiftWithFilter:
 
   /*
   // same crash unsugared
-  @Test def testSimple2l_p1: Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val printTree = cps.macroFlags.PrintTree
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+  @Test def testSimple2l1_p1: Unit =
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
           (1 to 10).withFilter( x => (x%2 == await(T1.cbi(0))) )
                    .flatMap( x =>
@@ -62,14 +62,47 @@ class TestCBS1ShiftWithFilter:
      }
      val r = c.run().get
      assert(r(0) == 23 )
-     */
+  */
 
+  /*
+  // same crash unsugared - simplifications
+  @Test def testSimple2l1_p3: Unit =
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async[ComputationBound]{
+          (1 to 10).withFilter( x => x == await(T1.cbi(1)) )
+                   .flatMap( x =>
+                      (1 to 10).withFilter( y => y == await(T1.cbi(1)) )
+                        .map(_ => x)
+                   )
+     }
+     val r = c.run().get
+     assert(r(0) == 1 )
+  */
 
-  // crash fixed by https://github.com/lampepfl/dotty/pull/10142
+  //*
+  // no-crash when adding await
+  @Test def testSimple2l1_p2: Unit =
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async[ComputationBound]{
+          (1 to 10).withFilter( x => (x%2 == await(T1.cbi(0))) )
+                   .flatMap( x =>
+                      (20 to 30).withFilter( y => y % 2 == await(T1.cbi(1)) )
+                                .map(y => x+ await(T1.cbi(y)))
+                   )
+     }
+     val r = c.run().get
+     assert(r(0) == 23 )
+     //*/
+
+  // fixed by https://github.com/lampepfl/dotty/pull/10142
   @Test def testSimple2l_p1_2: Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val printTree = cps.macroFlags.PrintTree
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      import cps.runtime._
      val c = async[ComputationBound]{
           (1 to 100).map( zDebug =>
