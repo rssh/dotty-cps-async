@@ -87,7 +87,6 @@ object ValDefTransform:
                                                     exprTerm:qctx.reflect.Term): qctx.reflect.Term = 
        {
           import qctx.reflect._
-          import scala.internal.quoted.showName
           import scala.quoted.QuoteContext
           import scala.quoted.Expr
 

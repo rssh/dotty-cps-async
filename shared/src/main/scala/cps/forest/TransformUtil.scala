@@ -60,25 +60,6 @@ object TransformUtil:
      changes.transformTerm(tree)
 
 
-  def namedLet(using qctx: QuoteContext)(name: String, rhs: qctx.reflect.Term)(body: qctx.reflect.Ident => qctx.reflect.Term): qctx.reflect.Term = {
-    import qctx.reflect._
-    import scala.internal.quoted.showName
-    import scala.quoted.QuoteContext
-    import scala.quoted.Expr
-    val expr = (rhs.seal: @unchecked) match {
-      case '{ $rhsExpr: $t } =>
-        '{
-          @showName(${Expr(name)})
-          val x = $rhsExpr
-          ${
-            val id = ('x).unseal.asInstanceOf[Ident]
-            body(id).seal
-          }
-        }
-    }
-    expr.unseal
-  }
-
   def createFunctionType(using qctx: QuoteContext)(argTypes: List[qctx.reflect.TypeRepr], 
                                                    resultType: qctx.reflect.TypeRepr): qctx.reflect.TypeRepr =
     import qctx.reflect._

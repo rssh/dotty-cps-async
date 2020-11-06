@@ -359,7 +359,6 @@ trait ApplyTreeTransform[F[_],CT]:
   }
 
   def buildApplyArgRecord(fun:Term, paramsDescriptor: MethodParamsDescriptor, t: Term, cpsCtx: TransformationContext[F,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
-       import scala.internal.quoted.showName
        import scala.quoted.QuoteContext
        import scala.quoted.Expr
 
