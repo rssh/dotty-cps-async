@@ -114,7 +114,6 @@ object Async {
                                            using qctx: QuoteContext): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import qctx.reflect._
-     import util._
      val cpsCtx = TransformationContext[F,T](f,tType,dm,flags,exprMarker,nesting,parent)
      f match 
          case Const(c) =>   ConstTransform(cpsCtx)
