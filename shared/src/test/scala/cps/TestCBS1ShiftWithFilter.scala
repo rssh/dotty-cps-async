@@ -98,7 +98,9 @@ class TestCBS1ShiftWithFilter:
      assert(r(0) == 23 )
      //*/
 
-  // fixed by https://github.com/lampepfl/dotty/pull/10142
+  /*
+  //  dotty bug:  https://github.com/lampepfl/dotty/issues/9894
+  // fixed by https://github.com/lampepfl/dotty/pull/10142  (not in 3.0.0-M1)
   @Test def testSimple2l_p1_2: Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
@@ -112,8 +114,11 @@ class TestCBS1ShiftWithFilter:
                    )
      }
      val r = c.run().get
+  */
 
 
+  /*
+  // blocked by  https://github.com/lampepfl/dotty/issues/9894
   @Test def testSimple2l_p3: Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
@@ -130,8 +135,10 @@ class TestCBS1ShiftWithFilter:
      }
      val r = c.run().get
      assert(r(0) == 23 )
+  */
 
-
+  /*
+  // blocked by  https://github.com/lampepfl/dotty/issues/9894
   @Test def testSimple2l2: Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
@@ -143,8 +150,11 @@ class TestCBS1ShiftWithFilter:
      }
      val r = c.run().get
      assert(r(0) == (2,20) )
+  */
 
 
+  /*
+  // blocked by  https://github.com/lampepfl/dotty/issues/9894
   @Test def testSimple2l2sync: Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
@@ -156,5 +166,6 @@ class TestCBS1ShiftWithFilter:
      }
      val r = c.run().get
      assert(r(0) == (2,21) )
+  */
 
 

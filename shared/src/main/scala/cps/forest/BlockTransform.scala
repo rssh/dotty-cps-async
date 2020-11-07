@@ -102,7 +102,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
      import qctx.reflect._
      ( (cpsCtx.flags.customValueDiscard || cpsCtx.flags.warnValueDiscard)
       &&
-       ( !(t.tpe =:= TypeRepr.of[Unit]) && !(t.tpe =:= TypeRepr.of[Nothing]) )
+       ( !(t.tpe =:= Type.of[Unit]) && !(t.tpe =:= Type.of[Nothing]) )
      )
 
 

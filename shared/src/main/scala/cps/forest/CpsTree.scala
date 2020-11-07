@@ -13,6 +13,8 @@ trait CpsTreeScope[F[_], CT] {
 
   import qctx.reflect._
 
+  type TypeRepr = Type
+  lazy val TypeRepr = Type
 
   sealed abstract class CpsTree:
 
@@ -212,7 +214,7 @@ trait CpsTreeScope[F[_], CT] {
           AwaitSyncCpsTree(f(transformed), ntpe)
 
     def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.CpsTree =
-           otherCake.AwaitAsyncCpsTree(nested.inCake(otherCake), otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr])
+           otherCake.AwaitAsyncCpsTree(nested.inCake(otherCake), otpe.asInstanceOf[otherCake.qctx.reflect.Type])
 
 
   
@@ -268,7 +270,7 @@ trait CpsTreeScope[F[_], CT] {
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.MappedCpsTree =
        otherCake.MappedCpsTree(prev.inCake(otherCake), 
                                op.asInstanceOf[otherCake.qctx.reflect.Term => otherCake.qctx.reflect.Term],
-                               otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr])
+                               otpe.asInstanceOf[otherCake.qctx.reflect.Type])
        
 
 
@@ -582,7 +584,7 @@ trait CpsTreeScope[F[_], CT] {
         originLambda.asInstanceOf[otherCake.qctx.reflect.Term], 
         params.asInstanceOf[List[otherCake.qctx.reflect.ValDef]], 
         body.inCake(otherCake), 
-        otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr]
+        otpe.asInstanceOf[otherCake.qctx.reflect.Type]
       )
 
     override def rtpe =
@@ -699,7 +701,7 @@ trait CpsTreeScope[F[_], CT] {
       otherCake.CallChainSubstCpsTree(
         origin.asInstanceOf[otherCake.qctx.reflect.Term], 
         shifted.asInstanceOf[otherCake.qctx.reflect.Term], 
-        otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr]
+        otpe.asInstanceOf[otherCake.qctx.reflect.Type]
       )
 
     override def transformed: Term = 
@@ -736,7 +738,7 @@ trait CpsTreeScope[F[_], CT] {
 
     def adoptTerm(t: qctx.reflect.Term): otherCake.qctx.reflect.Term = t.asInstanceOf[otherCake.qctx.reflect.Term]
 
-    def adoptType(t: qctx.reflect.TypeRepr): otherCake.qctx.reflect.TypeRepr = t.asInstanceOf[otherCake.qctx.reflect.TypeRepr]
+    def adoptType(t: qctx.reflect.Type): otherCake.qctx.reflect.Type = t.asInstanceOf[otherCake.qctx.reflect.Type]
 
     def adoptTermFun(op: qctx.reflect.Term => qctx.reflect.Term): otherCake.qctx.reflect.Term => otherCake.qctx.reflect.Term = 
         op.asInstanceOf[otherCake.qctx.reflect.Term => otherCake.qctx.reflect.Term]
