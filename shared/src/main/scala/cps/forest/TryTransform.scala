@@ -36,7 +36,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      val builder = if (!isAsync) {
                       CpsExpr.sync(monad, patternCode)
                    } else {
-                      val errorMonad = if (monad.unseal.tpe <:< Type.of[CpsTryMonad[F]]) {
+                      val errorMonad = if (monad.unseal.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
                                           monad.cast[CpsTryMonad[F]]
                                       } else {
                                           throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)

@@ -60,8 +60,8 @@ object TransformUtil:
      changes.transformTerm(tree)
 
 
-  def createFunctionType(using qctx: QuoteContext)(argTypes: List[qctx.reflect.Type], 
-                                                   resultType: qctx.reflect.Type): qctx.reflect.Type =
+  def createFunctionType(using qctx: QuoteContext)(argTypes: List[qctx.reflect.TypeRepr], 
+                                                   resultType: qctx.reflect.TypeRepr): qctx.reflect.TypeRepr =
     import qctx.reflect._
     val funSymbol = defn.FunctionClass(argTypes.size)
     val funTypeTree: TypeTree = TypeIdent(funSymbol)
