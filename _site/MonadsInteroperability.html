@@ -34,7 +34,7 @@
             
   <div class="section" id="monads-interoperability">
 <h1>Monads interoperability.<a class="headerlink" href="#monads-interoperability" title="Permalink to this headline">¶</a></h1>
-<p>Monads in async and await can be different:  <code class="docutils literal notranslate"><span class="pre">await[F]</span></code> can be applied inside <code class="docutils literal notranslate"><span class="pre">async[G]</span></code>  when exists <code class="docutils literal notranslate"><span class="pre">CpsMonadConversion[F,</span> <span class="pre">G]</span></code> (see <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/CpsMonadConversion.scala">CpsMonadConversion.scala</a> ).</p>
+<p>Monads in async and await can be different:  <code class="docutils literal notranslate"><span class="pre">await[F]</span></code> can be applied inside <code class="docutils literal notranslate"><span class="pre">async[G]</span></code>  when exists <code class="docutils literal notranslate"><span class="pre">CpsMonadConversion[F,</span> <span class="pre">G]</span></code> (see <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadConversion.scala">CpsMonadConversion.scala</a> ).</p>
 <div class="section" id="future-examples">
 <h2>Future Examples<a class="headerlink" href="#future-examples" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="async-f-await-future">
@@ -91,7 +91,7 @@
 <p>This can be immediatly evaluation for imperative monads, or for monads with delayed evaluation,
 like haskell-like IO – submittiong op to a pull, which should be evaluated during <code class="docutils literal notranslate"><span class="pre">`unsafePerformIO`</span></code>
 at the end of the world.</p>
-<p>You can read implementation of conversion of scheduled monad to <code class="docutils literal notranslate"><span class="pre">Future</span></code> in  <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/src/main/scala/cps/FutureAsyncMonad.scala">FutureAsyncMonad.scala</a></p>
+<p>You can read implementation of conversion of scheduled monad to <code class="docutils literal notranslate"><span class="pre">Future</span></code> in  <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/FutureAsyncMonad.scala">FutureAsyncMonad.scala</a></p>
 <p>Of course, it is is possible to create other conversions between you monads, based on other principles.</p>
 </div>
 </div>
