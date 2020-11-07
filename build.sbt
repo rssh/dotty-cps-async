@@ -4,7 +4,7 @@ val dottyVersion = "3.0.0-M1-bin-SNAPSHOT"
 
 
 val sharedSettings = Seq(
-    version := "0.3.0-SNAPSHOT",
+    version := "0.3.0-M1",
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
     name := "dotty-cps-async"
