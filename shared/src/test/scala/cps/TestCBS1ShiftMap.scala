@@ -49,6 +49,8 @@ class TestBS1ShiftMap:
      val r = c.run().get
      assert(r == "one")
 
+  /*
+  // dotty bug : https://github.com/lampepfl/dotty/issues/9894
   @Test def testMapForeachEntry(): Unit = 
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
@@ -63,6 +65,7 @@ class TestBS1ShiftMap:
      val r = c.run().get
      assert(sx == (1+2+3))
      assert(sy == (1+1+1))
+  */
 
   /*
   // dotty bug : https://github.com/lampepfl/dotty/issues/9894

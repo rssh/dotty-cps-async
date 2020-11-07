@@ -463,7 +463,7 @@ trait ApplyTreeTransform[F[_],CT]:
     if cpsCtx.flags.debugLevel >= 15 then
       cpsCtx.log(s"searchImplicits: tpTree=$tpTree")
       cpsCtx.log(s"tpe=$tpe")
-      cpsCtx.log(s"TypeRepr.of[ObjectAsyncShift]=${TypeRepr.of[ObjectAsyncShift]}")
+      cpsCtx.log(s"Type.of[ObjectAsyncShift]=${Type.of[ObjectAsyncShift]}")
     Implicits.search(tpTree)
 
 
