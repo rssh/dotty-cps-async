@@ -15,7 +15,8 @@ lazy val root = project
   .aggregate(cps.js, cps.jvm)
   .settings(
     Sphinx / sourceDirectory := baseDirectory.value / "docs",
-    git.remoteRepo := "git@github.com:rssh/dotty-cps-async.git"
+    git.remoteRepo := "git@github.com:rssh/dotty-cps-async.git",
+    publishArtifact := false,
   ).enablePlugins(SphinxPlugin)
    .enablePlugins(GhpagesPlugin)
 
