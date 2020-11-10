@@ -192,10 +192,10 @@ trait ApplyTreeTransform[F[_],CT]:
       case MethodType(paramNames, paramTypes, resType) =>
                // currently no support for path-dependend lambdas.
                MethodType(paramNames)( mt => paramTypes,
-                                       mt => fType.unseal.tpe.appliedTo(resType))
+                                       mt => TypeRepr.of[F].appliedTo(resType))
       case PolyType(paramNames,paramBounds,resType) =>
                PolyType(paramNames)(pt => paramBounds,
-                                    pt => fType.unseal.tpe.appliedTo(resType))
+                                    pt => TypeRepr.of[F].appliedTo(resType))
       case _ => throw MacroError("Not supported type for shifting: ${tpe}",cpsCtx.patternCode)
     }
 
@@ -482,7 +482,7 @@ trait ApplyTreeTransform[F[_],CT]:
            TypeApply(t, targs)
 
 
-       if (qual.tpe <:< quoted.Type[cps.runtime.CallChainAsyncShiftSubst[F,?,?]].unseal.tpe) then
+       if (qual.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) then
           val shiftedName = x.name + "_shifted"
           qual.tpe.typeSymbol.method(shiftedName) match
             case Nil  => 
@@ -501,7 +501,7 @@ trait ApplyTreeTransform[F[_],CT]:
                cpsCtx.log(s"found objectShift, ${success1.tree}")
                cpsCtx.log(s"objectShift.tpe = ${objectShift.tpe}")
              val shiftedExpr = Apply(
-                               TypeApply(Select.unique(objectShift, "apply"),fType.unseal::Nil),
+                               TypeApply(Select.unique(objectShift, "apply"),TypeTree.of[F]::Nil),
                                List(qual,monad)
                              )
              val newSelect = Select.unique(shiftedExpr, x.name)
@@ -520,11 +520,11 @@ trait ApplyTreeTransform[F[_],CT]:
                         throw MacroError(s"Method (${x.name}) is not defined in [${shiftType.show}], qual=${qual} ",posExpr(x))
                     case m::Nil =>
                         val newSelect = Select.unique(success2.tree, x.name)
-                        TypeApply(newSelect, fType.unseal::targs).appliedTo(qual,monad).appliedToArgs(args)
+                        TypeApply(newSelect, TypeTree.of[F]::targs).appliedTo(qual,monad).appliedToArgs(args)
                     case other =>
                         // TODO: other args in typebounds [?]
                         val expectedType = TransformUtil.createFunctionType(using qctx)(shiftedArgs.map(_.tpe), TypeBounds.empty)
-                        val shiftedCaller = Select.overloaded(success2.tree, x.name, (fType.unseal::targs).map(_.tpe), List(qual,monad), expectedType)
+                        val shiftedCaller = Select.overloaded(success2.tree, x.name, (TypeTree.of[F]::targs).map(_.tpe), List(qual,monad), expectedType)
                         Apply(shiftedCaller, args)
                              
                case failure2: ImplicitSearchFailure =>
@@ -621,13 +621,13 @@ trait ApplyTreeTransform[F[_],CT]:
       if (shifted.tpe.isFunctionType) 
          // TODO: extract argument types. now - one experiment
          shifted.tpe match
-           case AppliedType(f,List(a,AppliedType(m,b))) if f <:< quoted.Type[Function1].unseal.tpe =>
+           case AppliedType(f,List(a,AppliedType(m,b))) if f <:< TypeRepr.of[Function1] =>
              val sym = Symbol.newVal(Symbol.currentOwner, "shiftedArg", a.widen, Flags.EmptyFlags, Symbol.noSymbol)
              AsyncLambdaCpsTree(origin, List(ValDef(sym,None)), 
                   CpsTree.impure(Apply(Select.unique(shifted,"apply"),List(Ref(sym))),b.head),origin.tpe)
            case _ =>
              throw MacroError("Async function with arity != 1 is not supported yet",posExprs(shifted,origin))
-      else if (shifted.tpe <:< quoted.Type[cps.runtime.CallChainAsyncShiftSubst[F,?,?]].unseal.tpe ) 
+      else if (shifted.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) 
          CallChainSubstCpsTree(origin, shifted, origin.tpe)
       else
          CpsTree.impure(shifted, origin.tpe)

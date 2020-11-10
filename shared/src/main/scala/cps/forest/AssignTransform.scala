@@ -14,7 +14,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
   def run(using qctx: QuoteContext)(left: qctx.reflect.Term, right: qctx.reflect.Term): CpsExpr[F,T] = 
      import qctx.reflect._
      left.seal match 
-        case '{ $le: $lt } =>
+        case '{ $le: lt } =>
             val cpsLeft = Async.nestTransform(le,cpsCtx,TransformationContextMarker.AssignLeft)
             // shpuld have to structure in such waym as workarround against
             //  
@@ -27,7 +27,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
        left: qctx.reflect.Term, right: qctx.reflect.Term, cpsLeft:CpsExpr[F,L]): CpsExpr[F,T] = {
      import qctx.reflect._
      right.seal match {
-        case '{ $re: $rt } =>
+        case '{ $re: rt } =>
             val cpsRight = Async.nestTransform(re,cpsCtx,TransformationContextMarker.AssignRight)
             run1(left,right,cpsLeft,cpsRight)
         case _ =>
@@ -47,13 +47,13 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
         else    // !cpsLeft.isAsync && cpsRight.isAsync
             CpsExpr.async(monad,
                    cpsRight.map[T]( 
-                         '{ (x:R) => ${Assign(left,'x.unseal).seal.cast[T] } 
+                         '{ (x:R) => ${Assign(left,'x.unseal).asExprOf[T] } 
                           }).transformed )
      } else { // (cpsLeft.isAsync) {
         left match 
           case Select(obj,sym) => 
               obj.seal match 
-                 case '{ $o: $ot } =>
+                 case '{ $o: ot } =>
                     val lu = Async.nestTransform(o,cpsCtx,TransformationContextMarker.AssignSelect)
                     run2(left,right,cpsLeft,cpsRight,lu)
                  case _ =>
@@ -71,7 +71,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      if (!cpsRight.isAsync) {
           CpsExpr.async[F,T](monad,
                cpsLu.map[T]('{ x => 
-                    ${Assign('x.unseal.select(left.symbol), right).seal.cast[T]
+                    ${Assign('x.unseal.select(left.symbol), right).asExprOf[T]
                                                                        } }).transformed
          )
      } else {
@@ -81,7 +81,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                         '{ r => ${
                                                Assign('l.unseal.select(left.symbol),
                                                       'r.unseal
-                                               ).seal.cast[F[T]]
+                                               ).asExprOf[F[T]]
                                          }}
                                       ).transformed  }
                                  }).transformed

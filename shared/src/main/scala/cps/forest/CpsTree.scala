@@ -59,7 +59,7 @@ trait CpsTreeScope[F[_], CT] {
       * for async lambda.
       **/
      def rtpe: TypeRepr =
-        fType.unseal.tpe.appliedTo(List(otpe.widen))
+        TypeRepr.of[F].appliedTo(List(otpe.widen))
 
      def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
@@ -73,10 +73,10 @@ trait CpsTreeScope[F[_], CT] {
 
        syncOrigin match
          case Some(syncTerm) =>
-             CpsExpr.sync(monad,safeSeal(syncTerm).cast[T])
+             CpsExpr.sync(monad,safeSeal(syncTerm).asExprOf[T])
          case None =>
              try {
-               val sealedTransformed = safeSeal(transformed).cast[F[T]]
+               val sealedTransformed = safeSeal(transformed).asExprOf[F[T]]
                CpsExpr.async[F,T](monad, sealedTransformed)
              } catch {
                case ex: Throwable =>
@@ -304,7 +304,7 @@ trait CpsTreeScope[F[_], CT] {
               List(
                 Lambda(
                   MethodType(List("x"))(mt => List(wPrevOtpe),
-                                        mt => fType.unseal.tpe.appliedTo(wOtpe)),
+                                        mt => TypeRepr.of[F].appliedTo(wOtpe)),
                   opArgs => opm(opArgs.head.asInstanceOf[Term])
                 )
              )
@@ -586,7 +586,7 @@ trait CpsTreeScope[F[_], CT] {
       )
 
     override def rtpe =
-      val resType = fType.unseal.tpe.appliedTo(List(otpe.widen))
+      val resType = TypeRepr.of[F].appliedTo(List(otpe.widen))
       val paramTypes = params.map(_.tpt.tpe)
       if (params.length==0)
          val f0 = TypeIdent(Symbol.classSymbol("scala.Function0")).tpe

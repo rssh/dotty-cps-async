@@ -46,7 +46,7 @@ trait RootTreeTransform[F[_], CT]:
                     val expr = term.seal
                     val monad = cpsCtx.monad
                     expr match 
-                      case '{ $e: $et } =>
+                      case '{ $e: et } =>
                         val rCpsExpr = try {
                              val nFlags = cpsCtx.flags.copy(muted = muted || cpsCtx.flags.muted)
                              Async.nestTransform(e, cpsCtx.copy(flags = nFlags), marker)
@@ -120,7 +120,7 @@ trait RootTreeTransform[F[_], CT]:
                       op: TreeTransformScope[F,?] => CpsTree): CpsTree =
         val nScope = if (false && term.isExpr) {
            term.seal match
-             case '{ $e: $et} =>
+             case '{ $e: et} =>
                 nestScope(e, marker, muted)
              case _ =>
                 throw MacroError("Can't determinate type for ${e.show}",posExprs(term))

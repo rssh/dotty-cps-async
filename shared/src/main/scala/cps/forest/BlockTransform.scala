@@ -27,7 +27,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
          case d: Definition =>
            d match {
              case v@ValDef(vName,vtt,optRhs) =>
-               val valDefExpr = Block(List(v),Literal(Constant.Unit())).seal.cast[Unit]
+               val valDefExpr = Block(List(v),Literal(Constant.Unit())).asExprOf[Unit]
                val nestCtx = cpsCtx.nest(valDefExpr, uType,
                                          TransformationContextMarker.BlockInside(i))
                ValDefTransform.fromBlock(using qctx)(nestCtx, v)
@@ -37,16 +37,16 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
          case t: Term =>
            // TODO: rootTransform
            t.seal match
-               case '{ $p:$TP } =>
+               case '{ $p: tp } =>
                        if (checkValueDiscarded(using qctx)(t)) 
                            // bug in dotty: show cause match error in test
                            // see https://github.com/lampepfl/dotty/issues/9684
                            def safeShow(): String =
                              try
-                               quoted.Type[TP].show
+                               quoted.Type.show[tp]
                              catch
                                case ex: Throwable => //ex.printStackTrace()
-                               quoted.Type[TP].unseal.toString + " [exception during print]"
+                               TypeTree.of[tp].toString + " [exception during print]"
 
                            if (cpsCtx.flags.customValueDiscard)
                              val valueDiscard = TypeIdent(Symbol.classSymbol("cps.ValueDiscard")).tpe
@@ -54,7 +54,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                              val tpTree = valueDiscard.appliedTo(tpe)
                              Implicits.search(tpTree) match
                                case sc: ImplicitSearchSuccess =>
-                                  val pd = Apply(Select.unique(sc.tree,"apply"),List(t)).seal.cast[Unit]
+                                  val pd = Apply(Select.unique(sc.tree,"apply"),List(t)).asExprOf[Unit]
                                   Async.nestTransform(pd, cpsCtx, TransformationContextMarker.BlockInside(i))
                                case fl: ImplicitSearchFailure =>
                                   val tps = safeShow()
@@ -82,7 +82,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
             printf(other.show)
             throw MacroError(s"unknown tree type in block: $other",patternCode)
      }
-     val rLast = Async.nestTransform(last.seal.cast[T],cpsCtx,TransformationContextMarker.BlockLast)
+     val rLast = Async.nestTransform(last.asExprOf[T],cpsCtx,TransformationContextMarker.BlockLast)
      val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
      // wrap yet in one Expr, to avoid unrolling during append in enclosing block).
      val retval = CpsExpr.wrap(blockResult)

@@ -15,14 +15,14 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                     cases: List[qctx.reflect.CaseDef],
                                     finalizer: Option[qctx.reflect.Term]): CpsExpr[F,T] =
      import qctx.reflect._
-     val cpsBody = Async.nestTransform(body.seal.cast[T],
+     val cpsBody = Async.nestTransform(body.asExprOf[T],
                                             cpsCtx, TCM.TryBody)
      val cpsCaseDefs = cases.zipWithIndex.map((cd,i) => Async.nestTransform(
-                                                  cd.rhs.seal.cast[T],
+                                                  cd.rhs.asExprOf[T],
                                                   cpsCtx, TCM.TryCase(i)))
      val isCaseDefsAsync = cpsCaseDefs.exists(_.isAsync)
      val optCpsFinalizer = finalizer.map( x => Async.nestTransform[F,T,Unit](
-                                        x.seal.cast[Unit], cpsCtx, TCM.TryFinally))
+                                        x.asExprOf[Unit], cpsCtx, TCM.TryFinally))
      val isFinalizerAsync = optCpsFinalizer.exists(_.isAsync)
      val isAsync = cpsBody.isAsync || isCaseDefsAsync || isFinalizerAsync
 
@@ -30,14 +30,14 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
         val nCaseDefs = (cases lazyZip cpsCaseDefs) map { (frs,snd) =>
            CaseDef(frs.pattern, frs.guard, snd.transformed.unseal)
         }
-        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs.toList).seal.cast[F[T]]} }
-        restoreExpr.cast[Throwable => F[T]]
+        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs.toList).asExprOf[F[T]]} }
+        restoreExpr.asExprOf[Throwable => F[T]]
 
      val builder = if (!isAsync) {
                       CpsExpr.sync(monad, patternCode)
                    } else {
                       val errorMonad = if (monad.unseal.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
-                                          monad.cast[CpsTryMonad[F]]
+                                          monad.asExprOf[CpsTryMonad[F]]
                                       } else {
                                           throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)
                                       }

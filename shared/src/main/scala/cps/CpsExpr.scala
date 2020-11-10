@@ -26,7 +26,7 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
      if (prev.isEmpty)
        fLast
      else
-       Block(prev.toList.map(_.extract), fLast.unseal).seal.cast[F[T]]
+       Block(prev.toList.map(_.extract), fLast.unseal).asExprOf[F[T]]
 
   def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T]
 
@@ -67,7 +67,7 @@ abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[CpsMonad[F]],
          if prev.isEmpty then
             last
          else
-            qctx.reflect.Block(prev.toList.map(_.extract), last.unseal).seal.cast[T]
+            qctx.reflect.Block(prev.toList.map(_.extract), last.unseal).asExprOf[T]
      )
 
 

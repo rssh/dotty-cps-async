@@ -21,9 +21,9 @@ given Unliftable[DebugLevel]:
           val sym = other.unseal.symbol
           sym.tree match
              case ValDef(name,tpt,Some(rhs)) =>
-                      fromExpr(rhs.seal.cast[DebugLevel])
+                      fromExpr(rhs.asExprOf[DebugLevel])
              case DefDef(name,tps,vps,rt,Some(rhs)) =>
-                      fromExpr(rhs.seal.cast[DebugLevel])
+                      fromExpr(rhs.asExprOf[DebugLevel])
              case DefDef(name,tps,vps,tp,None) =>
                       // currently it is no-way to extract definition of given.
                       // TODO: submit request to dotty

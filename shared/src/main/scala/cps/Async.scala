@@ -48,8 +48,8 @@ object Async {
        case Some(dm) =>
           transformMonad[F,T](f,dm)
        case None =>
-          val ft = summon[quoted.Type[F]]
-          report.throwError(s"Can't find async monad for ${ft.show}", f)
+          //val ft = summon[quoted.Type[F]]
+          report.throwError(s"Can't find async monad for ${TypeRepr.of[F].show}", f)
 
 
   /**

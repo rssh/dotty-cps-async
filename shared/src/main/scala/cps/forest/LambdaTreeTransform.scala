@@ -12,8 +12,8 @@ trait LambdaTreeTransform[F[_], CT]:
 
   import qctx.reflect._
 
-  def typeInMonad(tp:TypeRepr): TypeRepr =
-       fType.unseal.tpe.appliedTo(tp)
+  //def typeInMonad(tp:TypeRepr): TypeRepr =
+  //     fType.unseal.tpe.appliedTo(tp)
 
   // case lambdaTree @ Lambda(params,body)
   def runLambda(lambdaTerm: Term, params: List[ValDef], expr: Term ): CpsTree =
@@ -34,7 +34,7 @@ trait LambdaTreeTransform[F[_], CT]:
 
 
   def shiftedMethodType(paramNames: List[String], paramTypes:List[TypeRepr], otpe: TypeRepr): MethodType =
-     MethodType(paramNames)(_ => paramTypes, _ => typeInMonad(otpe.widen))
+     MethodType(paramNames)(_ => paramTypes, _ => TypeRepr.of[F].appliedTo(otpe.widen))
 
 
 

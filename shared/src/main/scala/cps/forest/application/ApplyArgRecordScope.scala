@@ -171,7 +171,7 @@ trait ApplyArgRecordScope[F[_], CT]:
        def append(a: CpsTree): CpsTree = a
 
        private def createAsyncPartialFunction(from: TypeRepr, to: TypeRepr, body: Match, params: List[ValDef]): Term =
-         val toInF = typeInMonad(to)
+         val toInF = TypeRepr.of[F].appliedTo(List(to))
          val fromType = from
          val matchVar = body.scrutinee
          val paramNames = params.map(_.name)
@@ -217,17 +217,17 @@ trait ApplyArgRecordScope[F[_], CT]:
 
          def termCast[E](term: Term, tp:quoted.Type[E]): Expr[E] =
             given quoted.Type[E] = tp
-            term.seal.cast[E]
+            term.asExprOf[E]
 
 
          val r = fromType.seal match
-           case '[$FT] =>
+           case '[ftt] =>
              toInF.seal match
-               case '[$TT] =>
-                  '{ new PartialFunction[FT,TT] {
-                       override def isDefinedAt(x1:FT):Boolean =
-                          ${ newCheckBody('x1.unseal ).seal.cast[Boolean] }
-                       override def apply(x2:FT): TT =
+               case '[ttt] =>
+                  '{ new PartialFunction[ftt,ttt] {
+                       override def isDefinedAt(x1:ftt):Boolean =
+                          ${ newCheckBody('x1.unseal ).asExprOf[Boolean] }
+                       override def apply(x2:ftt): ttt =
                           ${ val nBody = cpsBody.transformed
                              nBody match
                                case m@Match(scr,caseDefs) =>
@@ -235,7 +235,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                  val nCaseDefs = caseDefs.map( cd =>
                                                     rebindCaseDef(cd, cd.rhs, b0, true))
                                  val nTerm = Match('x2.unseal, nCaseDefs)
-                                 termCast(nTerm,quoted.Type[TT])
+                                 termCast(nTerm,quoted.Type[ttt])
                                case _ =>
                                  throw MacroError(
                                    s"assumed that transformed match is Match, we have $nBody",
@@ -415,7 +415,7 @@ trait ApplyArgRecordScope[F[_], CT]:
       if !shifted then
          term
       else
-         val mt = MethodType(List())(_ => List(), _ => typeInMonad(term.tpe.widen))
+         val mt = MethodType(List())(_ => List(), _ => TypeRepr.of[F].appliedTo(List(term.tpe.widen)))
          Lambda(mt, args => cpsTree.transformed)
 
     def isAsync: Boolean = cpsTree.isAsync
