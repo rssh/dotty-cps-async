@@ -220,9 +220,9 @@ trait ApplyArgRecordScope[F[_], CT]:
             term.asExprOf[E]
 
 
-         val r = fromType.seal match
+         val r = fromType.asType match
            case '[ftt] =>
-             toInF.seal match
+             toInF.asType match
                case '[ttt] =>
                   '{ new PartialFunction[ftt,ttt] {
                        override def isDefinedAt(x1:ftt):Boolean =
