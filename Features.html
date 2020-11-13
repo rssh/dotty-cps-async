@@ -116,7 +116,7 @@ When migrating your program from legacy SIP22 to dotty, you can change the heade
 <p>All test cases from original Scala-Async distribution are passed with a change of imports only,
 and included in our regression suite.</p>
 <p>It is also possible to compile sip22 async code without changing of the source code with <a class="reference external" href="https://github.com/rssh/shim--scala-async--dotty-cps-async">shim–scala-async–dotty-cps-async</a> -s help.</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;shim-scala-async-dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.2.1-RC1&quot;</span><span class="o">,</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;shim-scala-async-dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.3.2-M1&quot;</span><span class="o">,</span>
 </pre></div>
 </div>
 <p>Note that compatibility was not a primary goal during the development of dotty-cps-async. Generated code is quite different, so if you need a bug-to-bug compatible version of scala2 async, you should use the port of the original -XAsync compiler plugin.</p>
