@@ -29,18 +29,18 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      def makeAsyncCaseDefs(): List[CaseDef] =
         ((cases lazyZip cpsCaseDefs) map { (frs,snd) =>
            CaseDef(frs.pattern, frs.guard, snd.transformed.unseal)
-        }
+        }).toList
 
      def makeRestoreExpr(): Expr[Throwable => F[T]]  =
         val nCaseDefs = makeAsyncCaseDefs()
-        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs).cast[F[T]]} }
-        restoreExpr.cast[Throwable => F[T]]
+        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs).asExprOf[F[T]]} }
+        restoreExpr.asExprOf[Throwable => F[T]]
 
 
      val builder = if (!isAsync) {
                       CpsExpr.sync(monad, patternCode)
                    } else {
-                      val errorMonad = if (monad.unseal.tpe <:< Type.of[CpsTryMonad[F]]) {
+                      val errorMonad = if (monad.unseal.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
                                           monad.cast[CpsTryMonad[F]]
                                       } else {
                                           throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)
