@@ -68,8 +68,8 @@ trait CpsTreeScope[F[_], CT] {
          t.tpe.widen match
            case MethodType(_,_,_) | PolyType(_,_,_) =>
              val ext = t.etaExpand
-             ext.seal
-           case _ => t.seal
+             ext.asExpr
+           case _ => t.asExpr
 
        syncOrigin match
          case Some(syncTerm) =>
@@ -80,7 +80,7 @@ trait CpsTreeScope[F[_], CT] {
                CpsExpr.async[F,T](monad, sealedTransformed)
              } catch {
                case ex: Throwable =>
-                 println("failed seal:"+ transformed.seal.show )
+                 println("failed seal:"+ transformed.asExpr.show )
                  throw ex;
              }
 

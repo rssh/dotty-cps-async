@@ -26,7 +26,7 @@ trait LambdaTreeTransform[F[_], CT]:
         if (cpsCtx.flags.allowShiftedLambda) then
             AsyncLambdaCpsTree(lambdaTerm, params, cpsBody, lambdaTerm.tpe)
         else
-            throw MacroError("await inside lambda functions without enclosing async block", lambdaTerm.seal)
+            throw MacroError("await inside lambda functions without enclosing async block", lambdaTerm.asExpr)
      } else {
         CpsTree.pure(lambdaTerm)
      }

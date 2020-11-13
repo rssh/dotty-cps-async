@@ -32,14 +32,14 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
          case MethodType(_,_,_) | PolyType(_,_,_) =>
            val etaExpanded = t.etaExpand
            try
-             etaExpanded.seal
+             etaExpanded.asExpr
            catch
              case ex: Exception =>
                 // TODO: via reporting
                 // println(s"etaExpanding not help, t.tpe.widen=${t.tpe.widen}")
                 //ex.printStackTrace
                 cpsCtx.patternCode
-         case _ => t.seal
+         case _ => t.asExpr
 
    def posExprs(terms: qctx.reflect.Term*): Expr[Any] =
        import qctx.reflect._
@@ -52,11 +52,11 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
            case MethodType(_,_,_) | PolyType(_,_,_) =>
               val etaExpanded = t.etaExpand
               try
-                retval = Some(etaExpanded.seal)
+                retval = Some(etaExpanded.asExpr)
               catch
                 case ex: Exception =>
                    //do nothing
-           case _ => retval = Some(t.seal)
+           case _ => retval = Some(t.asExpr)
        retval.getOrElse(cpsCtx.patternCode)
          
 
@@ -64,7 +64,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
    def safeShow(t: qctx.reflect.Term): String =
        import qctx.reflect._
        try 
-         t.seal.show
+         t.asExpr.show
        catch 
          case ex: Exception =>
             t.toString

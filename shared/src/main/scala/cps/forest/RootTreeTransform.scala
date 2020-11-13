@@ -43,7 +43,7 @@ trait RootTreeTransform[F[_], CT]:
                             )
                             tree.inCake(thisTransform)
                   case _ =>  // TODO: elimi
-                    val expr = term.seal
+                    val expr = term.asExpr
                     val monad = cpsCtx.monad
                     expr match 
                       case '{ $e: et } =>
@@ -119,7 +119,7 @@ trait RootTreeTransform[F[_], CT]:
                       muted: Boolean,
                       op: TreeTransformScope[F,?] => CpsTree): CpsTree =
         val nScope = if (false && term.isExpr) {
-           term.seal match
+           term.asExpr match
              case '{ $e: et} =>
                 nestScope(e, marker, muted)
              case _ =>

@@ -29,7 +29,9 @@ object A3 {
          case Some(mme) =>  // we have Expr[MM[F]] here, need MM[F]
                          val mm: MM[F] = ???  //   staging not works inside macros.
                          mm.mmTransform(e) 
-         case None => val msg = s"MM not found for ${Type[F]}"
+         case None => 
+                      val ft = summon[Type[F]]
+                      val msg = s"MM not found for ${ft}"
                       throw new RuntimeException(msg)
                       //compiletime.error(msg)
 

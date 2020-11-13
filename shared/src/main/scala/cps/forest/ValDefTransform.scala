@@ -19,7 +19,7 @@ object ValDefTransform:
      val rhs = valDef.rhs.getOrElse(
              throw MacroError(s"val $valDef without right part in block ", cpsCtx.patternCode)
      )
-     rhs.seal match 
+     rhs.asExpr match 
         case '{ $e: et } =>
             if (cpsCtx.flags.debugLevel > 15) 
                cpsCtx.log(s"rightPart is ${e.show}")

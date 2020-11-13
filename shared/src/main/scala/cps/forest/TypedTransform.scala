@@ -13,7 +13,7 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   def run(using qctx: QuoteContext)(t: qctx.reflect.Term, tp: qctx.reflect.TypeTree): CpsExpr[F,T] =
      import qctx.reflect._
-     t.seal match 
+     t.asExpr match 
        case '{ $t1:tt1 } =>
          val r = Async.nestTransform(t1, cpsCtx, TransformationContextMarker.Typed)
          if (!r.isAsync)  
@@ -24,6 +24,6 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
          else 
             r.map( '{ x => ${Typed('x.unseal, TypeTree.of[T]).asExprOf[T]} } )
        case _ =>
-         throw MacroError("Can't determinate type for ${t}",t.seal) 
+         throw MacroError("Can't determinate type for ${t}",t.asExpr) 
 
 

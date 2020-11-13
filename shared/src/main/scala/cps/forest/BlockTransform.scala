@@ -36,7 +36,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
            }
          case t: Term =>
            // TODO: rootTransform
-           t.seal match
+           t.asExpr match
                case '{ $p: tp } =>
                        if (checkValueDiscarded(using qctx)(t)) 
                            // bug in dotty: show cause match error in test
@@ -71,7 +71,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                          Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
                case other =>
                        printf(other.show)
-                       throw MacroError(s"can't handle term in block: $other",t.seal)
+                       throw MacroError(s"can't handle term in block: $other",t.asExpr)
          case i:Import =>
             // Import is not statement - so, it is impossible to create block with import
             //   in macros.
