@@ -52,6 +52,33 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
         }
       }
 
+   def withAsyncAction[A](fa:F[A])(action: => F[Unit]):F[A] =
+    flatMap(
+       restore(fa){ ex => 
+         flatMap(
+           restore(tryImpure(action)){ 
+             ex1 => ex.addSuppressed(ex1)
+             error(ex)
+           })(_ => error(ex))      
+       }
+    ){ x =>
+        map(tryImpure(action))(_ => x)
+    }
+
+   def tryPure[A](a: =>A):F[A] =
+       try {
+         pure(a)
+       } catch {
+         case ex: Throwable => error(ex)
+       }
+
+   def tryImpure[A](a: =>F[A]):F[A] =
+       try {
+         a
+       } catch {
+         case ex: Throwable => error(ex)
+       }
+
 }
 
 

@@ -5,6 +5,7 @@ import org.junit.Assert._
 
 import scala.quoted._
 import scala.util.Success
+import scala.util.Failure
 
 
 class TestBS1Try:
@@ -112,8 +113,8 @@ class TestBS1Try:
   def failSyncOp(): Unit =
         throw new Exception("failSyncOp")
 
-  @Test def try_rethrow_tail(): Unit = 
-     implicit val printCode = cps.macroFlags.PrintCode
+  @Test def try_rethrow_incase(): Unit = 
+     //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      var x = 0
      val c = async{
@@ -132,6 +133,68 @@ class TestBS1Try:
      assert(r.isFailure)
      assert(x == 2)
 
+  @Test def try_rethrow_in_finalizer(): Unit = 
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     var x = 0
+     val c = async{
+        x = await(T1.cbi(1))
+        try {
+          failSyncOp();
+          x = 3;
+        } finally {
+            x = 2  
+            throw new RuntimeException("BBB");
+        }
+        x
+     }
+     val r = c.run()
+     assert(r.isFailure)
+     val Failure(ex) = r
+     assert(ex.getMessage == "failSyncOp")
+     assert(x == 2)
 
+
+  @Test def tryAsyncInFinalizer(): Unit = 
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     var x = 0
+     val c = async{
+        x = await(T1.cbi(1))
+        try {
+          failSyncOp();
+          x = 3;
+        } finally {
+            x = await(T1.cbi(2))
+        }
+        x
+     }
+     val r = c.run()
+     assert(r.isFailure)
+     assert(x == 2)
+
+  @Test def tryAsyncCaseDefFinalizer(): Unit = 
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     var x = 0
+     var y = 0
+     val c = async{
+        x = await(T1.cbi(1))
+        try {
+          failSyncOp()
+          x = 3
+        } catch {
+           case ex: Throwable =>
+              x = 2
+              throw ex
+        } finally {
+            y = await(T1.cbi(2))
+        }
+        x
+     }
+     val r = c.run()
+     assert(r.isFailure)
+     assert(x == 2)
+     assert(y == 2)
 
 
