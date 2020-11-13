@@ -109,3 +109,29 @@ class TestBS1Try:
      }
      assert(c.run() == Success(2))
 
+  def failSyncOp(): Unit =
+        throw new Exception("failSyncOp")
+
+  @Test def try_rethrow_tail(): Unit = 
+     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     var x = 0
+     val c = async{
+        x = await(T1.cbi(1))
+        try {
+          failSyncOp();
+          x = 3;
+        } catch {
+          case ex:Exception => 
+            x = 2  
+            throw ex;
+        }
+        x
+     }
+     val r = c.run()
+     assert(r.isFailure)
+     assert(x == 2)
+
+
+
+

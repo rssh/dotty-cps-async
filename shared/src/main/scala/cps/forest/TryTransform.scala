@@ -26,12 +26,16 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      val isFinalizerAsync = optCpsFinalizer.exists(_.isAsync)
      val isAsync = cpsBody.isAsync || isCaseDefsAsync || isFinalizerAsync
 
-     def makeRestoreExpr(): Expr[Throwable => F[T]]  =
-        val nCaseDefs = (cases lazyZip cpsCaseDefs) map { (frs,snd) =>
+     def makeAsyncCaseDefs(): List[CaseDef] =
+        ((cases lazyZip cpsCaseDefs) map { (frs,snd) =>
            CaseDef(frs.pattern, frs.guard, snd.transformed.unseal)
-        }
-        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs.toList).asExprOf[F[T]]} }
+        }).toList
+
+     def makeRestoreExpr(): Expr[Throwable => F[T]]  =
+        val nCaseDefs = makeAsyncCaseDefs()
+        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.unseal, nCaseDefs).asExprOf[F[T]]} }
         restoreExpr.asExprOf[Throwable => F[T]]
+
 
      val builder = if (!isAsync) {
                       CpsExpr.sync(monad, patternCode)
@@ -46,14 +50,22 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                            if (cpsCaseDefs.isEmpty)
                              cpsBody
                            else
-                             CpsExpr.async[F,T](cpsCtx.monad,
-                               '{
-                                 ${errorMonad}.restore(
-                                   ${cpsBody.transformed}
-                                   )(${makeRestoreExpr()})
-                               })
+                             cpsBody.syncOrigin match
+                               case None =>
+                                 CpsExpr.async[F,T](cpsCtx.monad,
+                                  '{
+                                     ${errorMonad}.restore(
+                                       ${cpsBody.transformed}
+                                      )(${makeRestoreExpr()})
+                                  })
+                               case Some(syncBody) =>
+                                 val nBody = '{ ${monad}.pure($syncBody) }.unseal
+                                 CpsExpr.async[F,T](cpsCtx.monad,
+                                    Try(nBody, makeAsyncCaseDefs(), None).asExprOf[F[T]]
+                                 )
                         case Some(cpsFinalizer) =>
                            if (cpsCaseDefs.isEmpty)
+                             // TODO: case with sync cpsBody
                              CpsExpr.async[F,T](cpsCtx.monad,
                                '{
                                   ${errorMonad}.withAction(
@@ -61,6 +73,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                   )(${cpsFinalizer.transformed})
                                })
                            else
+                             // TODO: case with sync cpsBody
                              CpsExpr.async[F,T](cpsCtx.monad,
                                  '{
                                    ${errorMonad}.withAction(
