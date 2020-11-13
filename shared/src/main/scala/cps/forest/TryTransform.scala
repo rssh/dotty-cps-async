@@ -65,23 +65,83 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                  )
                         case Some(cpsFinalizer) =>
                            if (cpsCaseDefs.isEmpty)
-                             // TODO: case with sync cpsBody
-                             CpsExpr.async[F,T](cpsCtx.monad,
-                               '{
-                                  ${errorMonad}.withAction(
-                                    ${cpsBody.transformed}
-                                  )(${cpsFinalizer.transformed})
-                               })
+                             cpsBody.syncOrigin match
+                               case None =>
+                                 cpsFinalizer.syncOrigin match
+                                   case Some(syncFinalizer) =>
+                                      CpsExpr.async[F,T](cpsCtx.monad,
+                                       '{
+                                         ${errorMonad}.withAction(
+                                            ${cpsBody.transformed}
+                                         )(${syncFinalizer})
+                                      })
+                                   case None =>
+                                      CpsExpr.async[F,T](cpsCtx.monad,
+                                       '{
+                                         ${errorMonad}.withAsyncAction(
+                                            ${cpsBody.transformed}
+                                         )(${cpsFinalizer.transformed})
+                                      })
+                               case Some(syncBody) =>
+                                 cpsFinalizer.syncOrigin match
+                                   case Some(syncFinalizer) =>
+                                      CpsExpr.async[F,T](cpsCtx.monad, 
+                                       '{
+                                         ${errorMonad}.withAction(
+                                           ${errorMonad}.tryPure($syncBody)
+                                         )(${syncFinalizer})
+                                      })
+                                   case None =>
+                                      CpsExpr.async[F,T](cpsCtx.monad,
+                                       '{
+                                         ${errorMonad}.withAsyncAction(
+                                           ${errorMonad}.tryPure($syncBody)
+                                         )(${cpsFinalizer.transformed})
+                                      })
                            else
-                             // TODO: case with sync cpsBody
-                             CpsExpr.async[F,T](cpsCtx.monad,
-                                 '{
-                                   ${errorMonad}.withAction(
-                                    ${errorMonad}.restore(
-                                     ${cpsBody.transformed}
-                                    )(${makeRestoreExpr()})
-                                   )(${cpsFinalizer.transformed})
-                                 })
+                             cpsBody.syncOrigin match
+                               case Some(syncBody) =>
+                                 cpsFinalizer.syncOrigin match
+                                   case Some(syncFinalizer) =>
+                                     CpsExpr.async[F,T](cpsCtx.monad,
+                                      '{
+                                         ${errorMonad}.withAction(
+                                           ${errorMonad}.restore(
+                                             ${errorMonad}.tryPure($syncBody)
+                                           )(${makeRestoreExpr()})
+                                         )($syncFinalizer)
+                                     })
+                                   case None =>
+                                     CpsExpr.async[F,T](cpsCtx.monad,
+                                      '{
+                                         ${errorMonad}.withAsyncAction(
+                                           ${errorMonad}.restore(
+                                             ${errorMonad}.tryPure($syncBody)
+                                           )(${makeRestoreExpr()})
+                                         )(${cpsFinalizer.transformed})
+                                      })
+                               case None =>
+                                 // TODO: think, mb it is possible to construct case, when need for try is not eliminated by async.
+                                 //if yes wrap cpsBody,transformed into inpure.
+                                 cpsFinalizer.syncOrigin match
+                                   case Some(syncFinalizer) =>
+                                     CpsExpr.async[F,T](cpsCtx.monad,
+                                      '{
+                                         ${errorMonad}.withAction(
+                                           ${errorMonad}.restore(
+                                             ${cpsBody.transformed}
+                                           )(${makeRestoreExpr()})
+                                         )($syncFinalizer)
+                                     })
+                                   case None =>
+                                     CpsExpr.async[F,T](cpsCtx.monad,
+                                      '{
+                                         ${errorMonad}.withAsyncAction(
+                                           ${errorMonad}.restore(
+                                             ${cpsBody.transformed}
+                                           )(${makeRestoreExpr()})
+                                         )(${cpsFinalizer.transformed})
+                                     })
                    }
      builder
 
