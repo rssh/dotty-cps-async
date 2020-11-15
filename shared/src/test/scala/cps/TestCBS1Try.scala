@@ -198,3 +198,27 @@ class TestBS1Try:
      assert(y == 2)
 
 
+  @Test def tryInMatch1(): Unit = 
+     //implicit val printCode = cps.macroFlags.PrintCode
+     var wasInCatch: Boolean = false
+     val x: Int = 1
+     val c = async {
+        await(T1.cbi(2)) match
+          case 2 =>
+            try
+              x match
+               case 1 =>
+                 failSyncOp()
+               case _ =>
+                 throw new RuntimeException("AAA") 
+            catch
+              case ex: Throwable =>
+                wasInCatch = true
+                throw ex
+     }
+     val r = c.run()
+     assert(r.isFailure)
+     assert( wasInCatch )
+
+
+

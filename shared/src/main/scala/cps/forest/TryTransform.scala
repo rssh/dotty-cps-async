@@ -55,7 +55,9 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                  CpsExpr.async[F,T](cpsCtx.monad,
                                   '{
                                      ${errorMonad}.restore(
-                                       ${cpsBody.transformed}
+                                       ${errorMonad}.tryImpure(
+                                         ${cpsBody.transformed}
+                                       )
                                       )(${makeRestoreExpr()})
                                   })
                                case Some(syncBody) =>
@@ -72,14 +74,18 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                       CpsExpr.async[F,T](cpsCtx.monad,
                                        '{
                                          ${errorMonad}.withAction(
-                                            ${cpsBody.transformed}
+                                            ${errorMonad}.tryImpure(
+                                              ${cpsBody.transformed}
+                                            )
                                          )(${syncFinalizer})
                                       })
                                    case None =>
                                       CpsExpr.async[F,T](cpsCtx.monad,
                                        '{
                                          ${errorMonad}.withAsyncAction(
-                                            ${cpsBody.transformed}
+                                            ${errorMonad}.tryImpure(
+                                               ${cpsBody.transformed}
+                                            )
                                          )(${cpsFinalizer.transformed})
                                       })
                                case Some(syncBody) =>
@@ -121,15 +127,15 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                          )(${cpsFinalizer.transformed})
                                       })
                                case None =>
-                                 // TODO: think, mb it is possible to construct case, when need for try is not eliminated by async.
-                                 //if yes wrap cpsBody,transformed into inpure.
                                  cpsFinalizer.syncOrigin match
                                    case Some(syncFinalizer) =>
                                      CpsExpr.async[F,T](cpsCtx.monad,
                                       '{
                                          ${errorMonad}.withAction(
                                            ${errorMonad}.restore(
-                                             ${cpsBody.transformed}
+                                             ${errorMonad}.tryImpure(
+                                               ${cpsBody.transformed}
+                                             )
                                            )(${makeRestoreExpr()})
                                          )($syncFinalizer)
                                      })
@@ -138,7 +144,9 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                       '{
                                          ${errorMonad}.withAsyncAction(
                                            ${errorMonad}.restore(
-                                             ${cpsBody.transformed}
+                                             ${errorMonad}.tryImpure(
+                                               ${cpsBody.transformed}
+                                             )
                                            )(${makeRestoreExpr()})
                                          )(${cpsFinalizer.transformed})
                                      })

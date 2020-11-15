@@ -85,6 +85,15 @@ class TestCBS1Select:
                 val c2 = new c1.InnerC2()
                 await(c2.gi()) + c2.g()
               }
-      println("c=="+c)
+      //println("c=="+c)
       assert(c.run() == Success(5))
+
+
+  /*
+  @Test def sel_outside_await(): Unit = 
+      val c = async{
+            val r = await(T1.cbt(P(5,6))).x
+      }
+      assert(c.run() == Success(5))
+  */
 
