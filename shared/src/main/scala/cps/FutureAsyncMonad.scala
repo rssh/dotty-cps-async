@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import scala.quoted._
 import scala.util._
 
-given FutureAsyncMonad(using ExecutionContext) as CpsAsyncMonad[Future]: 
+given FutureAsyncMonad(using ExecutionContext) as CpsSchedulingMonad[Future]: 
 
    type F[+T] = Future[T]
 
