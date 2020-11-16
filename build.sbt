@@ -5,7 +5,7 @@ val dottyVersion = "3.0.0-M1"
 
 
 lazy val sharedSettings = Seq(
-    version := "0.3.2-M1",
+    version := "0.3.3-M1",
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
     name := "dotty-cps-async"
