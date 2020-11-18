@@ -36,7 +36,7 @@ trait AwaitTreeTransform[F[_],CT]:
       */
 
   def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, otherCpsMonad: Term): CpsTree =
-      val myCpsMonad = cpsCtx.monad.unseal
+      val myCpsMonad = Term.of(cpsCtx.monad)
       val myCpsMonadTpe = myCpsMonad.tpe
       val myF = TypeRepr.of[F]
       val otherF = targ

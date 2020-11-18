@@ -469,7 +469,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
   def shiftedApply(term: Term, originArgs:List[Term], shiftedArgs: List[Term], shiftedIndexes:Set[Int]): Term =
 
-    val monad = cpsCtx.monad.unseal
+    val monad = Term.of(cpsCtx.monad)
 
     def shiftSelectTypeApplyApply(x:Select, targs:List[TypeTree], args: List[Term]): Term =
 

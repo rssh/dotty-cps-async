@@ -18,7 +18,7 @@ given Unliftable[DebugLevel]:
        case '{ new DebugLevel(${Unlifted(x)}) } =>
                  Some(DebugLevel(x))
        case other =>
-          val sym = other.unseal.symbol
+          val sym = Term.of(other).symbol
           sym.tree match
              case ValDef(name,tpt,Some(rhs)) =>
                       fromExpr(rhs.asExprOf[DebugLevel])

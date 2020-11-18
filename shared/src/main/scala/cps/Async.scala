@@ -64,14 +64,14 @@ object Async {
       if (flags.printCode)
         println(s"before transformed: ${f.show}")
       if (flags.printTree)
-        println(s"value: ${f.unseal}")
+        println(s"value: ${Term.of(f)}")
       if (flags.debugLevel > 5) 
         println(s"customValueDiscard=${flags.customValueDiscard}, warnValueDiscard=${flags.warnValueDiscard}")
       val r = rootTransform[F,T](f,dm,flags,TopLevel,0, None).transformed
       if (flags.printCode)
         println(s"transformed value: ${r.show}")
         if (flags.printTree)
-          println(s"transformed tree: ${r.unseal}")
+          println(s"transformed tree: ${Term.of(r)}")
       r
     catch
       case ex: MacroError =>
@@ -126,7 +126,7 @@ object Async {
          case '{ throw $ex } =>
                             ThrowTransform.run(cpsCtx, ex)
          case _ =>
-             val fTree = f.unseal
+             val fTree = Term.of(f)
              fTree match {
                 case Apply(fun,args) =>
                    ApplyTransform(cpsCtx).run(fun,args)
