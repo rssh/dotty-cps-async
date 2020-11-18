@@ -91,8 +91,10 @@ class TestCBS1Select:
 
   @Test def sel_outside_await(): Unit = 
       val c = async{
-            val r = await(T1.cbt(P(5,6))).x
+         val r = await(T1.cbt(P(5,6))).x
+         r
       }
-      assert(c.run() == Success(5))
+      val r = c.run() 
+      assert(r == Success(5))
 
 

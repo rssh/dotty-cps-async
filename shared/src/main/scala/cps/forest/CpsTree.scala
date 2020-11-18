@@ -81,6 +81,8 @@ trait CpsTreeScope[F[_], CT] {
              } catch {
                case ex: Throwable =>
                  println("failed seal:"+ transformed.asExpr.show )
+                 println(s"transformed.tpe=${transformed.tpe}")
+                 println(s"F[T]=${TypeRepr.of[F[T]]}")
                  throw ex;
              }
 
@@ -242,13 +244,12 @@ trait CpsTreeScope[F[_], CT] {
     def transformed: Term = {
           val untmapTerm = Term.of(cpsCtx.monad).select(mapSymbol)
           val wPrevOtpe = prev.otpe.widen
-          val wOtpe = otpe.widen
-          val tmapTerm = untmapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
+          val tmapTerm = untmapTerm.appliedToTypes(List(wPrevOtpe,otpe))
           val r = tmapTerm.appliedToArgss(
                      List(List(prev.transformed),
                           List(
                             Lambda(
-                              MethodType(List("x"))(mt => List(wPrevOtpe), mt => wOtpe),
+                              MethodType(List("x"))(mt => List(wPrevOtpe), mt => otpe),
                               opArgs => op(opArgs.head.asInstanceOf[Term])
                             )
                           )
@@ -296,15 +297,14 @@ trait CpsTreeScope[F[_], CT] {
         val monad = Term.of(cpsCtx.monad)
         val untpFlatMapTerm = monad.select(flatMapSymbol)
         val wPrevOtpe = prev.otpe.widen
-        val wOtpe = otpe.widen
-        val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
+        val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,otpe))
         val r = tpFlatMapTerm.appliedToArgss(
             List(
               List(prev.transformed),
               List(
                 Lambda(
                   MethodType(List("x"))(mt => List(wPrevOtpe),
-                                        mt => TypeRepr.of[F].appliedTo(wOtpe)),
+                                        mt => TypeRepr.of[F].appliedTo(otpe)),
                   opArgs => opm(opArgs.head.asInstanceOf[Term])
                 )
              )
