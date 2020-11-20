@@ -4,7 +4,7 @@ import cps._
 
 object implicitAwait:
 
-  trait IsPossible[T[_]]
+  trait IsPossible[F[_]]
 
   inline given conversion[F[_],T](using CpsMonad[F], IsPossible[F]) as Conversion[F[T],T] =
            x => await(x) 

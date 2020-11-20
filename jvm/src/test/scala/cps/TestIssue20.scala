@@ -12,6 +12,8 @@ import scala.util.Success
 import java.util.Timer
 import java.util.TimerTask
 
+import cps.monads.given
+
 class TestIssue20:
 
   import scala.concurrent.ExecutionContext.Implicits.global 

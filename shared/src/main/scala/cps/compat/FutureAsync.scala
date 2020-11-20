@@ -2,7 +2,7 @@ package cps.compat
 
 import scala.concurrent._
 import cps._
-import cps.{ given CpsAsyncMonad[Future] }
+import cps.monads.{ given CpsAsyncMonad[Future] }
 
 object FutureAsync:
 

@@ -1,5 +1,6 @@
 package cps
 
+
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
@@ -9,6 +10,9 @@ import scala.language.postfixOps
 import scala.language.implicitConversions
 import scala.quoted._
 import scala.util.Success
+
+import cps.monads.FutureAsyncMonad
+import cps.monads.FutureAsyncMonad.ImplicitAwait
 
 
 class TestImplicitAwait:

@@ -32,9 +32,9 @@ class TestCBS1ShiftWithFilter:
      assert(r(0) == 2 )
 
   @Test def testSimple2l: Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val printTree = cps.macroFlags.PrintTree
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[ComputationBound]{
           for{ x <- 1 to 10 if (x%2) == await(T1.cbi(0)) 
                y <- 20 to 30 if (y%2) == await(T1.cbi(1)) 

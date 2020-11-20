@@ -1,5 +1,6 @@
-package cps
+package cps.monads
 
+import cps._
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.quoted._
@@ -45,7 +46,10 @@ given FutureAsyncMonad(using ExecutionContext) as CpsSchedulingMonad[Future]:
 
    def executionContext = summon[ExecutionContext]
 
-given cps.features.implicitAwait.IsPossible[Future]
+object FutureAsyncMonad:
+
+   given ImplicitAwait as cps.features.implicitAwait.IsPossible[Future]
+
 
 given fromFutureConversion[G[_]](using ExecutionContext, CpsAsyncMonad[G]) as CpsMonadConversion[Future,G] =
    new CpsMonadConversion[Future, G] {

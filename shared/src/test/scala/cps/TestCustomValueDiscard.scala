@@ -11,6 +11,8 @@ import scala.quoted._
 import scala.util.Success
 
 import cps.features.customValueDiscard.given 
+//import cps.monads.FutureAsyncMonad
+import cps.monads.given
 
 class TestCustomValueDiscard:
 
