@@ -31,9 +31,6 @@ class TestCBS1ShiftWithFilter:
      val r = c.run().get
      assert(r(0) == 2 )
 
-/*
-//  dotty crash
-//   more complex than original  https://github.com/lampepfl/dotty/issues/9894
   @Test def testSimple2l: Unit =
      implicit val printCode = cps.macroFlags.PrintCode
      implicit val printTree = cps.macroFlags.PrintTree
@@ -45,10 +42,7 @@ class TestCBS1ShiftWithFilter:
      }
      val r = c.run().get
      assert(r(0) == 23 )
-*/
 
-  /*
-  // same crash unsugared
   @Test def testSimple2l1_p1: Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
@@ -62,7 +56,6 @@ class TestCBS1ShiftWithFilter:
      }
      val r = c.run().get
      assert(r(0) == 23 )
-  */
 
   /*
   // same crash unsugared - simplifications

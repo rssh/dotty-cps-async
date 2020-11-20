@@ -67,7 +67,7 @@ trait CpsTreeScope[F[_], CT] {
        def safeSeal(t:Term):Expr[Any] =
          t.tpe.widen match
            case MethodType(_,_,_) | PolyType(_,_,_) =>
-             val ext = t.etaExpand
+             val ext = t.etaExpand(Symbol.currentOwner)
              ext.asExpr
            case _ => t.asExpr
 
@@ -249,8 +249,9 @@ trait CpsTreeScope[F[_], CT] {
                      List(List(prev.transformed),
                           List(
                             Lambda(
+                              Symbol.currentOwner,
                               MethodType(List("x"))(mt => List(wPrevOtpe), mt => otpe),
-                              opArgs => op(opArgs.head.asInstanceOf[Term])
+                              (owner, opArgs) => op(opArgs.head.asInstanceOf[Term]).changeOwner(owner)
                             )
                           )
                      )
@@ -303,9 +304,10 @@ trait CpsTreeScope[F[_], CT] {
               List(prev.transformed),
               List(
                 Lambda(
+                  Symbol.currentOwner,
                   MethodType(List("x"))(mt => List(wPrevOtpe),
                                         mt => TypeRepr.of[F].appliedTo(otpe)),
-                  opArgs => opm(opArgs.head.asInstanceOf[Term])
+                  (owner,opArgs) => opm(opArgs.head.asInstanceOf[Term]).changeOwner(owner)
                 )
              )
            )
@@ -608,7 +610,7 @@ trait CpsTreeScope[F[_], CT] {
        //       because otherwise it's quite strange why we have such interface in compiler
 
        //  r: (X1 .. XN) => F[R] = (x1 .. xN) => cps(f(x1,... xN)).   
-      Lambda(shiftedType, (x: List[Tree]) => { 
+      Lambda(Symbol.currentOwner, shiftedType, (owner: Symbol, x: List[Tree]) => { 
          // here we need to change owner of ValDefs which was in lambda.
          //  TODO: always pass mapping between new symbols as parameters to transformed
          if (cpsCtx.flags.debugLevel >= 15)
@@ -623,7 +625,7 @@ trait CpsTreeScope[F[_], CT] {
                                         case _  => super.transformTerm(tree)
                  case _ => super.transformTerm(tree)
          }
-         argTransformer.transformTerm(body.transformed)
+         argTransformer.transformTerm(body.transformed).changeOwner(owner)
       })
 
     override def transformed: Term = 

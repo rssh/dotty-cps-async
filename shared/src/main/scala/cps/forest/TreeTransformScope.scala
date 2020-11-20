@@ -30,7 +30,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
        import qctx.reflect._
        t.tpe.widen match
          case MethodType(_,_,_) | PolyType(_,_,_) =>
-           val etaExpanded = t.etaExpand
+           val etaExpanded = t.etaExpand(Symbol.currentOwner)
            try
              etaExpanded.asExpr
            catch
@@ -50,7 +50,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
          rest = rest.tail
          t.tpe.widen match
            case MethodType(_,_,_) | PolyType(_,_,_) =>
-              val etaExpanded = t.etaExpand
+              val etaExpanded = t.etaExpand(Symbol.currentOwner)
               try
                 retval = Some(etaExpanded.asExpr)
               catch

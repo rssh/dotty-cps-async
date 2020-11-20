@@ -209,7 +209,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
          def newCheck(): Term =
             val mt = MethodType(paramNames)(_ => List(fromType), _ => TypeRepr.of[Boolean])
-            Lambda(mt, args => changeArgs(params,args,newCheckBody(matchVar)))
+            Lambda(Symbol.currentOwner, mt, (owner,args) => changeArgs(params,args,newCheckBody(matchVar)).changeOwner(owner))
 
          def newBody():Term =
             val mt = MethodType(paramNames)( _ => List(fromType), _ => toInF)
@@ -252,7 +252,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
        private def createAsyncLambda(mt: MethodType, params: List[ValDef]): Term =
          val transformedBody = cpsBody.transformed
-         Lambda(mt, args => changeArgs(params,args,transformedBody))
+         Lambda(Symbol.currentOwner,mt, (owner,args) => changeArgs(params,args,transformedBody).changeOwner(owner))
 
        private def rebindCaseDef(caseDef:CaseDef,
                                  body: Term,
@@ -415,7 +415,7 @@ trait ApplyArgRecordScope[F[_], CT]:
          term
       else
          val mt = MethodType(List())(_ => List(), _ => TypeRepr.of[F].appliedTo(List(term.tpe.widen)))
-         Lambda(mt, args => cpsTree.transformed)
+         Lambda(Symbol.currentOwner,mt, (owner,args) => cpsTree.transformed.changeOwner(owner))
 
     def isAsync: Boolean = cpsTree.isAsync
     def hasShiftedLambda: Boolean = shifted
