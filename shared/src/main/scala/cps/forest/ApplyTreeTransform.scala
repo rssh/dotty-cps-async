@@ -425,7 +425,7 @@ trait ApplyTreeTransform[F[_],CT]:
                 val argName: String = "a" + acc.posIndex // TODO: get name from params
                 // will be the next dotty upgrade
                 //val symbol = Symbol.newVal(Owner.current.symbol,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
-                val symbol = Symbol.newVal(Symbol.currentOwner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
+                val symbol = Symbol.newVal(Symbol.spliceOwner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
                 val valDef = symbol.tree match
                   case v@ValDef(_,_,_) => v
                   case _ =>
@@ -622,7 +622,7 @@ trait ApplyTreeTransform[F[_],CT]:
          // TODO: extract argument types. now - one experiment
          shifted.tpe match
            case AppliedType(f,List(a,AppliedType(m,b))) if f <:< TypeRepr.of[Function1] =>
-             val sym = Symbol.newVal(Symbol.currentOwner, "shiftedArg", a.widen, Flags.EmptyFlags, Symbol.noSymbol)
+             val sym = Symbol.newVal(Symbol.spliceOwner, "shiftedArg", a.widen, Flags.EmptyFlags, Symbol.noSymbol)
              AsyncLambdaCpsTree(origin, List(ValDef(sym,None)), 
                   CpsTree.impure(Apply(Select.unique(shifted,"apply"),List(Ref(sym))),b.head),origin.tpe)
            case _ =>

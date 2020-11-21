@@ -15,19 +15,17 @@ object TransformUtil:
      import util._
      val search = new TreeAccumulator[Option[Tree]] {
 
-        //def foldTree(x: Option[Tree], tree: Tree)(using Owner): Option[Tree] =
-        def foldTree(x: Option[Tree], tree: Tree)(using ctx:Context): Option[Tree] =
-                 foldOverTree(x,tree)
+        def foldTree(x: Option[Tree], tree: Tree)(owner: Symbol): Option[Tree] =
+                 foldOverTree(x,tree)(owner)
 
-        //override def foldOverTree(x: Option[Tree], tree: Tree)(using Owner): Option[Tree] = {
-        override def foldOverTree(x: Option[Tree], tree: Tree)(using Context): Option[Tree] = {
+        override def foldOverTree(x: Option[Tree], tree: Tree)(owner: Symbol): Option[Tree] = {
            if (x.isDefined)
              x
            else
-             cond(tree) orElse super.foldOverTree(x,tree)
+             cond(tree) orElse super.foldOverTree(x,tree)(owner)
         }
      }
-     search.foldTree(None,term)
+     search.foldTree(None,term)(Symbol.spliceOwner)
   }
 
   def containsAwait(using qctx:QuoteContext)(term: qctx.reflect.Term): Boolean =
@@ -48,16 +46,16 @@ object TransformUtil:
      import qctx.reflect._
      import util._
      val changes = new TreeMap() {
-        override def transformTerm(tree:Term)(using Context):Term =
+        override def transformTerm(tree:Term)(owner: Symbol):Term =
           tree match
             case ident@Ident(name) => if (ident.symbol == origin) {
                                          newTerm
                                       } else {
-                                         super.transformTerm(tree)
+                                         super.transformTerm(tree)(owner)
                                       }
-            case _ => super.transformTerm(tree)
+            case _ => super.transformTerm(tree)(owner)
      }
-     changes.transformTerm(tree)
+     changes.transformTerm(tree)(Symbol.spliceOwner)
 
 
   def createFunctionType(using qctx: QuoteContext)(argTypes: List[qctx.reflect.TypeRepr], 

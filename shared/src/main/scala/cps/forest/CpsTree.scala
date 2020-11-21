@@ -67,7 +67,7 @@ trait CpsTreeScope[F[_], CT] {
        def safeSeal(t:Term):Expr[Any] =
          t.tpe.widen match
            case MethodType(_,_,_) | PolyType(_,_,_) =>
-             val ext = t.etaExpand(Symbol.currentOwner)
+             val ext = t.etaExpand(Symbol.spliceOwner)
              ext.asExpr
            case _ => t.asExpr
 
@@ -249,7 +249,7 @@ trait CpsTreeScope[F[_], CT] {
                      List(List(prev.transformed),
                           List(
                             Lambda(
-                              Symbol.currentOwner,
+                              Symbol.spliceOwner,
                               MethodType(List("x"))(mt => List(wPrevOtpe), mt => otpe),
                               (owner, opArgs) => op(opArgs.head.asInstanceOf[Term]).changeOwner(owner)
                             )
@@ -304,7 +304,7 @@ trait CpsTreeScope[F[_], CT] {
               List(prev.transformed),
               List(
                 Lambda(
-                  Symbol.currentOwner,
+                  Symbol.spliceOwner,
                   MethodType(List("x"))(mt => List(wPrevOtpe),
                                         mt => TypeRepr.of[F].appliedTo(otpe)),
                   (owner,opArgs) => opm(opArgs.head.asInstanceOf[Term]).changeOwner(owner)
@@ -610,7 +610,7 @@ trait CpsTreeScope[F[_], CT] {
        //       because otherwise it's quite strange why we have such interface in compiler
 
        //  r: (X1 .. XN) => F[R] = (x1 .. xN) => cps(f(x1,... xN)).   
-      Lambda(Symbol.currentOwner, shiftedType, (owner: Symbol, x: List[Tree]) => { 
+      Lambda(Symbol.spliceOwner, shiftedType, (owner: Symbol, x: List[Tree]) => { 
          // here we need to change owner of ValDefs which was in lambda.
          //  TODO: always pass mapping between new symbols as parameters to transformed
          if (cpsCtx.flags.debugLevel >= 15)
@@ -618,14 +618,14 @@ trait CpsTreeScope[F[_], CT] {
          val paramsMap = params.zipWithIndex.map{case (tree,index)=>(tree.symbol,index)}.toMap
          val indexedArgs = x.toIndexedSeq
          val argTransformer = new TreeMap() {
-            override def transformTerm(tree: Term)(using ctx: Context): Term =
+            override def transformTerm(tree: Term)(owner: Symbol): Term =
                tree match
                  case Ident(name) => paramsMap.get(tree.symbol) match
                                         case Some(index) => Ref(x(index).symbol)
-                                        case _  => super.transformTerm(tree)
-                 case _ => super.transformTerm(tree)
+                                        case _  => super.transformTerm(tree)(owner)
+                 case _ => super.transformTerm(tree)(owner)
          }
-         argTransformer.transformTerm(body.transformed).changeOwner(owner)
+         argTransformer.transformTerm(body.transformed)(owner)
       })
 
     override def transformed: Term = 

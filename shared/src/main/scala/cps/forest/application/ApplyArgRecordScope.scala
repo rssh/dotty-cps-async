@@ -209,7 +209,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
          def newCheck(): Term =
             val mt = MethodType(paramNames)(_ => List(fromType), _ => TypeRepr.of[Boolean])
-            Lambda(Symbol.currentOwner, mt, (owner,args) => changeArgs(params,args,newCheckBody(matchVar)).changeOwner(owner))
+            Lambda(Symbol.spliceOwner, mt, (owner,args) => changeArgs(params,args,newCheckBody(matchVar)).changeOwner(owner))
 
          def newBody():Term =
             val mt = MethodType(paramNames)( _ => List(fromType), _ => toInF)
@@ -252,7 +252,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
        private def createAsyncLambda(mt: MethodType, params: List[ValDef]): Term =
          val transformedBody = cpsBody.transformed
-         Lambda(Symbol.currentOwner,mt, (owner,args) => changeArgs(params,args,transformedBody).changeOwner(owner))
+         Lambda(Symbol.spliceOwner,mt, (owner,args) => changeArgs(params,args,transformedBody).changeOwner(owner))
 
        private def rebindCaseDef(caseDef:CaseDef,
                                  body: Term,
@@ -263,9 +263,7 @@ trait ApplyArgRecordScope[F[_], CT]:
            pattern match
              case bd@Bind(name,pat1) =>
                 val bSym = bd.symbol
-                //FUTURE:
-                //val nBSym = Symbol.newBind(Owner.current.symbol, name,bSym.flags, Ref(bSym).tpe.widen)
-                val nBSym = Symbol.newBind(Symbol.currentOwner, name,bSym.flags, Ref(bSym).tpe.widen)
+                val nBSym = Symbol.newBind(Symbol.spliceOwner, name,bSym.flags, Ref(bSym).tpe.widen)
                 val nMap = map.updated(bSym, Ref(nBSym))
                 val (nPat1, nMap1) = rebindPatterns(pat1, nMap)
                 (Bind(nBSym,nPat1), nMap1)
@@ -309,7 +307,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                       case _ => throw MacroError(s"term expected for lambda param, we have ${paramTree}",posExprs(term))
                   case _ => None
 
-             override def transformTerm(tree:Term)(using Context):Term =
+             override def transformTerm(tree:Term)(owner: Symbol):Term =
                tree match
                  case ident@Ident(name) => lookupParamTerm(ident.symbol) match
                                              case Some(paramTerm) => 
@@ -319,23 +317,23 @@ trait ApplyArgRecordScope[F[_], CT]:
                                                               cpsCtx.log(s"oldOwner: ${ident.symbol.owner} , newOwner: ${paramTerm.symbol.owner}")
                                                               cpsCtx.log(s"oldOwner.hashCode: ${ident.symbol.owner.hashCode} , newOwner.hashCode: ${paramTerm.symbol.owner.hashCode}")
                                                           paramTerm
-                                             case None => super.transformTerm(tree)
-                 case _ => super.transformTerm(tree)
+                                             case None => super.transformTerm(tree)(owner)
+                 case _ => super.transformTerm(tree)(owner)
 
-             override def transformTypeTree(tree:TypeTree)(using Context):TypeTree =
+             override def transformTypeTree(tree:TypeTree)(owner: Symbol):TypeTree =
                tree match
                  case Singleton(ref) =>
                            lookupParamTerm(ref.symbol) match
                                case Some(paramTerm) => Singleton(paramTerm)
-                               case None => super.transformTypeTree(tree)
+                               case None => super.transformTypeTree(tree)(owner)
                  case a@Annotated(tp,annotation) =>
                            // bug in default TreeTransform, should process Annotated
-                           Annotated.copy(a)(transformTypeTree(tp),transformTerm(annotation))
+                           Annotated.copy(a)(transformTypeTree(tp)(owner),transformTerm(annotation)(owner))
                  case i@Inferred() =>
-                           Inferred(transformType(i.tpe))
-                 case _ => super.transformTypeTree(tree)
+                           Inferred(transformType(i.tpe)(owner))
+                 case _ => super.transformTypeTree(tree)(owner)
 
-             def transformType(tp: TypeRepr)(using Context): TypeRepr =
+             def transformType(tp: TypeRepr)(owner: Symbol): TypeRepr =
                tp match
                  case ConstantType(c) => tp
                  case tref@TermRef(qual, name) =>
@@ -347,27 +345,27 @@ trait ApplyArgRecordScope[F[_], CT]:
                          // TODO: add constructor to CompilerReflection
                          tp
                  case SuperType(thisTpe,superTpe) =>
-                         SuperType(transformType(thisTpe),transformType(superTpe))
+                         SuperType(transformType(thisTpe)(owner),transformType(superTpe)(owner))
                  case Refinement(parent,name,info) =>
-                         Refinement(transformType(parent),name,transformType(info))
+                         Refinement(transformType(parent)(owner),name,transformType(info)(owner))
                  case AppliedType(tycon, args) =>
-                         transformType(tycon).appliedTo(args.map(x => transformType(x)))
+                         transformType(tycon)(owner).appliedTo(args.map(x => transformType(x)(owner)))
                  case AnnotatedType(underlying, annot) =>
-                         AnnotatedType(transformType(underlying), transformTerm(annot))
-                 case AndType(rhs,lhs) => AndType(transformType(rhs),transformType(lhs))
-                 case OrType(rhs,lhs) => OrType(transformType(rhs),transformType(lhs))
+                         AnnotatedType(transformType(underlying)(owner), transformTerm(annot)(owner))
+                 case AndType(rhs,lhs) => AndType(transformType(rhs)(owner),transformType(lhs)(owner))
+                 case OrType(rhs,lhs) => OrType(transformType(rhs)(owner),transformType(lhs)(owner))
                  case MatchType(bound,scrutinee,cases) =>
-                            MatchType(transformType(bound),transformType(scrutinee),
-                                                        cases.map(x => transformType(x)))
-                 case ByNameType(tp1) => ByNameType(transformType(tp1))
+                            MatchType(transformType(bound)(owner),transformType(scrutinee)(owner),
+                                                        cases.map(x => transformType(x)(owner)))
+                 case ByNameType(tp1) => ByNameType(transformType(tp1)(owner))
                  case ParamRef(x) => tp
                  case NoPrefix() => tp
-                 case TypeBounds(low,hi) => TypeBounds(transformType(low),transformType(hi))
+                 case TypeBounds(low,hi) => TypeBounds(transformType(low)(owner),transformType(hi)(owner))
                  case _ => tp  //  hope nobody will put termRef inside recursive type
 
 
          }
-         changes.transformTerm(body)
+         changes.transformTerm(body)(Symbol.spliceOwner)
 
   }
 
@@ -415,7 +413,7 @@ trait ApplyArgRecordScope[F[_], CT]:
          term
       else
          val mt = MethodType(List())(_ => List(), _ => TypeRepr.of[F].appliedTo(List(term.tpe.widen)))
-         Lambda(Symbol.currentOwner,mt, (owner,args) => cpsTree.transformed.changeOwner(owner))
+         Lambda(Symbol.spliceOwner,mt, (owner,args) => cpsTree.transformed.changeOwner(owner))
 
     def isAsync: Boolean = cpsTree.isAsync
     def hasShiftedLambda: Boolean = shifted
