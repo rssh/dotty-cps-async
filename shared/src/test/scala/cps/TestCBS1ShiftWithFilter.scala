@@ -57,7 +57,7 @@ class TestCBS1ShiftWithFilter:
      val r = c.run().get
      assert(r(0) == 23 )
 
-  /*
+  //*
   // same crash unsugared - simplifications
   @Test def testSimple2l1_p3: Unit =
      //implicit val printCode = cps.macroFlags.PrintCode
@@ -72,7 +72,7 @@ class TestCBS1ShiftWithFilter:
      }
      val r = c.run().get
      assert(r(0) == 1 )
-  */
+  //*/
 
   //*
   // no-crash when adding await
