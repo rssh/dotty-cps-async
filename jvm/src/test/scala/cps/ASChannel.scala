@@ -15,26 +15,9 @@ import java.util.concurrent.atomic.AtomicInteger
 class ASChannel[F[_]:CpsAsyncMonad,A]
 {
   
-   final val INSERTING = 1
-   final val ABANDONED = 2
-   final val OK = 3
-
-   case class ReadRecord(
-      readCallback: A => F[Unit],
-      readStartCallback: Boolean => Unit,
-      //status: AtomicInteger
-   )
-
-   case class WriteRecord(
-      writeCallback: Unit => F[A],
-   )
 
    private val readers: ConcurrentLinkedQueue[A => F[Unit]] = new ConcurrentLinkedQueue()
-   private val lastReadStarted: AtomicReference[F[Unit]|Null] = new AtomicReference(null)
-   private val lastReadNumber: AtomicLong = new AtomicLong(0L)
    private val writers: ConcurrentLinkedQueue[Unit=>F[A]] = new ConcurrentLinkedQueue()
-   private val lastWriteStarted: AtomicReference[F[A]|Null] = new AtomicReference(null)
-
 
    def read():F[A] = {
       Option(writers.poll()) match 
