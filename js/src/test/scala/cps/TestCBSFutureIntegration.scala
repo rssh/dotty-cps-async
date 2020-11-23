@@ -1,5 +1,6 @@
 package cps
 
+
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
@@ -9,6 +10,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util._
 
+import cps.monads.given
 
 
 class TestCBSFutureIntegration:
