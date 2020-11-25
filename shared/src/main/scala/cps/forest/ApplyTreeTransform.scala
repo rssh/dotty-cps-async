@@ -359,7 +359,7 @@ trait ApplyTreeTransform[F[_],CT]:
   }
 
   def buildApplyArgRecord(fun:Term, paramsDescriptor: MethodParamsDescriptor, t: Term, cpsCtx: TransformationContext[F,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
-       import scala.quoted.QuoteContext
+       import scala.quoted.Quotes
        import scala.quoted.Expr
 
        if cpsCtx.flags.debugLevel >= 15 then
@@ -658,7 +658,7 @@ trait ApplyTreeTransform[F[_],CT]:
 object ApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T],
                          applyTerm: qctx1.reflect.Term,
                          fun: qctx1.reflect.Term,
                          args: List[qctx1.reflect.Term]): CpsExpr[F,T] = {

@@ -20,7 +20,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
 
    val cpsCtx: TransformationContext[F,CT]
 
-   implicit val qctx: QuoteContext
+   implicit val qctx: Quotes
 
    implicit val fType: quoted.Type[F]
 
@@ -74,7 +74,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
 
 trait TreeTransformScopeInstance[F[_]:Type,T:Type](
          override val cpsCtx: TransformationContext[F,T])
-         (implicit override val qctx: QuoteContext)
+         (implicit override val qctx: Quotes)
                                  extends TreeTransformScope[F,T] {
 
 

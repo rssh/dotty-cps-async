@@ -10,7 +10,7 @@ case class DebugLevel(value: Int)
 given Unliftable[DebugLevel]:
 
    def fromExpr(x: Expr[DebugLevel]) =
-     import qctx.reflect._
+     import quotes.reflect._
      println(s"Unliftable[DebugLevel], x=${x.show}")
      x match
        case '{ DebugLevel(${Unlifted(x)}) } =>

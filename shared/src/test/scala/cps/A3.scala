@@ -6,13 +6,13 @@ trait X[T] { type V = T }
 
 trait MM[F[_]] {
 
-  def mmTransform[T:Type](expr: Expr[T])(using qctx: QuoteContext):Expr[F[T]]
+  def mmTransform[T:Type](expr: Expr[T])(using Quotes):Expr[F[T]]
 
 }
 
 implicit object MMX extends MM[X] {
 
-  def mmTransform[T:Type](expr: Expr[T])(using qctx: QuoteContext):Expr[X[T]] =
+  def mmTransform[T:Type](expr: Expr[T])(using Quotes):Expr[X[T]] =
    '{ new X{ val v=${expr} } }
 
 }
@@ -23,7 +23,7 @@ object A3 {
      ${ A3.aTransform[F,T]('x) }
   
 
-  def aTransform[F[_]:Type,T:Type](e:Expr[T])(using qctx: QuoteContext):Expr[F[T]] = 
+  def aTransform[F[_]:Type,T:Type](e:Expr[T])(using Quotes):Expr[F[T]] = 
      // call mmTransform here
      Expr.summon[MM[F]] match 
          case Some(mme) =>  // we have Expr[MM[F]] here, need MM[F]

@@ -13,8 +13,8 @@ object WhileTransform:
    **/
   def run[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T], 
                                cond: Expr[Boolean], repeat: Expr[Unit]
-                               )(using qctx: QuoteContext): CpsExpr[F,T] =
-     import qctx.reflect._
+                               )(using Quotes): CpsExpr[F,T] =
+     import quotes.reflect._
      import util._
      import cpsCtx._
      val cpsCond = Async.nestTransform(cond, cpsCtx, TransformationContextMarker.WhileCond)

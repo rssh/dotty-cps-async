@@ -10,12 +10,11 @@ trait SelectTreeTransform[F[_], CT]:
 
   thisScope: TreeTransformScope[F, CT] =>
 
-  import qctx.reflect._
+  import quotes.reflect._
 
   // case selectTerm @ Select(qualifier,name) 
   def runSelect( selectTerm: Select ): CpsTree =
      val symbol = selectTerm.symbol
-     //runRoot(selectTerm.qualifier, TransformationContextMarker.Select).applyTerm1(_.select(symbol), selectTerm.tpe)
      val qual = runRoot(selectTerm.qualifier, TransformationContextMarker.Select)
      val r = qual.select(symbol, selectTerm.tpe)
      r
@@ -24,7 +23,7 @@ trait SelectTreeTransform[F[_], CT]:
 object SelectTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T],
                          selectTerm: qctx1.reflect.Select): CpsExpr[F,T] = {
                          
      val tmpFType = summon[Type[F]]
@@ -37,7 +36,7 @@ object SelectTreeTransform:
          implicit val ctType: quoted.Type[T] = tmpCTType
           
          def bridge(): CpsExpr[F,T] =
-            val origin = selectTerm.asInstanceOf[qctx.reflect.Select]
+            val origin = selectTerm.asInstanceOf[quotes.reflect.Select]
             runSelect(origin).toResult[T]
                         
 

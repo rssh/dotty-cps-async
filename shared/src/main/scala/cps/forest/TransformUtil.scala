@@ -9,9 +9,9 @@ import cps.misc._
 object TransformUtil:
 
 
-  def find(using qctx:QuoteContext)(term: qctx.reflect.Term,
-                       cond: qctx.reflect.Tree=> Option[qctx.reflect.Tree]) :Option[qctx.reflect.Tree] = {
-     import qctx.reflect._
+  def find(using Quotes)(term: quotes.reflect.Term,
+                       cond: quotes.reflect.Tree=> Option[quotes.reflect.Tree]) :Option[quotes.reflect.Tree] = {
+     import quotes.reflect._
      import util._
      val search = new TreeAccumulator[Option[Tree]] {
 
@@ -28,8 +28,8 @@ object TransformUtil:
      search.foldTree(None,term)(Symbol.spliceOwner)
   }
 
-  def containsAwait(using qctx:QuoteContext)(term: qctx.reflect.Term): Boolean =
-    import qctx.reflect._
+  def containsAwait(using Quotes)(term: quotes.reflect.Term): Boolean =
+    import quotes.reflect._
     find(term, {
            case v@Apply(TypeApply(id@Ident("await"),targs),args) =>
                          if (id.symbol.fullName == "cps.await") Some(v) else None
@@ -40,10 +40,10 @@ object TransformUtil:
   /**
    * substitute identifier with the origin symbol to new tree
    **/
-  def substituteIdent(using qctx:QuoteContext)(tree: qctx.reflect.Term,
+  def substituteIdent(using qctx:Quotes)(tree: qctx.reflect.Term,
                            origin: qctx.reflect.Symbol,
                            newTerm: qctx.reflect.Term): qctx.reflect.Term =
-     import qctx.reflect._
+     import quotes.reflect._
      import util._
      val changes = new TreeMap() {
         override def transformTerm(tree:Term)(owner: Symbol):Term =
@@ -58,9 +58,9 @@ object TransformUtil:
      changes.transformTerm(tree)(Symbol.spliceOwner)
 
 
-  def createFunctionType(using qctx: QuoteContext)(argTypes: List[qctx.reflect.TypeRepr], 
-                                                   resultType: qctx.reflect.TypeRepr): qctx.reflect.TypeRepr =
-    import qctx.reflect._
+  def createFunctionType(using Quotes)(argTypes: List[quotes.reflect.TypeRepr], 
+                                       resultType: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+    import quotes.reflect._
     val funSymbol = defn.FunctionClass(argTypes.size)
     val funTypeTree: TypeTree = TypeIdent(funSymbol)
     funTypeTree.tpe.appliedTo(argTypes.map(_.widen) :+ resultType.widen)

@@ -22,7 +22,7 @@ trait TypeApplyTreeTransform[F[_], CT]:
 object TypeApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx1: QuoteContext)(cpsCtx1: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T],
                          applyTerm: qctx1.reflect.Term, 
                          fun: qctx1.reflect.Term, 
                          targs: List[qctx1.reflect.TypeTree]): CpsExpr[F,T] = {
@@ -36,9 +36,9 @@ object TypeApplyTreeTransform:
          implicit val ctType: quoted.Type[T] = tmpCTType
           
          def bridge(): CpsExpr[F,T] =
-            runTypeApply(applyTerm.asInstanceOf[qctx.reflect.Term],
-                         fun.asInstanceOf[qctx.reflect.Term],
-                         targs.asInstanceOf[List[qctx.reflect.TypeTree]]
+            runTypeApply(applyTerm.asInstanceOf[quotes.reflect.Term],
+                         fun.asInstanceOf[quotes.reflect.Term],
+                         targs.asInstanceOf[List[quotes.reflect.TypeTree]]
                         ).toResult[T].asInstanceOf[CpsExpr[F,T]]
 
      } 

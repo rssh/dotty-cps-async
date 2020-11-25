@@ -11,10 +11,10 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
   import cpsCtx._
 
   // case Try(body, cases, finalizer)
-  def run(using qctx: QuoteContext)(body: qctx.reflect.Term,
-                                    cases: List[qctx.reflect.CaseDef],
-                                    finalizer: Option[qctx.reflect.Term]): CpsExpr[F,T] =
-     import qctx.reflect._
+  def run(using Quotes)(body: quotes.reflect.Term,
+                        cases: List[quotes.reflect.CaseDef],
+                        finalizer: Option[quotes.reflect.Term]): CpsExpr[F,T] =
+     import quotes.reflect._
      val cpsBody = Async.nestTransform(body.asExprOf[T],
                                             cpsCtx, TCM.TryBody)
      val cpsCaseDefs = cases.zipWithIndex.map((cd,i) => Async.nestTransform(

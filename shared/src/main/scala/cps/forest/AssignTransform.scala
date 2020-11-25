@@ -11,8 +11,8 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
   import cpsCtx._
 
   // case Assign(left,right) 
-  def run(using qctx: QuoteContext)(left: qctx.reflect.Term, right: qctx.reflect.Term): CpsExpr[F,T] = 
-     import qctx.reflect._
+  def run(using Quotes)(left: quotes.reflect.Term, right: quotes.reflect.Term): CpsExpr[F,T] = 
+     import quotes.reflect._
      left.asExpr match 
         case '{ $le: lt } =>
             val cpsLeft = Async.nestTransform(le,cpsCtx,TransformationContextMarker.AssignLeft)
@@ -23,9 +23,9 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
             throw MacroError("Can't determinate type",left.asExpr)
 
 
-  def runWithLeft[L:Type](using qctx: QuoteContext)(
-       left: qctx.reflect.Term, right: qctx.reflect.Term, cpsLeft:CpsExpr[F,L]): CpsExpr[F,T] = {
-     import qctx.reflect._
+  def runWithLeft[L:Type](using Quotes)(
+       left: quotes.reflect.Term, right: quotes.reflect.Term, cpsLeft:CpsExpr[F,L]): CpsExpr[F,T] = {
+     import quotes.reflect._
      right.asExpr match {
         case '{ $re: rt } =>
             val cpsRight = Async.nestTransform(re,cpsCtx,TransformationContextMarker.AssignRight)
@@ -35,12 +35,10 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      }
   }
 
-  //implicit def getOrigin[S](x:CpsExprResult[F,S]): quoted.Type[S] = x.originType
 
-
-  def run1[L:Type,R:Type](using qctx: QuoteContext)(left: qctx.reflect.Term, right: qctx.reflect.Term,
+  def run1[L:Type,R:Type](using Quotes)(left: quotes.reflect.Term, right: quotes.reflect.Term,
                 cpsLeft: CpsExpr[F,L], cpsRight: CpsExpr[F,R]): CpsExpr[F,T] =
-     import qctx.reflect._
+     import quotes.reflect._
      if (!cpsLeft.isAsync) {
         if (!cpsRight.isAsync) 
             CpsExpr.sync(monad, patternCode)
@@ -63,11 +61,11 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      }
 
 
-  def run2[L:Type,R:Type,LU:Type](using qctx: QuoteContext)(
-            left: qctx.reflect.Term, right: qctx.reflect.Term,
+  def run2[L:Type,R:Type,LU:Type](using Quotes)(
+            left: quotes.reflect.Term, right: quotes.reflect.Term,
              cpsLeft: CpsExpr[F,L], cpsRight: CpsExpr[F,R],
              cpsLu: CpsExpr[F,LU]): CpsExpr[F,T] =
-     import qctx.reflect._
+     import quotes.reflect._
      if (!cpsRight.isAsync) {
           CpsExpr.async[F,T](monad,
                cpsLu.map[T]('{ x => 

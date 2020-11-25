@@ -11,8 +11,8 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
-  def run(using qctx: QuoteContext)(t: qctx.reflect.Term, tp: qctx.reflect.TypeTree): CpsExpr[F,T] =
-     import qctx.reflect._
+  def run(using Quotes)(t: quotes.reflect.Term, tp: quotes.reflect.TypeTree): CpsExpr[F,T] =
+     import quotes.reflect._
      t.asExpr match 
        case '{ $t1:tt1 } =>
          val r = Async.nestTransform(t1, cpsCtx, TransformationContextMarker.Typed)

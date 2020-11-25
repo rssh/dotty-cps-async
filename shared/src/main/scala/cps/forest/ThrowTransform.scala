@@ -14,8 +14,8 @@ object ThrowTransform:
    **/
   def run[F[_]:Type,T:Type, S<:Throwable:Type](cpsCtx: TransformationContext[F,T],
                                ex: Expr[S]
-                               )(using qctx: QuoteContext): CpsExpr[F,T] =
-     import qctx.reflect._
+                               )(using Quotes): CpsExpr[F,T] =
+     import quotes.reflect._
      import util._
      import cpsCtx._
      val cpsEx = Async.nestTransform(ex, cpsCtx, TransformationContextMarker.ThrowException)
