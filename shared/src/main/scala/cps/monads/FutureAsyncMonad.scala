@@ -23,7 +23,14 @@ given FutureAsyncMonad(using ExecutionContext) as CpsSchedulingMonad[Future]:
    def error[A](e: Throwable): F[A] =
         Future.failed(e)
    
-   def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A] =
+   override def mapTry[A,B](fa:F[A])(f: Try[A]=>B): F[B] =
+        fa.transform{ v => Success(f(v)) }
+
+   def flatMapTry[A,B](fa:F[A])(f: Try[A]=>F[B]): F[B] =
+        fa.transformWith{ v => f(v) }
+
+
+   override def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A] =
         fa.recoverWith{ case ex => fx(ex) }
    
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A] =

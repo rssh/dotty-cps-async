@@ -126,7 +126,13 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
 
    def error[T](e: Throwable):ComputationBound[T] = Error[T](e)
 
-   def restore[A](fa: ComputationBound[A])(fx:Throwable => ComputationBound[A]): ComputationBound[A] = Thunk(() => {
+   override def mapTry[A,B](fa: ComputationBound[A])(f:Try[A]=>B): ComputationBound[B] =
+     Thunk(() => Done(f(fa.run())))
+
+   override def flatMapTry[A,B](fa: ComputationBound[A])(f:Try[A]=>ComputationBound[B]): ComputationBound[B] =
+     Thunk(() => f(fa.run()))
+
+   override def restore[A](fa: ComputationBound[A])(fx:Throwable => ComputationBound[A]): ComputationBound[A] = Thunk(() => {
          fa.run() match 
             case Success(a) => Done(a)
             case Failure(ex) => fx(ex)
