@@ -1,0 +1,7 @@
+% https://tikzcd.yichuanshen.de/#N4Igdg9gJgpgziAXAbVABwnAlgFyxMJZABgBoBGAXVJADcBDAGwFcYkQACAMWQCFKQAX1LpMufIRRkAzNTpNW7DhwCCHISJAZseAkQBMpWTQYs2iECrgBPMAGMAyswBGcHAH0e-DaJ0SDpMRypooWXu5UPlpiupLIACyk+sEK5pY29k6uHuGRwr7ieiiJQSap7DwASgKCcjBQAObwRKAAZgBOEAC2SOQ0OBBIhvJm7K3uADJRHd29-YOIZCOhIK3TnT2IwwNIS4xYYGlQ9HAAFvUgZaNhyAC0NZozm0s7iNJXKw3rs1vzSInLNINSbfTYA14AVg+aVOAD0AFSgpDvECQ6HsU5IxDghYo-aHdjHM4XdE3e5CSiCIA
+\begin{tikzcd}
+                                       &  & {F[B_1]} \arrow[rr, "h"]                                            &  & {F[R]}                                                               \\
+{ F[B]} \arrow[rru, "g"]               &  &                                                                     &  &                                                                      \\
+                                       &  &                                                                     &  & {AsyncSubst_F[B_1]} \arrow[uu, "h^*"] \arrow[lluu, "{F[-]}", dashed] \\
+  A  \arrow[rr, "f_L"] \arrow[uu, "f"] &  & {AsyncSubst_F[B]} \arrow[lluu, "{F[-]}", dashed] \arrow[rru, "g_L"] &  &                                                                     
+\end{tikzcd}

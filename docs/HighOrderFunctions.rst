@@ -30,6 +30,7 @@ If we want all requests to run in parallel, we can start them in one map and whe
 During async transform, dotty-cps-async substitute method map of you List with signature  
    ``List[A].map[B](f: A=>B)`` to  
 
+:: index:: AsyncShift
 
 .. code-block:: scala
 
@@ -87,7 +88,9 @@ Example:
 Object oriented interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- Sometimes, we can use classes, defines in the object-oriented manner, where data is private inside class.  If the developer of such class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement AsyncShifted[F:CpsMonad] version inside  you class, which will accept methods with shifted parameters, and made a given ObjectAsync which should create instance of AsyncShifted from object and CpsMonad.
+.. index:: ObjectAsyncShift
+
+Sometimes, we can use classes, defines in the object-oriented manner, where data is private inside class.  If the developer of such class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement AsyncShifted[F:CpsMonad] version inside  you class, which will accept methods with shifted parameters, and made a given ObjectAsync which should create instance of AsyncShifted from object and CpsMonad.
 
 Example:
 
@@ -126,5 +129,6 @@ Then we can define given instance for conversion:
 
 Note that you should carefully decide whether you need async function support and how to deal with concurrent modifications.  For example, in the code snippet below, different changes will interleave with each other.
  Usually, low-level constructs do not need async counterparts.
+
 
 

@@ -1,0 +1,10 @@
+\documentclass[convert]{standalone}
+\usepackage{tikz-cd}
+\begin{document}
+% https://tikzcd.yichuanshen.de/#N4Igdg9gJgpgziAXAbVABwnAlgFyxMJZABgBpiBdUkANwEMAbAVxiRAAIAxZAIQpAC+pdJlz5CKAEzkqtRizZdkAYX5CR2PASJlJs+s1aIO7AILtBwkBk3ii0vdQMLjpuAE8wAYwDKTAEZwOAD63HyCsjBQAObwRKAAZgBOEAC2SGQgOBBIAIxO8kYgABaWiSnpiNJZOYgAzAWGbAnBADJlIMlpSNXZGY0unR1dlQ01eQNFxQB6AFTDFUhjfYiZDFhgRVB0cMVRIJNs3AC0ahQCQA
+\begin{tikzcd}
+{ F[B]} \arrow[rr, "h"]                &  & { F[C]}                                                            \\
+                                       &  &                                                                    \\
+  A  \arrow[rr, "f_L"] \arrow[uu, "f"] &  & {AsyncSubst_F[B]} \arrow[uu, "h^*"] \arrow[lluu, "{\nu}", dashed]
+\end{tikzcd}
+\end{document}
