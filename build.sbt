@@ -1,10 +1,10 @@
 //val dottyVersion = "3.0.0-M1-bin-20201022-b26dbc4-NIGHTLY"
-//val dottyVersion = "3.0.0-M2-bin-SNAPSHOT"
+//val dottyVersion = "3.0.0-RC1-bin-SNAPSHOT"
 val dottyVersion = dottyLatestNightlyBuild.get
 
 
 val sharedSettings = Seq(
-    version := "0.3.3-SNAPSHOT",
+    version := "0.3.4-SNAPSHOT",
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
     name := "dotty-cps-async"
