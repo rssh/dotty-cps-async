@@ -28,9 +28,15 @@ ThisBuild / homepage := Some(url("https://github.com/rssh/dotty-cps-async"))
 
 ThisBuild / pomIncludeRepository := { _ => false }
 ThisBuild / publishTo := {
+       println("mark:thisBuild/publishTo")
        val nexus = "https://oss.sonatype.org/"
-       if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-       else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+       if (isSnapshot.value) {
+           println("mark:thisBuild/publishTo - isSnapshot")
+           Some("snapshots" at nexus + "content/repositories/snapshots")
+       } else {
+           println("mark:thisBuild/publishTo")
+           Some("releases" at nexus + "service/local/staging/deploy/maven2")
+       }
 }
 ThisBuild / publishMavenStyle := true
 
