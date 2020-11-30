@@ -60,12 +60,12 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                                   val tps = safeShow()
                                   val msg = s"discarding non-unit value without custom discard $tps (${fl.explanation})"
                                   if (cpsCtx.flags.warnValueDiscard)
-                                      report.warning(msg, t.pos)
+                                      report.warning(msg, p)
                                   else
-                                      report.error(msg, t.pos)
+                                      report.error(msg, p)
                                   Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
                            else
-                             report.warning(s"discarding non-unit value ${safeShow()}", t.pos)
+                             report.warning(s"discarding non-unit value ${safeShow()}", p)
                              Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
                        else
                          Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
