@@ -7,7 +7,7 @@ object PrintTree
 
 case class DebugLevel(value: Int)
 
-given Unliftable[DebugLevel]:
+given Unliftable[DebugLevel] with
 
    def fromExpr(x: Expr[DebugLevel]) =
      import quotes.reflect._

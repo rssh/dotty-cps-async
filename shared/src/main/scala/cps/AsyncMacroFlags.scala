@@ -12,7 +12,7 @@ case class AsyncMacroFlags(
    muted: Boolean = false,
 )
 
-given Unliftable[AsyncMacroFlags]:
+given Unliftable[AsyncMacroFlags] with
    def fromExpr(x: Expr[AsyncMacroFlags]) =
      x match
        case '{ AsyncMacroFlags(${Unlifted(x)},${Unlifted(y)},${Unlifted(z)}) } =>
