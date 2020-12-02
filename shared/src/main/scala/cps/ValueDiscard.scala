@@ -12,11 +12,11 @@ object ValueDiscard:
 
     inline override def apply(value: T): Unit = {}
 
-  transparent inline given intValueDiscard as ValueDiscard[Int] = EmptyValueDiscard[Int]
-  transparent inline given longValueDiscard as ValueDiscard[Long] = EmptyValueDiscard[Long]
-  transparent inline given booleanValueDiscard as ValueDiscard[Boolean] = EmptyValueDiscard[Boolean]
-  transparent inline given stringValueDiscard as ValueDiscard[String] = EmptyValueDiscard[String]
-    
+  transparent inline given intValueDiscard: ValueDiscard[Int] = EmptyValueDiscard[Int]
+  transparent inline given longValueDiscard: ValueDiscard[Long] = EmptyValueDiscard[Long]
+  transparent inline given booleanValueDiscard: ValueDiscard[Boolean] = EmptyValueDiscard[Boolean]
+  transparent inline given stringValueDiscard: ValueDiscard[String] = EmptyValueDiscard[String]
+
 
 
 
