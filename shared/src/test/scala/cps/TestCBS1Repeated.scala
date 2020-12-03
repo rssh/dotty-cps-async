@@ -35,4 +35,19 @@ class TestCBS1Repeated:
   def f(x:String, y: Int*):String =
       x + y.mkString
 
+  def f2(x:FC*):String =
+      x.map(e => e.name+":"+e.fun()).mkString(",")
+
+  case class FC(name:String, fun: ()=>Boolean)
+
+  @Test def repeated_fun(): Unit = 
+     val c = async[ComputationBound]{
+       val esx: scala.collection.immutable.Seq[FC] = Seq(FC.apply(
+         "aaa", 
+         () => ({val tmp=1; tmp})==2
+       ))
+       f2(esx :_* )
+     }
+     assert(c.run() == Success("aaa:false"))
+
 

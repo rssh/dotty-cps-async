@@ -160,6 +160,8 @@ object Async {
                    ReturnTransform(cpsCtx).run(returnTerm)
                 case constTerm@Literal(_)=>  // looks like Const on expressions not handel all cases.
                    ConstTransform(cpsCtx)
+                case repeatedTerm@Repeated(elems, tpt) =>  
+                   RepeatedTransform(cpsCtx).run(repeatedTerm)
                 case _ =>
                    println("f:"+f.show)
                    println("fTree:"+fTree)
