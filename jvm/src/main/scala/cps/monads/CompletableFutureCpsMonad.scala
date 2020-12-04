@@ -8,7 +8,7 @@ import scala.util.Success
 import scala.util.control.NonFatal
 
 
-given CompletableFutureCpsMonad as CpsSchedulingMonad[CompletableFuture] {
+given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with {
 
    def pure[T](t:T):CompletableFuture[T] =
          CompletableFuture.completedFuture(t)
@@ -64,7 +64,7 @@ given CompletableFutureCpsMonad as CpsSchedulingMonad[CompletableFuture] {
 
    override def restore[A](fa: CompletableFuture[A])(fx:Throwable => CompletableFuture[A]): CompletableFuture[A] =
         val retval = new CompletableFuture[A]
-        fa.handle{ (v,e) => 
+        fa.handle{ (v,e) =>
           if (e eq null) then
              retval.complete(v)
           else
@@ -89,7 +89,7 @@ given CompletableFutureCpsMonad as CpsSchedulingMonad[CompletableFuture] {
         val r = new CompletableFuture[A]()
         CompletableFuture.runAsync{()=>
           op.handle{ (v,e) =>
-            if (e eq null) 
+            if (e eq null)
                r.complete(v)
             else
                r.completeExceptionally(e)

@@ -23,7 +23,7 @@ class TestCBS1Apply:
   class Zzz(zx:Int) {
      def ta[T](t:T):String =
           t.toString + zx.toString
- 
+
      def byNameInt(x: =>Int):Int =
           zx + x + x
 
@@ -75,12 +75,12 @@ class TestCBS1Apply:
 
 
     class ZzzAsyncShift extends ObjectAsyncShift[Zzz] {
-          def apply[F[_]](zzz:Zzz, cpsMonad: CpsMonad[F]):zzz.InternalAsyncShifted[F] = 
+          def apply[F[_]](zzz:Zzz, cpsMonad: CpsMonad[F]):zzz.InternalAsyncShifted[F] =
                                                                   zzz.shifted(cpsMonad)
     }
 
-    transparent inline given zzzAsyncShift as ObjectAsyncShift[Zzz] = new ZzzAsyncShift()
-            
+    transparent inline given zzzAsyncShift: ObjectAsyncShift[Zzz] = new ZzzAsyncShift()
+
   }
 
 
