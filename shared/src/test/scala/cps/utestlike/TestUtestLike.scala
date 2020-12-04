@@ -11,6 +11,8 @@ import cps._
 
 class TestUtestLike:
 
+  def qqq = 1
+
   @Test def reproduce(): Unit =
      val f = T1.cbi(10)
      val c = async{
