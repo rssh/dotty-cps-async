@@ -1,7 +1,8 @@
 package cps
 
 import scala.quoted._
-import scala.util.Try
+import scala.util._
+import scala.util.control.NonFatal
 import scala.concurrent.duration._
 
 /**
@@ -30,12 +31,16 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
    def error[A](e: Throwable): F[A]
 
-   def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A] 
+   def flatMapTry[A,B](fa:F[A])(f: Try[A] => F[B]):F[B]
 
-/*
+   def mapTry[A,B](fa:F[A])(f: Try[A] => B):F[B] =
+       flatMapTry(fa)(x => pure(f(x)))
+
+
+   def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A] =
          flatMapTry[A,A](fa){ x =>
            x match
-             case Success(a) => m.pure(a)
+             case Success(a) => pure(a)
              case Failure(e) => try{
                                   fx(e)
                                 }catch{
@@ -43,10 +48,6 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
                                 }
          }
 
-   def mapTry[A,B](fa:F[A])(f: Try[A] => B):F[B]
-
-   def flatMapTry[A,B](fa:F[A])(f: Try[A] => F[B]):F[B]
-*/
 
    def withAction[A](fa:F[A])(action: =>Unit):F[A] =
     flatMap(
@@ -67,6 +68,7 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
           case ex: Throwable => error(ex)
         }
       }
+
 
    def withAsyncAction[A](fa:F[A])(action: => F[Unit]):F[A] =
     flatMap(
@@ -94,7 +96,6 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
        } catch {
          case ex: Throwable => error(ex)
        }
-
 
 }
 
