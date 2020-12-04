@@ -30,9 +30,9 @@ trait RepeatedTreeTransform[F[_], CT]:
        // TODO: check 'isChanged?'
        CpsTree.pure(repeated)
     else
-       val syncArgs = args.map(_.identArgs(true)).toList
+       val syncArgs = args.map(_.identArg(true)).toList
        val rightCps = CpsTree.pure(Repeated(syncArgs, tpt))
-       args.fodRight(rightCps)((e,s) =>
+       args.foldRight(rightCps)((e,s) =>
           if (e.usePrepend(true))
              e.append(s)
           else
