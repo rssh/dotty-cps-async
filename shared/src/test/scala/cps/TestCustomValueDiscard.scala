@@ -27,10 +27,9 @@ class TestCustomValueDiscard:
      //implicit val debugLevel = cps.macroFlags.DebugLevel(10)
      
      var x = 0
-     given ValueDiscard[MyObj] {
+     given ValueDiscard[MyObj] with
         override def apply(value:MyObj) = 
            x += value.value
-     }
 
      val c = async[ComputationBound]{ 
          await(T1.cbt(MyObj(1)))
