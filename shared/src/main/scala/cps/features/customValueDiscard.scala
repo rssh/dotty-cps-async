@@ -2,7 +2,7 @@ package cps.features
 
 import cps._
 
-// bug in dotty: 
+// bug in dotty:
 trait customValueDiscard
 trait warningValueDiscard
 
@@ -17,7 +17,7 @@ trait WarnValueDiscardTag
  **/
 object customValueDiscard:
 
-  given tag as CustomValueDiscardTag
+  given tag: CustomValueDiscardTag with {}
 
 
 
@@ -26,8 +26,8 @@ object customValueDiscard:
  **/
 object warnValueDiscard:
 
-  given tag as WarnValueDiscardTag
-  
+  given tag: WarnValueDiscardTag with {}
+
 
 
 
