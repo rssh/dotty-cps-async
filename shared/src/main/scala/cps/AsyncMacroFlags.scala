@@ -12,9 +12,22 @@ case class AsyncMacroFlags(
    muted: Boolean = false,
 )
 
-given Unliftable[AsyncMacroFlags] with
-   def fromExpr(x: Expr[AsyncMacroFlags]) =
-     x match
-       case '{ AsyncMacroFlags(${Unlifted(x)},${Unlifted(y)},${Unlifted(z)}) } =>
-                 Some(AsyncMacroFlags(x,y,z))
+/*
+given FromExpr[AsyncMacroFlags] with
+
+   def unapply(v: Expr[AsyncMacroFlags]): Option[AsyncMacroFlags] =
+     v match
+       case '{ AsyncMacroFlags($ePrintCode,$ePrintTree,$eDebugLevel,
+                               $eAllowShiftedLambda, $eCustomValueDiscard,
+                               $eWarnValueDiscard, $eMuted) } =>
+          val printCode = ePrintCode match
+            case Expr(x) => x
+            case _ =>
+               throw MacroError("printCode should be a constant expression", ePrintCode)
+          ??? 
+               //Some(AsyncMacroFlags(printCode, 
+               //     ))
        case _ => None
+*/
+
+

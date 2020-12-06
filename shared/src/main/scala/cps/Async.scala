@@ -81,21 +81,23 @@ object Async {
 
   def adoptFlags(f: Expr[_])(using Quotes): AsyncMacroFlags =
     import quotes.reflect._
+    /*
     Expr.summon[AsyncMacroFlags] match
       case Some(flagsExpr) =>
         flagsExpr match
-          case Unlifted(flags) => flags
+          case Expr(flags) => flags
           case _  =>
             throw MacroError(
                     s"AsyncMacroFlags ($flagsExpr) is not a compile-time value", flagsExpr )
       case None =>
+     */
             import cps.macroFlags.{_, given}
             val printTree = Expr.summon[PrintTree.type].isDefined
             val printCode = Expr.summon[PrintCode.type].isDefined
             val debugLevel = Expr.summon[DebugLevel] match
                  case Some(expr) =>
                    expr match
-                      case Unlifted(v) => v.value
+                      case Expr(v) => v.value
                       case other  =>
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0

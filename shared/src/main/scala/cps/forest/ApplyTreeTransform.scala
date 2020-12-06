@@ -46,7 +46,7 @@ trait ApplyTreeTransform[F[_],CT]:
      r
 
   def sameSelect(funTerm:Term, name:String, targs:List[TypeTree], args:List[Term]):Option[Term] =
-      funTerm.symbol.method(name) match
+      funTerm.symbol.memberMethod(name) match
         case None => None
         case m::Nil =>
            val select = Select.unique(funTerm, name)
@@ -362,7 +362,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
        if (qual.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) then
           val shiftedName = x.name + "_shifted"
-          qual.tpe.typeSymbol.method(shiftedName) match
+          qual.tpe.typeSymbol.memberMethod(shiftedName) match
             case Nil  => 
                throw MacroError(s"Can't find method ${shiftedName} for qual=${qual} ",posExpr(x))
             case m::Nil =>
@@ -393,7 +393,7 @@ trait ApplyTreeTransform[F[_],CT]:
                                    } else {
                                      shiftType.typeSymbol
                                    }
-                 shiftSymbol.method(x.name) match
+                 shiftSymbol.memberMethod(x.name) match
                     case Nil =>
                         throw MacroError(s"Method (${x.name}) is not defined in [${shiftType.show}], qual=${qual} ",posExpr(x))
                     case m::Nil =>

@@ -97,7 +97,9 @@ object Tracer {
 
   def codeOf[T](expr: Expr[T])(using Quotes): String =
     import quotes.reflect._
-    Term.of(expr).pos.sourceCode
+    Term.of(expr).pos.sourceCode match
+      case Some(code) => code
+      case None => throw new RuntimeException(s"Can't find sourcecode for ${expr}")
 
 
 
