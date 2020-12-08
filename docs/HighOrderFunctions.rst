@@ -85,12 +85,10 @@ Example:
                                                                                TaggedValueAsyncShift[T]() 
 
 
-Object oriented interface
+Object oriented interface (obsolete, up to 0.3.5)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. index:: ObjectAsyncShift
-
-Sometimes, we can use classes, defines in the object-oriented manner, where data is private inside class.  If the developer of such class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement AsyncShifted[F:CpsMonad] version inside  you class, which will accept methods with shifted parameters, and made a given ObjectAsync which should create instance of AsyncShifted from object and CpsMonad.
+Sometimes, we can use classes, defines in an object-oriented manner, where data is private inside class.  If the developer of such a class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement AsyncShifted[F:CpsMonad] version inside  you class, which will accept methods with shifted parameters, and made a given ObjectAsync which should create instance of AsyncShifted from object and CpsMonad.
 
 Example:
 
@@ -105,30 +103,23 @@ Example:
        sendSignal(x)
        old
 
-    def shifted[F[_]](m: CpsMonad[M]) = new MyIntControllerAsyncShifted[F]
+    def modify_async[F[_]](m: CpsMonad[M])(f: Int => F[Int]): F[Int] =
+       val old = x
+       m.map(f(x))(_ => { sendSignal(x); old }) 
 
-    class  MyIntControllerAsyncShifted[F[_]](m: CpsMonad[M]) extends AsyncShifted[MyIntController,F]:
-          
-          def modify(f:  Int => F[Int]): F[Int] =
-               val old = x
-               m.map(f(x))(_ => { sendSignal(x); old }) 
-
-Then we can define given instance for conversion:
 
 .. code-block:: scala
-
- object MyIntController:
-
-   class MyAsyncShift extends ObjectAsyncShift[MyIntController]:
-          def apply[F[_]](obj:MyIntController, cpsMonad: CpsMonad[F]):obj.InternalAsyncShifted[F] =
-                                                                                 obj.shifted(cpsMonad)
-
-   transparent inline given myAsyncShift as ObjectAsyncShift[Zzz] = new MyAsyncShift()
-
 
 
 Note that you should carefully decide whether you need async function support and how to deal with concurrent modifications.  For example, in the code snippet below, different changes will interleave with each other.
  Usually, low-level constructs do not need async counterparts.
+
+
+Object oriented interface (after 0.3.5)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
 
 
 
