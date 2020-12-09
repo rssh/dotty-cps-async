@@ -41,11 +41,10 @@ object Tracer {
 
       override def transformTerm(tree: Term)(owner: Symbol): Term = {
         tree match {
-          case i @ Ident(name) if i.symbol.pos.exists
-            && i.pos.exists
+          case i @ Ident(name) if ( i.symbol.pos.isDefined
             // only trace identifiers coming from the same file,
             // since those are the ones people probably care about
-            && i.symbol.pos.sourceFile == i.pos.sourceFile
+            && i.symbol.pos.get.sourceFile == i.pos.sourceFile
             // Don't trace methods, since you cannot just print them "standalone"
             // without providing arguments
             && !i.symbol.isDefDef && !i.symbol.isClassConstructor
@@ -53,7 +52,7 @@ object Tracer {
             // as part of the language implementation
             && !i.symbol.flags.is(Flags.Artifact)
             // Don't trace "magic" identifiers with '$'s in them
-            && !name.toString.contains('$') =>
+            && !name.toString.contains('$') ) =>
 
             tree.tpe.widen.asType match
               case '[t] => wrapWithLoggedValue[t](tree.asExpr, logger)
