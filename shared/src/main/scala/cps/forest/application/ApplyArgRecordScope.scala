@@ -193,7 +193,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                wasDefault: Boolean):List[CaseDef]=
               rest match
                 case h::t =>
-                     val nh = rebindCaseDef(h, Literal(Constant.Boolean(true)), Map.empty, false)
+                     val nh = rebindCaseDef(h, Literal(BooleanConstant(true)), Map.empty, false)
                      transformCases(t, nh::acc, wasDefault)
                 case Nil =>
                       val lastCase = casePattern match
@@ -310,7 +310,7 @@ trait ApplyArgRecordScope[F[_], CT]:
              override def transformTerm(tree:Term)(owner: Symbol):Term =
                tree match
                  case ident@Ident(name) => lookupParamTerm(ident.symbol) match
-                                             case Some(paramTerm) => 
+                                             case Some(paramTerm) =>
                                                           if (cpsCtx.flags.debugLevel >= 20) then
                                                               cpsCtx.log(s"changeSym, changed $ident to $paramTerm")
                                                               cpsCtx.log(s"oldHashcode: ${ident.symbol.hashCode}, new Hash: ${paramTerm.symbol.hashCode}")

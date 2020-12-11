@@ -27,7 +27,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
          case d: Definition =>
            d match {
              case v@ValDef(vName,vtt,optRhs) =>
-               val valDefExpr = Block(List(v),Literal(Constant.Unit())).asExprOf[Unit]
+               val valDefExpr = Block(List(v),Literal(UnitConstant())).asExprOf[Unit]
                val nestCtx = cpsCtx.nest(valDefExpr, uType,
                                          TransformationContextMarker.BlockInside(i))
                ValDefTransform.fromBlock(using qctx)(nestCtx, v)
@@ -38,7 +38,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
            // TODO: rootTransform
            t.asExpr match
                case '{ $p: tp } =>
-                       if (checkValueDiscarded(using qctx)(t)) 
+                       if (checkValueDiscarded(using qctx)(t))
                            // bug in dotty: show cause match error in test
                            // see https://github.com/lampepfl/dotty/issues/9684
                            def safeShow(): String =
