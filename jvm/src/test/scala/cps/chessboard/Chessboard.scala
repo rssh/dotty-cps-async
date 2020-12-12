@@ -14,16 +14,16 @@ object Chessboard:
    def empty = Map.empty
    val size = 8
 
-   extension (board: Chessboard):
+   extension (board: Chessboard)
 
-       def put(x:Int, y:Int, chessman: Chessman): Option[Chessboard] = 
+       def put(x:Int, y:Int, chessman: Chessman): Option[Chessboard] =
          require(board.isInside(x,y))
          val xy = (x,y)
-         board.get(xy) match 
+         board.get(xy) match
            case Some(c) => None
            case None => Some(board.updated(xy,chessman))
-       
-      
+
+
        def check(x:Int, y:Int): Option[Chessman] =
          board.get((x,y))
 
@@ -45,4 +45,4 @@ object Chessboard:
            (0 until size).forall(y =>
              check(x,y).isDefined
                               ) )
-              
+

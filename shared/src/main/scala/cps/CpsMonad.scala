@@ -36,7 +36,6 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
    def mapTry[A,B](fa:F[A])(f: Try[A] => B):F[B] =
        flatMapTry(fa)(x => pure(f(x)))
 
-
    def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A] =
          flatMapTry[A,A](fa){ x =>
            x match
@@ -51,16 +50,16 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
    def withAction[A](fa:F[A])(action: =>Unit):F[A] =
     flatMap(
-       restore(fa){ ex => 
+       restore(fa){ ex =>
          try {
            action
-           error(ex) 
+           error(ex)
          }catch{
            case ex1: Throwable => ex.addSuppressed(ex1)
              error(ex)
          }
        }
-      ){x => 
+      ){x =>
         try{
           action
           pure(x)
@@ -72,12 +71,12 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
    def withAsyncAction[A](fa:F[A])(action: => F[Unit]):F[A] =
     flatMap(
-       restore(fa){ ex => 
+       restore(fa){ ex =>
          flatMap(
-           restore(tryImpure(action)){ 
+           restore(tryImpure(action)){
              ex1 => ex.addSuppressed(ex1)
              error(ex)
-           })(_ => error(ex))      
+           })(_ => error(ex))
        }
     ){ x =>
         map(tryImpure(action))(_ => x)
@@ -151,7 +150,7 @@ object CpsMonad:
 
   object ForSyntax:
 
-    extension [F[_],T,S](x:F[T])(using m:CpsMonad[F]):
+    extension [F[_],T,S](x:F[T])(using m:CpsMonad[F])
 
       def flatMap(f: T=>F[S]): F[S] =
          m.flatMap(x)(f)
