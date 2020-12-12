@@ -63,14 +63,14 @@ object Async {
       if (flags.printCode)
         println(s"before transformed: ${f.show}")
       if (flags.printTree)
-        println(s"value: ${Term.of(f)}")
+        println(s"value: ${f.asTerm}")
       if (flags.debugLevel > 5) 
         println(s"customValueDiscard=${flags.customValueDiscard}, warnValueDiscard=${flags.warnValueDiscard}")
       val r = rootTransform[F,T](f,dm,flags,TopLevel,0, None).transformed
       if (flags.printCode)
         println(s"transformed value: ${r.show}")
         if (flags.printTree)
-          println(s"transformed tree: ${Term.of(r)}")
+          println(s"transformed tree: ${r.asTerm}")
       r
     catch
       case ex: MacroError =>
@@ -117,7 +117,6 @@ object Async {
      import quotes.reflect._
      val cpsCtx = TransformationContext[F,T](f,tType,dm,flags,exprMarker,nesting,parent)
      f match 
-         case Const(c) =>   ConstTransform(cpsCtx)
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
          case '{ while ($cond) { $repeat }  } =>
@@ -127,7 +126,7 @@ object Async {
          case '{ throw $ex } =>
                             ThrowTransform.run(cpsCtx, ex)
          case _ =>
-             val fTree = Term.of(f)
+             val fTree = f.asTerm
              fTree match {
                 case Apply(fun,args) =>
                    ApplyTransform(cpsCtx).run(fun,args)
@@ -160,7 +159,7 @@ object Async {
                    SuperTransform(cpsCtx).run(superTerm)
                 case returnTerm@Return(expr, from)=>
                    ReturnTransform(cpsCtx).run(returnTerm, from)
-                case constTerm@Literal(_)=>  // looks like Const on expressions not handel all cases.
+                case constTerm@Literal(_)=>  
                    ConstTransform(cpsCtx)
                 case repeatedTerm@Repeated(elems, tpt) =>  
                    RepeatedTransform(cpsCtx).run(repeatedTerm)

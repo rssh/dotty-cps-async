@@ -19,14 +19,14 @@ object Tracer {
         val trees: Expr[Seq[AssertEntry[T]]] = Expr.ofSeq(ess.map(e => makeAssertEntry(e, codeOf(e))))
         Expr.betaReduce('{ $func($trees)})
 
-      case _ => throw new RuntimeException(s"Only varargs are supported. Got: ${Term.of(exprs)}")
+      case _ => throw new RuntimeException(s"Only varargs are supported. Got: ${exprs.asTerm}")
     }
   }
 
   private def makeAssertEntry[T](expr: Expr[T], code: String)(using Quotes, Type[T]) =
     import quotes.reflect._
     def entryBody(logger: Expr[TestValue => Unit]) =
-      tracingMap(logger).transformTerm(Term.of(expr))(Symbol.spliceOwner).asExprOf[T]
+      tracingMap(logger).transformTerm(expr.asTerm)(Symbol.spliceOwner).asExprOf[T]
     '{AssertEntry(
       ${Expr(code)},
       logger => ${entryBody('logger)})}
@@ -81,7 +81,7 @@ object Tracer {
         case _ => Type.of[T].toString // Workaround lampepfl/dotty#8858
     expr match {
       case '{ $x: t } =>
-        Term.of('{
+        ('{
           val tmp: t = $x
           $logger(TestValue(
             ${Expr(expr.show)},
@@ -90,13 +90,13 @@ object Tracer {
             tmp
           ))
           tmp
-        })
+        }).asTerm
     }
   }
 
   def codeOf[T](expr: Expr[T])(using Quotes): String =
     import quotes.reflect._
-    Term.of(expr).pos.sourceCode match
+    expr.asTerm.pos.sourceCode match
       case Some(code) => code
       case None => throw new RuntimeException(s"Can't find sourcecode for ${expr}")
 

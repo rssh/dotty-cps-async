@@ -22,7 +22,7 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
             //else
             //   ???
          else 
-            r.map( '{ x => ${Typed(Term.of('x), TypeTree.of[T]).asExprOf[T]} } )
+            r.map( '{ x => ${Typed('x.asTerm, TypeTree.of[T]).asExprOf[T]} } )
        case _ =>
          throw MacroError("Can't determinate type for ${t}",t.asExpr) 
 

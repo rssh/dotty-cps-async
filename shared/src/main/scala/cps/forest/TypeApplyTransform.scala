@@ -12,6 +12,6 @@ class TypeApplyTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
   // case TypeApply(fun,targs) 
   def run(using Quotes)(fun: quotes.reflect.Term, targs: List[quotes.reflect.TypeTree]): CpsExpr[F,T] =
      import quotes.reflect._
-     TypeApplyTreeTransform.run(cpsCtx,Term.of(patternCode), fun, targs)
+     TypeApplyTreeTransform.run(cpsCtx,patternCode.asTerm, fun, targs)
      
 

@@ -18,7 +18,7 @@ given FromExpr[DebugLevel] with
        case '{ new DebugLevel(${Expr(x)}) } =>
                  Some(DebugLevel(x))
        case other =>
-          val sym = Term.of(other).symbol
+          val sym = other.asTerm.symbol
           sym.tree match
              case ValDef(name,tpt,Some(rhs)) =>
                       unapply(rhs.asExprOf[DebugLevel])

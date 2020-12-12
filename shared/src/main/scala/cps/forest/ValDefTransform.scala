@@ -63,12 +63,12 @@ object ValDefTransform:
             case Some(nextOrigin) =>
              '{
                ${monad}.map(${cpsRhs.transformed})((v:V) => 
-                          ${appendBlockExpr(Term.of('v), nextOrigin)}) 
+                          ${appendBlockExpr('v.asTerm, nextOrigin)}) 
               }
             case  None =>
              '{
                ${monad}.flatMap(${cpsRhs.transformed})((v:V)=>
-                          ${appendBlockExpr(Term.of('v), next.transformed)}) 
+                          ${appendBlockExpr('v.asTerm, next.transformed)}) 
              }
 
        override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
@@ -100,7 +100,7 @@ object ValDefTransform:
 
        private def buildAppendBlockExpr[A:Type](using Quotes)(oldValDef: quotes.reflect.ValDef, rhs: quotes.reflect.Term, expr:Expr[A]):Expr[A] = 
           import quotes.reflect._
-          buildAppendBlock(oldValDef,rhs,Term.of(expr)).asExprOf[A]
+          buildAppendBlock(oldValDef,rhs,expr.asTerm).asExprOf[A]
 
   }
 
@@ -117,7 +117,7 @@ object ValDefTransform:
          import quotes.reflect._
          val prevStats: List[Statement] = prev.map(_.extract).toList
          val valDef: Statement = oldValDef.asInstanceOf[quotes.reflect.ValDef]
-         val outputTerm = Term.of(n) match
+         val outputTerm = n.asTerm match
             case Block(statements, last) => 
                    Block( prevStats ++: (valDef +: statements), last)
             case other => 
@@ -132,7 +132,7 @@ object ValDefTransform:
           import quotes.reflect._
 
           val valDef = oldValDef.asInstanceOf[quotes.reflect.ValDef]
-          val block = Term.of(next.transformed) match 
+          val block = next.transformed.asTerm match 
              case Block(stats, e) =>
                  Block( prev.map(_.extract) ++: valDef +: stats, e)
              case other =>
