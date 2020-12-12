@@ -358,7 +358,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                             MatchType(transformType(bound)(owner),transformType(scrutinee)(owner),
                                                         cases.map(x => transformType(x)(owner)))
                  case ByNameType(tp1) => ByNameType(transformType(tp1)(owner))
-                 case ParamRef(x) => tp
+                 case ParamRef(x, index) => tp  //transform tp ?
                  case NoPrefix() => tp
                  case TypeBounds(low,hi) => TypeBounds(transformType(low)(owner),transformType(hi)(owner))
                  case _ => tp  //  hope nobody will put termRef inside recursive type

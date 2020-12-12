@@ -158,8 +158,8 @@ object Async {
                    InlinedTransform(cpsCtx).run(inlinedTerm)
                 case superTerm@Super(qual,mix) =>
                    SuperTransform(cpsCtx).run(superTerm)
-                case returnTerm@Return(expr)=>
-                   ReturnTransform(cpsCtx).run(returnTerm)
+                case returnTerm@Return(expr, from)=>
+                   ReturnTransform(cpsCtx).run(returnTerm, from)
                 case constTerm@Literal(_)=>  // looks like Const on expressions not handel all cases.
                    ConstTransform(cpsCtx)
                 case repeatedTerm@Repeated(elems, tpt) =>  
