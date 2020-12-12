@@ -7,23 +7,23 @@ object PrintTree
 
 case class DebugLevel(value: Int)
 
-given Unliftable[DebugLevel]:
+given FromExpr[DebugLevel] with
 
-   def fromExpr(x: Expr[DebugLevel]) =
+   def unapply(x: Expr[DebugLevel])(using Quotes) =
      import quotes.reflect._
      println(s"Unliftable[DebugLevel], x=${x.show}")
      x match
-       case '{ DebugLevel(${Unlifted(x)}) } =>
+       case '{ DebugLevel(${Expr(x)}) } =>
                  Some(DebugLevel(x))
-       case '{ new DebugLevel(${Unlifted(x)}) } =>
+       case '{ new DebugLevel(${Expr(x)}) } =>
                  Some(DebugLevel(x))
        case other =>
           val sym = Term.of(other).symbol
           sym.tree match
              case ValDef(name,tpt,Some(rhs)) =>
-                      fromExpr(rhs.asExprOf[DebugLevel])
+                      unapply(rhs.asExprOf[DebugLevel])
              case DefDef(name,tps,vps,rt,Some(rhs)) =>
-                      fromExpr(rhs.asExprOf[DebugLevel])
+                      unapply(rhs.asExprOf[DebugLevel])
              case DefDef(name,tps,vps,tp,None) =>
                       // currently it is no-way to extract definition of given.
                       // TODO: submit request to dotty
@@ -31,3 +31,4 @@ given Unliftable[DebugLevel]:
              case other =>
                       println(s"other=${other.show}")
                       None
+

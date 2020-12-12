@@ -52,4 +52,19 @@ class TestBS1:
      val c1 = c.run()
      assert( c1 == Success(8) )
 
+  @Test def tSeqSimple(): Unit = 
+     val c = Async.async[ComputationBound]{
+          Seq(1,2,await(T1.cbi(3)),await(T1.cbi(4)),5)
+     }
+     val c1 = c.run()
+     assert( c1 == Success(Seq(1,2,3,4,5)) )
+
+  @Test def tSeq2(): Unit = 
+     //implicit val printTree = cps.macroFlags.PrintTree
+     val c = Async.async[ComputationBound]{
+          Seq("==",(1,2,await(T1.cbi(3)),await(T1.cbi(4)),5))
+     }
+     val c1 = c.run()
+     assert( c1 == Success(Seq("==",(1,2,3,4,5))) )
+
 

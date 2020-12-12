@@ -81,21 +81,23 @@ object Async {
 
   def adoptFlags(f: Expr[_])(using Quotes): AsyncMacroFlags =
     import quotes.reflect._
+    /*
     Expr.summon[AsyncMacroFlags] match
       case Some(flagsExpr) =>
         flagsExpr match
-          case Unlifted(flags) => flags
+          case Expr(flags) => flags
           case _  =>
             throw MacroError(
                     s"AsyncMacroFlags ($flagsExpr) is not a compile-time value", flagsExpr )
       case None =>
+     */
             import cps.macroFlags.{_, given}
             val printTree = Expr.summon[PrintTree.type].isDefined
             val printCode = Expr.summon[PrintCode.type].isDefined
             val debugLevel = Expr.summon[DebugLevel] match
                  case Some(expr) =>
                    expr match
-                      case Unlifted(v) => v.value
+                      case Expr(v) => v.value
                       case other  =>
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0
@@ -158,8 +160,13 @@ object Async {
                    SuperTransform(cpsCtx).run(superTerm)
                 case returnTerm@Return(expr)=>
                    ReturnTransform(cpsCtx).run(returnTerm)
+                case constTerm@Literal(_)=>  // looks like Const on expressions not handel all cases.
+                   ConstTransform(cpsCtx)
+                case repeatedTerm@Repeated(elems, tpt) =>  
+                   RepeatedTransform(cpsCtx).run(repeatedTerm)
                 case _ =>
-                   printf("fTree:"+fTree)
+                   println("f:"+f.show)
+                   println("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)
              }
      

@@ -16,7 +16,7 @@ class TestBS1ShiftUsing:
     def close(): Unit  =
       this.isClosed = true
 
-  given Using.Releasable[TestResource]:
+  given Using.Releasable[TestResource] with
     def release(resource: TestResource):Unit =
        resource.close()
 

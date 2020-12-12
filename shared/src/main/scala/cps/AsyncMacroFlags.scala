@@ -1,6 +1,7 @@
 package cps
 
 import scala.quoted._
+import misc._
 
 case class AsyncMacroFlags(
    printCode: Boolean = false,
@@ -12,9 +13,23 @@ case class AsyncMacroFlags(
    muted: Boolean = false,
 )
 
-given Unliftable[AsyncMacroFlags]:
-   def fromExpr(x: Expr[AsyncMacroFlags]) =
-     x match
-       case '{ AsyncMacroFlags(${Unlifted(x)},${Unlifted(y)},${Unlifted(z)}) } =>
-                 Some(AsyncMacroFlags(x,y,z))
+given FromExpr[AsyncMacroFlags] with
+
+   def unapply(v: Expr[AsyncMacroFlags])(using Quotes): Option[AsyncMacroFlags] =
+     v match
+       case '{ AsyncMacroFlags(${Expr(printCode)},${Expr(printTree)},
+                               ${Expr(debugLevel)},
+                               ${Expr(allowShiftedLambda)}, 
+                               ${Expr(customValueDiscard)},
+                               ${Expr(warnValueDiscard)}, 
+                               ${Expr(eMuted)}) } =>
+               Some(AsyncMacroFlags(printCode, printTree,
+                       debugLevel,
+                       allowShiftedLambda,
+                       customValueDiscard,
+                       warnValueDiscard,
+                       eMuted
+                   ))
        case _ => None
+
+
