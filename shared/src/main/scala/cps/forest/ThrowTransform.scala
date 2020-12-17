@@ -20,7 +20,7 @@ object ThrowTransform:
      import cpsCtx._
      val cpsEx = Async.nestTransform(ex, cpsCtx, TransformationContextMarker.ThrowException)
 
-     if (Term.of(cpsCtx.monad).tpe <:< TypeRepr.of[CpsTryMonad[F]])
+     if (cpsCtx.monad.asTerm.tpe <:< TypeRepr.of[CpsTryMonad[F]])
        val errorMonad = monad.asExprOf[CpsTryMonad[F]]
        if (!cpsEx.isAsync)
             // TODO: think, mb leave as is...

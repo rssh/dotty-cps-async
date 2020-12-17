@@ -8,7 +8,7 @@ trait ExprTreeGen:
 
 case class UnsealExprTreeGen[T](expr: Expr[T]) extends ExprTreeGen:
   def extract(using Quotes): quotes.reflect.Statement =
-    quotes.reflect.Term.of(expr)
+    quotes.reflect.expr.asTerm
 
 class StatementExprTreeGen(using Quotes)(stat: quotes.reflect.Statement) extends ExprTreeGen:
   def extract(using qctx:Quotes): quotes.reflect.Statement =
@@ -26,7 +26,7 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
      if (prev.isEmpty)
        fLast
      else
-       Block(prev.toList.map(_.extract), Term.of(fLast)).asExprOf[F[T]]
+       Block(prev.toList.map(_.extract), fLast.asTerm).asExprOf[F[T]]
 
   def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T]
 
@@ -64,7 +64,7 @@ abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[CpsMonad[F]],
          if prev.isEmpty then
             last
          else
-            quotes.reflect.Block(prev.toList.map(_.extract), quotes.reflect.Term.of(last)).asExprOf[T]
+            quotes.reflect.Block(prev.toList.map(_.extract), quotes.reflect.last.asTerm).asExprOf[T]
      )
 
 

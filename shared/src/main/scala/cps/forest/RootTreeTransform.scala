@@ -9,7 +9,7 @@ import cps.misc._
 trait RootTreeTransform[F[_], CT]:
 
   thisTransform: TreeTransformScope[F, CT] =>
-  
+
   import qctx.reflect._
 
   def runRoot(term: qctx.reflect.Term, marker: TransformationContextMarker, muted: Boolean = false): CpsTree =
@@ -18,20 +18,20 @@ trait RootTreeTransform[F[_], CT]:
      val r = term.tpe.widen match {
        case _ : MethodType =>
                //  in such case, we can't transform tree to expr
-               //  without eta-expansion.  
+               //  without eta-expansion.
                //    from other side - we don't want do eta-expand now, it can be performed early.
                 runRootUneta(term, marker, muted)
        case _ : PolyType =>
                 runRootUneta(term, marker, muted)
        case _ =>
                 term match
-                  case lambdaTerm@Lambda(params, body) => 
+                  case lambdaTerm@Lambda(params, body) =>
                                  // type of cps[x => y]  is  x=>F[y], not F[X=>Y]
                                  //  and if it violate CpsExpr contract (which require F[X=>Y]), let's
                                  //  work with lambda on the tree level.
                             B2.inNestedContext(lambdaTerm, marker, muted, scope =>
-                                 scope.runLambda(lambdaTerm.asInstanceOf[scope.qctx.reflect.Term], 
-                                                 params.asInstanceOf[List[scope.qctx.reflect.ValDef]], 
+                                 scope.runLambda(lambdaTerm.asInstanceOf[scope.qctx.reflect.Term],
+                                                 params.asInstanceOf[List[scope.qctx.reflect.ValDef]],
                                                  body.asInstanceOf[scope.qctx.reflect.Term]).inCake(thisTransform)
                             )
                   case applyTerm@Apply(fun,args)  =>
@@ -45,7 +45,7 @@ trait RootTreeTransform[F[_], CT]:
                   case _ =>  // TODO: elimi
                     val expr = term.asExpr
                     val monad = cpsCtx.monad
-                    expr match 
+                    expr match
                       case '{ $e: et } =>
                         val rCpsExpr = try {
                              val nFlags = cpsCtx.flags.copy(muted = muted || cpsCtx.flags.muted)
@@ -76,7 +76,7 @@ trait RootTreeTransform[F[_], CT]:
      val monad = cpsCtx.monad
      val r = term match {
        case Select(qual, name) =>
-           runRoot(qual, TransformationContextMarker.Select, muted) match 
+           runRoot(qual, TransformationContextMarker.Select, muted) match
               case rq: AsyncCpsTree =>
                   val cTransformed = rq.transformed.asInstanceOf[qctx.reflect.Term]
                   CpsTree.impure(Select(cTransformed,term.symbol),term.tpe)
@@ -107,14 +107,14 @@ trait RootTreeTransform[F[_], CT]:
 
   def exprToTree(expr: CpsExpr[F,_], e: Term): CpsTree =
      if (expr.isAsync)
-         val transformed = Term.of(expr.transformed)
+         val transformed = expr.transformed.asTerm
          AwaitSyncCpsTree(transformed, e.tpe)
      else
          PureCpsTree(e)
 
   object B2{
 
-   def inNestedContext(term: Term, 
+   def inNestedContext(term: Term,
                       marker: TransformationContextMarker,
                       muted: Boolean,
                       op: TreeTransformScope[F,?] => CpsTree): CpsTree =

@@ -42,7 +42,7 @@ object Async {
   /**
    * transform expression and get monad from context.
    **/
-  def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using Quotes): Expr[F[T]] = 
+  def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     Expr.summon[CpsMonad[F]] match
        case Some(dm) =>
@@ -55,7 +55,7 @@ object Async {
    * transform expression within given monad.  Use this function is you need to force async-transform
    * from other macros
    **/
-  def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): Expr[F[T]] = 
+  def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     import TransformationContextMarker._
     val flags = adoptFlags(f)
@@ -63,14 +63,14 @@ object Async {
       if (flags.printCode)
         println(s"before transformed: ${f.show}")
       if (flags.printTree)
-        println(s"value: ${Term.of(f)}")
-      if (flags.debugLevel > 5) 
+        println(s"value: ${f.asTerm}")
+      if (flags.debugLevel > 5)
         println(s"customValueDiscard=${flags.customValueDiscard}, warnValueDiscard=${flags.warnValueDiscard}")
       val r = rootTransform[F,T](f,dm,flags,TopLevel,0, None).transformed
       if (flags.printCode)
         println(s"transformed value: ${r.show}")
         if (flags.printTree)
-          println(s"transformed tree: ${Term.of(r)}")
+          println(s"transformed tree: ${r.asTerm}")
       r
     catch
       case ex: MacroError =>
@@ -107,14 +107,14 @@ object Async {
 
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]],
                                       flags: AsyncMacroFlags,
-                                      exprMarker: TransformationContextMarker, 
+                                      exprMarker: TransformationContextMarker,
                                       nesting: Int,
                                       parent: Option[TransformationContext[_,_]])(
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._
      val cpsCtx = TransformationContext[F,T](f,tType,dm,flags,exprMarker,nesting,parent)
-     f match 
+     f match
          case Const(c) =>   ConstTransform(cpsCtx)
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
@@ -125,7 +125,7 @@ object Async {
          case '{ throw $ex } =>
                             ThrowTransform.run(cpsCtx, ex)
          case _ =>
-             val fTree = Term.of(f)
+             val fTree = f.asTerm
              fTree match {
                 case Apply(fun,args) =>
                    ApplyTransform(cpsCtx).run(fun,args)
@@ -162,10 +162,10 @@ object Async {
                    printf("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)
              }
-     
-   
-  def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S], 
-                              cpsCtx: TransformationContext[F,T], 
+
+
+  def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S],
+                              cpsCtx: TransformationContext[F,T],
                               marker: TransformationContextMarker)(using Quotes):CpsExpr[F,S]=
         rootTransform(f,cpsCtx.monad,
                       cpsCtx.flags,marker,cpsCtx.nesting+1, Some(cpsCtx))

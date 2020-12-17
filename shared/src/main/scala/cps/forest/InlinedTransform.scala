@@ -34,7 +34,7 @@ class InlinedCpsExpr[F[_]:Type,T:Type](using qctx0: Quotes)(
       val qctxOldInlined = oldInlined.asInstanceOf[quotes.reflect.Inlined]
       val t = Inlined.copy(qctxOldInlined)(qctxOldInlined.call,
                                qctxOldInlined.bindings,
-                               Term.of(nested.transformed))
+                               nested.transformed.asTerm)
       t.asExprOf[F[T]]
 
    override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =

@@ -139,7 +139,7 @@ trait CpsTreeScope[F[_], CT] {
     def syncOrigin: Option[Term] = Some(origin)
 
     def transformed: Term =
-          val untpureTerm = Term.of(cpsCtx.monad).select(pureSymbol)
+          val untpureTerm = cpsCtx.monad.asTerm.select(pureSymbol)
           val tpureTerm = untpureTerm.appliedToType(otpe.widen)
           val r = tpureTerm.appliedTo(origin)
           r
@@ -242,7 +242,7 @@ trait CpsTreeScope[F[_], CT] {
           FlatMappedCpsTree(this, f, ntpe)
 
     def transformed: Term = {
-          val untmapTerm = Term.of(cpsCtx.monad).select(mapSymbol)
+          val untmapTerm = cpsCtx.monad.asTerm.select(mapSymbol)
           val wPrevOtpe = prev.otpe.widen
           val tmapTerm = untmapTerm.appliedToTypes(List(wPrevOtpe,otpe))
           val r = tmapTerm.appliedToArgss(
@@ -295,7 +295,7 @@ trait CpsTreeScope[F[_], CT] {
 
     def transformed: Term = {
         // ${cpsCtx.monad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
-        val monad = Term.of(cpsCtx.monad)
+        val monad = cpsCtx.monad.asTerm
         val untpFlatMapTerm = monad.select(flatMapSymbol)
         val wPrevOtpe = prev.otpe.widen
         val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,otpe))
