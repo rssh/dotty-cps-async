@@ -333,17 +333,6 @@ trait ApplyTreeTransform[F[_],CT]:
     val tpTree = asyncShift.appliedTo(tpe)
     Implicits.search(tpTree)
 
-  def findObjectAsyncShiftTerm(e:Term):ImplicitSearchResult =
-    val tpe = e.tpe.widen
-    val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
-    val tpTree = objAsyncShift.appliedTo(tpe)
-    //val tpTree = Type.of[ObjectAsyncShift].appliedTo(tpe).simplified
-    if cpsCtx.flags.debugLevel >= 15 then
-      cpsCtx.log(s"searchImplicits: tpTree=$tpTree")
-      cpsCtx.log(s"tpe=$tpe")
-      cpsCtx.log(s"Type.of[ObjectAsyncShift]=${TypeRepr.of[ObjectAsyncShift]}")
-    Implicits.search(tpTree)
-
 
   def shiftedApply(term: Term, originArgs:List[Term], shiftedArgs: List[Term], shiftedIndexes:Set[Int]): Term =
 
@@ -361,30 +350,55 @@ trait ApplyTreeTransform[F[_],CT]:
 
 
        if (qual.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) then
-          val shiftedName = x.name + "_shifted"
+          val shiftedName = x.name + "_shifted"  // TODO: change to _async ?
           qual.tpe.typeSymbol.memberMethod(shiftedName) match
             case Nil  => 
                throw MacroError(s"Can't find method ${shiftedName} for qual=${qual} ",posExpr(x))
             case m::Nil =>
-               //withTargs(Select(qual,m))
                Apply(withTargs(Select.unique(qual,shiftedName)), args)
             case other =>
                //TODO: possible overload in later args lists.
                Select.overloaded(qual,shiftedName,targs.map(_.tpe), args) 
        else
-         findObjectAsyncShiftTerm(qual) match
-           case success1: ImplicitSearchSuccess =>
-             val objectShift = success1.tree
-             if (cpsCtx.flags.debugLevel >= 15)
-               cpsCtx.log(s"found objectShift, ${success1.tree}")
-               cpsCtx.log(s"objectShift.tpe = ${objectShift.tpe}")
-             val shiftedExpr = Apply(
-                               TypeApply(Select.unique(objectShift, "apply"),TypeTree.of[F]::Nil),
-                               List(qual,monad)
-                             )
-             val newSelect = Select.unique(shiftedExpr, x.name)
-             Apply(withTargs(newSelect), args)
-           case failure1: ImplicitSearchFailure =>
+          val shiftedName = x.name + "_async"  
+          val optCandidate = qual.tpe.typeSymbol.memberMethod(shiftedName) match
+              case Nil => None
+              case m::Nil =>
+                println(s"foundUnique, shiftedName=${shiftedName} m.paramSymss=${m.paramSymss}")
+                val paramSymss = m.paramSymss
+                if (paramSymss.isEmpty) then
+                   throw MacroError(s" ${shiftedName} for qual=${qual} should have arguments",posExpr(x))
+                val typeArgsShifted = paramSymss.head.filter(_.isType)
+                val nTypeArgsShifted = typeArgsShifted.length
+                val nTypeArgs = targs.length
+                val useExtraArgs = if (nTypeArgs == nTypeArgsShifted) then {
+                                      false
+                                    } else if (nTypeArgsShifted == nTypeArgs + 1) then {
+                                      true
+                                    } else {
+                                      throw MacroError(s" ${shiftedName} for qual=${qual} number of type arguments is impossible",posExpr(x))
+                                    }
+                if (useExtraArgs) then
+                   Some(Apply(TypeApply(Select.unique(qual,shiftedName), TypeTree.of[F]::targs), monad::args))
+                else
+                  Some(Apply(withTargs(Select.unique(qual,shiftedName)), args))
+              case other =>
+                try
+                  // try without F[_]  // TODO: mb re
+                  Some(Select.overloaded(qual,shiftedName,targs.map(_.tpe), args))
+                catch
+                  case ex: Throwable =>
+                     try
+                       Some(Select.overloaded(qual,shiftedName,TypeTree.of[F].tpe::targs.map(_.tpe), monad::args))
+                     catch
+                       case ex1: Throwable =>
+                         //TODO: diagnostics.
+                         None
+          optCandidate match
+            case Some(candidate) => 
+             println(s"found ${candidate.show}")
+             candidate
+            case None =>
              findAsyncShiftTerm(qual) match
                case success2: ImplicitSearchSuccess =>
                  val shiftType = success2.tree.tpe
@@ -406,7 +420,7 @@ trait ApplyTreeTransform[F[_],CT]:
                         Apply(shiftedCaller, args)
                              
                case failure2: ImplicitSearchFailure =>
-                 throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or ObjectAsyncShift (${failure1.explanation}) for qual=${qual} ",posExpr(x))
+                 throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} ",posExpr(x))
 
 
     if (cpsCtx.flags.debugLevel >= 15)

@@ -63,11 +63,6 @@ object AsyncShift extends AsyncShiftLowPriority1 {
 
 }
 
-trait AsyncShifted[T,F[_]]
 
-trait ObjectAsyncShift[T]
-{
-  //def apply[F[_]](obj:T, cpsMonad: CpsMonad[F]): AsyncShifted[T,F]
-}
 
 

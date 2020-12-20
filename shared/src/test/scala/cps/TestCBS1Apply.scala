@@ -39,23 +39,21 @@ class TestCBS1Apply:
      def zntCurried[T <: Any](x: =>T)(y: =>T):String =
            x.toString + y.toString + x.toString + y.toString
 
-     class InternalAsyncShifted[F[_]](m:CpsMonad[F]) extends AsyncShifted[Zzz,F] {
-
-          def byNameInt(x: ()=>F[Int]): F[Int] = {
+     def byNameInt_async[F[_]](m: CpsMonad[F], x: ()=>F[Int]): F[Int] = {
                m.flatMap(x()){ x1 =>
                  m.map(x()){ x2 =>
                     zx + x1 + x2
                } }
-          }
+     }
 
-          def znt[T <: Any](x:()=>F[T]): F[String] =
+     def znt_async[F[_],T <: Any](m:CpsMonad[F],x:()=>F[T]): F[String] =
             given CpsMonad[F] = m
             import CpsMonad.ForSyntax._
             for{ fx1 <- x()
                 fx2 <- x()
             } yield fx1.toString + fx2.toString
 
-          def zntCurried[T <: Any](x: ()=>F[T])(y: ()=>F[T]): F[String] =
+     def zntCurried_async[F[_],T <: Any](m: CpsMonad[F], x: ()=>F[T])(y: ()=>F[T]): F[String] =
             given CpsMonad[F] = m
             import CpsMonad.ForSyntax._
             for{ fx1 <- x()
@@ -65,23 +63,8 @@ class TestCBS1Apply:
             } yield fx1.toString + fy1.toString + fx2.toString + fy2.toString
 
 
-     }
-
-     def shifted[F[_]](m: CpsMonad[F]) = InternalAsyncShifted[F](m)
-
   }
 
-  object Zzz {
-
-
-    class ZzzAsyncShift extends ObjectAsyncShift[Zzz] {
-          def apply[F[_]](zzz:Zzz, cpsMonad: CpsMonad[F]):zzz.InternalAsyncShifted[F] =
-                                                                  zzz.shifted(cpsMonad)
-    }
-
-    transparent inline given zzzAsyncShift: ObjectAsyncShift[Zzz] = new ZzzAsyncShift()
-
-  }
 
 
   @Test def apply_fun2(): Unit = {
@@ -98,7 +81,6 @@ class TestCBS1Apply:
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async{
        val zzz = new Zzz(3)
-       val zzzAsyncShift = summon[ObjectAsyncShift[Zzz]]
        var x = 0;
        zzz.byNameInt(await({ x=x+1; T1.cbi(2)})):Unit
        x
