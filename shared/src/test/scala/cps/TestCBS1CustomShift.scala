@@ -29,6 +29,18 @@ class TestBS1SCustomShift:
             m.map(f(x))( y => frs < y ))
     }
 
+    def doOverload(a:Int, f: (Int,Int)=>Int): Int = f(a,x)
+
+    def doOverload(a: String, f: String=>String): String = f(x.toString)
+
+    def doOverload(v: Int, f: Int=>Int): Int = f(v)
+
+    def doOverload_async(a:Int, f: (Int,Int)=>F[Int]): F[Int] = f(a,x)
+
+    def doOverload_async(a:String, f: String=>F[String]): F[String] = f(x.toString)
+
+    def doOverload_async(v: Int, f: Int=>F[Int]): F[Int] = f(v)
+
 
   class ExampleOther:
 
@@ -50,6 +62,17 @@ class TestBS1SCustomShift:
     }
 
 
+    def doOverload(f: Int=>Int): Int = f(x)
+
+    def doOverload_async[F[_]](m: CpsMonad[F], f: Int=>Int): Int = f(x)
+
+    def doOverload(a:Int, f: (Int,Int)=>Int): Int = f(a,x)
+
+    def doOverload_async[F[_]](m: CpsMonad[F], a:Int, f: (Int,Int)=>F[Int]): F[Int] = f(a,x)
+
+    def doOverload(a:String, f: String=>String): String = f(a)
+
+    def doOverload_async[F[_]](a:String, f: String=>F[String]): F[String] = f(x.toString)
 
 
   @Test def testSimpleSame(): Unit = 
@@ -67,6 +90,30 @@ class TestBS1SCustomShift:
      val c = async[ComputationBound]{
         val otherApi = new ExampleOther
         otherApi.simpleOther(x => x + await(T1.cbi(1)))
+     }
+     assert(c.run() == Success(1))
+
+
+  @Test def testReadingSame(): Unit = 
+     val c = async[ComputationBound]{
+        val sameApi = new ExampleSame[ComputationBound](summon[CpsMonad[ComputationBound]])
+        sameApi.reading(1,2)( x => x + await(T1.cbi(1)) )
+     }
+     assert(c.run() == Success(true))
+
+
+  @Test def testOverload1Same(): Unit = 
+     val c = async[ComputationBound]{
+        val sameApi = new ExampleSame[ComputationBound](summon[CpsMonad[ComputationBound]])
+        sameApi.doOverload(1,(x,y) => x + await(T1.cbi(y)))
+     }
+     assert(c.run() == Success(1))
+
+
+  @Test def testOverload1Other(): Unit = 
+     val c = async[ComputationBound]{
+        val otherApi = new ExampleOther
+        otherApi.doOverload(2,(x,y) => x + await(T1.cbi(y)))
      }
      assert(c.run() == Success(1))
 
