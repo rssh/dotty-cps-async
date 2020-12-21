@@ -59,8 +59,6 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
                    //do nothing
            case _ => retval = Some(t.asExpr)
        retval.getOrElse(cpsCtx.patternCode)
-         
-
 
    def safeShow(t: qctx.reflect.Term): String =
        import qctx.reflect._
@@ -69,6 +67,8 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
        catch 
          case ex: Exception =>
             t.toString
+
+   case class MessageWithPos(message:String, pos: qctx.reflect.Position)
 
 }
 

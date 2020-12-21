@@ -115,6 +115,6 @@ class TestBS1SCustomShift:
         val otherApi = new ExampleOther
         otherApi.doOverload(2,(x,y) => x + await(T1.cbi(y)))
      }
-     assert(c.run() == Success(1))
+     assert(c.run() == Success(2))
 
 

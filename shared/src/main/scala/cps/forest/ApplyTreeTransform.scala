@@ -334,37 +334,42 @@ trait ApplyTreeTransform[F[_],CT]:
     Implicits.search(tpTree)
 
 
-     
 
 
   def shiftedApply(term: Term, originArgs:List[Term], shiftedArgs: List[Term], shiftedIndexes:Set[Int]): Term =
 
     val monad = cpsCtx.monad.asTerm
 
-    def checkInplaceAsyncMethodCandidate(methodSym: Symbol, targs: List[TypeTree]): Either[MacroError,Boolean] =
-       val paramSymss = m.paramSymss
+    def checkInplaceAsyncMethodCandidate(methodSym: Symbol, qual: Term, targs: List[TypeTree], args: List[Term]): Either[MessageWithPos,Boolean] =
+       val paramSymss = methodSym.paramSymss
+       val mPos = methodSym.pos.getOrElse(qual.pos)
        if (paramSymss.isEmpty) then
-           MacroError(s" ${shiftedName} for qual=${qual} should have arguments",posExpr(x))
-          val typeArgsShifted = paramSymss.head.filter(_.isType)
+           Left(MessageWithPos(s"${methodSym.name} for qual=${qual} should have arguments",mPos))
+       else
+           val typeArgsShifted = paramSymss.head.filter(_.isType)
            val nTypeArgsShifted = typeArgsShifted.length
            val nTypeArgs = targs.length
            if (nTypeArgs != nTypeArgsShifted) && (nTypeArgsShifted != nTypeArgs + 1) then 
-              Left(MacroError(s" ${shiftedName} for qual=${qual} number of type arguments is impossible",posExpr(x)))
-           else if (nTypeeArgsShifted == nTypeArgs + 1) then
-              // first argument should be a kind one.
-              // TODO: check
-              Right(true)
-           else
-              Right(false)
+              Left(MessageWithPos(s" ${methodSym.name} for qual=${qual} number of type arguments is impossible",mPos))
+           else 
+              // TODO: additional check ?
+              Right(nTypeArgsShifted == nTypeArgs + 1)
 
-    def findInplaceAsyncMethodCall(x:Select, asyncName: String, 
-                                  targs: List[TypeTree], args: List[Term]): Either[List[MacroError],Term] =
-         val qual = x.qual
-         qual.tpe.typeSymbol.memberMethod(asyncName) match
+    def findInplaceAsyncMethodCall(x:Select, shiftedName: String, 
+                                  targs: List[TypeTree], args: List[Term]): Either[List[MessageWithPos],Term] =
+         val qual = x.qualifier
+
+         def withTargs(t:Term):Term =
+           if (targs.isEmpty) 
+             t
+           else 
+             TypeApply(t, targs)
+
+         qual.tpe.typeSymbol.memberMethod(shiftedName) match
            case Nil =>
              Left(List())
            case m::Nil =>
-             checkInplaceAsyncMethodCandidate(m, targs, args) match
+             checkInplaceAsyncMethodCandidate(m, qual, targs, args) match
                case Left(error) => Left(List(error))
                case Right(useExtraArgs) =>
                  if (useExtraArgs)
@@ -372,15 +377,15 @@ trait ApplyTreeTransform[F[_],CT]:
                  else
                    Right(Apply(withTargs(Select.unique(qual,shiftedName)), args))
            case overloaded =>
-               var errors: List[MacroError] = List.empty
+               var errors: List[MessageWithPos] = List.empty
                var foundUseExtra: List[Symbol] = List.empty
                var foundDirect: List[Symbol] = List.empty
                var c = overloaded
                while(!c.isEmpty) {
                  val sym = c.head
                  c = c.tail
-                 checkInPlaceAsyncMethodCandidate(sym, targs) match
-                   case Left(e) => errors = errors::e
+                 checkInplaceAsyncMethodCandidate(sym, qual, targs, args) match
+                   case Left(e) => errors = e::errors
                    case Right(useExtra) =>
                       if (useExtra)
                         foundUseExtra = sym::foundUseExtra
@@ -395,11 +400,11 @@ trait ApplyTreeTransform[F[_],CT]:
                       Right(Select.overloaded(qual,shiftedName,TypeTree.of[F].tpe::targs.map(_.tpe), monad::args))
                else 
                    if (foundUseExtra.isEmpty) then
-                      Some(Select.overloaded(qual,shiftedName,targs.map(_.tpe), args))
+                      Right(Select.overloaded(qual,shiftedName,targs.map(_.tpe), args))
                    else
                       // found both variants, can't choose ?
                       Left(List(
-                        MacroError("Can't determinate overloaded variant for method $asyncName, qual=${qual.show}",posExprs(x))
+                        MessageWithPos("More than one candidate for overloaded variant for method $shiftedName, qual=${qual.show}",x.pos)
                       ))
             
 
@@ -408,25 +413,25 @@ trait ApplyTreeTransform[F[_],CT]:
 
        val qual = x.qualifier
 
-       def withTargs(t:Term):Term =
-         if (targs.isEmpty) 
-           t
-         else 
-           TypeApply(t, targs)
 
-       def traceNotFoundErrors(msg:String, errors:List[MacroError]): Unit =
-          errors.foreach(e =>)
+       def traceFunNotFound(msg:String, errors:List[MessageWithPos]): Unit =
+          if (!errors.isEmpty) then
+            report.warning(msg)
+            errors.foreach(e =>
+              report.warning(e.message, e.pos)
+            )
 
        if (qual.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) then
           val shiftedName = x.name + "_shifted"  // TODO: change to _async ?
           findInplaceAsyncMethodCall(x, shiftedName,  targs, args) match
-            case Left(errors) => for
+            case Left(errors) => traceFunNotFound(s"failed candidates for ${qual.show} ${shiftedName}",errors)
+                          throw MacroError(s"can't find candidate for ${qual.show} ${shiftedName}",posExprs(x))
             case Right(t) => t
        else
           val shiftedName = x.name + "_async"  
           findInplaceAsyncMethodCall(x, shiftedName,  targs, args) match
             case Right(t) => t
-            case Left(errors) => 
+            case Left(funErrors) => 
              findAsyncShiftTerm(qual) match
                case success2: ImplicitSearchSuccess =>
                  val shiftType = success2.tree.tpe
@@ -448,7 +453,7 @@ trait ApplyTreeTransform[F[_],CT]:
                         Apply(shiftedCaller, args)
                              
                case failure2: ImplicitSearchFailure =>
-                 if
+                 traceFunNotFound(s"failed candidates for ${qual.show} ${shiftedName}",funErrors)
                  throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} ",posExpr(x))
 
 
