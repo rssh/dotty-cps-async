@@ -88,7 +88,49 @@ Example:
 Object oriented interface (obsolete, up to 0.3.5)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sometimes, we can use classes, defines in an object-oriented manner, where data is private inside class.  If the developer of such a class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement AsyncShifted[F:CpsMonad] version inside  you class, which will accept methods with shifted parameters, and made a given ObjectAsync which should create instance of AsyncShifted from object and CpsMonad.
+.. index:: ObjectAsyncShift
+
+Sometimes, we can use classes, defines in the object-oriented manner, where data is private inside class.  If the developer of such class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement AsyncShifted[F:CpsMonad] version inside  you class, which will accept methods with shifted parameters, and made a given ObjectAsync which should create instance of AsyncShifted from object and CpsMonad.
+
+Example:
+
+.. code-block:: scala
+
+ class  MyIntController:
+    private var x:  Int = 0;
+
+    def  modify(f: Int => Int): Int =
+       val old = x
+       x = f(x)
+       sendSignal(x)
+       old
+
+    def shifted[F[_]](m: CpsMonad[M]) = new MyIntControllerAsyncShifted[F]
+
+    class  MyIntControllerAsyncShifted[F[_]](m: CpsMonad[M]) extends AsyncShifted[MyIntController,F]:
+          
+          def modify(f:  Int => F[Int]): F[Int] =
+               val old = x
+               m.map(f(x))(_ => { sendSignal(x); old }) 
+
+Then we can define given instance for conversion:
+
+.. code-block:: scala
+
+ object MyIntController:
+
+   class MyAsyncShift extends ObjectAsyncShift[MyIntController]:
+          def apply[F[_]](obj:MyIntController, cpsMonad: CpsMonad[F]):obj.InternalAsyncShifted[F] =
+                                                                                 obj.shifted(cpsMonad)
+
+   transparent inline given myAsyncShift as ObjectAsyncShift[Zzz] = new MyAsyncShift()
+
+
+Object oriented interface (after 0.3.6+)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes, we can use classes, defines in an object-oriented manner, where data is private inside class.  If the developer of such a class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement an async-shifted version of the function inside your class:
+
 
 Example:
 
@@ -108,18 +150,11 @@ Example:
        m.map(f(x))(_ => { sendSignal(x); old }) 
 
 
-.. code-block:: scala
+As we have seen, shifted functions have an additional type parameter: F[_] and parameter CpsMonad[F]  (or more specific type, if needed).  Async transformer will substitute the call of `modify` into the call of `modify_async` during compilation.
+   Sometimes,  we already have F[_] as the type parameter of the enclosing class. In such a case, we can omit those additional parameters in the async variant.
 
+- 
 
 Note that you should carefully decide whether you need async function support and how to deal with concurrent modifications.  For example, in the code snippet below, different changes will interleave with each other.
  Usually, low-level constructs do not need async counterparts.
-
-
-Object oriented interface (after 0.3.5)
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-
-
 
