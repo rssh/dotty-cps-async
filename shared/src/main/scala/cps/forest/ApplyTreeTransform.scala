@@ -333,58 +333,105 @@ trait ApplyTreeTransform[F[_],CT]:
     val tpTree = asyncShift.appliedTo(tpe)
     Implicits.search(tpTree)
 
-  def findObjectAsyncShiftTerm(e:Term):ImplicitSearchResult =
-    val tpe = e.tpe.widen
-    val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
-    val tpTree = objAsyncShift.appliedTo(tpe)
-    //val tpTree = Type.of[ObjectAsyncShift].appliedTo(tpe).simplified
-    if cpsCtx.flags.debugLevel >= 15 then
-      cpsCtx.log(s"searchImplicits: tpTree=$tpTree")
-      cpsCtx.log(s"tpe=$tpe")
-      cpsCtx.log(s"Type.of[ObjectAsyncShift]=${TypeRepr.of[ObjectAsyncShift]}")
-    Implicits.search(tpTree)
+
 
 
   def shiftedApply(term: Term, originArgs:List[Term], shiftedArgs: List[Term], shiftedIndexes:Set[Int]): Term =
 
     val monad = cpsCtx.monad.asTerm
 
+    def checkInplaceAsyncMethodCandidate(methodSym: Symbol, qual: Term, targs: List[TypeTree], args: List[Term]): Either[MessageWithPos,Boolean] =
+       val paramSymss = methodSym.paramSymss
+       val mPos = methodSym.pos.getOrElse(qual.pos)
+       if (paramSymss.isEmpty) then
+           Left(MessageWithPos(s"${methodSym.name} for qual=${qual} should have arguments",mPos))
+       else
+           val typeArgsShifted = paramSymss.head.filter(_.isType)
+           val nTypeArgsShifted = typeArgsShifted.length
+           val nTypeArgs = targs.length
+           if (nTypeArgs != nTypeArgsShifted) && (nTypeArgsShifted != nTypeArgs + 1) then 
+              Left(MessageWithPos(s" ${methodSym.name} for qual=${qual} number of type arguments is impossible",mPos))
+           else 
+              // TODO: additional check ?
+              Right(nTypeArgsShifted == nTypeArgs + 1)
+
+    def findInplaceAsyncMethodCall(x:Select, shiftedName: String, 
+                                  targs: List[TypeTree], args: List[Term]): Either[List[MessageWithPos],Term] =
+         val qual = x.qualifier
+
+         def withTargs(t:Term):Term =
+           if (targs.isEmpty) 
+             t
+           else 
+             TypeApply(t, targs)
+
+         qual.tpe.typeSymbol.memberMethod(shiftedName) match
+           case Nil =>
+             Left(List())
+           case m::Nil =>
+             checkInplaceAsyncMethodCandidate(m, qual, targs, args) match
+               case Left(error) => Left(List(error))
+               case Right(useExtraArgs) =>
+                 if (useExtraArgs)
+                   Right(Apply(TypeApply(Select.unique(qual,shiftedName), TypeTree.of[F]::targs), monad::args))
+                 else
+                   Right(Apply(withTargs(Select.unique(qual,shiftedName)), args))
+           case overloaded =>
+               var errors: List[MessageWithPos] = List.empty
+               var foundUseExtra: List[Symbol] = List.empty
+               var foundDirect: List[Symbol] = List.empty
+               var c = overloaded
+               while(!c.isEmpty) {
+                 val sym = c.head
+                 c = c.tail
+                 checkInplaceAsyncMethodCandidate(sym, qual, targs, args) match
+                   case Left(e) => errors = e::errors
+                   case Right(useExtra) =>
+                      if (useExtra)
+                        foundUseExtra = sym::foundUseExtra
+                      else
+                        foundDirect = sym::foundDirect
+               }
+               if (foundDirect.isEmpty) then
+                   if (foundUseExtra.isEmpty) then
+                      Left(errors)
+                   else
+                      // TODO: add retval to overload check
+                      Right(Select.overloaded(qual,shiftedName,TypeTree.of[F].tpe::targs.map(_.tpe), monad::args))
+               else 
+                   if (foundUseExtra.isEmpty) then
+                      Right(Select.overloaded(qual,shiftedName,targs.map(_.tpe), args))
+                   else
+                      // found both variants, can't choose ?
+                      Left(List(
+                        MessageWithPos("More than one candidate for overloaded variant for method $shiftedName, qual=${qual.show}",x.pos)
+                      ))
+            
+
+
     def shiftSelectTypeApplyApply(x:Select, targs:List[TypeTree], args: List[Term]): Term =
 
        val qual = x.qualifier
 
-       def withTargs(t:Term):Term =
-         if (targs.isEmpty) 
-           t
-         else 
-           TypeApply(t, targs)
 
+       def traceFunNotFound(msg:String, errors:List[MessageWithPos]): Unit =
+          if (!errors.isEmpty) then
+            report.warning(msg)
+            errors.foreach(e =>
+              report.warning(e.message, e.pos)
+            )
 
        if (qual.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) then
-          val shiftedName = x.name + "_shifted"
-          qual.tpe.typeSymbol.memberMethod(shiftedName) match
-            case Nil  => 
-               throw MacroError(s"Can't find method ${shiftedName} for qual=${qual} ",posExpr(x))
-            case m::Nil =>
-               //withTargs(Select(qual,m))
-               Apply(withTargs(Select.unique(qual,shiftedName)), args)
-            case other =>
-               //TODO: possible overload in later args lists.
-               Select.overloaded(qual,shiftedName,targs.map(_.tpe), args) 
+          val shiftedName = x.name + "_shifted"  // TODO: change to _async ?
+          findInplaceAsyncMethodCall(x, shiftedName,  targs, args) match
+            case Left(errors) => traceFunNotFound(s"failed candidates for ${qual.show} ${shiftedName}",errors)
+                          throw MacroError(s"can't find candidate for ${qual.show} ${shiftedName}",posExprs(x))
+            case Right(t) => t
        else
-         findObjectAsyncShiftTerm(qual) match
-           case success1: ImplicitSearchSuccess =>
-             val objectShift = success1.tree
-             if (cpsCtx.flags.debugLevel >= 15)
-               cpsCtx.log(s"found objectShift, ${success1.tree}")
-               cpsCtx.log(s"objectShift.tpe = ${objectShift.tpe}")
-             val shiftedExpr = Apply(
-                               TypeApply(Select.unique(objectShift, "apply"),TypeTree.of[F]::Nil),
-                               List(qual,monad)
-                             )
-             val newSelect = Select.unique(shiftedExpr, x.name)
-             Apply(withTargs(newSelect), args)
-           case failure1: ImplicitSearchFailure =>
+          val shiftedName = x.name + "_async"  
+          findInplaceAsyncMethodCall(x, shiftedName,  targs, args) match
+            case Right(t) => t
+            case Left(funErrors) => 
              findAsyncShiftTerm(qual) match
                case success2: ImplicitSearchSuccess =>
                  val shiftType = success2.tree.tpe
@@ -406,7 +453,8 @@ trait ApplyTreeTransform[F[_],CT]:
                         Apply(shiftedCaller, args)
                              
                case failure2: ImplicitSearchFailure =>
-                 throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or ObjectAsyncShift (${failure1.explanation}) for qual=${qual} ",posExpr(x))
+                 traceFunNotFound(s"failed candidates for ${qual.show} ${shiftedName}",funErrors)
+                 throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} ",posExpr(x))
 
 
     if (cpsCtx.flags.debugLevel >= 15)
