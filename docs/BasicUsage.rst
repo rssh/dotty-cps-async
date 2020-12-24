@@ -26,7 +26,7 @@ Previous version is for 3.0.0-M1:
 Basic Usage
 ===========
 
-Usage is obvious: we have two 'pseudo-functions' ``async`` and ``await`` [#f1]_ : 
+We have two 'pseudo-functions' ``async`` and ``await`` [#f1]_ : 
 
  .. index:: async
  .. index:: await
