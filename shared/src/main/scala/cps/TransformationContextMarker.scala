@@ -16,6 +16,7 @@ object TransformationContextMarker {
   case object IfTrue extends TransformationContextMarker
   case object IfFalse extends TransformationContextMarker
   case object InlinedBody extends TransformationContextMarker
+  case class  InlinedBinding(i:Int) extends TransformationContextMarker
   case object ApplyTypeApplySelect extends TransformationContextMarker
   case object ApplyTypeApply extends TransformationContextMarker
   case object ApplySelect extends TransformationContextMarker

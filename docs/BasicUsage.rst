@@ -26,7 +26,8 @@ Previous version is for 3.0.0-M2:
 Basic Usage
 ===========
 
-Usage is obvious: we have two 'pseudo-functions' ``async`` and ``await`` [#f1]_ : 
+The usage is quite similar to working with async/await frameworks in Scala2 and other languages.
+We have two 'pseudo-functions' ``async`` and ``await`` [#f1]_ : 
 
  .. index:: async
  .. index:: await

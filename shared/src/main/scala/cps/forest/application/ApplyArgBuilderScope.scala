@@ -95,13 +95,6 @@ trait ApplyArgBuilderScope[F[_],CT] {
                  throw MacroError(s"Can't find parameter with name $name", posExpr(t))
          case Block(Nil,last) =>
             buildApplyArgRecord(paramsDescriptor,last,cpsCtx,acc)
-         case inlined@Inlined(call,bindings,body) =>
-            val nested = buildApplyArgRecord(paramsDescriptor, body,cpsCtx,
-                                                acc.copy(records=IndexedSeq.empty)).records.head
-            if (bindings.isEmpty)
-               acc.advance(nested)
-            else
-               acc.advance(ApplyArgInlinedRecord(inlined, nested))
          case _ =>
             if cpsCtx.flags.debugLevel >= 15 then
                cpsCtx.log(s"paramType=${paramsDescriptor.paramType(acc.paramIndex)}")

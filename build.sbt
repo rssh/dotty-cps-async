@@ -1,4 +1,3 @@
-//val dottyVersion = "3.0.0-M1-bin-20201022-b26dbc4-NIGHTLY"
 //val dottyVersion = "3.0.0-M3-bin-SNAPSHOT"
 val dottyVersion = "3.0.0-M3"
 //val dottyVersion = dottyLatestNightlyBuild.get
@@ -28,7 +27,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
     .disablePlugins(SitePlugin)
     .jvmSettings(
         scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
-                            "-Ydebug-type-error", "-uniqid" ),
+                            "-Ydebug-type-error", "-uniqid", "-Ycheck:macros"  ),
         libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
     ).jsSettings(
         scalaJSUseMainModuleInitializer := true,

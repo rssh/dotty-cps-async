@@ -154,7 +154,7 @@ object Async {
                    SelectTreeTransform.run(cpsCtx, selectTerm)
                 //   SelectOuter ? //TreeTransform.run(cpsCtx, selectTerm)
                 case inlinedTerm@ Inlined(call,bindings,body) =>
-                   InlinedTransform(cpsCtx).run(inlinedTerm)
+                   InlinedTreeTransform.run(cpsCtx,inlinedTerm)
                 case superTerm@Super(qual,mix) =>
                    SuperTransform(cpsCtx).run(superTerm)
                 case returnTerm@Return(expr, from)=>
