@@ -15,7 +15,7 @@ trait InlinedTreeTransform[F[_], CT]:
 
   import qctx.reflect._
 
-  case class InlinedBindingRecord(newSym: Symbol, cpsTree: CpsTree, oldValDef: ValDef)
+  case class InlinedBindingRecord(newSym: Symbol, cpsTree: CpsTree, oldValDef: ValDef, newResultType: TypeRepr)
 
   case class InlinedBindingsRecord(changes: HashMap[Symbol, InlinedBindingRecord], newBindings: List[Definition])
   
@@ -30,12 +30,15 @@ trait InlinedTreeTransform[F[_], CT]:
                     lambda match
                       case Lambda(params, body) =>
                          val cpsBinding = runRoot(body, TransformationContextMarker.InlinedBinding(i))
+                         val resultType = vx.tpt.tpe match
+                             case AppliedType(fun, args) => args.last
+                             case _ => body.tpe.widen
                          if (cpsBinding.isAsync) {
-                            val lambdaTree = new AsyncLambdaCpsTree(lambda, params, cpsBinding, body.tpe)
+                            val lambdaTree = new AsyncLambdaCpsTree(lambda, params, cpsBinding, resultType)
                             val newSym = Symbol.newVal(Symbol.spliceOwner, name, lambdaTree.rtpe,  vx.symbol.flags, Symbol.noSymbol)
                             val rLambda = lambdaTree.rLambda.changeOwner(newSym)
                             val newValDef = ValDef(newSym, Some(rLambda))
-                            val bindingRecord = InlinedBindingRecord(newSym, lambdaTree, vx) 
+                            val bindingRecord = InlinedBindingRecord(newSym, lambdaTree, vx, resultType) 
                             s.copy(
                                changes = s.changes.updated(vx.symbol, bindingRecord),
                                newBindings = newValDef::s.newBindings
@@ -43,13 +46,13 @@ trait InlinedTreeTransform[F[_], CT]:
                          } else if (cpsBinding.isChanged) {
                             val newSym = Symbol.newVal(Symbol.spliceOwner, name, tpt.tpe,  vx.symbol.flags, Symbol.noSymbol)
                             // generate new lambda with changed body
-                            val mt = MethodType(params.map(_.name))(_ => params.map(_.tpt.tpe), _ => body.tpe.widen)
+                            val mt = MethodType(params.map(_.name))(_ => params.map(_.tpt.tpe), _ => resultType)
                             val newValDef = ValDef(newSym, cpsBinding.syncOrigin.map(body =>
                                Lambda(Symbol.spliceOwner, mt, 
                                  (owner,args)=> TransformUtil.substituteLambdaParams(params,args,body,owner).changeOwner(owner)
                                )
                             ))
-                            val bindingRecord = InlinedBindingRecord(newSym, CpsTree.pure(newValDef.rhs.get), vx) 
+                            val bindingRecord = InlinedBindingRecord(newSym, CpsTree.pure(newValDef.rhs.get), vx, resultType) 
                             s.copy(
                                changes = s.changes.updated(vx.symbol, bindingRecord),
                                newBindings = newValDef::s.newBindings
@@ -116,7 +119,7 @@ trait InlinedTreeTransform[F[_], CT]:
                                   val rhs = binding.oldValDef.rhs.get
                                   checkLambdaDef(rhs) match
                                      case Some(Lambda(params, body)) =>
-                                        val mt = MethodType(params.map(_.name))(_ => params.map(_.tpt.tpe), _ => body.tpe.widen)
+                                        val mt = MethodType(params.map(_.name))(_ => params.map(_.tpt.tpe), _ => binding.newResultType)
                                         Lambda(Symbol.spliceOwner, mt, 
                                               (owner,args) => 
                                                   (if inlineProxies then
