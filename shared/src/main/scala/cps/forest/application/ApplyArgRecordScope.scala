@@ -383,26 +383,6 @@ trait ApplyArgRecordScope[F[_], CT]:
 
   }
 
-    // TODO: check that bindings can have async elements.
-  case class ApplyArgInlinedRecord(origin: Inlined, nested: ApplyArgRecord )
-     extends ApplyArgRecord {
-       def index: Int = nested.index
-       def term: Term =
-             Inlined(origin.call, origin.bindings, nested.term)
-       def hasShiftedLambda: Boolean = nested.hasShiftedLambda
-       def isAsync: Boolean = nested.isAsync
-       def noOrderDepended = nested.noOrderDepended
-       def identArg(existsAsync:Boolean): Term = nested.identArg(existsAsync)
-       def shift(): ApplyArgRecord = copy(nested=nested.shift())
-       def append(a: CpsTree): CpsTree =
-             val na = nested.append(a)
-             if (na eq a)
-                a
-             else
-                InlinedCpsTree(origin, origin.bindings, na)
-
-
-  }
 
 
   case class ApplyArgByNameRecord(term: Term,
