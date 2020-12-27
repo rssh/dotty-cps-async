@@ -383,6 +383,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
   }
 
+    // TODO: check that bindings can have async elements.
   case class ApplyArgInlinedRecord(origin: Inlined, nested: ApplyArgRecord )
      extends ApplyArgRecord {
        def index: Int = nested.index
@@ -398,7 +399,7 @@ trait ApplyArgRecordScope[F[_], CT]:
              if (na eq a)
                 a
              else
-                InlinedCpsTree(origin, na)
+                InlinedCpsTree(origin, origin.bindings, na)
 
 
   }

@@ -27,5 +27,18 @@ class TestBS1Option:
      }
      assert(c.run() == Success(2))
 
+  @Test def optionGetOrElse_2_lv(): Unit = 
+     val c = async{
+        var x = 1
+        val y: Option[Int] = None
+        var z = y.getOrElse{
+          val x1 = x + 1;
+          x=x1; 
+          await(T1.cbi(2)) 
+        }
+        x
+     }
+     assert(c.run() == Success(2))
+
 
 

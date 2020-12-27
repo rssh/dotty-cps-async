@@ -37,9 +37,6 @@ object TransformUtil:
          }).isDefined
 
 
-  /**
-   * substitute identifier with the origin symbol to new tree
-   **/
   def substituteIdent(using qctx:Quotes)(tree: qctx.reflect.Term,
                            origin: qctx.reflect.Symbol,
                            newTerm: qctx.reflect.Term): qctx.reflect.Term =
@@ -64,5 +61,27 @@ object TransformUtil:
     val funSymbol = defn.FunctionClass(argTypes.size)
     val funTypeTree: TypeTree = TypeIdent(funSymbol)
     funTypeTree.tpe.appliedTo(argTypes.map(_.widen) :+ resultType.widen)
+
+  
+  def substituteLambdaParams(using qctx:Quotes)(oldParams:List[quotes.reflect.ValDef], 
+                                                newParams: List[quotes.reflect.Tree], 
+                                                body: quotes.reflect.Term, 
+                                                owner: quotes.reflect.Symbol) : quotes.reflect.Term = 
+    import quotes.reflect._
+    val paramsMap = oldParams.zipWithIndex.map{case (tree,index)=>(tree.symbol,index)}.toMap
+    val indexedArgs = newParams.toIndexedSeq
+    val argTransformer = new TreeMap() {
+            override def transformTerm(tree: Term)(owner: Symbol): Term =
+               tree match
+                 case Ident(name) => paramsMap.get(tree.symbol) match
+                                        case Some(index) => Ref(indexedArgs(index).symbol)
+                                        case _  => super.transformTerm(tree)(owner)
+                 case _ => super.transformTerm(tree)(owner)
+    }
+    argTransformer.transformTerm(body)(owner)
+
+
+
+
 
 

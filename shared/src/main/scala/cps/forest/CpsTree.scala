@@ -397,42 +397,44 @@ trait CpsTreeScope[F[_], CT] {
   end BlockCpsTree
 
 
-  case class InlinedCpsTree(origin: Inlined, nested: CpsTree) extends CpsTree:
+  case class InlinedCpsTree(origin: Inlined, bindings: List[Definition],  nested: CpsTree) extends CpsTree:
 
     override def isAsync = nested.isAsync
 
     override def isChanged = nested.isChanged
 
     override def transformed: Term =
-                  Inlined(origin.call, origin.bindings, nested.transformed)
+                  Inlined(origin.call, bindings, nested.transformed)
 
     override def syncOrigin: Option[Term] =
-                  nested.syncOrigin.map(Inlined(origin.call, origin.bindings, _ ))
+                  nested.syncOrigin.map(Inlined(origin.call, bindings, _ ))
 
     def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
-         InlinedCpsTree(origin, nested.applyTerm1(f, ntpe))
+         InlinedCpsTree(origin, bindings, nested.applyTerm1(f, ntpe))
 
     def select(symbol: Symbol, ntpe: TypeRepr): CpsTree =
-         InlinedCpsTree(origin, nested.select(symbol, ntpe))
+         InlinedCpsTree(origin, bindings, nested.select(symbol, ntpe))
 
     def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
-         InlinedCpsTree(origin, nested.monadMap(f, ntpe))
+         InlinedCpsTree(origin, bindings, nested.monadMap(f, ntpe))
 
     def monadFlatMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
-         InlinedCpsTree(origin, nested.monadFlatMap(f, ntpe))
+         InlinedCpsTree(origin, bindings, nested.monadFlatMap(f, ntpe))
 
     def appendFinal(next: CpsTree): CpsTree =
-         InlinedCpsTree(origin, nested.appendFinal(next))
+         InlinedCpsTree(origin, bindings, nested.appendFinal(next))
 
     def otpe: TypeRepr = nested.otpe
 
     override def rtpe: TypeRepr = nested.rtpe
 
     override def applyAwait(newOtpe:TypeRepr): CpsTree =
-         InlinedCpsTree(origin, nested.applyAwait(newOtpe))
+         InlinedCpsTree(origin, bindings, nested.applyAwait(newOtpe))
 
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.InlinedCpsTree =
-         otherCake.InlinedCpsTree(origin.asInstanceOf[otherCake.qctx.reflect.Inlined], nested.inCake(otherCake))
+         otherCake.InlinedCpsTree(origin.asInstanceOf[otherCake.qctx.reflect.Inlined], 
+                                  bindings.map(_.asInstanceOf[otherCake.qctx.reflect.Definition]),
+                                  nested.inCake(otherCake))
 
 
   end InlinedCpsTree
@@ -625,7 +627,7 @@ trait CpsTreeScope[F[_], CT] {
                                         case _  => super.transformTerm(tree)(owner)
                  case _ => super.transformTerm(tree)(owner)
          }
-         argTransformer.transformTerm(body.transformed)(owner)
+         argTransformer.transformTerm(body.transformed)(owner).changeOwner(owner)
       })
 
     override def transformed: Term =
@@ -685,7 +687,7 @@ trait CpsTreeScope[F[_], CT] {
    * want to have in F[A] methods with special meaning, which should be
    * performed on F[_] before jumping into monad (exampe: Iterable.withFilter)
    * we will catch in ApplyTree such methods and substitute to appropriative calls of
-   * shifted.  When we need other
+   * shifted.  
    **/
   case class CallChainSubstCpsTree(origin: Term, shifted:Term, override val otpe: TypeRepr) extends CpsTree:
 

@@ -11,7 +11,7 @@ class IFWriter[F[_]:CpsMonad,A]:
     summon[CpsMonad[F]].pure(())
 
   inline def write(a:A): Unit =
-    await(awrite(a))
+    await[F,Unit](awrite(a))
 
 
 class IFReader[F[_]:CpsMonad,A](a:A):
@@ -23,11 +23,12 @@ class IFReader[F[_]:CpsMonad,A](a:A):
    // Think: mb create _internal_pure ??
 
    def aforeach_async(f: A=> F[Unit]): F[F[Unit]] =
-         summon[CpsMonad[F]].pure(foreach_async(f))
+         summon[CpsMonad[F]].pure(f(a))
 
-   def aforeach(f: A=>Unit): F[Unit] =
-         foreach_async(a => summon[CpsMonad[F]].pure(f(a)))
+   def aforeach(f: A=>Unit): F[Unit] = async{
+         f(a)
+   }
 
    inline def foreach(f: A=>Unit): Unit =
-         await(aforeach(f))
+        await(aforeach(f))
 
