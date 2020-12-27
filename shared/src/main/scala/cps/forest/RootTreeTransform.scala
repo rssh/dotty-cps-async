@@ -45,11 +45,11 @@ trait RootTreeTransform[F[_], CT]:
                   case _ =>  // TODO: elimi
                     val expr = term.asExpr
                     val monad = cpsCtx.monad
-                    expr match 
-                      case '{ $e: et } =>
+                    term.tpe.widen.asType match
+                      case '[ et ] =>
                         val rCpsExpr = try {
                              val nFlags = cpsCtx.flags.copy(muted = muted || cpsCtx.flags.muted)
-                             Async.nestTransform(e, cpsCtx.copy(flags = nFlags), marker)
+                             Async.nestTransform(term.asExprOf[et], cpsCtx.copy(flags = nFlags), marker)
                         } catch {
                              case e: Throwable =>
                                 println(s"can't translate tree: $term" )

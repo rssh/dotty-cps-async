@@ -16,6 +16,11 @@ class IFWriter[F[_]:CpsMonad,A]:
 
 class IFReader[F[_]:CpsMonad,A](a:A):
 
+   def aread(): F[A] =
+        summon[CpsMonad[F]].pure(a)
+
+   inline def read():A =
+        await(aread())
 
    def foreach_async(f: A=> F[Unit]): F[Unit] =
          f(a)  

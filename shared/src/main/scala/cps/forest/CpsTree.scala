@@ -82,6 +82,7 @@ trait CpsTreeScope[F[_], CT] {
                case ex: Throwable =>
                  println("failed seal:"+ transformed.asExpr.show )
                  println(s"transformed.tpe=${transformed.tpe}")
+                 println(s"cpsTree=$this")
                  println(s"F[T]=${TypeRepr.of[F[T]]}")
                  throw ex;
              }
@@ -145,7 +146,7 @@ trait CpsTreeScope[F[_], CT] {
           r
 
     def applyAwait(newOtpe: TypeRepr): CpsTree =
-          AwaitSyncCpsTree(origin, newOtpe)
+          AwaitSyncCpsTree(origin, newOtpe.widen)
 
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.PureCpsTree =
           otherCake.PureCpsTree(otherCake.adopt(origin), isChanged)
@@ -601,8 +602,11 @@ trait CpsTreeScope[F[_], CT] {
       else if (params.length==2)
          val f2 = TypeIdent(Symbol.classSymbol("scala.Function2")).tpe
          f2.appliedTo( paramTypes :+ resType )
+      else if (params.length==3)
+         val f3 = TypeIdent(Symbol.classSymbol("scala.Function3")).tpe
+         f3.appliedTo( paramTypes :+ resType )
       else
-         throw MacroError("Sorry, functions with more than 2 parameters are not supported yet", posExprs(originLambda))
+         throw MacroError("Sorry, functions with more than 3 parameters are not supported yet", posExprs(originLambda))
 
     def rLambda: Term =
       val paramNames = params.map(_.name)

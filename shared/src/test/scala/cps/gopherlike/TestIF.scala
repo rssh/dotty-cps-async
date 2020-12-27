@@ -11,7 +11,7 @@ import cps._
 class TestIF:
 
   @Test def reproduce(): Unit =
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val writer = IFWriter[ComputationBound,Int]()
