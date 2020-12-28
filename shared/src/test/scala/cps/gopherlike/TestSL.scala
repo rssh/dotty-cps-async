@@ -23,8 +23,8 @@ class TestSL:
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
-     val writer = IFWriter[MyF,Int]()
-     val reader = IFReader[MyF,Int](10)
+     val writer = CIFWriter[MyF,Int]()
+     val reader = CIFReader[MyF,Int](10)
      val sl = SLSelectLoop[MyF]()
      sl.onReadAsync[Int](reader)(a => async{
           writer.write(a)

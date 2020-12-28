@@ -19,10 +19,10 @@ trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends
    def applyOrElse[A1 <:A, B1 >: B](x: A1, default: (A1)=>B1): F[B1] =
                                applyContOrElse(x, identity, default)
 
-   def applyContOrElse_shifted[A1 <:A, C](x: A1, ifApply:B=>F[C], ifNot: A1=>F[C]): F[C]
+   def applyContOrElse_async[A1 <:A, C](x: A1, ifApply:B=>F[C], ifNot: A1=>F[C]): F[C]
 
-   def applyOrElse_shifted[A1 <:A, B1 >: B](x: A1, default: (A1)=>F[B1]): F[B1] =
-                               applyContOrElse_shifted(x, x => m.pure(x), default)
+   def applyOrElse_async[A1 <:A, B1 >: B](x: A1, default: (A1)=>F[B1]): F[B1] =
+                               applyContOrElse_async(x, x => m.pure(x), default)
 
    def _origin: A=>F[B] = (x => apply(x))
 
@@ -40,14 +40,14 @@ trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends
               )
 
         def applyContOrElse[A1 <:A, D](x:A1, ifApply: C=>D, ifNot: A1=>D): F[D]=
-             fThis.applyContOrElse_shifted(x,
+             fThis.applyContOrElse_async(x,
                      y => g.applyContOrElse(y, ifApply, _ => ifNot(x) ),
                      x1 => m.pure(ifNot(x1))
              )
 
-        def applyContOrElse_shifted[A1 <:A, D](x:A1, ifApply: C=>F[D],  ifNot: A1=>F[D]): F[D]=
-             fThis.applyContOrElse_shifted(x,
-                     y => g.applyContOrElse_shifted(y, ifApply, _ => ifNot(x) ),
+        def applyContOrElse_async[A1 <:A, D](x:A1, ifApply: C=>F[D],  ifNot: A1=>F[D]): F[D]=
+             fThis.applyContOrElse_async(x,
+                     y => g.applyContOrElse_async(y, ifApply, _ => ifNot(x) ),
                      ifNot
              )
 
@@ -60,10 +60,10 @@ trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends
    def andThen[C](g: PartialFunction[B,C]): PartialFunctionCallChainSubst[F,A,C] =
          fThis.andThen(partialPlain(m,g))
 
-   def andThen_shifted[C](g: B => F[C]): PartialFunctionCallChainSubst[F,A,C] =
+   def andThen_async[C](g: B => F[C]): PartialFunctionCallChainSubst[F,A,C] =
          fThis.andThen(totalMapped(m,g))
 
-   def andThen_shifted[C](g: PartialFunction[B,F[C]]): PartialFunctionCallChainSubst[F,A,C] =
+   def andThen_async[C](g: PartialFunction[B,F[C]]): PartialFunctionCallChainSubst[F,A,C] =
          fThis.andThen(partialMapped(m,g))
 
    def compose[Z](g: PartialFunction[Z,A]): PartialFunctionCallChainSubst[F,Z,B] =
@@ -72,10 +72,10 @@ trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends
    def compose[Z](g: Z=>A): PartialFunctionCallChainSubst[F,Z,B] =
          totalPlain(m,g).andThen(fThis)
 
-   def compose_shifted[Z](g: PartialFunction[Z,F[A]]): PartialFunctionCallChainSubst[F,Z,B] =
+   def compose_async[Z](g: PartialFunction[Z,F[A]]): PartialFunctionCallChainSubst[F,Z,B] =
          partialMapped(m,g).andThen(fThis)
 
-   def compose_shifted[Z](g: Z=>F[A]): PartialFunctionCallChainSubst[F,Z,B] =
+   def compose_async[Z](g: Z=>F[A]): PartialFunctionCallChainSubst[F,Z,B] =
          totalMapped(m,g).andThen(fThis)
 
    def orElse[A1 <: A, B1 >: B](g: PartialFunctionCallChainSubst[F,A1,B1]): PartialFunctionCallChainSubst[F,A1,B1] =
@@ -91,22 +91,22 @@ trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends
           }
 
         override def applyOrElse[A2 <:A1, B2 >: B1](x:A2, default: A2=>B2): F[B2]=
-          fThis.applyOrElse_shifted[A2,B2](x, x=>g.applyOrElse[A2,B2](x,default) )
+          fThis.applyOrElse_async[A2,B2](x, x=>g.applyOrElse[A2,B2](x,default) )
                                               
 
         def applyContOrElse[A2<:A1, C](x:A2, ifApply: B1=>C, ifNot: A2=>C): F[C]=
-              fThis.applyContOrElse_shifted[A2,C](x, 
+              fThis.applyContOrElse_async[A2,C](x, 
                         b1 => m.pure(ifApply(b1)),
                         x2 => g.applyContOrElse[A2,C](x2, ifApply, ifNot)
               )
 
-        override def applyOrElse_shifted[A2 <:A1, B2 >: B1](x:A2, default: A2=>F[B2]): F[B2]=
-          fThis.applyOrElse_shifted(x, x => g.applyOrElse_shifted(x,default))
+        override def applyOrElse_async[A2 <:A1, B2 >: B1](x:A2, default: A2=>F[B2]): F[B2]=
+          fThis.applyOrElse_async(x, x => g.applyOrElse_async(x,default))
 
-        def applyContOrElse_shifted[A2 <:A1, C](x:A2, ifApply: B1=>F[C], ifNot: A2=>F[C]): F[C]=
-              fThis.applyContOrElse_shifted[A2,C](x, 
+        def applyContOrElse_async[A2 <:A1, C](x:A2, ifApply: B1=>F[C], ifNot: A2=>F[C]): F[C]=
+              fThis.applyContOrElse_async[A2,C](x, 
                       b1 => ifApply(b1),
-                      x2 => g.applyContOrElse_shifted[A2,C](x2, ifApply, ifNot)
+                      x2 => g.applyContOrElse_async[A2,C](x2, ifApply, ifNot)
               )
           
      }
@@ -123,9 +123,9 @@ object PartialFunctionCallChainSubst:
         override def applyOrElse[A1 <:A, B1 >: B](x:A1, default: A1=>B1): F[B1] = apply(x)
         override def applyContOrElse[A1 <:A, C](x:A1, ifApply: B=>C,  ifNot: A1=>C): F[C] = 
               m.pure(ifApply(f(x)))
-        override def applyOrElse_shifted[A1 <:A, B1 >: B](x:A1, default: A1=>F[B1]): F[B1] = 
+        override def applyOrElse_async[A1 <:A, B1 >: B](x:A1, default: A1=>F[B1]): F[B1] = 
               apply(x)
-        override def applyContOrElse_shifted[A1 <:A, C](x:A1, ifApply: B=>F[C], ifNot: A1=>F[C]): F[C] = 
+        override def applyContOrElse_async[A1 <:A, C](x:A1, ifApply: B=>F[C], ifNot: A1=>F[C]): F[C] = 
               ifApply(f(x))
      }
 
@@ -139,11 +139,11 @@ object PartialFunctionCallChainSubst:
              f.lift.apply(x) match
                 case Some(y) => m.pure(ifApply(y))
                 case None => m.pure(ifNot(x))
-        override def applyOrElse_shifted[A1 <:A, B1 >: B](x:A1, default: A1=>F[B1]): F[B1] = 
+        override def applyOrElse_async[A1 <:A, B1 >: B](x:A1, default: A1=>F[B1]): F[B1] = 
              f.lift.apply(x) match
                 case Some(y) => m.pure(y)
                 case None => default(x)
-        override def applyContOrElse_shifted[A1 <:A, C](x:A1, ifApply: B=>F[C], ifNot: A1=>F[C]): F[C] = 
+        override def applyContOrElse_async[A1 <:A, C](x:A1, ifApply: B=>F[C], ifNot: A1=>F[C]): F[C] = 
              f.lift.apply(x) match
                 case Some(y) => ifApply(y)
                 case None => ifNot(x)
@@ -156,7 +156,7 @@ object PartialFunctionCallChainSubst:
         override def applyOrElse[A1 <:A, B1 >: B](x:A1, default: A1=>B1): F[B1] = apply(x)
         override def applyContOrElse[A1 <:A, C](x:A1, ifApply: B=>C, ifNot: A1=>C): F[C] = 
             m.map(f(x))(ifApply)
-        override def applyContOrElse_shifted[A1 <:A, C](x:A1, ifApply: B=>F[C], ifNot: A1=>F[C]): F[C] = 
+        override def applyContOrElse_async[A1 <:A, C](x:A1, ifApply: B=>F[C], ifNot: A1=>F[C]): F[C] = 
             m.flatMap(f(x))(ifApply)
      }
 
@@ -170,7 +170,7 @@ object PartialFunctionCallChainSubst:
               f.lift(x) match
                  case Some(fy) => m.map(fy)(ifApply)
                  case None => m.pure(ifNot(x))
-        override def applyContOrElse_shifted[A1 <:A, C](x:A1, ifApply: B=>F[C], ifNot: A1=>F[C]): F[C] = 
+        override def applyContOrElse_async[A1 <:A, C](x:A1, ifApply: B=>F[C], ifNot: A1=>F[C]): F[C] = 
               f.lift(x) match
                  case Some(fy) => m.flatMap(fy)(ifApply)
                  case None => ifNot(x)

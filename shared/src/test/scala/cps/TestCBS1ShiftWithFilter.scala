@@ -115,7 +115,7 @@ class TestCBS1ShiftWithFilter:
      val c = async[ComputationBound]{
           await(RangeAsyncShift[Range.Inclusive]().withFilter((1 to 10), ComputationBoundAsyncMonad)( x => 
                      T1.cbi(0).map(a => (x%2 == a) ))
-                   .flatMap_shifted( x =>
+                   .flatMap_async( x =>
                        RangeAsyncShift[Range.Inclusive]().withFilter(20 to 30, ComputationBoundAsyncMonad)( 
                                   y => T1.cbi(1).map( a => a == y%2 )  )
                                 .map(y => x+y)

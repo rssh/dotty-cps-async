@@ -23,13 +23,13 @@ class Function1AndThenCallChainSubst[F[_],A,B,C](f: A=>B, g: B=>F[C], m:CpsMonad
    def andThen[D](h: C=>D): Function1AndThenCallChainSubst[F,A,B,D] =
         Function1AndThenCallChainSubst(f, x => m.map(g(x))(h), m)
     
-   def andThen_shifted[D](h: C=>F[D]): Function1AndThenCallChainSubst[F,A,B,D] =
+   def andThen_async[D](h: C=>F[D]): Function1AndThenCallChainSubst[F,A,B,D] =
         Function1AndThenCallChainSubst(f, x => m.flatMap(g(x))(h), m)
 
    def compose[Z](h: Z => A): Function1AndThenCallChainSubst[F,Z,B,C] =
         Function1AndThenCallChainSubst( x => f(h(x)), g, m)
 
-   def compose_shifted[Z](h: Z => F[A]): Function1ComposeAndThenCallChainSubst[F,Z,A,C] =
+   def compose_async[Z](h: Z => F[A]): Function1ComposeAndThenCallChainSubst[F,Z,A,C] =
         Function1ComposeAndThenCallChainSubst(h, (x:A)=>g(f(x)), m)
 
 
@@ -44,13 +44,13 @@ class Function1ComposeCallChainSubst[F[_],A,B,Z](f: A=>B, g: Z=>F[A], m:CpsMonad
    def andThen[C](h: B=>C): Function1ComposeCallChainSubst[F,A,C,Z] =
         Function1ComposeCallChainSubst((x:A)=>h(f(x)), g, m)
 
-   def andThen_shifted[C](h: B=>F[C]): Function1ComposeAndThenCallChainSubst[F,Z,A,C] =
+   def andThen_async[C](h: B=>F[C]): Function1ComposeAndThenCallChainSubst[F,Z,A,C] =
         Function1ComposeAndThenCallChainSubst(g, f andThen h, m)
 
    def compose[Y](h: Y => Z): Function1ComposeCallChainSubst[F,A,B,Y] =
         Function1ComposeCallChainSubst(f, h andThen g, m)
 
-   def compose_shifted[Y](h: Y => F[Z]): Function1ComposeCallChainSubst[F,A,B,Y] =
+   def compose_async[Y](h: Y => F[Z]): Function1ComposeCallChainSubst[F,A,B,Y] =
         Function1ComposeCallChainSubst(f, y => m.flatMap(h(y))(g), m)
 
 
@@ -65,13 +65,13 @@ class Function1ComposeAndThenCallChainSubst[F[_],A,B,C](f: A=>F[B], g:B => F[C],
    def andThen[D](h: C=>D): Function1ComposeAndThenCallChainSubst[F,A,B,D] =
         Function1ComposeAndThenCallChainSubst(f, (x:B)=> m.map(g(x))(h), m)
 
-   def andThen_shifted[D](h: C=>F[D]): Function1ComposeAndThenCallChainSubst[F,A,B,D] =
+   def andThen_async[D](h: C=>F[D]): Function1ComposeAndThenCallChainSubst[F,A,B,D] =
         Function1ComposeAndThenCallChainSubst(f, (x:B)=> m.flatMap(g(x))(h), m)
 
    def compose[Z](h: Z => A): Function1ComposeAndThenCallChainSubst[F,Z,B,C] =
         Function1ComposeAndThenCallChainSubst(h andThen f, g, m)
 
-   def compose_shifted[Z](h: Z => F[A]): Function1ComposeAndThenCallChainSubst[F,Z,B,C] =
+   def compose_async[Z](h: Z => F[A]): Function1ComposeAndThenCallChainSubst[F,Z,B,C] =
         Function1ComposeAndThenCallChainSubst((x:Z)=>m.flatMap(h(x))(f), g, m)
 
 

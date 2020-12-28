@@ -450,7 +450,7 @@ class DelayedWithFilter[F[_], A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], C
   def map[B](f: A => B): F[C[B]] = 
      runScan((s,a)=>s.addOne(f(a)))
 
-  def map_shifted[B](f: A => F[B]): F[C[B]] =
+  def map_async[B](f: A => F[B]): F[C[B]] =
      runScanF((s,a)=>{ 
        m.map(f(a))(b => {
          s.addOne(b)
@@ -462,7 +462,7 @@ class DelayedWithFilter[F[_], A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], C
   def flatMap[B](f: A => IterableOnce[B]): F[C[B]] = 
      runScan((s,a)=>s.addAll(f(a)))
 
-  def flatMap_shifted[B](f: A => F[IterableOnce[B]]): F[C[B]] = 
+  def flatMap_async[B](f: A => F[IterableOnce[B]]): F[C[B]] = 
      runScanF((s,a)=>{ 
        m.map(f(a))(b => {
          s.addAll(b)
@@ -472,7 +472,7 @@ class DelayedWithFilter[F[_], A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], C
 
   def withFilter(q: A=>Boolean) = DelayedWithFilter(c, m, x => m.map(p(x))(r => r && q(x)) )
 
-  def withFilter_shifted(q: A=> F[Boolean]) = 
+  def withFilter_async(q: A=> F[Boolean]) = 
        DelayedWithFilter(c, m, x => m.flatMap(p(x)){r => 
                                 if (r) then
                                      q(x) 
@@ -492,7 +492,7 @@ class DelayedWithFilter[F[_], A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], C
      }
   }
 
-  def foreach_shifted[U](f: A=>F[U]): F[Unit] = {
+  def foreach_async[U](f: A=>F[U]): F[Unit] = {
      val s0 = m.pure(())
      c.foldLeft(s0){(fs,e) =>
         m.flatMap(fs){ s =>

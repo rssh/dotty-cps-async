@@ -421,15 +421,8 @@ trait ApplyTreeTransform[F[_],CT]:
               report.warning(e.message, e.pos)
             )
 
-       if (qual.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) then
-          val shiftedName = x.name + "_shifted"  // TODO: change to _async ?
-          findInplaceAsyncMethodCall(x, shiftedName,  targs, args) match
-            case Left(errors) => traceFunNotFound(s"failed candidates for ${qual.show} ${shiftedName}",errors)
-                          throw MacroError(s"can't find candidate for ${qual.show} ${shiftedName}",posExprs(x))
-            case Right(t) => t
-       else
-          val shiftedName = x.name + "_async"  
-          findInplaceAsyncMethodCall(x, shiftedName,  targs, args) match
+       val shiftedName = x.name + "_async"  
+       findInplaceAsyncMethodCall(x, shiftedName,  targs, args) match
             case Right(t) => t
             case Left(funErrors) => 
              findAsyncShiftTerm(qual) match
