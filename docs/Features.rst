@@ -25,7 +25,7 @@ Can be written without await as:
 .. code-block:: scala
 
    val c = async[Future]{
-        import cps.features.implicitAwait.{given _}
+        import cps.features.implicitAwait.given
         val url = "http://www.example.com"
         val data = api.fetchUrl("http://www.example.com")
         val theme = api.classifyText(data)
@@ -34,8 +34,9 @@ Can be written without await as:
      }
 
 
-Looks at special syntax for enabling: ``{ given _}``.
-For using this feature, the underlying monad should support execution caching:  i.e., two awaits on the same expression should not cause reevaluation.
+
+The underlying monad should support execution caching for using this feature:  i.e., two awaits on the same expression should not cause reevaluation.
+
 
 To mark your monad as supporting this feature, you should define ``given cps.feature.implicitAwait.IsPossible[M]``.
 
@@ -46,7 +47,7 @@ Custom value discard
 
 .. index:: customValueDiscard
 
-Common developers mistakes during the writing of asynchronous code are to forget to handle something connected with discarded values, like error processing or awaiting.  
+During the writing of asynchronous code, common developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.  
 
 ``cps.feature.customValueDiscard``  limit the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types T, for which exists an implementation of a special ValueDiscard[T]. If given ValueDiscard[T] is not found in the current scope, then dropping values of this type is prohibited.  If found - ValueDiscard.apply(t) is called. It's defined as no-op for primitive types and can be extended by developer for own types.
 

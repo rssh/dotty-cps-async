@@ -3,7 +3,7 @@ High-order functions.
 
 Dotty-cps-async supports the automatic transformation of high-order functions,  where the lambda expression argument contains ``await``.  
 
-Example -- let us have a list of remote servers and want to fetch some data from each of them. 
+For example, let us have a list of remote servers and fetch some data from each of them. 
 Assume, that out http client provides next interface:
 
 .. code-block:: scala
@@ -86,7 +86,7 @@ Example:
 
 
 Object oriented interface (obsolete, up to 0.3.5)
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. index:: ObjectAsyncShift
 
@@ -127,7 +127,7 @@ Then we can define given instance for conversion:
 
 
 Object oriented interface (after 0.3.6+)
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Sometimes, we can use classes, defines in an object-oriented manner, where data is private inside class.  If the developer of such a class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement an async-shifted version of the function inside your class:
 
@@ -153,8 +153,90 @@ Example:
 As we have seen, shifted functions have an additional type parameter: F[_] and parameter CpsMonad[F]  (or more specific type, if needed).  Async transformer will substitute the call of `modify` into the call of `modify_async` during compilation.
    Sometimes,  we already have F[_] as the type parameter of the enclosing class. In such a case, we can omit those additional parameters in the async variant.
 
-- 
-
 Note that you should carefully decide whether you need async function support and how to deal with concurrent modifications.  For example, in the code snippet below, different changes will interleave with each other.
  Usually, low-level constructs do not need async counterparts.
+
+
+Special semantics for substitutions in call chains
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  Consider chain of calls, which accept async-shifted functions.  One example is  'withFilter' from standard collections library.  Let's look on the next chunk of code:  
+
+.. code-block:: scala
+
+  for{ url ← urls if  await(status(url))==Active
+        items ← await(api.retrieveItems(url))
+        Item <- items
+     } yield item  
+
+
+Here usual semantics of `withFilter` assume that we iterate `urls` only once.  But if we will translate this expression according to standard rules, we will receive two passes: one pass in async `withFilter` and the second in `flatMap`.
+
+To perform iteration once, we translate `withFilter` not to F[WithFilter] but to a substituted type DelayedWithFilter , which holds received predicate and delays actual evaluation upon the call of the next operation in chain.
+
+The implementation of this class looks like:
+
+.. code-block:: scala
+
+ class DelayedWithFilter[F[_], A, C[X] <: Iterable[X], CA <: C[A]](c: CA,
+                                         m: CpsMonad[F],
+                                         p:A=>F[Boolean],
+                                         ) 
+                  extends CallChainAsyncSubst[F, WithFilter[A,C], F[WithFilter[A,C]] ]
+ {
+  // return eager copy
+  def _origin: F[WithFilter[A,C]] = ...
+
+  def withFilter(q: A=>Boolean): DelayedWithFilter[F,A,CX,CA] =  ...
+
+  def withFilter_async(q: A=> F[Boolean]) = ...
+
+  def map[B](f: A => B): F[C[B]] = ...
+
+  def map_async[B](f: A => F[B]): F[C[B]] = ...
+
+  def flatMap[B](f: A => IterableOnce[B]): F[C[B]] = ...
+
+  def flatMap_async[B](f: A => F[IterableOnce[B]]): F[C[B]] = ...
+
+  def foreach[U](f: A=>U): F[Unit] = ...
+
+  def foreach_async[U](f: A=>F[U]): F[Unit] = ...
+
+ }
+
+
+I.e., in delayed variant implemented all original class methods, which should or collect operations into the next delayed object or perform an actual batched call.   
+Also, we have the method `_origin`,  which is called when we have no next call in the chain: an example of such a case is   `val x = c.withFilter(p)`.  
+
+By convention, the substituted type should be derived from CallChainAsyncSubst[F,T] 
+
+
+This structure has a nice category interpretation,
+If you are curious about that, let's look at the next diagram:
+
+.. image:: diagrams/AsyncSubst3.png
+
+Let we have hight-order function :math:`f: A\to B` (example: :math:`f = withFilter: Iterable \to WithFilter`); then direct async transform will give us an async variant of :math:`f` -- :math:`f_{async}`  (example:  naive implementation of `withFilter_async`), and substituted is :math:`f'_{async}` (example - our delayed implementation of `withFiter_async`).  Here we write `AsyncSubst` instead `CallChainAsyncSubst` to save space on the picture.
+
+For any function :math:`h: B->C`  from `B` to any `C`,  we have an image of `h` in `F[B]`: :math:`h_F = F.map(h)` and in AsyncSubst: :math:`h_{AsyncShift}`.
+The diagram is commutative: 
+ * :math:`h_{F} * f_{async} = h_{AsyncSubst} * f'_{async}` . (Example - `h` is `flatMap`, our implementation perform the same operation as usual flatMap, but in one batch with filtering).
+ * :math:`\_origin * h'_{AsyncSubst}  = h_{AsyncSubst}` . (Example - `h` is `withFilter`  :math:`h'_{AsyncSubst}` is an implementation construct an next delayed instance with two predicates ).  
+
+Moving to relations between functors, shown on the next diagram:
+
+.. image:: diagrams/AsyncSubstFunctors.png
+
+We can notice that `_origing` is a left Kan extension of `F` along `AsyncSubst`.  
+
+This technique can be applied for cases where direct cps transform is impossible.  
+  Example: cps transform of functional expression: `cps[S=>T]`, will give us not `F[S=>T]`,  but `S=>F[T]`.  We can't receive `F[T=>S]` from `T=>F[S]`, but can define an `AsynSubst[T=>S]` with implementation of `apply`, `andThen` and `compose`.
+
+
+
+
+
+
+  
 

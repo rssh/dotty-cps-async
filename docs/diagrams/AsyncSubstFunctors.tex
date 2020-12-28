@@ -1,0 +1,12 @@
+\documentclass[convert]{standalone}
+\usepackage{tikz-cd}
+\begin{document}
+
+% https://tikzcd.yichuanshen.de/#N4Igdg9gJgpgziAXAbVABwnAlgFyxMJZABgBpiBdUkANwEMAbAVxiRGQCoKQBfU9TLnyEUAZnJVajFmwBinbnwHY8BIgCZS6yfWatEIAIJwAnmADGAZSYAjODgW9JMKAHN4RUADMAThAC2SJogOBBIAIzUujIGADqxAPoQPliuWGAABAC8GQAydGAJwF4A5DxeINQM6fogUHRwABYulSAMdDYwDAAKgqoiICmujTi8-CC+AUhkIWGIwdG1pWPefoGIM6ER1E1YXqMbVR1dvSrCbAww+62dYFBIALSiM9VgtVAQODgt1Dh0WAw2JA3q1mnR7gZgawotJavEYH8MvEPgB3MB0Hx+FHIiBojFYlYTNbTX5zSJSPRsCo8Cg8IA
+\begin{tikzcd}
+{[*]} \arrow[rrdd, ] \arrow[rrr, "\eta \downarrow\downarrow", no head, dotted, bend right] \arrow[rrr, "F"] &  &                                                              & {F[*]} \\
+                                                                                                                &  &                                                              &        \\
+                                                                                                                &  & {AsyncSubst[*]} \arrow[ruu, "\_origin = Lan_{AsyncSubst}F"', dashed] &       
+\end{tikzcd}
+
+\end{document}

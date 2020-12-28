@@ -1,0 +1,14 @@
+\documentclass[convert]{standalone}
+\usepackage{tikz-cd}
+\begin{document}
+
+% https://tikzcd.yichuanshen.de/#N4Igdg9gJgpgziAXAbVABwnAlgFyxMJZABgBoAmAXVJADcBDAGwFcYkQBBEAX1PU1z5CKchWp0mrdgDFkAIUo8+IDNjwEiogCziGLNok5wAnmADGAZWYAjODnmLe-NUKJaxNPVMOyAwo+VVQQ0Udx1PSQMjU0sbO2R-JWdg4WRRYl1I9jkklQF1VPcMiP12Xx5xGCgAc3giUAAzACcIAFskMhAcCCQARhLvEAaAfWB6E3NuXOa2jppupFEJUsMGgHJR8ZippyGW9sQlhcR+kEYsMCiocYALKpABqIAdJ+GIJqxqi+n9vvmexAAZke7Buw2kP1mh3+SGBZ3o1hgjAACvlXIZGDAGjgHstBmDgBwJrFbDgdsoZgcjgD3HiojcNoTiVZSeTGr9ELTjnDzpd2FAIDgcPcQYYXm8Pl9CLtKXMugCAKyioaQg5K+VIABsypuqqQ6u5Os2xJ2lG4QA
+\begin{tikzcd}
+                                                                       &  & B \arrow[rr, "h"] \arrow[rrdd, "h_{async}"]                                                                 &  & C                                              \\
+                                                                       &  &                                                                                                             &  &                                                \\
+A \arrow[rr, "f_{async}"] \arrow[rrdd, "f'_{async}"] \arrow[rruu, "f"] &  & {F[B]} \arrow[rr, "h_F"]                                                                                    &  & {F[C]}                                         \\
+                                                                       &  &                                                                                                             &  &                                                \\
+                                                                       &  & {AsyncSubst[B]} \arrow[uu, "\_origin", dashed] \arrow[rruu, "h_{AsyncSubst}"] \arrow[rr, "h'_{AsyncSubst}"] &  & {AsyncSubst[C]} \arrow[uu, "\_origin", dotted]
+\end{tikzcd}
+
+\end{document}
