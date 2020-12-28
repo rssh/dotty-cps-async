@@ -13,6 +13,7 @@
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="High-order functions." href="HighOrderFunctions.html" />
@@ -65,7 +66,8 @@
 </div>
 <div class="section" id="basic-usage">
 <h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
-<p>Usage is obvious: we have two ‘pseudo-functions’ <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> <a class="footnote-reference brackets" href="#f1" id="id1">1</a> :</p>
+<p>The usage is quite similar to working with async/await frameworks in Scala2 and other languages.
+We have two ‘pseudo-functions’ <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> <a class="footnote-reference brackets" href="#f1" id="id1">1</a> :</p>
 <blockquote>
 <div><span class="target" id="index-0"></span><div class="highlight-scala notranslate" id="index-1"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="n">async</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">T</span><span class="o">](</span><span class="n">using</span> <span class="n">am</span><span class="k">:</span><span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span><span class="o">(</span><span class="kt">expr:</span> <span class="kt">T</span><span class="o">)=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span>
 

@@ -13,6 +13,7 @@
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Random Notes" href="random-notes/index.html" />
@@ -58,7 +59,7 @@ So, next code:</p>
 </div>
 <p>Can be written without await as:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">c</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]{</span>
-     <span class="k">import</span> <span class="nn">cps.features.implicitAwait.</span><span class="o">{</span><span class="n">given</span> <span class="k">_</span><span class="o">}</span>
+     <span class="k">import</span> <span class="nn">cps.features.implicitAwait.given</span>
      <span class="k">val</span> <span class="n">url</span> <span class="k">=</span> <span class="s">&quot;http://www.example.com&quot;</span>
      <span class="k">val</span> <span class="n">data</span> <span class="k">=</span> <span class="n">api</span><span class="o">.</span><span class="n">fetchUrl</span><span class="o">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="o">)</span>
      <span class="k">val</span> <span class="n">theme</span> <span class="k">=</span> <span class="n">api</span><span class="o">.</span><span class="n">classifyText</span><span class="o">(</span><span class="n">data</span><span class="o">)</span>
@@ -67,13 +68,12 @@ So, next code:</p>
   <span class="o">}</span>
 </pre></div>
 </div>
-<p>Looks at special syntax for enabling: <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">given</span> <span class="pre">_}</span></code>.
-For using this feature, the underlying monad should support execution caching:  i.e., two awaits on the same expression should not cause reevaluation.</p>
+<p>The underlying monad should support execution caching for using this feature:  i.e., two awaits on the same expression should not cause reevaluation.</p>
 <p>To mark your monad as supporting this feature, you should define <code class="docutils literal notranslate"><span class="pre">given</span> <span class="pre">cps.feature.implicitAwait.IsPossible[M]</span></code>.</p>
 </div>
 <div class="section" id="custom-value-discard">
 <h2>Custom value discard<a class="headerlink" href="#custom-value-discard" title="Permalink to this headline">¶</a></h2>
-<p id="index-0">Common developers mistakes during the writing of asynchronous code are to forget to handle something connected with discarded values, like error processing or awaiting.</p>
+<p id="index-0">During the writing of asynchronous code, common developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.</p>
 <p><code class="docutils literal notranslate"><span class="pre">cps.feature.customValueDiscard</span></code>  limit the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types T, for which exists an implementation of a special ValueDiscard[T]. If given ValueDiscard[T] is not found in the current scope, then dropping values of this type is prohibited.  If found - ValueDiscard.apply(t) is called. It’s defined as no-op for primitive types and can be extended by developer for own types.</p>
 <p>Example:</p>
 <p>Assume we have next api:</p>

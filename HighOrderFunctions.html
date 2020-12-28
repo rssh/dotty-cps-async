@@ -13,6 +13,7 @@
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Monads interoperability." href="MonadsInteroperability.html" />
@@ -43,7 +44,7 @@
   <div class="section" id="high-order-functions">
 <h1>High-order functions.<a class="headerlink" href="#high-order-functions" title="Permalink to this headline">¶</a></h1>
 <p>Dotty-cps-async supports the automatic transformation of high-order functions,  where the lambda expression argument contains <code class="docutils literal notranslate"><span class="pre">await</span></code>.</p>
-<p>Example – let us have a list of remote servers and want to fetch some data from each of them.
+<p>For example, let us have a list of remote servers and fetch some data from each of them.
 Assume, that out http client provides next interface:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">HttpClient</span><span class="k">:</span>
    <span class="kt">def</span> <span class="kt">fetchData</span><span class="o">(</span><span class="kt">url:</span> <span class="kt">String</span><span class="o">)</span><span class="kt">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
@@ -155,12 +156,72 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 <dl class="simple">
 <dt>As we have seen, shifted functions have an additional type parameter: F[_] and parameter CpsMonad[F]  (or more specific type, if needed).  Async transformer will substitute the call of <cite>modify</cite> into the call of <cite>modify_async</cite> during compilation.</dt><dd><p>Sometimes,  we already have F[_] as the type parameter of the enclosing class. In such a case, we can omit those additional parameters in the async variant.</p>
 </dd>
-</dl>
-<ul class="simple">
-<li></li>
-</ul>
-<dl class="simple">
 <dt>Note that you should carefully decide whether you need async function support and how to deal with concurrent modifications.  For example, in the code snippet below, different changes will interleave with each other.</dt><dd><p>Usually, low-level constructs do not need async counterparts.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="special-semantics-for-substitutions-in-call-chains">
+<h3>Special semantics for substitutions in call chains<a class="headerlink" href="#special-semantics-for-substitutions-in-call-chains" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>Consider chain of calls, which accept async-shifted functions.  One example is  ‘withFilter’ from standard collections library.  Let’s look on the next chunk of code:</p>
+</div></blockquote>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="o">{</span> <span class="n">url</span> <span class="k">←</span> <span class="n">urls</span> <span class="k">if</span>  <span class="n">await</span><span class="o">(</span><span class="n">status</span><span class="o">(</span><span class="n">url</span><span class="o">))==</span><span class="nc">Active</span>
+      <span class="n">items</span> <span class="k">←</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">retrieveItems</span><span class="o">(</span><span class="n">url</span><span class="o">))</span>
+      <span class="nc">Item</span> <span class="k">&lt;-</span> <span class="n">items</span>
+   <span class="o">}</span> <span class="k">yield</span> <span class="n">item</span>
+</pre></div>
+</div>
+<p>Here usual semantics of <cite>withFilter</cite> assume that we iterate <cite>urls</cite> only once.  But if we will translate this expression according to standard rules, we will receive two passes: one pass in async <cite>withFilter</cite> and the second in <cite>flatMap</cite>.</p>
+<p>To perform iteration once, we translate <cite>withFilter</cite> not to F[WithFilter] but to a substituted type DelayedWithFilter , which holds received predicate and delays actual evaluation upon the call of the next operation in chain.</p>
+<p>The implementation of this class looks like:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">DelayedWithFilter</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">A</span><span class="p">,</span> <span class="kt">C</span><span class="o">[</span><span class="kt">X</span><span class="o">]</span> <span class="k">&lt;:</span> <span class="kt">Iterable</span><span class="o">[</span><span class="kt">X</span><span class="o">]</span><span class="p">,</span> <span class="kt">CA</span> <span class="k">&lt;:</span> <span class="kt">C</span><span class="o">[</span><span class="kt">A</span><span class="o">]](</span><span class="n">c</span><span class="k">:</span> <span class="kt">CA</span><span class="o">,</span>
+                                        <span class="n">m</span><span class="k">:</span> <span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">],</span>
+                                        <span class="n">p</span><span class="k">:</span><span class="kt">A</span><span class="o">=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">Boolean</span><span class="o">],</span>
+                                        <span class="o">)</span>
+                 <span class="k">extends</span> <span class="nc">CallChainAsyncSubst</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span> <span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]</span><span class="p">,</span> <span class="kt">F</span><span class="o">[</span><span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]]</span> <span class="o">]</span>
+<span class="o">{</span>
+ <span class="c1">// return eager copy</span>
+ <span class="k">def</span> <span class="nc">_origin</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+
+ <span class="k">def</span> <span class="n">withFilter</span><span class="o">(</span><span class="n">q</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="nc">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">DelayedWithFilter</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span><span class="kt">A</span><span class="p">,</span><span class="kt">CX</span><span class="p">,</span><span class="kt">CA</span><span class="o">]</span> <span class="k">=</span>  <span class="o">...</span>
+
+ <span class="k">def</span> <span class="n">withFilter_async</span><span class="o">(</span><span class="n">q</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">Boolean</span><span class="o">])</span> <span class="k">=</span> <span class="o">...</span>
+
+ <span class="k">def</span> <span class="n">map</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="n">B</span><span class="o">)</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">C</span><span class="o">[</span><span class="kt">B</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+
+ <span class="k">def</span> <span class="n">map_async</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">B</span><span class="o">])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">C</span><span class="o">[</span><span class="kt">B</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+
+ <span class="k">def</span> <span class="n">flatMap</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="nc">IterableOnce</span><span class="o">[</span><span class="kt">B</span><span class="o">])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">C</span><span class="o">[</span><span class="kt">B</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+
+ <span class="k">def</span> <span class="n">flatMap_async</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">IterableOnce</span><span class="o">[</span><span class="kt">B</span><span class="o">]])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">C</span><span class="o">[</span><span class="kt">B</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+
+ <span class="k">def</span> <span class="n">foreach</span><span class="o">[</span><span class="kt">U</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="n">U</span><span class="o">)</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="o">...</span>
+
+ <span class="k">def</span> <span class="n">foreach_async</span><span class="o">[</span><span class="kt">U</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">U</span><span class="o">])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="o">...</span>
+
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>I.e., in delayed variant implemented all original class methods, which should or collect operations into the next delayed object or perform an actual batched call.
+Also, we have the method <cite>_origin</cite>,  which is called when we have no next call in the chain: an example of such a case is   <cite>val x = c.withFilter(p)</cite>.</p>
+<p>By convention, the substituted type should be derived from CallChainAsyncSubst[F,T]</p>
+<p>This structure has a nice category interpretation,
+If you are curious about that, let’s look at the next diagram:</p>
+<img alt="_images/AsyncSubst3.png" src="_images/AsyncSubst3.png" />
+<p>Let we have hight-order function <span class="math notranslate nohighlight">\(f: A\to B\)</span> (example: <span class="math notranslate nohighlight">\(f = withFilter: Iterable \to WithFilter\)</span>); then direct async transform will give us an async variant of <span class="math notranslate nohighlight">\(f\)</span> – <span class="math notranslate nohighlight">\(f_{async}\)</span>  (example:  naive implementation of <cite>withFilter_async</cite>), and substituted is <span class="math notranslate nohighlight">\(f'_{async}\)</span> (example - our delayed implementation of <cite>withFiter_async</cite>).  Here we write <cite>AsyncSubst</cite> instead <cite>CallChainAsyncSubst</cite> to save space on the picture.</p>
+<p>For any function <span class="math notranslate nohighlight">\(h: B-&gt;C\)</span>  from <cite>B</cite> to any <cite>C</cite>,  we have an image of <cite>h</cite> in <cite>F[B]</cite>: <span class="math notranslate nohighlight">\(h_F = F.map(h)\)</span> and in AsyncSubst: <span class="math notranslate nohighlight">\(h_{AsyncShift}\)</span>.
+The diagram is commutative:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(h_{F} * f_{async} = h_{AsyncSubst} * f'_{async}\)</span> . (Example - <cite>h</cite> is <cite>flatMap</cite>, our implementation perform the same operation as usual flatMap, but in one batch with filtering).</p></li>
+<li><p><span class="math notranslate nohighlight">\(\_origin * h'_{AsyncSubst}  = h_{AsyncSubst}\)</span> . (Example - <cite>h</cite> is <cite>withFilter</cite>  <span class="math notranslate nohighlight">\(h'_{AsyncSubst}\)</span> is an implementation construct an next delayed instance with two predicates ).</p></li>
+</ul>
+</div></blockquote>
+<p>Moving to relations between functors, shown on the next diagram:</p>
+<img alt="_images/AsyncSubstFunctors.png" src="_images/AsyncSubstFunctors.png" />
+<p>We can notice that <cite>_origing</cite> is a left Kan extension of <cite>F</cite> along <cite>AsyncSubst</cite>.</p>
+<dl class="simple">
+<dt>This technique can be applied for cases where direct cps transform is impossible.</dt><dd><p>Example: cps transform of functional expression: <cite>cps[S=&gt;T]</cite>, will give us not <cite>F[S=&gt;T]</cite>,  but <cite>S=&gt;F[T]</cite>.  We can’t receive <cite>F[T=&gt;S]</cite> from <cite>T=&gt;F[S]</cite>, but can define an <cite>AsynSubst[T=&gt;S]</cite> with implementation of <cite>apply</cite>, <cite>andThen</cite> and <cite>compose</cite>.</p>
 </dd>
 </dl>
 </div>
@@ -181,6 +242,7 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 <li><a class="reference internal" href="#functional-interface">Functional interface.</a></li>
 <li><a class="reference internal" href="#object-oriented-interface-obsolete-up-to-0-3-5">Object oriented interface (obsolete, up to 0.3.5)</a></li>
 <li><a class="reference internal" href="#object-oriented-interface-after-0-3-6">Object oriented interface (after 0.3.6+)</a></li>
+<li><a class="reference internal" href="#special-semantics-for-substitutions-in-call-chains">Special semantics for substitutions in call chains</a></li>
 </ul>
 </li>
 </ul>
