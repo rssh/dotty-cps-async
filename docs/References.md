@@ -25,8 +25,12 @@ Can we free concurrent programming from the monadic style:
 - F# Computation Expression. 
 	- Guide: <https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/computation-expressions>
 	- Paper: <http://tomasp.net/academic/papers/computation-zoo/>
+- C# : Guide:  <https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/task-asynchronous-programming-model>
 - Python: PEP-0492  <https://www.python.org/dev/peps/pep-0492/>
 - JavaScript:  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function>
 - Nim: macro module <https://nim-lang.org/docs/asyncdispatch.html>
+- Dart:
+	- Guide: <https://dart.dev/guides/language/language-tour#asynchrony-support>
+        - Formal specs: <https://spec.dart.dev/DartLangSpecDraft.pdf>  (async intro on page 18)
 
 
