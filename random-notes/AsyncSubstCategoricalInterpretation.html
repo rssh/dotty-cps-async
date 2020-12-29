@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Categorical interpretation for substitutions in async call chains: &#8212; dotty-cps-async 0.3.6-SNAPSHOT documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="FAQ" href="../FAQ.html" />
+    <link rel="prev" title="CPS-Async transformations:" href="CpsAsyncOverview.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../FAQ.html" title="FAQ"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="CpsAsyncOverview.html" title="CPS-Async transformations:"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.3.6-SNAPSHOT documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Random Notes</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Categorical interpretation for substitutions in async call chains:</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="categorical-interpretation-for-substitutions-in-async-call-chains">
+<span id="categorical-interpretation-for-callchainasyncsubst"></span><h1>Categorical interpretation for substitutions in async call chains:<a class="headerlink" href="#categorical-interpretation-for-substitutions-in-async-call-chains" title="Permalink to this headline">¶</a></h1>
+<p>Substitutions in async call chains is described in <a class="reference internal" href="../HighOrderFunctions.html#substitutions-in-call-chains"><span class="std std-ref">Special semantics for substitutions in call chains</span></a>.</p>
+<p>Let’s look at the next diagram:</p>
+<img alt="../_images/AsyncSubst3.png" src="../_images/AsyncSubst3.png" />
+<p>Let we have hight-order function <span class="math notranslate nohighlight">\(f: A\to B\)</span> (example: <span class="math notranslate nohighlight">\(f = withFilter: Iterable \to WithFilter\)</span>); then direct async transform will give us an async variant of <span class="math notranslate nohighlight">\(f\)</span> – <span class="math notranslate nohighlight">\(f_{async}\)</span>  (example:  naive implementation of <cite>withFilter_async</cite>), and substituted is <span class="math notranslate nohighlight">\(f'_{async}\)</span> (example - our delayed implementation of <cite>withFiter_async</cite>). <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Here we write <cite>AsyncSubst</cite> instead <cite>CallChainAsyncSubst</cite> to save space on the picture.</p>
+</dd>
+</dl>
+<p>For any function <span class="math notranslate nohighlight">\(h: B-&gt;C\)</span>  from <cite>B</cite> to any <cite>C</cite>,  we have an image of <cite>h</cite> in <cite>F[B]</cite>: <span class="math notranslate nohighlight">\(h_F = F.map(h)\)</span> and in AsyncSubst: <span class="math notranslate nohighlight">\(h_{AsyncShift}\)</span>.
+The diagram is commutative:
+* <span class="math notranslate nohighlight">\(h_{F} * f_{async} = h_{AsyncSubst} * f'_{async}\)</span> . (Example - <cite>h</cite> is <cite>flatMap</cite>, our implementation perform the same operation as usual flatMap, but in one batch with filtering).
+* <span class="math notranslate nohighlight">\(\_origin * h'_{AsyncSubst}  = h_{AsyncSubst}\)</span> . (Example - <cite>h</cite> is <cite>withFilter</cite>  <span class="math notranslate nohighlight">\(h'_{AsyncSubst}\)</span> is an implementation construct an next delayed instance with two predicates ).</p>
+<p>Moving to relations between functors, shown on the next diagram:</p>
+<img alt="../_images/AsyncSubstFunctors.png" src="../_images/AsyncSubstFunctors.png" />
+<p>We can notice that <cite>_origing</cite> is a left Kan extension of <cite>F</cite> along <cite>AsyncSubst</cite>.</p>
+<dl class="simple">
+<dt>This technique can be applied for cases where direct cps transform is impossible.</dt><dd><p>Example: cps transform of functional expression: <cite>cps[S=&gt;T]</cite>, will give us not <cite>F[S=&gt;T]</cite>,  but <cite>S=&gt;F[T]</cite>.  We can’t receive <cite>F[T=&gt;S]</cite> from <cite>T=&gt;F[S]</cite>, but can define an <cite>AsynSubst[T=&gt;S]</cite> with implementation of <cite>apply</cite>, <cite>andThen</cite> and <cite>compose</cite>.</p>
+</dd>
+</dl>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="CpsAsyncOverview.html"
+                        title="previous chapter">CPS-Async transformations:</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../FAQ.html"
+                        title="next chapter">FAQ</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/random-notes/AsyncSubstCategoricalInterpretation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../FAQ.html" title="FAQ"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="CpsAsyncOverview.html" title="CPS-Async transformations:"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.3.6-SNAPSHOT documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Random Notes</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Categorical interpretation for substitutions in async call chains:</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Ruslan Shevchenko.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>
