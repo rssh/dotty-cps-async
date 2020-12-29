@@ -205,10 +205,16 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 <p>I.e., in delayed variant implemented all original class methods, which should or collect operations into the next delayed object or perform an actual batched call.
 Also, we have the method <cite>_origin</cite>,  which is called when we have no next call in the chain: an example of such a case is   <cite>val x = c.withFilter(p)</cite>.</p>
 <p>By convention, the substituted type should be derived from CallChainAsyncSubst[F,T]</p>
-<p>This structure has a nice category interpretation,
-If you are curious about that, let’s look at the next diagram:</p>
+<p>This structure has a nice category interpretation,</p>
+<details>
+ <summary><a>(details)</a></summary><p>If you are curious about that, let’s look at the next diagram:</p>
 <img alt="_images/AsyncSubst3.png" src="_images/AsyncSubst3.png" />
-<p>Let we have hight-order function <span class="math notranslate nohighlight">\(f: A\to B\)</span> (example: <span class="math notranslate nohighlight">\(f = withFilter: Iterable \to WithFilter\)</span>); then direct async transform will give us an async variant of <span class="math notranslate nohighlight">\(f\)</span> – <span class="math notranslate nohighlight">\(f_{async}\)</span>  (example:  naive implementation of <cite>withFilter_async</cite>), and substituted is <span class="math notranslate nohighlight">\(f'_{async}\)</span> (example - our delayed implementation of <cite>withFiter_async</cite>).  Here we write <cite>AsyncSubst</cite> instead <cite>CallChainAsyncSubst</cite> to save space on the picture.</p>
+<p>Let we have hight-order function <span class="math notranslate nohighlight">\(f: A\to B\)</span> (example: <span class="math notranslate nohighlight">\(f = withFilter: Iterable \to WithFilter\)</span>); then direct async transform will give us an async variant of <span class="math notranslate nohighlight">\(f\)</span> – <span class="math notranslate nohighlight">\(f_{async}\)</span>  (example:  naive implementation of <cite>withFilter_async</cite>), and substituted is <span class="math notranslate nohighlight">\(f'_{async}\)</span> (example - our delayed implementation of <cite>withFiter_async</cite>). <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Here we write <cite>AsyncSubst</cite> instead <cite>CallChainAsyncSubst</cite> to save space on the picture.</p>
+</dd>
+</dl>
 <p>For any function <span class="math notranslate nohighlight">\(h: B-&gt;C\)</span>  from <cite>B</cite> to any <cite>C</cite>,  we have an image of <cite>h</cite> in <cite>F[B]</cite>: <span class="math notranslate nohighlight">\(h_F = F.map(h)\)</span> and in AsyncSubst: <span class="math notranslate nohighlight">\(h_{AsyncShift}\)</span>.
 The diagram is commutative:</p>
 <blockquote>
@@ -224,7 +230,7 @@ The diagram is commutative:</p>
 <dt>This technique can be applied for cases where direct cps transform is impossible.</dt><dd><p>Example: cps transform of functional expression: <cite>cps[S=&gt;T]</cite>, will give us not <cite>F[S=&gt;T]</cite>,  but <cite>S=&gt;F[T]</cite>.  We can’t receive <cite>F[T=&gt;S]</cite> from <cite>T=&gt;F[S]</cite>, but can define an <cite>AsynSubst[T=&gt;S]</cite> with implementation of <cite>apply</cite>, <cite>andThen</cite> and <cite>compose</cite>.</p>
 </dd>
 </dl>
-</div>
+</details></div>
 </div>
 </div>
 
