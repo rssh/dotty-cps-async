@@ -32,5 +32,9 @@ Can we free concurrent programming from the monadic style:
 - Dart:
 	- Guide: <https://dart.dev/guides/language/language-tour#asynchrony-support>
         - Formal specs: <https://spec.dart.dev/DartLangSpecDraft.pdf>  (async intro on page 18)
+- Rust:
+	- Async-Await working group: <https://rust-lang.github.io/compiler-team/working-groups/async-await/>
+        - Book "Asynchronous Programming in Rust": <https://rust-lang.github.io/async-book/>
+        - Rust language reference: <https://doc.rust-lang.org/nightly/reference/expressions/await-expr.html>
 
 
