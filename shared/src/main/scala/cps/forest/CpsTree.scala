@@ -616,22 +616,12 @@ trait CpsTreeScope[F[_], CT] {
        //       because otherwise it's quite strange why we have such interface in compiler
 
        //  r: (X1 .. XN) => F[R] = (x1 .. xN) => cps(f(x1,... xN)).
-      Lambda(Symbol.spliceOwner, shiftedType, (owner: Symbol, x: List[Tree]) => {
+      Lambda(Symbol.spliceOwner, shiftedType, (owner: Symbol, args: List[Tree]) => {
          // here we need to change owner of ValDefs which was in lambda.
          //  TODO: always pass mapping between new symbols as parameters to transformed
          if (cpsCtx.flags.debugLevel >= 15)
-             cpsCtx.log(s"generate rLambda: params in lambda-arg = ${x}")
-         val paramsMap = params.zipWithIndex.map{case (tree,index)=>(tree.symbol,index)}.toMap
-         val indexedArgs = x.toIndexedSeq
-         val argTransformer = new TreeMap() {
-            override def transformTerm(tree: Term)(owner: Symbol): Term =
-               tree match
-                 case Ident(name) => paramsMap.get(tree.symbol) match
-                                        case Some(index) => Ref(x(index).symbol)
-                                        case _  => super.transformTerm(tree)(owner)
-                 case _ => super.transformTerm(tree)(owner)
-         }
-         argTransformer.transformTerm(body.transformed)(owner).changeOwner(owner)
+             cpsCtx.log(s"generate rLambda: params in lambda-arg = ${args}")
+         TransformUtil.substituteLambdaParams(params, args, body.transformed, owner).changeOwner(owner)
       })
 
     override def transformed: Term =

@@ -37,23 +37,6 @@ object TransformUtil:
          }).isDefined
 
 
-  def substituteIdent(using qctx:Quotes)(tree: qctx.reflect.Term,
-                           origin: qctx.reflect.Symbol,
-                           newTerm: qctx.reflect.Term): qctx.reflect.Term =
-     import quotes.reflect._
-     import util._
-     val changes = new TreeMap() {
-        override def transformTerm(tree:Term)(owner: Symbol):Term =
-          tree match
-            case ident@Ident(name) => if (ident.symbol == origin) {
-                                         newTerm
-                                      } else {
-                                         super.transformTerm(tree)(owner)
-                                      }
-            case _ => super.transformTerm(tree)(owner)
-     }
-     changes.transformTerm(tree)(Symbol.spliceOwner)
-
 
   def createFunctionType(using Quotes)(argTypes: List[quotes.reflect.TypeRepr], 
                                        resultType: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
