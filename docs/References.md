@@ -20,7 +20,13 @@ Can we free concurrent programming from the monadic style:
    
 ## Related work in other languages
 
-- F# Computation Expression. Guide: https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/computation-expressions
-- F# Computation Expression. Paper: http://tomasp.net/academic/papers/computation-zoo/
+- Historical overview: <https://softwareengineering.stackexchange.com/questions/377464/who-did-async-await-first>
+
+- F# Computation Expression. 
+	- Guide: <https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/computation-expressions>
+	- Paper: <http://tomasp.net/academic/papers/computation-zoo/>
+- Python: PEP-0492  <https://www.python.org/dev/peps/pep-0492/>
+- JavaScript:  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function>
+- Nim: macro module <https://nim-lang.org/docs/asyncdispatch.html>
 
 
