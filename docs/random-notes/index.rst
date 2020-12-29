@@ -7,4 +7,5 @@ Random Notes
    :maxdepth: 2
 
    CpsAsyncOverview
+   AsyncSubstCategoricalInterpretation
 
