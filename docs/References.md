@@ -36,5 +36,7 @@ Can we free concurrent programming from the monadic style:
 	- Async-Await working group: <https://rust-lang.github.io/compiler-team/working-groups/async-await/>
         - Book "Asynchronous Programming in Rust": <https://rust-lang.github.io/async-book/>
         - Rust language reference: <https://doc.rust-lang.org/nightly/reference/expressions/await-expr.html>
-
-
+- Kotlin:
+	- Coroutines Guide: <https://kotlinlang.org/docs/reference/coroutines/coroutines-guide.html>
+- Swift:
+	- Proposal: <https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md>
