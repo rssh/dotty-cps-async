@@ -31,15 +31,15 @@ Can we free concurrent programming from the monadic style:
 - Nim: macro module <https://nim-lang.org/docs/asyncdispatch.html>
 - Dart:
 	- Guide: <https://dart.dev/guides/language/language-tour#asynchrony-support>
-        - Formal specs: <https://spec.dart.dev/DartLangSpecDraft.pdf>  (async intro on page 18)
+	- Formal specs: <https://spec.dart.dev/DartLangSpecDraft.pdf>  (async intro on page 18)
 - Rust:
 	- Async-Await working group: <https://rust-lang.github.io/compiler-team/working-groups/async-await/>
-        - Book "Asynchronous Programming in Rust": <https://rust-lang.github.io/async-book/>
-        - Rust language reference: <https://doc.rust-lang.org/nightly/reference/expressions/await-expr.html>
+	- Book "Asynchronous Programming in Rust": <https://rust-lang.github.io/async-book/>
+	- Rust language reference: <https://doc.rust-lang.org/nightly/reference/expressions/await-expr.html>
 - C++:
 	- N4134 (C++17 proposal (implemented but deferred) )  <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4134.pdf>
-        - N4680 (C++20 stackless coroutines proposal)  <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4680.pdf>
-        - Blog  <https://lewissbaker.github.io/2017/11/17/understanding-operator-co-await>
+	- N4680 (C++20 stackless coroutines proposal)  <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4680.pdf>
+	- Blog  <https://lewissbaker.github.io/2017/11/17/understanding-operator-co-await>
 	- Imlplementation of C++ coroutines:  <https://github.com/lewissbaker/cppcoro>
 - Kotlin:
 	- Coroutines Guide: <https://kotlinlang.org/docs/reference/coroutines/coroutines-guide.html>
