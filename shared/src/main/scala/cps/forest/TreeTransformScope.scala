@@ -18,6 +18,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
                   with AsyncTreeShifter[F,CT]
                   with RepeatedTreeTransform[F,CT]
                   with InlinedTreeTransform[F,CT]
+                  with SelectOuterTreeTransform[F,CT]
 {
 
    val cpsCtx: TransformationContext[F,CT]

@@ -15,12 +15,26 @@ trait InlinedTreeTransform[F[_], CT]:
 
   import qctx.reflect._
 
-  case class InlinedBindingRecord(newSym: Symbol, cpsTree: CpsTree, oldValDef: ValDef, newResultType: TypeRepr)
+  sealed trait InlinedBindingRecord
 
-  case class InlinedBindingsRecord(changes: HashMap[Symbol, InlinedBindingRecord], newBindings: List[Definition])
+  case class InlinedFunBindingRecord(newSym: Symbol, 
+                                     cpsTree: CpsTree, 
+                                     oldValDef: ValDef, 
+                                     newResultType: TypeRepr) extends InlinedBindingRecord
+
+  case class InlinedValBindingRecord(newSym: Symbol, 
+                                     cpsTree: CpsTree, 
+                                     oldValDef: ValDef,
+                                     awaitNewSym: Symbol) extends InlinedBindingRecord
+
+  case class InlinedBindingsRecord(changes: HashMap[Symbol, InlinedBindingRecord], 
+                                   newBindings: List[Definition], 
+                                   awaitVals: List[ValDef])
   
   def runInlined(origin: Inlined): CpsTree =
-    val s0 = InlinedBindingsRecord(HashMap.empty, List.empty)
+    if (cpsCtx.flags.debugLevel >= 15) then
+        cpsCtx.log(s"Inlined, origin=${origin.show}")  
+    val s0 = InlinedBindingsRecord(HashMap.empty, List.empty, List.empty)
     val funValDefs = origin.bindings.zipWithIndex.foldLeft(s0){ (s, xi) =>
        val (x,i) = xi
        x match
@@ -33,40 +47,49 @@ trait InlinedTreeTransform[F[_], CT]:
                          val resultType = vx.tpt.tpe match
                              case AppliedType(fun, args) => args.last
                              case _ => body.tpe.widen
-                         if (cpsBinding.isAsync) {
+                         if (cpsBinding.isAsync) then
                             val lambdaTree = new AsyncLambdaCpsTree(lambda, params, cpsBinding, resultType)
                             val newSym = Symbol.newVal(Symbol.spliceOwner, name, lambdaTree.rtpe,  vx.symbol.flags, Symbol.noSymbol)
                             val rLambda = lambdaTree.rLambda.changeOwner(newSym)
                             val newValDef = ValDef(newSym, Some(rLambda))
-                            val bindingRecord = InlinedBindingRecord(newSym, lambdaTree, vx, resultType) 
+                            val bindingRecord = InlinedFunBindingRecord(newSym, lambdaTree, vx, resultType) 
                             s.copy(
                                changes = s.changes.updated(vx.symbol, bindingRecord),
                                newBindings = newValDef::s.newBindings
                             )
-                         } else if (cpsBinding.isChanged) {
+                         else if (cpsBinding.isChanged) then
                             val newSym = Symbol.newVal(Symbol.spliceOwner, name, tpt.tpe,  vx.symbol.flags, Symbol.noSymbol)
-                            // generate new lambda with changed body
                             val mt = MethodType(params.map(_.name))(_ => params.map(_.tpt.tpe), _ => resultType)
                             val newValDef = ValDef(newSym, cpsBinding.syncOrigin.map(body =>
                                Lambda(Symbol.spliceOwner, mt, 
                                  (owner,args)=> TransformUtil.substituteLambdaParams(params,args,body,owner).changeOwner(owner)
                                )
                             ))
-                            val bindingRecord = InlinedBindingRecord(newSym, CpsTree.pure(newValDef.rhs.get), vx, resultType) 
+                            val bindingRecord = InlinedFunBindingRecord(newSym, CpsTree.pure(newValDef.rhs.get), vx, resultType) 
                             s.copy(
                                changes = s.changes.updated(vx.symbol, bindingRecord),
                                newBindings = newValDef::s.newBindings
                             ) 
-                         } else {
+                         else 
+                            // unchanged
                             s.copy(newBindings = vx::s.newBindings)
-                         }
                       case _ => // impossible
-                              s.copy(newBindings = vx::s.newBindings)
+                         s.copy(newBindings = vx::s.newBindings)
                  case None => 
-                      s.copy(newBindings = vx::s.newBindings)
-          case _ => 
+                    val cpsRhs = runRoot(rhs, TransformationContextMarker.InlinedBinding(i))
+                    /*
+                    if (cpsRhs.isAsync) {
+                         ??? 
+                    } else if (cpsRhs.isChanged) {
+                         ???
+                    } else {
+                        s.copy(newBindings = vx::s.newBindings)
+                    }
+                    */
+                    s.copy(newBindings = vx::s.newBindings)
+          case nonValDef => 
                s.copy(newBindings = x::s.newBindings)
-    }
+    }  
     val body =
       if (!funValDefs.changes.isEmpty) {
         val monad = cpsCtx.monad.asTerm
@@ -86,7 +109,7 @@ trait InlinedTreeTransform[F[_], CT]:
                term match
                  case Apply(TypeApply(Select(obj@Ident(name),"apply"),targs),args) =>
                         funValDefs.changes.get(obj.symbol) match
-                           case Some(binding) =>
+                           case Some(binding: InlinedFunBindingRecord) =>
                               val newArgs = args.map(a => this.transformTerm(a)(owner))
                               val newApply = Select.unique(Ref(binding.newSym),"apply")
                               val changed = Apply(TypeApply(newApply,targs),newArgs)
@@ -98,7 +121,7 @@ trait InlinedTreeTransform[F[_], CT]:
                               super.transformTerm(term)(owner)
                  case Apply(Select(obj@Ident(name),"apply"),args) =>
                         funValDefs.changes.get(obj.symbol) match
-                           case Some(binding) =>
+                           case Some(binding: InlinedFunBindingRecord) =>
                               val newArgs = args.map(a => this.transformTerm(a)(owner))
                               val newApply = Select.unique(Ref(binding.newSym),"apply")
                               val changed = Apply(newApply,newArgs)
@@ -110,14 +133,16 @@ trait InlinedTreeTransform[F[_], CT]:
                               super.transformTerm(term)(owner)
                  case obj@Ident(name) => 
                         funValDefs.changes.get(obj.symbol) match
-                           case Some(binding) =>
-                              if (binding.cpsTree.isAsync) then
-                                  // inline themself
-                                  //   low priority todo: think about escaping of work duplication if inlining.
-                                  //TODO: currently inline flag is not set in proxy. 
-                                  val inlineProxies = binding.oldValDef.symbol.flags.is(Flags.Inline)
-                                  val rhs = binding.oldValDef.rhs.get
-                                  checkLambdaDef(rhs) match
+                           case Some(vbinding) =>
+                             vbinding match
+                               case binding: InlinedFunBindingRecord =>
+                                 if (binding.cpsTree.isAsync) then
+                                   // inline themself
+                                   //   low priority todo: think about escaping of work duplication if inlining.
+                                   //TODO: currently inline flag is not set in proxy. 
+                                   val inlineProxies = binding.oldValDef.symbol.flags.is(Flags.Inline)
+                                   val rhs = binding.oldValDef.rhs.get
+                                   checkLambdaDef(rhs) match
                                      case Some(Lambda(params, body)) =>
                                         val mt = MethodType(params.map(_.name))(_ => params.map(_.tpt.tpe), _ => binding.newResultType)
                                         Lambda(Symbol.spliceOwner, mt, 
@@ -131,8 +156,10 @@ trait InlinedTreeTransform[F[_], CT]:
                                         )
                                      case _ =>
                                        throw MacroError("Lambda in rhs expected",posExprs(rhs))
-                              else
-                                  Ref(binding.newSym)
+                                 else
+                                   Ref(binding.newSym)
+                               case binding: InlinedValBindingRecord =>
+                                 ???
                            case None =>
                               super.transformTerm(term)(owner)
                  case _ =>
@@ -143,6 +170,8 @@ trait InlinedTreeTransform[F[_], CT]:
         origin.body
       }
     if (cpsCtx.flags.debugLevel >= 15) then
+        cpsCtx.log(s"runInline, body=${body}")
+        cpsCtx.log(s"runInline, newBindings=${funValDefs.newBindings.map(_.show).mkString("\n")}")
         funValDefs.changes.foreach{ b =>
            cpsCtx.log(s"fubValDef changes binding: ${b}")
         } 

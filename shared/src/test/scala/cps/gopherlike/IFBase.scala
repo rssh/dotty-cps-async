@@ -1,14 +1,18 @@
 package cps.gopherlike
 
 import cps._
+import java.io.Closeable
 
 trait IFWriter[F[_],A]:
 
+  type write = A
+
   var v:AnyRef = null
+
 
   protected def cpsMonad: CpsMonad[F]
 
-  protected final def wCpsMonad: CpsMonad[F] = cpsMonad
+  protected def wCpsMonad: CpsMonad[F] = cpsMonad
 
   def awrite(a:A): F[Unit] =
     v = a.asInstanceOf[AnyRef]
@@ -23,6 +27,8 @@ class CIFWriter[F[_]:CpsMonad,A]  extends IFWriter[F,A]:
 
 
 trait IFReader[F[_],A]:
+
+   type read = A
 
    protected def value: Option[A]
 
@@ -58,7 +64,7 @@ class CIFReader[F[_]:CpsMonad,A](a:A) extends IFReader[F,A]:
    protected override def cpsMonad = summon[CpsMonad[F]]
 
 
-trait IFChannel[F[_]:CpsMonad,A,B] extends IFWriter[F,A] with IFReader[F,B]:
+trait IFChannel[F[_],A,B] extends IFWriter[F,A] with IFReader[F,B] with Closeable:
 
    protected override def cpsMonad: CpsMonad[F]
 
@@ -68,4 +74,7 @@ class CIFChannel[F[_]:CpsMonad,A] extends IFChannel[F,A,A]:
    override def value = Some(v.asInstanceOf[A])
 
    protected override def cpsMonad = summon[CpsMonad[F]]
+
+   override def close(): Unit = {}   
+
 

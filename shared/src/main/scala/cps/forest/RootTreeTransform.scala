@@ -48,6 +48,8 @@ trait RootTreeTransform[F[_], CT]:
                     term.tpe.widen.asType match
                       case '[ et ] =>
                         val rCpsExpr = try {
+                             if cpsCtx.flags.debugLevel >= 15 then
+                                cpsCtx.log(s"nextedTransfornm: orin = $term")
                              val nFlags = cpsCtx.flags.copy(muted = muted || cpsCtx.flags.muted)
                              Async.nestTransform(term.asExprOf[et], cpsCtx.copy(flags = nFlags), marker)
                         } catch {
@@ -59,7 +61,9 @@ trait RootTreeTransform[F[_], CT]:
                         if cpsCtx.flags.debugLevel >= 10 then
                            cpsCtx.log(s"runRoot: rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
                            if cpsCtx.flags.debugLevel >= 15 then
-                             cpsCtx.log(s"runRoot: r=$r, async=${r.isAsync}, origin=$term")
+                             cpsCtx.log(s"runRoot: r=$r")
+                             cpsCtx.log(s"runRoot: origin=$term")
+                             cpsCtx.log(s"runRoot: marker=$marker, async=${r.isAsync}")
                         r
                       case _ =>
                         throw MacroError("Can't determinate exact type for term", expr)

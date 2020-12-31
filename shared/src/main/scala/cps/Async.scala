@@ -150,6 +150,8 @@ object Async {
                    ThisTransform(cpsCtx).run(thisTerm)
                 case matchTerm@Match(scrutinee, caseDefs) =>
                    MatchTreeTransform.run(cpsCtx, matchTerm)
+                case selectOuterTerm: SelectOuter =>
+                   SelectOuterTreeTransform.run(cpsCtx, selectOuterTerm)
                 case selectTerm: Select =>
                    SelectTreeTransform.run(cpsCtx, selectTerm)
                 //   SelectOuter ? //TreeTransform.run(cpsCtx, selectTerm)
