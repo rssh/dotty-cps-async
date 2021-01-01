@@ -110,7 +110,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
 
   case class ApplyArgLambdaRecord(
-       term: Block,   // Lambda,  see coding of Lambda in Tasty Reflect.
+       term: Term,   // Lambda,  see coding of Lambda in Tasty Reflect.
        index: Int,
        cpsBody: CpsTree,
        shifted: Boolean
@@ -388,7 +388,7 @@ trait ApplyArgRecordScope[F[_], CT]:
   case class ApplyArgByNameRecord(term: Term,
                                   index: Int,
                                   cpsTree: CpsTree,
-                                  shifted: Boolean) extends ApplyArgRecord:
+                                  shifted: Boolean) extends ApplyArgRecord {
     def identArg(existsAsync: Boolean): Term =
       if !shifted then
          term
@@ -402,6 +402,26 @@ trait ApplyArgRecordScope[F[_], CT]:
     def shift() = copy(shifted = true)
     def append(tree: CpsTree): CpsTree = tree
 
+  }
+
+
+  case class ApplyArgInlinedRecord(tree: InlinedCpsTree, nested: ApplyArgRecord )
+     extends ApplyArgRecord {
+       def index: Int = nested.index
+       def term: Term =
+              Inlined(tree.origin.call, tree.bindings, nested.term)
+       def hasShiftedLambda: Boolean = nested.hasShiftedLambda
+       def isAsync: Boolean = nested.isAsync
+       def noOrderDepended = nested.noOrderDepended
+       def identArg(existsAsync:Boolean): Term = nested.identArg(existsAsync)
+       def shift(): ApplyArgRecord = copy(nested=nested.shift())
+       def append(a: CpsTree): CpsTree =
+             val na = nested.append(a)
+             if (na eq a)
+                a
+             else
+                InlinedCpsTree(tree.origin, tree.bindings, na)
+  }
 
 
   def termIsNoOrderDepended(x:Term): Boolean =

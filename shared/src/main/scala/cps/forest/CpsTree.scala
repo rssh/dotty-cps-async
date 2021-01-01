@@ -20,6 +20,8 @@ trait CpsTreeScope[F[_], CT] {
 
      def isChanged: Boolean
 
+     def isLambda: Boolean
+
      def isSync: Boolean = ! isAsync
 
      def transformed: Term
@@ -106,6 +108,8 @@ trait CpsTreeScope[F[_], CT] {
 
     def isAsync = false
 
+    def isLambda = false
+
     def typeApply(targs: List[qctx.reflect.TypeTree]) =
                 PureCpsTree(origin.appliedToTypeTrees(targs), true)
 
@@ -189,6 +193,8 @@ trait CpsTreeScope[F[_], CT] {
 
   case class AwaitSyncCpsTree(val origin: Term, val otpe: TypeRepr) extends AsyncCpsTree:
 
+    def isLambda = false
+
     def transformed: Term = origin
 
     def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
@@ -204,6 +210,8 @@ trait CpsTreeScope[F[_], CT] {
                                      otherCake.adoptType(otpe))
 
   case class AwaitAsyncCpsTree(val nested: CpsTree, val otpe: TypeRepr) extends AsyncCpsTree:
+
+    def isLambda: Boolean = false
 
     def transformed: Term =
       FlatMappedCpsTree(nested, (t:Term)=>t, otpe).transformed
@@ -222,6 +230,7 @@ trait CpsTreeScope[F[_], CT] {
 
   case class MappedCpsTree(prev: CpsTree, op: Term => Term, otpe: TypeRepr) extends AsyncCpsTree:
 
+    def isLambda: Boolean = false
 
     def applyTerm1(f: Term => Term, npte: TypeRepr): CpsTree =
           MappedCpsTree(prev, t => f(op(t)), npte)
@@ -280,6 +289,8 @@ trait CpsTreeScope[F[_], CT] {
                       opm: Term => Term,
                       otpe: TypeRepr) extends AsyncCpsTree:
 
+    def isLambda: Boolean = false
+
     def select(symbol: Symbol, ntpe: TypeRepr): CpsTree =
           FlatMappedCpsTree(prev, t => opm(t).select(symbol), ntpe)
 
@@ -331,6 +342,8 @@ trait CpsTreeScope[F[_], CT] {
     override def isAsync = last.isAsync
 
     override def isChanged = last.isChanged || !prevs.isEmpty
+
+    override def isLambda = last.isLambda
 
     def toLast(f: CpsTree=>CpsTree):CpsTree =
       if (prevs.isEmpty)
@@ -404,6 +417,8 @@ trait CpsTreeScope[F[_], CT] {
 
     override def isChanged = nested.isChanged
 
+    override def isLambda = nested.isLambda
+
     override def transformed: Term =
                   Inlined(origin.call, bindings, nested.transformed)
 
@@ -440,11 +455,27 @@ trait CpsTreeScope[F[_], CT] {
 
   end InlinedCpsTree
 
-  case class ValCpsTree(valDef: ValDef, rightPart: CpsTree, nested: CpsTree) extends CpsTree:
+  case class ValCpsTree(valDef: ValDef, rightPart: CpsTree, nested: CpsTree, canBeLambda: Boolean = false) extends CpsTree:
+
+    if (rightPart.isLambda)
+       if (cpsCtx.flags.debugLevel > 10) then
+           cpsCtx.log("Creating ValDef with right-part: lambda.")
+           cpsCtx.log(s"rightPart: $rightPart")
+           cpsCtx.log(s"rightPart.transformed: ${rightPart.transformed}")
+       if (!canBeLambda) then
+           val posTerm = valDef.rhs.getOrElse(
+                            rightPart match
+                              case r: AsyncLambdaCpsTree => r.originLambda
+                              case _ => Block(List(valDef),Literal(UnitConstant()))
+                         )
+           throw new MacroError("Creating ValDef with lambda in right-part",posExprs(posTerm))
+       
 
     override def isAsync = rightPart.isAsync || nested.isAsync
 
     override def isChanged = rightPart.isChanged || nested.isChanged
+
+    override def isLambda = rightPart.isLambda || nested.isLambda
 
     override def transformed: Term =
        rightPart.syncOrigin match
@@ -453,7 +484,7 @@ trait CpsTreeScope[F[_], CT] {
          case None =>
            if (nested.isAsync)
               rightPart.monadFlatMap(v => appendValDef(v) , nested.otpe).transformed
-           else
+           else 
               rightPart.monadMap(v => appendValDef(v) , nested.otpe).transformed
 
     override def syncOrigin: Option[Term] =
@@ -521,6 +552,11 @@ trait CpsTreeScope[F[_], CT] {
 
     def isChanged = frs.isChanged || snd.isChanged
 
+    def isLambda = false
+
+    assert(!frs.isLambda)
+    assert(!snd.isLambda)
+
     override def transformed: Term =
          frs.appendFinal(snd).transformed
 
@@ -581,6 +617,8 @@ trait CpsTreeScope[F[_], CT] {
     override def isAsync = true
 
     override def isChanged = true
+
+    override def isLambda = true
 
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.AsyncLambdaCpsTree =
       otherCake.AsyncLambdaCpsTree(
@@ -692,6 +730,8 @@ trait CpsTreeScope[F[_], CT] {
     override def isAsync = true
 
     override def isChanged = true
+
+    override def isLambda = false
 
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.CallChainSubstCpsTree =
       otherCake.CallChainSubstCpsTree(

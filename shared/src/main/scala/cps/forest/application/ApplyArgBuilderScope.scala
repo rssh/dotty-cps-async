@@ -95,35 +95,65 @@ trait ApplyArgBuilderScope[F[_],CT] {
                  throw MacroError(s"Can't find parameter with name $name", posExpr(t))
          case Block(Nil,last) =>
             buildApplyArgRecord(paramsDescriptor,last,cpsCtx,acc)
+         case inlined@Inlined(call,bindings,body) =>
+            if (bindings.isEmpty) 
+               val nested = buildApplyArgRecord(paramsDescriptor, body, cpsCtx,
+                                                acc.copy(records=IndexedSeq.empty)).records.head
+               acc.advance(nested)
+            else
+               runInlined(inlined) match
+                 case inlined@InlinedCpsTree(origin, binding, cpsNested) =>
+                   val nested = buildCpsTreeApplyArgRecord(paramsDescriptor, body, cpsNested, cpsCtx,
+                                                acc.copy(records=IndexedSeq.empty)).records.head
+                   acc.advance(ApplyArgInlinedRecord(inlined, nested))
+                 case nonInlined =>
+                   buildCpsTreeApplyArgRecord(paramsDescriptor, body, nonInlined, cpsCtx, acc)
          case _ =>
             if cpsCtx.flags.debugLevel >= 15 then
                cpsCtx.log(s"paramType=${paramsDescriptor.paramType(acc.paramIndex)}")
                cpsCtx.log(s"byName=${paramsDescriptor.isByName(acc.paramIndex)}")
             val termCpsTree = runRoot(t, TCM.ApplyArg(acc.posIndex) )
-            if cpsCtx.flags.debugLevel >= 15 then
-               cpsCtx.log(s"termCpsTree = ${termCpsTree}")
-               cpsCtx.log(s"termCpsTree.isAsync = ${termCpsTree.isAsync}")
+            buildCpsTreeApplyArgRecord(paramsDescriptor, t, termCpsTree, cpsCtx, acc)
 
-            if (paramsDescriptor.isByName(acc.paramIndex))
-               acc.advance(ApplyArgByNameRecord(t,acc.posIndex,termCpsTree,termCpsTree.isAsync))
-            else
-              if (!termCpsTree.isAsync && termIsNoOrderDepended(t))
-                acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex))
-              else
-                val argName: String = "a" + acc.posIndex // TODO: get name from params
-                // will be the next dotty upgrade
-                //val symbol = Symbol.newVal(Owner.current.symbol,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
-                val symbol = Symbol.newVal(Symbol.spliceOwner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
-                val valDef = symbol.tree match
-                  case v@ValDef(_,_,_) => v
-                  case _ =>
-                    throw MacroError("Impossible internal error, create ValDef but have ${symbol.tree", posExpr(t))
-                val ident = Ref(symbol)
-                if (cpsCtx.flags.debugLevel > 15)
-                    cpsCtx.log(s"buildApplyArg: Precacl, t=$t, i=${acc.posIndex}")
-                acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree,valDef,ident))
        }
     }
+
+    def buildCpsTreeApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, termCpsTree: CpsTree, cpsCtx: TransformationContext[F,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
+       if cpsCtx.flags.debugLevel >= 15 then
+          cpsCtx.log(s"termCpsTree = ${termCpsTree}")
+          cpsCtx.log(s"termCpsTree.isAsync = ${termCpsTree.isAsync}")
+             
+       if (paramsDescriptor.isByName(acc.paramIndex))
+          acc.advance(ApplyArgByNameRecord(t,acc.posIndex,termCpsTree,termCpsTree.isAsync))
+       else
+          if (!termCpsTree.isAsync && termIsNoOrderDepended(t))
+             acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex))
+          else
+             if (termCpsTree.isLambda) 
+               termCpsTree match
+                  case AsyncLambdaCpsTree(originLambda,params,cpsBody,otpe) =>
+                          val nextRecord = ApplyArgLambdaRecord(originLambda,acc.posIndex,cpsBody, false)
+                          acc.advance(nextRecord)
+                  case BlockCpsTree(prevs, last) => 
+                          // TODO: create instance of ApplyArgLambdaBlockRecord   
+                          throw MacroError(s"Lambda inside blocks is not supported in arguments yet", posExpr(t))
+                  case _ =>
+                          throw MacroError(s"Lambda expected", posExpr(t))
+             else
+               val argName: String = "a" + acc.posIndex // TODO: get name from params
+               val symbol = Symbol.newVal(Symbol.spliceOwner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
+               val valDef = symbol.tree match
+                  case v@ValDef(_,_,_) => v
+                  case _ =>
+                    throw MacroError("Impossible internal error, create ValDef but have ${symbol.tree}", posExpr(t))
+               val ident = Ref(symbol)
+               if (cpsCtx.flags.debugLevel > 15)
+                 cpsCtx.log(s"buildApplyArg: Precacl, t=$t, i=${acc.posIndex}")
+               acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree,valDef,ident))
+
+    }
+
+    
 
   }
 

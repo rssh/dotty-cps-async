@@ -25,10 +25,9 @@ class TestSL3:
      var (x,y) = (0L,1L)
 
      var sum = 0L
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
 
-/*
      val reader = async[Future] {
          SLSelectLoop[Future].apply{
             case z: info.read => //sum += z
@@ -41,5 +40,5 @@ class TestSL3:
                               //}
          }
      }
-*/
+
 

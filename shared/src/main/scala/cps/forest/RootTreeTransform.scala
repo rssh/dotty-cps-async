@@ -42,6 +42,12 @@ trait RootTreeTransform[F[_], CT]:
                                               Nil).inCake(thisTransform)
                             )
                             tree.inCake(thisTransform)
+                  case inlined@Inlined(call,bindings,body) =>
+                            val tree = B2.inNestedContext(inlined, marker, muted, scope =>
+                               scope.runInlined(inlined.asInstanceOf[scope.qctx.reflect.Inlined])
+                                    .inCake(thisTransform)
+                            )
+                            tree
                   case _ =>  // TODO: elimi
                     val expr = term.asExpr
                     val monad = cpsCtx.monad
