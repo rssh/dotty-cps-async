@@ -40,6 +40,13 @@ trait IFReader[F[_],A]:
    inline def read():A =
         await(aread())(using cpsMonad)
 
+   def aOptRead(): F[Option[A]]=
+        cpsMonad.pure(value)
+
+   inline def optRead(): Option[A] =
+        await(aOptRead())(using cpsMonad)
+        
+
    def foreach_async(f: A=> F[Unit]): F[Unit] =
          f(value.get)  
 

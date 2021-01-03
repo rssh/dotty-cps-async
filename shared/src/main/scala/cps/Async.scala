@@ -162,7 +162,7 @@ object Async {
                 case returnTerm@Return(expr, from)=>
                    ReturnTransform(cpsCtx).run(returnTerm, from)
                 case constTerm@Literal(_)=>  
-                   ConstTransform(cpsCtx)
+                   ConstTransform.run(cpsCtx, constTerm)
                 case repeatedTerm@Repeated(elems, tpt) =>  
                    RepeatedTransform(cpsCtx).run(repeatedTerm)
                 case _ =>

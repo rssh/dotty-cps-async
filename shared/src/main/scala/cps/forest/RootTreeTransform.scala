@@ -89,7 +89,7 @@ trait RootTreeTransform[F[_], CT]:
            runRoot(qual, TransformationContextMarker.Select, muted) match 
               case rq: AsyncCpsTree =>
                   val cTransformed = rq.transformed.asInstanceOf[qctx.reflect.Term]
-                  CpsTree.impure(Select(cTransformed,term.symbol),term.tpe)
+                  CpsTree.impure(Select(cTransformed,term.symbol),term.tpe.widen)
               case _: PureCpsTree =>
                   CpsTree.pure(term)
        case Ident(name) =>
@@ -118,7 +118,7 @@ trait RootTreeTransform[F[_], CT]:
   def exprToTree(expr: CpsExpr[F,_], e: Term): CpsTree =
      if (expr.isAsync)
          val transformed = expr.transformed.asTerm
-         AwaitSyncCpsTree(transformed, e.tpe)
+         AwaitSyncCpsTree(transformed, e.tpe.widen)
      else
          PureCpsTree(e)
 

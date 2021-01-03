@@ -10,8 +10,8 @@ object ConstTransform:
 
   // we know, that f is match to Const
   //(see rootTransform)
-  def apply[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T])(
-                                           using Quotes): CpsExpr[F,T] =
+  def run[F[_]:Type,T:Type](using Quotes)(cpsCtx: TransformationContext[F,T],
+                                          constTerm: quotes.reflect.Literal):CpsExpr[F,T] =
      CpsExpr.sync(cpsCtx.monad, cpsCtx.patternCode) 
 
 
