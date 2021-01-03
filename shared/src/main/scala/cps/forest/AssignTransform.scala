@@ -41,7 +41,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import quotes.reflect._
      if (!cpsLeft.isAsync) {
         if (!cpsRight.isAsync) 
-            CpsExpr.sync(monad, patternCode)
+            CpsExpr.sync(monad, patternCode, false)
         else    // !cpsLeft.isAsync && cpsRight.isAsync
             CpsExpr.async(monad,
                    cpsRight.map[T]( 

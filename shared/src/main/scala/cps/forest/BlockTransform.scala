@@ -32,7 +32,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                                          TransformationContextMarker.BlockInside(i))
                ValDefTransform.fromBlock(using qctx)(nestCtx, v)
              case _ =>
-               DefCpsExpr(using qctx)(cpsCtx.monad,Seq(),d)
+               DefCpsExpr(using qctx)(cpsCtx.monad,Seq(),d, false)
            }
          case t: Term =>
            // TODO: rootTransform
@@ -110,7 +110,10 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 class DefCpsExpr[F[_]:Type](using qctx: Quotes)(
                      monad: Expr[CpsMonad[F]],
                      prev: Seq[ExprTreeGen],
-                     definition: quotes.reflect.Definition) extends SyncCpsExpr[F, Unit](monad, prev) {
+                     definition: quotes.reflect.Definition,
+                     changed: Boolean) extends SyncCpsExpr[F, Unit](monad, prev) {
+
+  override def isChanged = changed
 
   def last(using Quotes): Expr[Unit] = '{ () }
 
@@ -118,10 +121,10 @@ class DefCpsExpr[F[_]:Type](using qctx: Quotes)(
        if (exprs.isEmpty)
          this
        else
-         new DefCpsExpr(using quotes)(monad,exprs ++: prev,definition)
+         new DefCpsExpr(using quotes)(monad,exprs ++: prev,definition, changed || exprs.exists(_.isChanged)  )
 
   def append[A:Type](chunk: CpsExpr[F,A])(using Quotes): CpsExpr[F,A] =
-       chunk.prependExprs(Seq(StatementExprTreeGen(using this.qctx)(definition))).prependExprs(prev)
+       chunk.prependExprs(Seq(StatementExprTreeGen(using this.qctx)(definition, false))).prependExprs(prev)
 
 
 }

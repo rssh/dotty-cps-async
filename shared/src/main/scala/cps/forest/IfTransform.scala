@@ -26,7 +26,7 @@ object IfTransform:
        if (!cR.isAsync)
          if (!tR.isAsync && !fR.isAsync) 
             isAsync = false
-            CpsExpr.sync(monad, patternCode)
+            CpsExpr.sync(monad, patternCode, cR.isChanged || tR.isChanged || fR.isChanged)
          else
             CpsExpr.async[F,T](monad,
                 '{ if ($cond) 

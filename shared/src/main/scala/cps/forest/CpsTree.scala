@@ -66,19 +66,19 @@ trait CpsTreeScope[F[_], CT] {
      def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
 
-       def safeSeal(t:Term):Expr[Any] =
+       def safeSealAs[T: quoted.Type](t:Term):Expr[T] =
          t.tpe.widen match
            case MethodType(_,_,_) | PolyType(_,_,_) =>
              val ext = t.etaExpand(Symbol.spliceOwner)
-             ext.asExpr
-           case _ => t.asExpr
+             ext.asExprOf[T]
+           case _ => t.asExprOf[T]
 
        syncOrigin match
          case Some(syncTerm) =>
-             CpsExpr.sync(monad,safeSeal(syncTerm).asExprOf[T])
+             CpsExpr.sync(monad,safeSealAs[T](syncTerm), isChanged)
          case None =>
              try {
-               val sealedTransformed = safeSeal(transformed).asExprOf[F[T]]
+               val sealedTransformed = safeSealAs[F[T]](transformed)
                CpsExpr.async[F,T](monad, sealedTransformed)
              } catch {
                case ex: Throwable =>

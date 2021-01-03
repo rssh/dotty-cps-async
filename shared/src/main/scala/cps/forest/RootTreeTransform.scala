@@ -115,12 +115,18 @@ trait RootTreeTransform[F[_], CT]:
      r
   }
 
-  def exprToTree(expr: CpsExpr[F,_], e: Term): CpsTree =
-     if (expr.isAsync)
-         val transformed = expr.transformed.asTerm
-         AwaitSyncCpsTree(transformed, e.tpe.widen)
-     else
-         PureCpsTree(e)
+  def exprToTree[T](expr: CpsExpr[F,T], e: Term): CpsTree =
+     expr.syncOrigin match
+       case Some(origin) => PureCpsTree(origin.asTerm, false)
+       case None => 
+           val transformed = expr.transformed.asTerm
+           AwaitSyncCpsTree(transformed, e.tpe.widen)
+     
+     //if (expr.isAsync)
+     //    val transformed = expr.transformed.asTerm
+     //    AwaitSyncCpsTree(transformed, e.tpe.widen)
+     //else
+         //PureCpsTree(e)
 
   object B2{
 

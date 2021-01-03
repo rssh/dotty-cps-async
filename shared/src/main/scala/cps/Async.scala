@@ -142,8 +142,8 @@ object Async {
                    IdentTransform(cpsCtx).run(name)
                 case Typed(expr, tp) =>
                    TypedTransform(cpsCtx).run(expr,tp)
-                case Try(body, cases, finalizer) =>
-                   TryTransform(cpsCtx).run(body,cases,finalizer)
+                case tryTerm@Try(body, cases, finalizer) =>
+                   TryTransform(cpsCtx).run(tryTerm,body,cases,finalizer)
                 case New(typeTree) =>
                    NewTransform(cpsCtx).run(typeTree)
                 case thisTerm@This(qual) =>

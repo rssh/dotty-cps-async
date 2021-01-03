@@ -24,7 +24,11 @@ object WhileTransform:
      val unitBuilder = {
        if (!cpsCond.isAsync)
          if (!cpsRepeat.isAsync) 
-            CpsExpr.sync(monad, patternCode)
+            if (!cpsCond.isChanged && !cpsRepeat.isChanged)
+               CpsExpr.sync(monad, patternCode, false)
+            else 
+               val term = While(cpsCond.syncOrigin.get.asTerm, cpsRepeat.syncOrigin.get.asTerm)
+               CpsExpr.sync(monad, term.asExprOf[T], true)
          else
             CpsExpr.async[F,Unit](monad,
                // TODO: add name to whileFun ?

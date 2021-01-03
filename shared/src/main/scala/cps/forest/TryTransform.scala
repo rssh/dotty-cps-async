@@ -11,7 +11,8 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
   import cpsCtx._
 
   // case Try(body, cases, finalizer)
-  def run(using Quotes)(body: quotes.reflect.Term,
+  def run(using Quotes)(origin: quotes.reflect.Try,
+                        body: quotes.reflect.Term,
                         cases: List[quotes.reflect.CaseDef],
                         finalizer: Option[quotes.reflect.Term]): CpsExpr[F,T] =
      import quotes.reflect._
@@ -21,14 +22,22 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                                   cd.rhs.asExprOf[T],
                                                   cpsCtx, TCM.TryCase(i)))
      val isCaseDefsAsync = cpsCaseDefs.exists(_.isAsync)
+     val isCaseDefsChanged = cpsCaseDefs.exists(_.isChanged)
      val optCpsFinalizer = finalizer.map( x => Async.nestTransform[F,T,Unit](
                                         x.asExprOf[Unit], cpsCtx, TCM.TryFinally))
      val isFinalizerAsync = optCpsFinalizer.exists(_.isAsync)
+     val isFinalizerChanged = optCpsFinalizer.exists(_.isChanged)
      val isAsync = cpsBody.isAsync || isCaseDefsAsync || isFinalizerAsync
+     val isChanged = cpsBody.isChanged || isCaseDefsChanged || isFinalizerChanged
 
      def makeAsyncCaseDefs(): List[CaseDef] =
         ((cases lazyZip cpsCaseDefs) map { (frs,snd) =>
            CaseDef(frs.pattern, frs.guard, snd.transformed.asTerm)
+        }).toList
+
+     def makeSyncCaseDefs(): List[CaseDef] =
+        ((cases lazyZip cpsCaseDefs) map { (frs,snd) =>
+           CaseDef(frs.pattern, frs.guard, snd.syncOrigin.get.asTerm)
         }).toList
 
      def makeRestoreExpr(): Expr[Throwable => F[T]]  =
@@ -38,7 +47,16 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
 
      val builder = if (!isAsync) {
-                      CpsExpr.sync(monad, patternCode)
+                      if (!isChanged) {
+                         CpsExpr.sync(monad, patternCode, false)
+                      } else {
+                         val expr = quotes.reflect.Try.copy(origin)(
+                                            cpsBody.syncOrigin.get.asTerm, 
+                                            makeSyncCaseDefs(),
+                                            optCpsFinalizer.map(_.syncOrigin.get.asTerm)
+                         ).asExprOf[T]
+                         CpsExpr.sync(monad, expr, true)
+                      }
                    } else {
                       val errorMonad = if (monad.asTerm.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
                                           monad.asExprOf[CpsTryMonad[F]]
