@@ -16,6 +16,13 @@ trait MatchTreeTransform[F[_], CT]:
 
   // case selectTerm @ Select(qualifier,name) 
   def runMatch( matchTerm: Match ): CpsTree =
+     if (cpsCtx.flags.debugLevel >= 15) then
+         cpsCtx.log(s"matchTransform: matchTerm.tpe=${matchTerm.tpe}")
+         cpsCtx.log(s"matchTransform: matchTerm.tpe.widen=${matchTerm.tpe.widen}")
+         cpsCtx.log(s"matchTransform: veryWiden(matchTerm.tpe)=${TransformUtil.veryWiden(matchTerm.tpe)}")
+     //val widenOtpe = TransformUtil.veryWiden(matchTerm.tpe)
+     //val otpe = widenOtpe
+     val otpe = matchTerm.tpe
      val scrutinee = matchTerm.scrutinee
      val cpsScrutinee = runRoot(scrutinee, TCM.MatchScrutinee)
      val cpsCases = matchTerm.cases.map( caseDef => runRoot(caseDef.rhs, TCM.MatchCase ) )
@@ -32,12 +39,12 @@ trait MatchTreeTransform[F[_], CT]:
            CpsTree.pure(matchTerm)
         else 
            val nTree = Match.copy(matchTerm)(scrutinee, nCases)
-           CpsTree.impure(nTree, matchTerm.tpe)
+           CpsTree.impure(nTree, otpe)
      else
         if (!asyncCases) 
-           cpsScrutinee.monadMap( x => Match(x, nCases), matchTerm.tpe )
+           cpsScrutinee.monadMap( x => Match(x, nCases), otpe )
         else
-           cpsScrutinee.monadFlatMap( x => Match(x, nCases), matchTerm.tpe )
+           cpsScrutinee.monadFlatMap( x => Match(x, nCases), otpe )
 
 
    

@@ -117,7 +117,8 @@ trait RootTreeTransform[F[_], CT]:
 
   def exprToTree[T](expr: CpsExpr[F,T], e: Term): CpsTree =
      expr.syncOrigin match
-       case Some(origin) => PureCpsTree(origin.asTerm, false)
+       case Some(origin) => 
+            PureCpsTree(origin.asTerm, expr.isChanged)
        case None => 
            val transformed = expr.transformed.asTerm
            AwaitSyncCpsTree(transformed, e.tpe.widen)

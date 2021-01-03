@@ -63,8 +63,27 @@ object TransformUtil:
     }
     argTransformer.transformTerm(body)(owner)
 
+  /**
+   * widen, which works over 'or' and 'and' types.
+   *  (bug in dotty?)
+   **/
+  def veryWiden(using qctx: Quotes)(tp: qctx.reflect.TypeRepr): qctx.reflect.TypeRepr =
+    import quotes.reflect._
+    tp match
+      case OrType(lhs,rhs) => val nLhs = veryWiden(lhs)
+                              val nRhs = veryWiden(rhs)
+                              if (nLhs =:= nRhs) then
+                                  nLhs
+                              else
+                                  OrType(veryWiden(lhs),veryWiden(rhs))
+      case other => tp.widen
 
 
-
+  def ensureTyped(using qctx: Quotes)(term: qctx.reflect.Term, tp: qctx.reflect.TypeRepr): qctx.reflect.Term =
+     import quotes.reflect._
+     if (term.tpe =:= tp) then
+         term
+     else
+         Typed(term, Inferred(tp))
 
 
