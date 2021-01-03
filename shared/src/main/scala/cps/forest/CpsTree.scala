@@ -63,6 +63,11 @@ trait CpsTreeScope[F[_], CT] {
      def rtpe: TypeRepr =
         TypeRepr.of[F].appliedTo(List(otpe.widen))
 
+     /**
+      * cast CpsTree to keep newOtpe.type inside monad.
+      **/
+     def castOtpe(newOtpe: TypeRepr):CpsTree
+
      def toResult[T: quoted.Type] : CpsExpr[F,T] =
        import cpsCtx._
 
@@ -71,14 +76,21 @@ trait CpsTreeScope[F[_], CT] {
            case MethodType(_,_,_) | PolyType(_,_,_) =>
              val ext = t.etaExpand(Symbol.spliceOwner)
              ext.asExprOf[T]
-           case _ => t.asExprOf[T]
+           case _ => 
+             t.asExprOf[T]
 
        syncOrigin match
          case Some(syncTerm) =>
              CpsExpr.sync(monad,safeSealAs[T](syncTerm), isChanged)
          case None =>
              try {
-               val sealedTransformed = safeSealAs[F[T]](transformed)
+               val sealedTransformed = 
+                    if (transformed.tpe <:< TypeRepr.of[F[T]]) then
+                       safeSealAs[F[T]](transformed)
+                    else
+                       // when F[_] is not covariant, but we know, that
+                       // otpe <: T and we can map Typing somewhere inside the expression
+                       safeSealAs[F[T]](castOtpe(TypeRepr.of[T]).transformed)
                CpsExpr.async[F,T](monad, sealedTransformed)
              } catch {
                case ex: Throwable =>
@@ -141,6 +153,12 @@ trait CpsTreeScope[F[_], CT] {
 
     def otpe: TypeRepr = origin.tpe.widen
 
+    def castOtpe(newOtpe: TypeRepr): CpsTree =
+         if (newOtpe =:= otpe)
+            this
+         else
+            PureCpsTree(Typed(origin, Inferred(newOtpe)), true)
+
     def syncOrigin: Option[Term] = Some(origin)
 
     def transformed: Term =
@@ -191,6 +209,7 @@ trait CpsTreeScope[F[_], CT] {
           AwaitAsyncCpsTree(this, newOtpe)
 
 
+
   case class AwaitSyncCpsTree(val origin: Term, val otpe: TypeRepr) extends AsyncCpsTree:
 
     def isLambda = false
@@ -205,6 +224,12 @@ trait CpsTreeScope[F[_], CT] {
           monadMap(_.select(symbol), ntpe)
           //was: AwaitSyncCpsTree(origin.select(symbol), ntpe)
 
+    def castOtpe(newOtpe: TypeRepr): CpsTree =
+          if (otpe =:= newOtpe) then
+              this
+          else
+              monadMap(x => Typed(x,Inferred(newOtpe)), newOtpe)
+
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.AwaitSyncCpsTree =
           otherCake.AwaitSyncCpsTree(otherCake.adopt(origin),
                                      otherCake.adoptType(otpe))
@@ -218,6 +243,12 @@ trait CpsTreeScope[F[_], CT] {
 
     def select(symbol: Symbol, ntpe: TypeRepr): CpsTree =
        AwaitSyncCpsTree(transformed.select(symbol), ntpe)
+
+    def castOtpe(newOtpe: TypeRepr): CpsTree =
+          if (otpe =:= newOtpe)
+             this
+          else
+             FlatMappedCpsTree(nested, (t:Term)=>Typed(t,Inferred(newOtpe)), newOtpe)
 
     def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
           AwaitSyncCpsTree(f(transformed), ntpe)
@@ -277,6 +308,10 @@ trait CpsTreeScope[F[_], CT] {
     override def applyAwait(newOtpe: TypeRepr): CpsTree =
        FlatMappedCpsTree(prev, op, newOtpe)
 
+    def castOtpe(newOtpe: TypeRepr): CpsTree =
+       MappedCpsTree(prev, term => Typed(op(term),Inferred(newOtpe)), newOtpe)
+
+
     override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.MappedCpsTree =
        otherCake.MappedCpsTree(prev.inCake(otherCake),
                                op.asInstanceOf[otherCake.qctx.reflect.Term => otherCake.qctx.reflect.Term],
@@ -304,6 +339,9 @@ trait CpsTreeScope[F[_], CT] {
     override def monadFlatMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
           // this.flatMap(f) = prev.flatMap(opm).flatMap(f)
           FlatMappedCpsTree(this,f,ntpe)
+
+    def castOtpe(ntpe: TypeRepr): CpsTree =
+          FlatMappedCpsTree(prev, t => Typed(opm(t),Inferred(ntpe)), ntpe)
 
     def transformed: Term = {
         // ${cpsCtx.monad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
@@ -385,6 +423,9 @@ trait CpsTreeScope[F[_], CT] {
 
     override def rtpe: TypeRepr = last.rtpe
 
+    override def castOtpe(ntpe: TypeRepr): CpsTree =
+        BlockCpsTree(prevs, last.castOtpe(ntpe))
+
     override def applyAwait(newOtpe: TypeRepr): CpsTree =
         BlockCpsTree(prevs, last.applyAwait(newOtpe))
 
@@ -443,6 +484,9 @@ trait CpsTreeScope[F[_], CT] {
     def otpe: TypeRepr = nested.otpe
 
     override def rtpe: TypeRepr = nested.rtpe
+
+    override def castOtpe(ntpe: TypeRepr): CpsTree =
+         InlinedCpsTree(origin, bindings, nested.castOtpe(ntpe))
 
     override def applyAwait(newOtpe:TypeRepr): CpsTree =
          InlinedCpsTree(origin, bindings, nested.applyAwait(newOtpe))
@@ -512,6 +556,9 @@ trait CpsTreeScope[F[_], CT] {
     override def otpe: TypeRepr = nested.otpe
 
     override def rtpe: TypeRepr = nested.rtpe
+
+    override def castOtpe(ntpe: TypeRepr): CpsTree =
+        ValCpsTree(valDef, rightPart, nested.castOtpe(ntpe))
 
     override def applyAwait(newOtpe: TypeRepr): CpsTree =
         ValCpsTree(valDef, rightPart, nested.applyAwait(newOtpe))
@@ -603,6 +650,9 @@ trait CpsTreeScope[F[_], CT] {
     override def otpe: TypeRepr = snd.otpe
 
     override def rtpe: TypeRepr = snd.rtpe
+
+    override def castOtpe(ntpe: TypeRepr): CpsTree =
+         AppendCpsTree(frs, snd.castOtpe(ntpe))
 
     override def inCake[F1[_],T1](otherScope: TreeTransformScope[F1,T1]): otherScope.AppendCpsTree =
          otherScope.AppendCpsTree(frs.inCake(otherScope), snd.inCake(otherScope))
@@ -697,6 +747,9 @@ trait CpsTreeScope[F[_], CT] {
     override def applyAwait(newOtpe: TypeRepr): CpsTree =
        throw MacroError("async lambda can't be an await argument", posExprs(originLambda) )
 
+    override def castOtpe(ntpe: TypeRepr): CpsTree =
+       AsyncLambdaCpsTree(originLambda, params, body.castOtpe(ntpe), ntpe)
+
     // here value is discarded.
     def appendFinal(next: CpsTree): CpsTree =
       next match
@@ -765,6 +818,8 @@ trait CpsTreeScope[F[_], CT] {
     override def applyAwait(newOtpe: TypeRepr): CpsTree =
        prunned.applyAwait(newOtpe)
 
+    override def castOtpe(newOtpe: TypeRepr): CpsTree =
+       prunned.castOtpe(newOtpe)
 
   end CallChainSubstCpsTree
 
