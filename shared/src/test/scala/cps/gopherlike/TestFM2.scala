@@ -16,9 +16,9 @@ class TestFM2:
      val bChannel = new CIFChannel[F,B]()
 
      def run(): F[Unit] = 
-      implicit val printCode = cps.macroFlags.PrintCode
+      //implicit val printCode = cps.macroFlags.PrintCode
       //implicit val printTree = cps.macroFlags.PrintTree
-      implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
       async[F]{
         while{
           prev.optRead() match
