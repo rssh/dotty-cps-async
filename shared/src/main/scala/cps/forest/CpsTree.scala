@@ -84,13 +84,17 @@ trait CpsTreeScope[F[_], CT] {
              CpsExpr.sync(monad,safeSealAs[T](syncTerm), isChanged)
          case None =>
              try {
+               val candidate = transformed
                val sealedTransformed = 
-                    if (transformed.tpe <:< TypeRepr.of[F[T]]) then
-                       safeSealAs[F[T]](transformed)
-                    else
+                    if (candidate.tpe <:< TypeRepr.of[F[T]]) then
+                       safeSealAs[F[T]](candidate)
+                    else if (otpe <:< TypeRepr.of[T]) then
                        // when F[_] is not covariant, but we know, that
                        // otpe <: T and we can map Typing somewhere inside the expression
                        safeSealAs[F[T]](castOtpe(TypeRepr.of[T]).transformed)
+                    else
+                       // we should not cast to F[T]
+                       safeSealAs[F[T]](candidate)
                CpsExpr.async[F,T](monad, sealedTransformed)
              } catch {
                case ex: Throwable =>
@@ -244,11 +248,11 @@ trait CpsTreeScope[F[_], CT] {
     def select(symbol: Symbol, ntpe: TypeRepr): CpsTree =
        AwaitSyncCpsTree(transformed.select(symbol), ntpe)
 
-    def castOtpe(newOtpe: TypeRepr): CpsTree =
-          if (otpe =:= newOtpe)
+    def castOtpe(ntpe: TypeRepr): CpsTree =
+          if (otpe =:= ntpe)
              this
           else
-             FlatMappedCpsTree(nested, (t:Term)=>Typed(t,Inferred(newOtpe)), newOtpe)
+             MappedCpsTree(this, t => Typed(t,Inferred(ntpe)), ntpe)
 
     def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
           AwaitSyncCpsTree(f(transformed), ntpe)
@@ -284,7 +288,8 @@ trait CpsTreeScope[F[_], CT] {
 
     def transformed: Term = {
           val untmapTerm = cpsCtx.monad.asTerm.select(mapSymbol)
-          val wPrevOtpe = prev.otpe.widen
+          //val wPrevOtpe = prev.otpe.widen
+          val wPrevOtpe = TransformUtil.veryWiden(prev.otpe.widen)
           val tmapTerm = untmapTerm.appliedToTypes(List(wPrevOtpe,otpe))
           val r = tmapTerm.appliedToArgss(
                      List(List(prev.transformed),
@@ -341,22 +346,25 @@ trait CpsTreeScope[F[_], CT] {
           FlatMappedCpsTree(this,f,ntpe)
 
     def castOtpe(ntpe: TypeRepr): CpsTree =
-          FlatMappedCpsTree(prev, t => Typed(opm(t),Inferred(ntpe)), ntpe)
+          MappedCpsTree(this, t => Typed(t,Inferred(ntpe)), ntpe)
 
     def transformed: Term = {
         // ${cpsCtx.monad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
         val monad = cpsCtx.monad.asTerm
         val untpFlatMapTerm = monad.select(flatMapSymbol)
-        val wPrevOtpe = prev.otpe.widen
-        val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,otpe))
+        //val wPrevOtpe = prev.otpe.widen
+        val wPrevOtpe = TransformUtil.veryWiden(prev.otpe)
+        //val wOtpe = otpe.widen
+        val wOtpe = TransformUtil.veryWiden(otpe)
+        val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
         val r = tpFlatMapTerm.appliedToArgss(
             List(
-              List(prev.transformed),
+              List(prev.castOtpe(wPrevOtpe).transformed),
               List(
                 Lambda(
                   Symbol.spliceOwner,
                   MethodType(List("x"))(mt => List(wPrevOtpe),
-                                        mt => TypeRepr.of[F].appliedTo(otpe)),
+                                        mt => TypeRepr.of[F].appliedTo(wOtpe)),
                   (owner,opArgs) => opm(opArgs.head.asInstanceOf[Term]).changeOwner(owner)
                 )
              )
