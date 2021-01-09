@@ -39,6 +39,7 @@ class SLSelectLoop[F[_]:CpsMonad]:
       SLSelectLoop.loopImpl[F]('pf, '{summonInline[CpsMonad[F]]})  
     }    
   
+  
 
   def runAsync():F[Unit] =
     if (readers.isEmpty)
@@ -49,10 +50,29 @@ class SLSelectLoop[F[_]:CpsMonad]:
   inline def run(): Unit =
     await(runAsync())
       
+  def fold[S](s0:S)(step: (S,SLSelectLoop[F])=> S|SLSelectLoop.Done[S]): S = {
+     step(s0, new SLSelectLoop[F] ) match {
+         case SLSelectLoop.Done(s) => s.asInstanceOf[S]
+         case other => fold(other.asInstanceOf[S])(step)
+     }
+  }
 
+  def fold_async[S](s0:S)(step: (S,SLSelectLoop[F])=> F[S|SLSelectLoop.Done[S]]): F[S] = {
+     summon[CpsMonad[F]].flatMap(step(s0, new SLSelectLoop[F])){ r =>
+        r match
+          case SLSelectLoop.Done(s) => summon[CpsMonad[F]].pure(s.asInstanceOf[S])
+          case other => fold_async(other.asInstanceOf[S])(step)
+     }
+  }
+
+  inline def afold[S](s0:S)(inline step: (S,SLSelectLoop[F]) => S|SLSelectLoop.Done[S]): F[S] =
+     async[F] {
+       fold(s0)(step)
+     }
 
 object SLSelectLoop:
 
+  case class Done[S](s:S)
 
   sealed trait SelectGroupExpr[F[_]]:
     def  toExpr: Expr[SLSelectLoop[F]]

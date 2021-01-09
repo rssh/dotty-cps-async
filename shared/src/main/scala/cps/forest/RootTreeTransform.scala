@@ -59,9 +59,13 @@ trait RootTreeTransform[F[_], CT]:
                              val nFlags = cpsCtx.flags.copy(muted = muted || cpsCtx.flags.muted)
                              Async.nestTransform(term.asExprOf[et], cpsCtx.copy(flags = nFlags), marker)
                         } catch {
-                             case e: Throwable =>
-                                println(s"can't translate tree: $term" )
-                                throw e;
+                             case e: MacroError  =>
+                                if (!e.printed) then
+                                  println(s"can't translate tree: ${term.show}" )
+                                  e.printStackTrace()
+                                  throw e.copy(printed=true);
+                                else
+                                  throw e
                         }
                         val r = exprToTree(rCpsExpr, term)
                         if cpsCtx.flags.debugLevel >= 10 then

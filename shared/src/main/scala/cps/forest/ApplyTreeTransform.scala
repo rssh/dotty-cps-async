@@ -473,6 +473,7 @@ trait ApplyTreeTransform[F[_],CT]:
        //           Apply(TypeApply(shiftCaller(x),targs),args)
        case Apply(x, args1) =>
                   // TODO: shift args
+                  ???
                   Apply(shiftedApply(x,args1,args1,Set()),shiftedArgs)
        case Lambda(params, body) =>
                   val shiftedSymbols = params.zipWithIndex.filter{
@@ -483,8 +484,12 @@ trait ApplyTreeTransform[F[_],CT]:
        case Block(statements, last) =>
                   Block(statements, shiftedApply(last, originArgs, shiftedArgs, shiftedIndexes))
        case _ =>
-                  val errorExpr = posExpr(term)
-                  throw MacroError(s"Can't shift caller ${term}",errorExpr)
+                  report.warning(s"""
+                     Need to shift $term, tpe.widen=${term.tpe.widen} 
+                     originArgs=${originArgs}
+                     shiftedArgs=${shiftedArgs}
+                  """, posExprs(term))
+                  throw MacroError(s"Can't shift caller ${term}",posExprs(term))
 
   end shiftedApply
 
@@ -510,7 +515,16 @@ trait ApplyTreeTransform[F[_],CT]:
             //val sym = Symbol.newVal(Symbol.currentOwner, "x", t.widen, Flags.EmptyFlags, Symbol.noSymbol)   
             //val shifted = buildShiftedApply(Ref(x), argRecords, withAsync, tails)
             // TODO: monadFlatMap should accept lambda-expression
-            cpsFun.monadFlatMap(v => buildShiftedApply(v,argRecords, withAsync, tails), applyTpe)
+            cpsFun.monadFlatMap({ v =>
+               try {
+                  buildShiftedApply(v,argRecords, withAsync, tails)
+               } catch {
+                  case ex: MacroError =>
+                    println(s"error during buildShiftedApply for applyTerm=${applyTerm.show}")
+                    println(s"fun=${fun.show}")
+                    throw ex;
+               }
+            }, applyTpe)
         else
           val args = argRecords.map(_.identArg(withAsync)).toList
           val tailArgss = tails.map(_.map(_.identArg(withAsync)).toList)
@@ -563,6 +577,7 @@ trait ApplyTreeTransform[F[_],CT]:
       val shiftedArgs = argRecords.map(_.shift().identArg(withAsync)).toList
       val originArgs = argRecords.map(_.term).toList
       if (cpsCtx.flags.debugLevel >= 15)
+          cpsCtx.log(s"buildShiftedApply::fun=${fun}")
           cpsCtx.log(s"buildShiftedApply::argRecords=${argRecords}")
           cpsCtx.log(s"buildShiftedApply::shiftedArgs=${shiftedArgs}")
           cpsCtx.log(s"buildShiftedApply::tails=${tails}")
