@@ -7,10 +7,9 @@ class MapOpsAsyncShift[K,V, CC[KX,VX] <: MapOps[KX,VX,CC,CC[KX,VX]] with CI[(KX,
                             CI[X] <: Iterable[X] & IterableOps[X,CI,CI[X]],
                                                                  CKV <: CC[K,V] with PartialFunction[K,V] ] extends
                                                                        IterableOpsAsyncShift[(K,V),CI,CKV]
-                                                                      with
-                                                                       PartialFunctionAsyncShiftBase[K,V, CKV]
-                                                                      with
-                                                                       AsyncShift[CKV]:
+                                                                      with PartialFunctionAsyncShiftBase[K,V, CKV]
+                                                                      with AsyncShift[CKV]:
+                                                                      
 
  def flatMap[F[_], K2, V2](c: CKV, m: CpsMonad[F])(f: ((K, V)) => F[IterableOnce[(K2, V2)]]): F[CC[K2, V2]] =
    val s0 = m.pure(c.mapFactory.newBuilder[K2,V2])
