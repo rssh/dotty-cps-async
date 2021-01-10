@@ -16,16 +16,10 @@ trait SelectOuterTreeTransform[F[_], CT]:
   def runSelectOuter( term: SelectOuter ): CpsTree =
      val qual = runRoot(term.qualifier, TransformationContextMarker.SelectOuter)
      if (!qual.isChanged)
+        // TODO: mb not use pure ?
         CpsTree.pure(term)
      else
-        term match
-          case Select(q1, symbol) =>
-                 // TODO: TypeApply can live in qual
-                 SelectTypeApplyCpsTree(q1,List(),List(SelectTypeApplyRecord(symbol,List(),term.level)))
-          case _ =>
-                 throw MacroError("Expected that SelectOuter also match Select", posExprs(term))
-        //val r = qual.applyTerm1(t => SelectOuter(t, term.name, term.level), term.tpe)
-        r
+        SelectTypeApplyCpsTree(qual,List(),List(SelectTypeApplyRecord(term.symbol,List(),term.level)),term.tpe)
 
 
 object SelectOuterTreeTransform:

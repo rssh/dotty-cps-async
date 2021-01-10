@@ -336,7 +336,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
 
 
-  def shiftedApply(term: Term, originArgs:List[Term], shiftedArgs: List[Term], shiftedIndexes:Set[Int]): Term =
+  def shiftedApply(cpsTree: CpsTree, term: Term, originArgs:List[Term], shiftedArgs: List[Term], shiftedIndexes:Set[Int]): Term =
 
     val monad = cpsCtx.monad.asTerm
 
@@ -474,7 +474,7 @@ trait ApplyTreeTransform[F[_],CT]:
        case Apply(x, args1) =>
                   // TODO: shift args
                   ???
-                  Apply(shiftedApply(x,args1,args1,Set()),shiftedArgs)
+                  //Apply(shiftedApply(x,args1,args1,Set()),shiftedArgs)
        case Lambda(params, body) =>
                   val shiftedSymbols = params.zipWithIndex.filter{
                       (p,i) => shiftedIndexes.contains(i)
@@ -482,7 +482,8 @@ trait ApplyTreeTransform[F[_],CT]:
                   val nBody = asyncShift(body, shiftedSymbols)
                   ???
        case Block(statements, last) =>
-                  Block(statements, shiftedApply(last, originArgs, shiftedArgs, shiftedIndexes))
+                  // TODO: change cpsFun appropriative
+                  Block(statements, shiftedApply(cpsTree, last, originArgs, shiftedArgs, shiftedIndexes))
        case _ =>
                   report.warning(s"""
                      Need to shift $term, tpe.widen=${term.tpe.widen} 
@@ -507,7 +508,7 @@ trait ApplyTreeTransform[F[_],CT]:
         val applyTpe = applyTerm.tpe
         if (withShiftedLambda)
           if (cpsFun.isSync || inShiftedCallChain)
-            val shifted = buildShiftedApply(fun, argRecords, withAsync, tails)
+            val shifted = buildShiftedApply(cpsFun, fun, argRecords, withAsync, tails)
             if (cpsCtx.flags.debugLevel >= 15)
                cpsCtx.log(s"buildApply: shifted=${safeShow(shifted)}")
             shiftedResultCpsTree(applyTerm, shifted)
@@ -515,9 +516,11 @@ trait ApplyTreeTransform[F[_],CT]:
             //val sym = Symbol.newVal(Symbol.currentOwner, "x", t.widen, Flags.EmptyFlags, Symbol.noSymbol)   
             //val shifted = buildShiftedApply(Ref(x), argRecords, withAsync, tails)
             // TODO: monadFlatMap should accept lambda-expression
+            println(s"cpsFun=${cpsFun}")
+            println(s"cpsFun.transformed=${cpsFun.transformed.show}")
             cpsFun.monadFlatMap({ v =>
                try {
-                  buildShiftedApply(v,argRecords, withAsync, tails)
+                  buildShiftedApply(cpsFun, v,argRecords, withAsync, tails)
                } catch {
                   case ex: MacroError =>
                     println(s"error during buildShiftedApply for applyTerm=${applyTerm.show}")
@@ -569,6 +572,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
 
   def buildShiftedApply(
+                        cpsFun: CpsTree,
                         fun: Term,
                         argRecords:Seq[ApplyArgRecord],
                         withAsync: Boolean,
@@ -581,7 +585,7 @@ trait ApplyTreeTransform[F[_],CT]:
           cpsCtx.log(s"buildShiftedApply::argRecords=${argRecords}")
           cpsCtx.log(s"buildShiftedApply::shiftedArgs=${shiftedArgs}")
           cpsCtx.log(s"buildShiftedApply::tails=${tails}")
-      val shiftedApplyHead = shiftedApply(fun, originArgs, shiftedArgs, shiftedIndexes.toSet)
+      val shiftedApplyHead = shiftedApply(cpsFun, fun, originArgs, shiftedArgs, shiftedIndexes.toSet)
       val shiftedTails = tails.map(_.map(_.shift().identArg(withAsync)).toList)
       val r = shiftedApplyHead.appliedToArgss(shiftedTails)
       if (cpsCtx.flags.debugLevel >= 15)
