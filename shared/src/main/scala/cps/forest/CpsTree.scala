@@ -33,7 +33,8 @@ trait CpsTreeScope[F[_], CT] {
 
      def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree
 
-     def select(symbol: Symbol, ntpe: TypeRepr): CpsTree = SelectCpsTree(this, symbol, ntpe)
+     def select(symbol: Symbol, ntpe: TypeRepr): CpsTree = 
+          SelectTypeApplyCpsTree(this, List.empty, List(SelectTypeApplyRecord(symbol,List.empty)), ntpe)
 
      def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree
 
@@ -834,30 +835,40 @@ trait CpsTreeScope[F[_], CT] {
 
   end CallChainSubstCpsTree
 
-  case class SelectTypeApplyRecord(symbol: Symbol, targs: List[TypeTree], level: Int)
+  case class SelectTypeApplyRecord(symbol: Symbol, targs: List[TypeTree], level: Int = 0):
+     def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.SelectTypeApplyRecord =
+         otherCake.SelectTypeApplyRecord(symbol.asInstanceOf[otherCake.qctx.reflect.Symbol],
+                                        targs.map(_.asInstanceOf[otherCake.qctx.reflect.TypeTree]))
+                                         
 
   /**
    * represent select expression, which can be in monad or outside monad.
+   *
+   *  selects are reversed - i.e.most internal at the end.
+   *  constructor is not devoted to used directly: use SelectTypeApplyCpsTree.create instead.
    **/
-  case class SelectTypeApplyCpsTree(nested: CpsTree, 
+  case class SelectTypeApplyCpsTree(
+                                    nested: CpsTree, 
                                     targs:List[TypeTree], 
-                                    selectors: List[SelectTypeApplyRecord],
-                                    otpe: TypeRepr) extends CpsTree:
+                                    selects: List[SelectTypeApplyRecord],
+                                    otpe: TypeRepr,
+                                    changed: Boolean) extends CpsTree:
 
     override def isAsync = nested.isAsync
 
-    override def isChanged = nested.isChanged
+    override def isChanged = nested.isChanged || changed
 
     override def isLambda = nested.isLambda
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.SelectCpsTree =
-       otherCake.SelectCpsTree(nested.inCake(otherCake),
-                               symbol.asInstanceOf[otherCake.qctx.reflect.Symbol],
+    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.SelectTypeApplyCpsTree =
+       otherCake.SelectTypeApplyCpsTree(nested.inCake(otherCake),
+                               targs.map(_.asInstanceOf[otherCake.qctx.reflect.TypeTree]),
+                               selects.map(_.inCake(otherCake)),
                                otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr])
 
     def apply(term:Term):Term =
          val t1 = if (targs.isEmpty) term else TypeApply(term, targs)
-         selectors.foldLeft(t1){ (s,e) =>
+         selects.foldRight(t1){ (e,s) =>
             val t2 = if (e.level == 0) then Select(s, e.symbol) else SelectOuter(s, e.symbol.name, e.level)
             if e.targs.isEmpty then t2 else TypeApply(t2,targs)
          }
@@ -876,29 +887,51 @@ trait CpsTreeScope[F[_], CT] {
            case FlatMappedCpsTree(prev, opm, nOtpe) =>
              FlatMappedCpsTree(prev, t => apply(opm(t)), otpe).transformed
            case AppendCpsTree(frs, snd) =>
-             // impossible by constration, but let's duplicated
-             AppendCpsTree(frs, SelectTypeApplyCpsTree(snd,targs,selectors)).transformed
+             AppendCpsTree(frs, SelectTypeApplyCpsTree.create(snd,targs,selects), otpe).transformed
            case BlockCpsTree(stats, last) =>
-             BlockCpsTree(stats, SelectTypeApplyCpsTree(last,targs, selectors)).transformed
+             BlockCpsTree(stats, SelectTypeApplyCpsTree.create(last,targs, selects, otpe)).transformed
            case InlinedCpsTree(origin, bindings,  nested) =>
-             InlinedCpsTree(origin, bindings, SelectTypeApplyCpsTree(nested,targs, selectors, otpe)).transformed
+             InlinedCpsTree(origin, bindings, SelectTypeApplyCpsTree.create(nested,targs, selects, otpe)).transformed
            case ValCpsTree(valDef, rightPart, nested, canBeLambda) =>
              ValCpsTree(valDef, rightPart, nested.select(symbol,otpe)).transformed
            case AsyncLambdaCpsTree(origin, params, body, nOtpe) =>
              ???
            case CallChainSubstCpsTree(origin, shifted, nOtpe) =>
-             val select = Select.unique(shifted,symbol.name)
-             shiftedResultCpsTree(origin, select).transformed
-           case SelectCpsTree(nNested, nSymbol, nOtpe) =>
-    
+             if (!targs.isEmpty) then
+                // targs is already should be here
+                throw MacroException("CallChainSubstCpsTree already contains applied targs", posExprs(origin))
+             selects.reverse match    
+                case head::tail =>
+                   val select = Select.unique(shifted,head.symbol.name)
+                   val selectTypeApply = if (head.targs.isEmpty) select else TypeApply(select,targs)
+                   val nextNested = shiftedResultCpsTree(origin, selectTypeAppy)
+                   SelectTypeApplyCpsTree.create(nextNested,targs,tail.reverse,otpe).transformed
+                case Nil =>
+                   nested.transformed
+           case n@SelectCpsTree(nNested, nTargs, nSelects, nOtpe) =>
+             SelectCpsTree(nNested,targs ++ nTargs, selects ++ nSelects, otpe).transformed
+
+
     override def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree = 
            syncOrigin match
              case Some(t) => PureCpsTree(x(t),ntpe,true)
              case None => ???
 
-       
+  end SelectTypeApplyCpsTree
 
-  end SelectCpsTree
+  object SelectTypeApplyCpsTree:
+
+    def create(nested: CpsTree, 
+               targs:List[TypeTree], 
+               selects: List[SelectTypeApplyRecord],
+               otpe: TypeRepr,
+               changed: Boolean) =
+      nested match
+        case prev: SelectTypeApplyCpsTree =>
+             SelectCpsTree(prev.nested,targs ++ prev.targs, selects ++ prev.selects, otpe)
+        case _ => SelectTypeApplyCpsTree(nested,targs,selects,otpe,changed)
+
+  end SelectTypeApplyCpsTree
 
   extension (otherCake: TreeTransformScope[?,?])
     def adopt(t: qctx.reflect.Term): otherCake.qctx.reflect.Term = t.asInstanceOf[otherCake.qctx.reflect.Term]

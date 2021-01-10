@@ -18,7 +18,13 @@ trait SelectOuterTreeTransform[F[_], CT]:
      if (!qual.isChanged)
         CpsTree.pure(term)
      else
-        val r = qual.applyTerm1(t => SelectOuter(t, term.name, term.level), term.tpe)
+        term match
+          case Select(q1, symbol) =>
+                 // TODO: TypeApply can live in qual
+                 SelectTypeApplyCpsTree(q1,List(),List(SelectTypeApplyRecord(symbol,List(),term.level)))
+          case _ =>
+                 throw MacroError("Expected that SelectOuter also match Select", posExprs(term))
+        //val r = qual.applyTerm1(t => SelectOuter(t, term.name, term.level), term.tpe)
         r
 
 
