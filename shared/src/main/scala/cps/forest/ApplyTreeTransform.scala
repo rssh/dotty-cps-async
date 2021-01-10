@@ -98,14 +98,12 @@ trait ApplyTreeTransform[F[_],CT]:
                           sameSelect(shifted, method, targs, args) match 
                             case None =>
                                // not-found, use origin
-                               //val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
                                val cpsObj = cpsObj1.select(obj, obj.symbol, obj.tpe).typeApply(fun, targs, fun.tpe)
                                handleArgs1(applyTerm, fun, cpsObj, args, tails)
                             case Some(term) =>
                                // for now, will check both term and tree. TODO build CpsTree in sameSelect
                                handleArgs1(applyTerm, term, CpsTree.pure(term, isChanged=true), args, tails, unpure=true)
                  case _ =>
-                     //val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
                      val cpsObj = cpsObj1.select(obj, obj.symbol, obj.tpe).typeApply(fun, targs, fun.tpe)
                      handleArgs1(applyTerm, fun, cpsObj, args, tails)
           else if (cpsObj1.isChanged)
@@ -157,7 +155,7 @@ trait ApplyTreeTransform[F[_],CT]:
                if (cpsCtx.flags.debugLevel >= 15)
                   cpsCtx.log(s"funSelect: CallChainSubstCpsTree discovered, fun=$fun fun.tpe=${fun.tpe}")
                sameSelect(cls.shifted, methodName, List.empty, args) match 
-                  case None => //val cpsObj1 = cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe)
+                  case None => 
                                val cpsObj1 = cpsObj.select(fun,fun.symbol, fun.tpe)
                                handleArgs1(applyTerm, fun, cpsObj1, args, tails)
                   case Some(term) => val cpsObj1 = CpsTree.pure(term, isChanged = true)
@@ -165,12 +163,7 @@ trait ApplyTreeTransform[F[_],CT]:
             case _ =>
                if (cpsCtx.flags.debugLevel >= 15)
                   cpsCtx.log(s"funSelect: ! lambda || Subst, fun=$fun fun.tpe=${fun.tpe}")
-               if (cpsObj.isAsync)
-                   handleArgs1(applyTerm, fun,
-                        cpsObj.monadMap(x => Select(x,fun.symbol), fun.tpe), args, tails)
-               else
-                  handleArgs1(applyTerm, fun, cpsObj.select(fun, fun.symbol, fun.tpe), args, tails)
-               //handleArgs1(applyTerm, fun, cpsObj.select(fun, fun.symbol, fun.tpe), args, tails)
+               handleArgs1(applyTerm, fun, cpsObj.select(fun, fun.symbol, fun.tpe), args, tails)
 
 
   def handleFunIdent(applyTerm: Term, fun:Term, args:List[Term], name: String, tails: List[Seq[ApplyArgRecord]]):CpsTree =
