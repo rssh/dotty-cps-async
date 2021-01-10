@@ -98,15 +98,19 @@ trait ApplyTreeTransform[F[_],CT]:
                           sameSelect(shifted, method, targs, args) match 
                             case None =>
                                // not-found, use origin
-                               val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
+                               //val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
+                               val cpsObj = cpsObj1.select(obj.symbol, obj.tpe).typeApply(fun, targs, fun.tpe)
                                handleArgs1(applyTerm, fun, cpsObj, args, tails)
                             case Some(term) =>
+                               // for now, will check both term and tree. TODO build CpsTree in sameSelect
                                handleArgs1(applyTerm, term, CpsTree.pure(term, isChanged=true), args, tails, unpure=true)
                  case _ =>
-                     val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
+                     //val cpsObj = cpsObj1.monadMap(x => TypeApply(Select(x,obj.symbol),targs), fun.tpe)
+                     val cpsObj = cpsObj1.select(obj.symbol, obj.tpe).typeApply(fun, targs, fun.tpe)
                      handleArgs1(applyTerm, fun, cpsObj, args, tails)
           else if (cpsObj1.isChanged)
-              val cpsObj = cpsObj1.applyTerm1(x=>TypeApply(Select(x,obj.symbol),targs), fun.tpe)
+              //val cpsObj = cpsObj1.applyTerm1(x=>TypeApply(Select(x,obj.symbol),targs), fun.tpe)
+              val cpsObj = cpsObj1.select(obj.symbol, obj.tpe).typeApply(fun, targs, fun.tpe)
               handleArgs1(applyTerm, fun, cpsObj, args, tails)
           else
               handleArgs1(applyTerm, fun, CpsTree.pure(fun), args, tails)

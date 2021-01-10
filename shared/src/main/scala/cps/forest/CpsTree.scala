@@ -28,10 +28,11 @@ trait CpsTreeScope[F[_], CT] {
 
      def syncOrigin: Option[Term]
 
-     def typeApply(targs: List[qctx.reflect.TypeTree], ntpe: TypeRepr): CpsTree =
-            applyTerm1(_.appliedToTypeTrees(targs), ntpe)
+     def typeApply(orig: Term, targs: List[qctx.reflect.TypeTree], ntpe: TypeRepr): CpsTree =
+          SelectTypeApplyCpsTree(this, targs, List.empty, ntpe)
+          //applyTerm1(_.appliedToTypeTrees(targs), ntpe)
 
-     def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree
+     //def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree
 
      def select(symbol: Symbol, ntpe: TypeRepr): CpsTree = 
           SelectTypeApplyCpsTree(this, List.empty, List(SelectTypeApplyRecord(symbol,List.empty)), ntpe)
@@ -127,11 +128,11 @@ trait CpsTreeScope[F[_], CT] {
 
     def isLambda = false
 
-    def typeApply(targs: List[qctx.reflect.TypeTree]) =
-                PureCpsTree(origin.appliedToTypeTrees(targs), true)
+    //def typeApply(orig: Term, targs: List[qctx.reflect.TypeTree], ) =
+    //            PureCpsTree(origin.appliedToTypeTrees(targs), true)
 
-    def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree =
-      PureCpsTree(x(origin), isChanged)
+    //def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree =
+    //  PureCpsTree(x(origin), isChanged)
 
      //  pure(x).map(f) = pure(f(x))
     def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
@@ -397,8 +398,8 @@ trait CpsTreeScope[F[_], CT] {
       else
         last.syncOrigin map (l => Block(prevs.toList,l))
 
-    def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
-       toLast(_.applyTerm1(f,ntpe))
+    //def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
+    //   toLast(_.applyTerm1(f,ntpe))
 
      // TODO: pass other cake ?
     def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
@@ -459,8 +460,8 @@ trait CpsTreeScope[F[_], CT] {
     override def syncOrigin: Option[Term] =
                   nested.syncOrigin.map(Inlined(origin.call, bindings, _ ))
 
-    def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
-         InlinedCpsTree(origin, bindings, nested.applyTerm1(f, ntpe))
+    //def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
+    //     InlinedCpsTree(origin, bindings, nested.applyTerm1(f, ntpe))
 
     def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
          InlinedCpsTree(origin, bindings, nested.monadMap(f, ntpe))
@@ -528,8 +529,8 @@ trait CpsTreeScope[F[_], CT] {
        } yield appendValDef(rhs)
 
 
-    override def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
-        ValCpsTree(valDef, rightPart, nested.applyTerm1(f,ntpe))
+    //override def applyTerm1(f: Term => Term, ntpe: TypeRepr): CpsTree =
+    //    ValCpsTree(valDef, rightPart, nested.applyTerm1(f,ntpe))
 
     override def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
         ValCpsTree(valDef, rightPart, nested.monadMap(f,ntpe))
@@ -615,8 +616,8 @@ trait CpsTreeScope[F[_], CT] {
           }
     }
 
-    def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree =
-         AppendCpsTree(frs, snd.applyTerm1(x, ntpe))
+    //def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree =
+    //     AppendCpsTree(frs, snd.applyTerm1(x, ntpe))
 
     override def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
          AppendCpsTree(frs, snd.monadMap(f, ntpe))
@@ -714,9 +715,9 @@ trait CpsTreeScope[F[_], CT] {
 
 
     // TODO: eliminate applyTerm in favor of 'Select', typeApply, Apply
-    def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree =
-          // TODO: generate other lambda.
-          throw MacroError("async lambda can't be an apply1 argument", posExprs(originLambda) )
+    //def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree =
+    //      // TODO: generate other lambda.
+    //      throw MacroError("async lambda can't be an apply1 argument", posExprs(originLambda) )
 
      //  m.map(pure(x=>cosBody))(f) =  ???
     def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
@@ -782,8 +783,8 @@ trait CpsTreeScope[F[_], CT] {
 
     override def syncOrigin: Option[Term] = None
 
-    override def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree =
-       prunned.applyTerm1(x, ntpe)
+    //override def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree =
+    //   prunned.applyTerm1(x, ntpe)
 
     override def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
        prunned.monadMap(f, ntpe)
@@ -811,8 +812,8 @@ trait CpsTreeScope[F[_], CT] {
   /**
    * represent select expression, which can be in monad or outside monad.
    *
-   *  selects are reversed - i.e.most internal at the end.
    *  constructor is not devoted to used directly: use SelectTypeApplyCpsTree.create instead.
+   *  selects is reversed (i.e. external added to head)
    **/
   case class SelectTypeApplyCpsTree(
                                     nested: CpsTree, 
@@ -835,10 +836,10 @@ trait CpsTreeScope[F[_], CT] {
                                changed)
 
     def apply(term:Term):Term =
-         val t1 = if (targs.isEmpty) term else TypeApply(term, targs)
+         val t1 = if (targs.isEmpty) term else term.appliedToTypeTrees(targs)
          selects.foldRight(t1){ (e,s) =>
             val t2 = if (e.level == 0) then Select(s, e.symbol) else SelectOuter(s, e.symbol.name, e.level)
-            if e.targs.isEmpty then t2 else TypeApply(t2,targs)
+            if e.targs.isEmpty then t2 else TypeApply(t2, e.targs)
          }
          
 
@@ -868,22 +869,41 @@ trait CpsTreeScope[F[_], CT] {
              if (!targs.isEmpty) then
                 // targs is already should be here
                 throw MacroError("CallChainSubstCpsTree already contains applied targs", posExprs(origin))
-             selects.reverse match    
-                case head::tail =>
+             val revSelects = selects.reverse
+             revSelects.headOption match
+               case Some(head) =>
+                   // TODO: add overloaded case
                    val select = Select.unique(shifted,head.symbol.name)
                    val selectTypeApply = if (head.targs.isEmpty) select else TypeApply(select,targs)
                    val nextNested = shiftedResultCpsTree(origin, selectTypeApply)
-                   SelectTypeApplyCpsTree.create(nextNested,targs,tail.reverse,otpe).transformed
-                case Nil =>
+                   SelectTypeApplyCpsTree.create(nextNested,targs,revSelects.tail.reverse,otpe).transformed
+               case None =>
                    nested.transformed
            case n@SelectTypeApplyCpsTree(nNested, nTargs, nSelects, nOtpe, nChanged) =>
              SelectTypeApplyCpsTree(nNested,targs ++ nTargs, selects ++ nSelects, otpe, changed||nChanged).transformed
 
+    override def typeApply(orig: Term, targs: List[qctx.reflect.TypeTree], ntpe: TypeRepr): CpsTree =
+         selects match
+            case head::tail =>
+              if (head.targs.isEmpty) then
+                 copy(selects = head.copy(targs=targs)::tail,
+                      otpe = ntpe)
+              else
+                 throw MacroError("multiple type arguments are not supported", posExprs(orig))
+            case Nil =>
+              if (targs.isEmpty) then // impossible, 
+                 copy(targs = targs)
+              else
+                 throw MacroError("multiple type arguments are not supported", posExprs(orig))
+            
+    override def select(symbol: Symbol, ntpe: TypeRepr): CpsTree = 
+         val newEntry = SelectTypeApplyRecord(symbol,List.empty)
+         copy(selects = newEntry::selects, otpe=ntpe)
 
-    override def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree = 
-         syncOrigin match
-           case Some(t) => PureCpsTree(x(t),true)
-           case None => ???
+    //override def applyTerm1(x: Term => Term, ntpe: TypeRepr): CpsTree = 
+    //     syncOrigin match
+    //       case Some(t) => PureCpsTree(x(t),true)
+    //       case None => ???
 
     override def syncOrigin: Option[Term] = 
          nested.syncOrigin.map(t => apply(t))

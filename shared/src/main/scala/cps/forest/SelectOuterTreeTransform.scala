@@ -19,7 +19,7 @@ trait SelectOuterTreeTransform[F[_], CT]:
         // TODO: mb not use pure ?
         CpsTree.pure(term)
      else
-        SelectTypeApplyCpsTree(qual,List(),List(SelectTypeApplyRecord(term.symbol,List(),term.level)),term.tpe)
+        SelectTypeApplyCpsTree.create(qual,List(),List(SelectTypeApplyRecord(term.symbol,List(),term.level)),term.tpe)
 
 
 object SelectOuterTreeTransform:

@@ -16,7 +16,7 @@ trait TypeApplyTreeTransform[F[_], CT]:
   def runTypeApply( applyTerm: qctx.reflect.Term, 
                     fun: qctx.reflect.Term, 
                     targs: List[qctx.reflect.TypeTree]): CpsTree =
-     runRoot(fun,TransformationContextMarker.TypeApplyFun).typeApply(targs, applyTerm.tpe)
+     runRoot(fun,TransformationContextMarker.TypeApplyFun).typeApply(applyTerm, targs, applyTerm.tpe)
 
 
 object TypeApplyTreeTransform:
