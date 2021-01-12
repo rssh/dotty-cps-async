@@ -25,6 +25,7 @@ Can we free concurrent programming from the monadic style:
 - F# Computation Expression. 
 	- Guide: <https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/computation-expressions>
 	- Paper: <http://tomasp.net/academic/papers/computation-zoo/>
+        - Joinad language extension (paper): http://tomasp.net/academic/papers/joinads/joinads.pdf
 - C# : Guide:  <https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/task-asynchronous-programming-model>
 - Python: PEP-0492  <https://www.python.org/dev/peps/pep-0492/>
 - JavaScript:  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function>
@@ -45,4 +46,10 @@ Can we free concurrent programming from the monadic style:
 	- Coroutines Guide: <https://kotlinlang.org/docs/reference/coroutines/coroutines-guide.html>
 - Swift:
 	- Proposal: <https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md>
+- Zig:
+	- Description: https://ziglang.org/download/0.5.0/release-notes.html#Async-Functions
+	- Article about doing async implicit ('colorblind'): https://kristoff.it/blog/zig-colorblind-async-await/
+- Koka:
+	- Paper: "Structured Asynchrony with Algebraic Effects" https://www.microsoft.com/en-us/research/wp-content/uploads/2017/05/asynceffects-msr-tr-2017-21.pdf
+
 
