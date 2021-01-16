@@ -32,7 +32,7 @@ trait CpsTreeScope[F[_], CT] {
           SelectTypeApplyCpsTree(Some(orig), this, targs, List.empty, ntpe)
 
      def select(orig: Term, symbol: Symbol, ntpe: TypeRepr): CpsTree = 
-          SelectTypeApplyCpsTree(Some(orig), this, List.empty, List(SelectTypeApplyRecord(symbol,List.empty)), ntpe)
+          SelectTypeApplyCpsTree(Some(orig), this, List.empty, List(SelectTypeApplyRecord(otpe,symbol,List.empty)), ntpe)
 
      def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree
 
@@ -774,9 +774,11 @@ trait CpsTreeScope[F[_], CT] {
 
   end CallChainSubstCpsTree
 
-  case class SelectTypeApplyRecord(symbol: Symbol, targs: List[TypeTree], level: Int = 0):
+  case class SelectTypeApplyRecord(prevTpe: TypeRepr, symbol: Symbol, targs: List[TypeTree], level: Int = 0):
      def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.SelectTypeApplyRecord =
-         otherCake.SelectTypeApplyRecord(symbol.asInstanceOf[otherCake.qctx.reflect.Symbol],
+         otherCake.SelectTypeApplyRecord(
+                                        prevTpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr],
+                                        symbol.asInstanceOf[otherCake.qctx.reflect.Symbol],
                                         targs.map(_.asInstanceOf[otherCake.qctx.reflect.TypeTree]))
                                          
 
@@ -877,7 +879,7 @@ trait CpsTreeScope[F[_], CT] {
                  throw MacroError("multiple type arguments are not supported", posExprs(orig))
             
     override def select(orig: Term, symbol: Symbol, ntpe: TypeRepr): CpsTree = 
-         val newEntry = SelectTypeApplyRecord(symbol,List.empty)
+         val newEntry = SelectTypeApplyRecord(otpe,symbol,List.empty)
          copy(origin=Some(orig), selects = newEntry::selects, otpe=ntpe)
 
 

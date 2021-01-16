@@ -68,8 +68,8 @@ class TestCBS1Apply:
 
 
   @Test def apply_fun2(): Unit = {
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async{
        await(T1.cbi(2).map(new Zzz(_))).ta("qqq")
      }
