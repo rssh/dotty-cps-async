@@ -113,7 +113,7 @@ trait CpsTreeScope[F[_], CT] {
 
   object CpsTree:
 
-    def pure(origin:Term, isChanged: Boolean = false): CpsTree = PureCpsTree(origin)
+    def pure(origin:Term, isChanged: Boolean = false): CpsTree = PureCpsTree(origin, isChanged)
 
     def impure(transformed:Term, tpe: TypeRepr): CpsTree =
                    AwaitSyncCpsTree(transformed, tpe.widen)

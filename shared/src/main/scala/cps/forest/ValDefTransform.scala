@@ -32,9 +32,13 @@ object ValDefTransform:
                                                 valDef, cpsRight, CpsExpr.unit(monad) )
             } else {
                if (cpsCtx.flags.debugLevel > 15) 
-                 cpsCtx.log(s"rightPart is no async, cpsRight.transformed=${cpsRight.transformed.show}")
-               ValWrappedCpsExpr(using quotes)(monad, Seq(), valDef, 
-                                                CpsExpr.unit(monad) )
+                 cpsCtx.log(s"ValDef: rightPart no async changed=${cpsRight.isChanged}, cpsRight.transformed=${cpsRight.transformed.show}")
+
+               val nextValDef = if (cpsRight.isChanged) {
+                                    ValDef(valDef.symbol, Some(cpsRight.syncOrigin.get.asTerm.changeOwner(valDef.symbol)))
+                                } else 
+                                    valDef
+               ValWrappedCpsExpr(using quotes)(monad, Seq(), nextValDef,   CpsExpr.unit(monad) )
             }
         case other =>
             throw MacroError(s"Can't concretize type of right-part $rhs ", cpsCtx.patternCode)

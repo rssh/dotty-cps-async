@@ -70,6 +70,11 @@ class SLSelectLoop[F[_]:CpsMonad]:
        fold(s0)(step)
      }
 
+
+  inline def map1[A](inline step: PartialFunction[SLSelectLoop[F], A]): IFReader[F,A] =
+     ???
+     
+
 object SLSelectLoop:
 
   case class Done[S](s:S)

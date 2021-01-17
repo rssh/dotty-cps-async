@@ -60,8 +60,6 @@ trait ApplyTreeTransform[F[_],CT]:
               case other =>
                 throw MacroError("expected that Select.overloaded should match apply", posExprs(other,funTerm))
            
-     
-
 
   /**
    *applyTerm = Apply(fun, args)
@@ -486,17 +484,22 @@ trait ApplyTreeTransform[F[_],CT]:
 
        val shiftedName = x.name + "_async"  
        findInplaceAsyncMethodCall(x, shiftedName,  targs, args) match
-            case Right(t) => t
-            case Left(funErrors) => 
-             findAsyncShiftTerm(qual) match
-               case success2: ImplicitSearchSuccess =>
-                 val shiftType = success2.tree.tpe
-                 val shiftSymbol = if (shiftType.isSingleton) {
+         case Right(t) => t
+         case Left(funErrors) => 
+           val funErrors0 = funErrors
+           val shiftedName1 = x.name + "Async"
+           findInplaceAsyncMethodCall(x, shiftedName1,  targs, args) match
+             case Right(t) => t
+             case Left(funErrors) =>
+               findAsyncShiftTerm(qual) match
+                 case success2: ImplicitSearchSuccess =>
+                   val shiftType = success2.tree.tpe
+                   val shiftSymbol = if (shiftType.isSingleton) {
                                      shiftType.termSymbol
                                    } else {
                                      shiftType.typeSymbol
                                    }
-                 shiftSymbol.memberMethod(x.name) match
+                   shiftSymbol.memberMethod(x.name) match
                     case Nil =>
                         throw MacroError(s"Method (${x.name}) is not defined in [${shiftType.show}], qual=${qual} ",posExpr(x))
                     case m::Nil =>
@@ -508,9 +511,10 @@ trait ApplyTreeTransform[F[_],CT]:
                         val shiftedCaller = Select.overloaded(success2.tree, x.name, (TypeTree.of[F]::targs).map(_.tpe), List(qual,monad), expectedType)
                         Apply(shiftedCaller, args)
                              
-               case failure2: ImplicitSearchFailure =>
-                 traceFunNotFound(s"failed candidates for ${qual.show} ${shiftedName}",funErrors)
-                 throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} ",posExpr(x))
+                 case failure2: ImplicitSearchFailure =>
+                   traceFunNotFound(s"failed candidates for ${qual.show} ${shiftedName}",funErrors)
+                   throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} ",posExpr(x))
+
 
 
     if (cpsCtx.flags.debugLevel >= 15)
@@ -567,7 +571,7 @@ trait ApplyTreeTransform[F[_],CT]:
                  ): CpsTree =
         if (cpsCtx.flags.debugLevel >= 15)
             cpsCtx.log(s"buildApply: fun=${safeShow(fun)}")
-            cpsCtx.log(s"cpsFun.isSync=${cpsFun.isSync}, withShiftedLambda=${withShiftedLambda}, inShiftedCallChain=${inShiftedCallChain}")
+            cpsCtx.log(s"buildApply: cpsFun.isSync=${cpsFun.isSync}, withShiftedLambda=${withShiftedLambda}, inShiftedCallChain=${inShiftedCallChain}")
         val applyTpe = applyTerm.tpe
         if (withShiftedLambda)
           buildShiftedApply(cpsFun, fun, argRecords, withAsync, tails, applyTerm)
@@ -608,6 +612,9 @@ trait ApplyTreeTransform[F[_],CT]:
              throw MacroError("Async function with arity != 1 is not supported yet",posExprs(shifted,origin))
       else if (shifted.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) 
          CallChainSubstCpsTree(origin, shifted, origin.tpe)
+      else if (shifted.tpe.widen =:= origin.tpe.widen) 
+         // experimental, when shifted result type is the same as result type.
+         CpsTree.pure(shifted, isChanged=true)
       else
          CpsTree.impure(shifted, origin.tpe)
 
