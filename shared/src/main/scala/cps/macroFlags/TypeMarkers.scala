@@ -22,9 +22,9 @@ given FromExpr[DebugLevel] with
           sym.tree match
              case ValDef(name,tpt,Some(rhs)) =>
                       unapply(rhs.asExprOf[DebugLevel])
-             case DefDef(name,tps,vps,rt,Some(rhs)) =>
+             case DefDef(name,params,rt,Some(rhs)) =>
                       unapply(rhs.asExprOf[DebugLevel])
-             case DefDef(name,tps,vps,tp,None) =>
+             case DefDef(name,params,tp,None) =>
                       // currently it is no-way to extract definition of given.
                       // TODO: submit request to dotty
                       None
