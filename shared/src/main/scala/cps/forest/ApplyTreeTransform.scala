@@ -479,7 +479,7 @@ trait ApplyTreeTransform[F[_],CT]:
           if (!errors.isEmpty) then
             report.warning(msg)
             errors.foreach(e =>
-              report.warning(e.message, e.pos)
+              report.warning(e.message)
             )
 
        val shiftedName = x.name + "_async"  
@@ -513,7 +513,7 @@ trait ApplyTreeTransform[F[_],CT]:
                              
                  case failure2: ImplicitSearchFailure =>
                    traceFunNotFound(s"failed candidates for ${qual.show} ${shiftedName}",funErrors)
-                   throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} ",posExpr(x))
+                   throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} name = ${x.name}, shiftedName=${shiftedName}",posExpr(x))
 
 
 
