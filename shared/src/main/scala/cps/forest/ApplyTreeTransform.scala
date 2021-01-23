@@ -312,17 +312,6 @@ trait ApplyTreeTransform[F[_],CT]:
         }
   }
 
-  // TODO: remove
-  def haveAsyncLambdaInArgs(args:List[Term]):Boolean =
-     args.exists{ x =>
-       x match
-          case Lambda(largs,body) => TransformUtil.containsAwait(body)
-          case Repeated(rargs,tpt) => haveAsyncLambdaInArgs(rargs)
-          case _ => false
-     }
-
-  def findAsyncShift[E:quoted.Type](e:Expr[E]):Option[Expr[AsyncShift[E]]] =
-    Expr.summon[AsyncShift[E]]
 
   def findAsyncShiftTerm(e:Term):ImplicitSearchResult =
     val tpe = e.tpe.widen

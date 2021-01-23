@@ -57,3 +57,10 @@ class TryAsyncShift[T] extends AsyncShift[Try[T]]:
            case Failure(ex) => pf(ex)
 
 
+
+object TryModuleAsyncShift extends AsyncShift[Try.type]:
+
+   def apply[F[_],T](o:Try.type, m:CpsTryMonad[F])(r: ()=>F[T]):F[Try[T]] =
+         m.mapTry(r())(identity)
+
+

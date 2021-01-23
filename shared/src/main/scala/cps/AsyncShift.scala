@@ -60,6 +60,10 @@ object AsyncShift extends AsyncShiftLowPriority2 {
  transparent inline given shiftedTry[A]: AsyncShift[scala.util.Try[A]] =
       new cps.runtime.util.TryAsyncShift[A]()
 
+ transparent inline given shiftedTryModule: AsyncShift[scala.util.Try.type] =
+      cps.runtime.util.TryModuleAsyncShift
+
+
  transparent inline given shiftedUsing: AsyncShift[scala.util.Using.type] =
        cps.runtime.util.UsingAsyncShift
 
