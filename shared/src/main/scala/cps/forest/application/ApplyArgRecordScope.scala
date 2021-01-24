@@ -134,7 +134,7 @@ trait ApplyArgRecordScope[F[_], CT]:
             term.tpe match
               case MethodType(paramNames, paramTypes, resType) =>
                   val mt = shiftedMethodType(paramNames, paramTypes, resType)
-                  createAsyncLambda(mt, params)
+                  createAsyncLambda(mt, params, Symbol.spliceOwner)
               case ft@AppliedType(tp,tparams) =>
                   if (ft.isFunctionType) {
                       //val paramTypes = tparams.dropRight(1).map(typeOrBoundsToType(_,false))
@@ -142,7 +142,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                       val resType = tparams.last
                       val paramNames = params.map(_.name)
                       val mt = shiftedMethodType(paramNames, paramTypes, resType)
-                      createAsyncLambda(mt, params)
+                      createAsyncLambda(mt, params, Symbol.spliceOwner)
                   } else if (tp <:< partialFunctionType ) {
                       val (tIn, tOut) = tparams match
                          case tIn::tOut::Nil => (tIn, tOut)
@@ -207,13 +207,6 @@ trait ApplyArgRecordScope[F[_], CT]:
             Match.copy(body)(inputVal, transformCases(body.cases,Nil,false))
             //Match(inputVal, transformCases(body.cases,Nil,false))
 
-         def newCheck(): Term =
-            val mt = MethodType(paramNames)(_ => List(fromType), _ => TypeRepr.of[Boolean])
-            Lambda(Symbol.spliceOwner, mt, (owner,args) => changeArgs(params,args,newCheckBody(matchVar)).changeOwner(owner))
-
-         def newBody():Term =
-            val mt = MethodType(paramNames)( _ => List(fromType), _ => toInF)
-            createAsyncLambda(mt, params)
 
          def termCast[E:Type](term: Term): Expr[E] =
             term.asExprOf[E]
@@ -250,9 +243,9 @@ trait ApplyArgRecordScope[F[_], CT]:
 
          r
 
-       private def createAsyncLambda(mt: MethodType, params: List[ValDef]): Term =
+       private def createAsyncLambda(mt: MethodType, params: List[ValDef], owner: Symbol): Term =
          val transformedBody = cpsBody.transformed
-         Lambda(Symbol.spliceOwner,mt, (owner,args) => changeArgs(params,args,transformedBody).changeOwner(owner))
+         Lambda(owner, mt, (owner,args) => changeArgs(params,args,transformedBody).changeOwner(owner))
 
        private def rebindCaseDef(caseDef:CaseDef,
                                  body: Term,
