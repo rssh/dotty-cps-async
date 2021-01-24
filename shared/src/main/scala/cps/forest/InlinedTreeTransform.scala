@@ -63,7 +63,7 @@ trait InlinedTreeTransform[F[_], CT]:
                             val newSym = Symbol.newVal(Symbol.spliceOwner, name, tpt.tpe,  vx.symbol.flags, Symbol.noSymbol)
                             val mt = MethodType(params.map(_.name))(_ => params.map(_.tpt.tpe), _ => resultType)
                             val newValDef = ValDef(newSym, cpsBinding.syncOrigin.map(body =>
-                               Lambda(Symbol.spliceOwner, mt, 
+                               Lambda(newSym, mt, 
                                  (owner,args)=> TransformUtil.substituteLambdaParams(params,args,body,owner).changeOwner(owner)
                                )
                             ))
