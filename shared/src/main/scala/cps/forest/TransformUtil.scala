@@ -86,4 +86,26 @@ object TransformUtil:
      else
          Typed(term, Inferred(tp))
 
+  // used for debugging instrumentation
+  def dummyMapper(using Quotes)(t: quotes.reflect.Term, owner: quotes.reflect.Symbol): Boolean =
+     import quotes.reflect._
+     var wasError = false
+     val checker = new TreeMap() {
+
+
+         override def transformTerm(tree: Term)(owner: Symbol): Term =
+            try {
+              super.transformTerm(tree)(owner)
+            }catch{
+              case ex: Throwable =>
+                if (!wasError)
+                  ex.printStackTrace() 
+                  wasError = true
+                throw ex
+            }
+
+     } 
+     checker.transformTerm(t)(owner)
+     wasError
+     
 

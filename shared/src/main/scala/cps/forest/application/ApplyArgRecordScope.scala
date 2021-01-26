@@ -193,7 +193,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                wasDefault: Boolean):List[CaseDef]=
               rest match
                 case h::t =>
-                     val nh = rebindCaseDef(h, Literal(BooleanConstant(true)), Map.empty, false)
+                     val nh = rebindCaseDef(h, Literal(BooleanConstant(true)), Map.empty, false, Symbol.spliceOwner)
                      transformCases(t, nh::acc, wasDefault)
                 case Nil =>
                       val lastCase = casePattern match
@@ -225,7 +225,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                case m@Match(scr,caseDefs) =>
                                  val b0 = Map(matchVar.symbol -> 'x2.asTerm)
                                  val nCaseDefs = caseDefs.map( cd =>
-                                                    rebindCaseDef(cd, cd.rhs, b0, true))
+                                                    rebindCaseDef(cd, cd.rhs, b0, true, Symbol.spliceOwner))
                                  val nTerm = Match('x2.asTerm, nCaseDefs)
                                  termCast(nTerm)
                                case _ =>
@@ -245,12 +245,13 @@ trait ApplyArgRecordScope[F[_], CT]:
 
        private def createAsyncLambda(mt: MethodType, params: List[ValDef], owner: Symbol): Term =
          val transformedBody = cpsBody.transformed
-         Lambda(owner, mt, (owner,args) => changeArgs(params,args,transformedBody).changeOwner(owner))
+         Lambda(owner, mt, (owner,args) => changeArgs(params,args,transformedBody.changeOwner(owner),owner))
 
        private def rebindCaseDef(caseDef:CaseDef,
                                  body: Term,
                                  assoc: Map[Symbol, Term],
-                                 processBody: Boolean): CaseDef = {
+                                 processBody: Boolean,
+                                 owner: Symbol): CaseDef = {
 
          def rebindPatterns(pattern: Tree, map:Map[Symbol,Term]): (Tree, Map[Symbol, Term]) = {
            pattern match
@@ -273,21 +274,21 @@ trait ApplyArgRecordScope[F[_], CT]:
          }
 
          val (nPattern, newBindings) = rebindPatterns(caseDef.pattern, assoc)
-         val nGuard = caseDef.guard.map( changeSyms(newBindings, _ ) )
-         val nBody = if (processBody) changeSyms(newBindings, body) else body
+         val nGuard = caseDef.guard.map( changeSyms(newBindings, _, owner ) )
+         val nBody = if (processBody) changeSyms(newBindings, body, owner) else body
          CaseDef(nPattern, nGuard, nBody)
        }
 
-       private def changeArgs(params:List[ValDef], nParams:List[Tree], body: Term): Term =
+       private def changeArgs(params:List[ValDef], nParams:List[Tree], body: Term, owner: Symbol): Term =
          val association: Map[Symbol, Tree] = (params zip nParams).foldLeft(Map.empty){
              case (m, (oldParam, newParam)) => m.updated(oldParam.symbol, newParam)
          }
-         changeSyms(association, body)
+         changeSyms(association, body, owner: Symbol)
 
-       private def changeIdent(body:Term, oldSym: Symbol, newSym: Symbol): Term =
-         changeSyms(Map(oldSym->Ref(newSym)), body)
+       private def changeIdent(body:Term, oldSym: Symbol, newSym: Symbol, owner: Symbol): Term =
+         changeSyms(Map(oldSym->Ref(newSym)), body, owner)
 
-       private def changeSyms(association: Map[Symbol,Tree], body: Term): Term =
+       private def changeSyms(association: Map[Symbol,Tree], body: Term, owner: Symbol): Term =
          if  cpsCtx.flags.debugLevel >= 20 then
              cpsCtx.log(s"changeSyms, association = $association")
          val changes = new TreeMap() {
@@ -309,7 +310,7 @@ trait ApplyArgRecordScope[F[_], CT]:
                                                               cpsCtx.log(s"oldHashcode: ${ident.symbol.hashCode}, new Hash: ${paramTerm.symbol.hashCode}")
                                                               cpsCtx.log(s"oldOwner: ${ident.symbol.owner} , newOwner: ${paramTerm.symbol.owner}")
                                                               cpsCtx.log(s"oldOwner.hashCode: ${ident.symbol.owner.hashCode} , newOwner.hashCode: ${paramTerm.symbol.owner.hashCode}")
-                                                          paramTerm
+                                                          paramTerm.changeOwner(owner)
                                              case None => super.transformTerm(tree)(owner)
                  case _ => super.transformTerm(tree)(owner)
 
@@ -358,7 +359,7 @@ trait ApplyArgRecordScope[F[_], CT]:
 
 
          }
-         changes.transformTerm(body)(Symbol.spliceOwner)
+         changes.transformTerm(body)(owner)
 
   }
 

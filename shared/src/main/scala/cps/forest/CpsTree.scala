@@ -531,7 +531,9 @@ trait CpsTreeScope[F[_], CT] {
         ValCpsTree(valDef, rightPart, nested.applyAwait(newOtpe))
 
     def appendValDef(right: Term):Term =
-       val nValDef = ValDef.copy(valDef)(name = valDef.name, tpt=valDef.tpt, rhs=Some(right))
+       val nValDef = ValDef.copy(valDef)(name = valDef.name, 
+                                         tpt=valDef.tpt, 
+                                         rhs=Some(right.changeOwner(valDef.symbol)))
        val result = nested match
          case BlockCpsTree.Matcher(prevs,last) =>
            val lastTerm = last.syncOrigin.getOrElse(last.transformed)

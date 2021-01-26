@@ -39,10 +39,16 @@ trait InlinedTreeTransform[F[_], CT]:
     val s0 = InlinedBindingsRecord(HashMap.empty, List.empty, List.empty)
     val funValDefs = origin.bindings.zipWithIndex.foldLeft(s0){ (s, xi) =>
        val (x,i) = xi
+       var debug = false
        x match
           case vx@ValDef(name,tpt,Some(rhs)) =>
+              if (name == "SLSelectLoop_this")
+                  cpsCtx.log(s"!!!: SFSelectLoop_this in bindings, symbol=${vx.symbol.hashCode} ")
+                  debug = true
               checkLambdaDef(rhs) match
                  case Some(lambda) => 
+                    if (debug)
+                       cpsCtx.log("!!!:SFSelectLoop_this is lambda")
                     lambda match
                       case Lambda(params, body) =>
                          val cpsBinding = runRoot(body, TransformationContextMarker.InlinedBinding(i))
@@ -54,6 +60,7 @@ trait InlinedTreeTransform[F[_], CT]:
                             val newSym = Symbol.newVal(Symbol.spliceOwner, name, lambdaTree.rtpe,  vx.symbol.flags, Symbol.noSymbol)
                             val rLambda = lambdaTree.rLambda.changeOwner(newSym)
                             val newValDef = ValDef(newSym, Some(rLambda))
+                            // check:
                             val bindingRecord = InlinedFunBindingRecord(newSym, lambdaTree, vx, resultType) 
                             s.copy(
                                changes = s.changes.updated(vx.symbol, bindingRecord),
@@ -64,7 +71,8 @@ trait InlinedTreeTransform[F[_], CT]:
                             val mt = MethodType(params.map(_.name))(_ => params.map(_.tpt.tpe), _ => resultType)
                             val newValDef = ValDef(newSym, cpsBinding.syncOrigin.map(body =>
                                Lambda(newSym, mt, 
-                                 (owner,args)=> TransformUtil.substituteLambdaParams(params,args,body,owner).changeOwner(owner)
+                                 //(owner,args)=> TransformUtil.substituteLambdaParams(params,args,body,owner).changeOwner(owner)
+                                 (owner,args)=> TransformUtil.substituteLambdaParams(params,args,body,owner)
                                )
                             ))
                             val bindingRecord = InlinedFunBindingRecord(newSym, CpsTree.pure(newValDef.rhs.get), vx, resultType) 
@@ -78,6 +86,8 @@ trait InlinedTreeTransform[F[_], CT]:
                       case _ => // impossible
                          s.copy(newBindings = vx::s.newBindings)
                  case None => 
+                    if (debug)
+                       cpsCtx.log(s"!!!: SFSelectLoop_this ${vx.symbol} is not lambda ")
                     val cpsRhs = try {
                             runRoot(rhs, TransformationContextMarker.InlinedBinding(i))
                       } catch {
@@ -89,8 +99,19 @@ trait InlinedTreeTransform[F[_], CT]:
                       }
                     cpsRhs.syncOrigin match
                       case None =>
-                         val newSym = Symbol.newVal(Symbol.spliceOwner, name, cpsRhs.rtpe,  vx.symbol.flags, Symbol.noSymbol)
+                         if (debug)
+                            cpsCtx.log("!!!:SFSelectLoop_this is async")
+                         val newName = if (debug) name+"DEBUG" else name
+                         val newSym = Symbol.newVal(Symbol.spliceOwner, newName, cpsRhs.rtpe,  vx.symbol.flags, Symbol.noSymbol)
+                         if (debug)
+                            cpsCtx.log(s"!!!:newSym.id = ${newSym.hashCode}")
+                            cpsCtx.log(s"!!!:rhs.transformed = ${cpsRhs.transformed.show}")
                          val newValDef = ValDef(newSym, Some(cpsRhs.transformed.changeOwner(newSym)))
+                         if (debug)
+                            cpsCtx.log("!!!:after change owner")
+                            val testValDef = ValDef.copy(newValDef)(newValDef.name, newValDef.tpt, newValDef.rhs)
+                            cpsCtx.log("!!!:test valdef created ..")
+
                          if (cpsRhs.isLambda) {
                             val resType = TypeRepr.of[F].appliedTo(cpsRhs.otpe.widen)
                             val bindingRecord =  InlinedFunBindingRecord(newSym, cpsRhs, vx, resType)
@@ -104,7 +125,7 @@ trait InlinedTreeTransform[F[_], CT]:
                                    Apply(Apply(TypeApply(Ref(awaitSymbol),
                                                          List(TypeTree.of[F], Inferred(cpsRhs.otpe))),
                                                List(Ref(newSym))),
-                                         List(monad))
+                                         List(monad)).changeOwner(awaitValSym)
 
                             ))
                             val bindingRecord =  InlinedValBindingRecord(awaitValSym, cpsRhs, vx) 
