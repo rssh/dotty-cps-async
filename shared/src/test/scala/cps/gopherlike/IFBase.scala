@@ -18,7 +18,7 @@ trait IFWriter[F[_],A]:
     v = a.asInstanceOf[AnyRef]
     cpsMonad.pure(())
 
-  inline def write(a:A): Unit =
+  inline def write(inline a:A): Unit =
     await[F,Unit](awrite(a))(using wCpsMonad)
 
 
@@ -61,7 +61,7 @@ trait IFReader[F[_],A]:
          f(value.get)
      }
 
-   inline def foreach(f: A=>Unit): Unit =
+   inline def foreach(inline f: A=>Unit): Unit =
         await(aforeach(f))(using cpsMonad)
 
 class CIFReader[F[_]:CpsMonad,A](a:A) extends IFReader[F,A]:
