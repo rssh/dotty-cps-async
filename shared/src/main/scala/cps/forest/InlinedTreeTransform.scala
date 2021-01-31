@@ -42,13 +42,8 @@ trait InlinedTreeTransform[F[_], CT]:
        var debug = false
        x match
           case vx@ValDef(name,tpt,Some(rhs)) =>
-              if (name == "SLSelectLoop_this")
-                  cpsCtx.log(s"!!!: SFSelectLoop_this in bindings, symbol=${vx.symbol.hashCode} ")
-                  debug = true
               checkLambdaDef(rhs) match
                  case Some(lambda) => 
-                    if (debug)
-                       cpsCtx.log("!!!:SFSelectLoop_this is lambda")
                     lambda match
                       case Lambda(params, body) =>
                          val cpsBinding = runRoot(body, TransformationContextMarker.InlinedBinding(i))
@@ -86,8 +81,6 @@ trait InlinedTreeTransform[F[_], CT]:
                       case _ => // impossible
                          s.copy(newBindings = vx::s.newBindings)
                  case None => 
-                    if (debug)
-                       cpsCtx.log(s"!!!: SFSelectLoop_this ${vx.symbol} is not lambda ")
                     val cpsRhs = try {
                             runRoot(rhs, TransformationContextMarker.InlinedBinding(i))
                       } catch {
@@ -99,18 +92,9 @@ trait InlinedTreeTransform[F[_], CT]:
                       }
                     cpsRhs.syncOrigin match
                       case None =>
-                         if (debug)
-                            cpsCtx.log("!!!:SFSelectLoop_this is async")
                          val newName = if (debug) name+"DEBUG" else name
                          val newSym = Symbol.newVal(Symbol.spliceOwner, newName, cpsRhs.rtpe,  vx.symbol.flags, Symbol.noSymbol)
-                         if (debug)
-                            cpsCtx.log(s"!!!:newSym.id = ${newSym.hashCode}")
-                            cpsCtx.log(s"!!!:rhs.transformed = ${cpsRhs.transformed.show}")
                          val newValDef = ValDef(newSym, Some(cpsRhs.transformed.changeOwner(newSym)))
-                         if (debug)
-                            cpsCtx.log("!!!:after change owner")
-                            val testValDef = ValDef.copy(newValDef)(newValDef.name, newValDef.tpt, newValDef.rhs)
-                            cpsCtx.log("!!!:test valdef created ..")
 
                          if (cpsRhs.isLambda) {
                             val resType = TypeRepr.of[F].appliedTo(cpsRhs.otpe.widen)

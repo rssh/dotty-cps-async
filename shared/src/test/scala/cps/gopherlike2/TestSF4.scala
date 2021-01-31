@@ -1,0 +1,42 @@
+package cps.gopherlike2
+
+import org.junit.{Test,Ignore}
+import org.junit.Assert._
+
+import scala.quoted._
+import scala.concurrent.Future
+import scala.util.Success
+
+import cps._
+import cps.monads.FutureAsyncMonad
+import scala.concurrent.ExecutionContext.Implicits.global
+
+
+class TestSF4:
+
+  def qqq: Int = 0
+
+/*
+  //compiler bug: TODO: minimize
+  @Test def reproduce(): Unit = {
+     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+
+     val in = new CIFChannel[Future,Boolean]()
+     val select = SLSelect[Future,Unit](summon[CpsMonad[Future]])
+
+     val generator = async[Future] {
+         select.fold(in){ (ch,s) =>
+            s.apply{
+                case v: ch.read => ch
+            }
+         }
+     }
+     assert(true)
+
+  }
+*/
+
+
+
