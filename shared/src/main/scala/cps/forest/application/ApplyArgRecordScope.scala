@@ -131,11 +131,17 @@ trait ApplyArgRecordScope[F[_], CT]:
               case Lambda(params, body) => (params, body)
               case _ =>
                  throw MacroError(s"Lambda expexted, we have ${term.asExpr.show}",term.asExpr)
-            term.tpe match
-              case MethodType(paramNames, paramTypes, resType) =>
-                  val mt = shiftedMethodType(paramNames, paramTypes, resType)
-                  createAsyncLambda(mt, params, Symbol.spliceOwner)
-              case ft@AppliedType(tp,tparams) =>
+            shiftedArgExpr(existsAsync, term.tpe, params, body)
+         else
+            term
+
+
+       def shiftedArgExpr(existsAsync:Boolean, identType: TypeRepr, params: List[ValDef], body:Term): Term =
+         identType match
+            case MethodType(paramNames, paramTypes, resType) =>
+                val mt = shiftedMethodType(paramNames, paramTypes, resType)
+                createAsyncLambda(mt, params, Symbol.spliceOwner)
+            case ft@AppliedType(tp,tparams) =>
                   if (ft.isFunctionType) {
                       //val paramTypes = tparams.dropRight(1).map(typeOrBoundsToType(_,false))
                       val paramTypes = tparams.dropRight(1)
@@ -156,15 +162,15 @@ trait ApplyArgRecordScope[F[_], CT]:
                   } else {
                       throw MacroError(s"FunctionType expected, we have ${tp}", term.asExpr)
                   }
-              case other =>
+            case at@AnnotatedType(underlying,anon) =>
+                  shiftedArgExpr(existsAsync, underlying, params, body)
+            case other =>
                   // TODO: logging compiler interface instead println
                   println(s"MethodType expected, we have ${term.tpe}")
                   println(s"term.show = ${term.show}")
                   println(s"term.body = ${term}")
                   println(s"mt = ${other}")
                   throw MacroError(s"methodType expected for ${term.asExpr.show}, we have $other",term.asExpr)
-         else
-            term
 
        def shift(): ApplyArgRecord = copy(shifted=true)
 
