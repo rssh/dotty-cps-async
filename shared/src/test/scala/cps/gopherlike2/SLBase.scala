@@ -41,6 +41,12 @@ class SLSelect[F[_], S](m:CpsMonad[F]):
       SLSelect.applyImpl[F,S]('pf, '{summonInline[CpsMonad[F]]})  
     }    
   
+  inline def apply1[A](inline ch: IFReader[F,A], f: A=>S): S =
+      val s0 = new SLSelect[F,S](asyncMonad)
+      await(s0.onRead(ch)(f).runAsync())(using asyncMonad)
+  
+  inline def apply2[A](inline pf: PartialFunction[Any,S]): S =
+      ???
   
 
   def runAsync():F[S] =
@@ -131,6 +137,7 @@ object SLSelect:
     import quotes.reflect._
     pf match
       case Lambda(valDefs, body) =>
+        println(s"valDefs.symbols = ${valDefs.map(_.symbol)}")
         runImplTree[F,A,B](builder, body)
       case Inlined(_,List(),body) => 
         runImplTree[F,A,B](builder, body)

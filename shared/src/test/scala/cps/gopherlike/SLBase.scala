@@ -36,9 +36,13 @@ class SLSelectLoop[F[_]:CpsMonad]:
 
   inline def apply(inline pf: PartialFunction[Any,Boolean]): Unit =
     ${  
-      SLSelectLoop.loopImpl[F]('pf, '{summonInline[CpsMonad[F]]})  
+      SLSelectLoop.loopImpl[F]('pf, '{summon[CpsMonad[F]]})  
     }    
   
+  inline def applyAsync(inline pf: PartialFunction[Any,F[Boolean]]): Unit =
+    ${
+      SLSelectLoop.loopImplAsync[F]('pf, '{summon[CpsMonad[F]]})  
+    }
   
 
   def runAsync():F[Unit] =
@@ -109,6 +113,12 @@ object SLSelectLoop:
       runImpl( builder, pf)
       
 
+  def loopImplAsync[F[_]:Type](pf: Expr[PartialFunction[Any,F[Boolean]]], m: Expr[CpsMonad[F]])(using Quotes): Expr[Unit] =
+      def builder(caseDefs: List[SelectorCaseExpr[F]]):Expr[Unit] = {
+         ???
+      }
+      //runImpl( builder, pf)
+      ???
 
   def runImpl[F[_]:Type, A:Type,B :Type](builder: List[SelectorCaseExpr[F]]=>Expr[B],
                                  pf: Expr[PartialFunction[Any,A]])(using Quotes): Expr[B] =

@@ -28,9 +28,10 @@ class TestImplicitAwait:
            Future successful s"${url}:${theme}:${userId}"
   
 
+  // Regression: compiler bug in dotty
   @Test def withImplicitAwait(): Unit = 
-     ///implicit val printCode = cps.macroFlags.PrintCode
-     //implicit val printTree = cps.macroFlags.PrintTree
+     implicit val printCode = cps.macroFlags.PrintCode
+     implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(10)
      val api = ApiEmulator
      val c = async[Future]{ 
@@ -43,6 +44,7 @@ class TestImplicitAwait:
      }
      val r = Await.result(c, 10 seconds)
      assert(r=="http://www.example.com:0:1")
+
 
 
   @Test def withExplicitAwait(): Unit = 
@@ -58,5 +60,6 @@ class TestImplicitAwait:
      }
      val r = Await.result(c, 10 seconds)
      assert(r=="http://www.example.com:0:1")
+
 
 
