@@ -141,7 +141,9 @@ trait ApplyArgBuilderScope[F[_],CT] {
                           throw MacroError(s"Lambda expected", posExpr(t))
              else
                val argName: String = "a" + acc.posIndex // TODO: get name from params
-               val symbol = Symbol.newVal(Symbol.spliceOwner,argName,t.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
+               val widenType = TransformUtil.veryWiden(t.tpe)
+               val symbol = Symbol.newVal(Symbol.spliceOwner,argName, widenType,
+                                          Flags.EmptyFlags,Symbol.noSymbol)
                val valDef = symbol.tree match
                   case v@ValDef(_,_,_) => v
                   case _ =>
@@ -149,7 +151,7 @@ trait ApplyArgBuilderScope[F[_],CT] {
                val ident = Ref(symbol)
                if (cpsCtx.flags.debugLevel > 15)
                  cpsCtx.log(s"buildApplyArg: Precacl, t=$t, i=${acc.posIndex}")
-               acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree,valDef,ident))
+               acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree.castOtpe(widenType),valDef,ident))
 
     }
 

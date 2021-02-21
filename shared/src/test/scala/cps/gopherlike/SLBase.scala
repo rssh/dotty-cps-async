@@ -5,6 +5,7 @@ import cps._
 import scala.quoted._
 import scala.compiletime._
 
+import cps.forest.TransformUtil
 
 class SLSelectLoop[F[_]:CpsMonad]:
 
@@ -175,7 +176,7 @@ object SLSelectLoop:
           if (ch.tpe <:< TypeRepr.of[IFReader[F,?]]) 
             tp.tpe.widen.asType match
               case '[a] => 
-                caseDef.rhs.tpe.widen.asType match
+                TransformUtil.veryWiden(caseDef.rhs.tpe).asType match
                   case '[r] =>
                      ReadExpression(ch.asExprOf[IFReader[F,a]],readFun.asExprOf[a=>r])
                   case _ => 
@@ -190,7 +191,7 @@ object SLSelectLoop:
           if (ch.tpe <:< TypeRepr.of[IFWriter[F,?]]) then
             tp.tpe.widen.asType match
               case '[a] => 
-                caseDef.rhs.tpe.widen.asType match
+                TransformUtil.veryWiden(caseDef.rhs.tpe).asType match
                   case '[r] =>
                      WriteExpression(ch.asExprOf[IFWriter[F,a]],e.asExprOf[a], writeFun.asExprOf[a=>r], m) 
                   case _ => 
@@ -252,7 +253,7 @@ object SLSelectLoop:
                 oldArgSymbol: quotes.reflect.Symbol,
                 body: quotes.reflect.Term): quotes.reflect.Block =
     import quotes.reflect._
-    val mt = MethodType(List(argName))(_ => List(argType), _ => body.tpe.widen)
+    val mt = MethodType(List(argName))(_ => List(argType), _ => TransformUtil.veryWiden(body.tpe))
     Lambda(Symbol.spliceOwner, mt, (owner,args) =>
       substIdent(body,oldArgSymbol, args.head.asInstanceOf[Term], owner).changeOwner(owner))
 

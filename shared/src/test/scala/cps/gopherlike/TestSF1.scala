@@ -19,7 +19,7 @@ class TestSF1:
   @Test def reproduce(): Unit = {
      implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
-     implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      async[Future] {
         val ch1 = new CIFChannel[Future,Int]()
         val ch2 = new CIFChannel[Future,Int]()

@@ -21,11 +21,11 @@ object ValDefTransform:
      val rhs = valDef.rhs.getOrElse(
              throw MacroError(s"val $valDef without right part in block ", cpsCtx.patternCode)
      )
-     rhs.asExpr match 
-        case '{ $e: et } =>
+     TransformUtil.veryWiden(rhs.tpe).asType match 
+        case '[et] =>
             if (cpsCtx.flags.debugLevel > 15) 
-               cpsCtx.log(s"rightPart is ${TransformUtil.safeShow(e.asTerm)}")
-            val cpsRight = Async.nestTransform(e,cpsCtx,TransformationContextMarker.ValDefRight)
+               cpsCtx.log(s"rightPart is ${TransformUtil.safeShow(rhs)}")
+            val cpsRight = Async.nestTransform(rhs.asExprOf[et],cpsCtx,TransformationContextMarker.ValDefRight)
             if (cpsRight.isAsync) {
                if (cpsCtx.flags.debugLevel > 15) {
                   cpsCtx.log(s"rightPart is async")

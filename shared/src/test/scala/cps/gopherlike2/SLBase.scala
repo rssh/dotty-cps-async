@@ -5,6 +5,7 @@ import cps._
 import scala.quoted._
 import scala.compiletime._
 
+import cps.forest.TransformUtil
 
 class SLSelect[F[_], S](m:CpsMonad[F]):
 
@@ -153,7 +154,7 @@ object SLSelect:
       case b@Bind(v, tp@Typed(expr, TypeSelect(ch,"read"))) =>
           val readFun = makeLambda(v,tp.tpe,b.symbol,caseDef.rhs)
           if (ch.tpe <:< TypeRepr.of[IFReader[F,?]]) 
-            tp.tpe.widen.asType match
+            TransformUtil.veryWiden(tp.tpe).asType match
               case '[a] => 
                 ReadExpression(ch.asExprOf[IFReader[F,a]],readFun.asExprOf[a=>S])
               case _ => 
@@ -164,7 +165,7 @@ object SLSelect:
           val writeFun = makeLambda(v,tp.tpe, b.symbol, caseDef.rhs)
           val e = matchCaseDefCondition(caseDef, v)
           if (ch.tpe <:< TypeRepr.of[IFWriter[F,?]]) then
-            tp.tpe.widen.asType match
+            TransformUtil.veryWiden(tp.tpe).asType match
               case '[a] => 
                 WriteExpression(ch.asExprOf[IFWriter[F,a]],e.asExprOf[a], writeFun.asExprOf[a=>S]) 
               case _ =>
