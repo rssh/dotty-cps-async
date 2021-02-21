@@ -42,7 +42,7 @@ trait ApplyTreeTransform[F[_],CT]:
             handleFun(applyTerm, fun, args, tails)
      if (cpsCtx.flags.debugLevel > 15)
        cpsCtx.log(s"runApply result = ${r}")
-       cpsCtx.log(s"runApply result transformed = ${r.transformed.show}")
+       cpsCtx.log(s"runApply result transformed = ${safeShow(r.transformed)}")
      r
 
   def sameSelect(funTerm:Term, name:String, targs:List[TypeTree], args:List[Term]):Option[Term] =

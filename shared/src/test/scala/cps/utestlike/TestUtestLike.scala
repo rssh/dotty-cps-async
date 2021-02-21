@@ -19,3 +19,9 @@ class TestUtestLike:
      }
      assert(c.run() == Success(()))
 
+// workarround for https://github.com/lampepfl/dotty/issues/11331
+object TestUtestLike:
+
+   def dummy=0
+
+

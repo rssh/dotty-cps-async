@@ -16,6 +16,7 @@ class TestSF3:
 
   def qqq: Int = 0
 
+  /*
   // dotty bug: https://github.com/lampepfl/dotty/issues/11251
   @Test def reproduce(): Unit = {
      implicit val printCode = cps.macroFlags.PrintCode
@@ -38,6 +39,7 @@ class TestSF3:
      assert(true)
 
   }
+  */
 
 
 

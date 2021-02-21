@@ -16,7 +16,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
   def run(using qctx: Quotes)(prevs: List[qctx.reflect.Statement], last: qctx.reflect.Term): CpsExpr[F,T] =
 
      if (cpsCtx.flags.debugLevel >= 10) then
-        cpsCtx.log(s"Block transform, last=${last.show}")
+        cpsCtx.log(s"Block transform, last=${TransformUtil.safeShow(last)}")
      val tType = summon[Type[T]]
      val uType = summon[Type[Unit]]
      import qctx.reflect._

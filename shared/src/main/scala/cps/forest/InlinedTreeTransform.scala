@@ -33,8 +33,7 @@ trait InlinedTreeTransform[F[_], CT]:
   
   def runInlined(origin: Inlined): CpsTree =
     if (cpsCtx.flags.debugLevel >= 15) then
-        cpsCtx.log(s"Inlined, origin=${origin.show}")  
-        cpsCtx.log(s"Inlined, spliceOwner = ${origin.show}")  
+        cpsCtx.log(s"Inlined, origin=${safeShow(origin)}")  
     val monad = cpsCtx.monad.asTerm
     val s0 = InlinedBindingsRecord(HashMap.empty, List.empty, List.empty)
     val funValDefs = origin.bindings.zipWithIndex.foldLeft(s0){ (s, xi) =>
@@ -232,7 +231,7 @@ trait InlinedTreeTransform[F[_], CT]:
     
     if (cpsCtx.flags.debugLevel >= 15) then
         cpsCtx.log(s"runInline, body=${body}")
-        cpsCtx.log(s"runInline, newBindings=${funValDefs.newBindings.map(_.show).mkString("\n")}")
+        cpsCtx.log(s"runInline, newBindings=${funValDefs.newBindings.map(TransformUtil.safeShow(_)).mkString("\n")}")
         funValDefs.changes.foreach{ b =>
            cpsCtx.log(s"fubValDef changes binding: ${b}")
         } 

@@ -49,7 +49,14 @@ object Async {
        case Some(dm) =>
           transformMonad[F,T](f,dm)
        case None =>
-          report.throwError(s"Can't find async monad for ${TypeRepr.of[F].show}", f)
+          val msg = s"Can't find async monad for ${TypeRepr.of[F].show} (transformImpl)"
+          //if (flags.debugLevel > 0)
+          println(s"code=${f.show}")
+          report.error(msg, f)
+          val ex = new RuntimeException(msg)
+          ex.printStackTrace()
+          //else
+          report.throwError(msg, f)
 
 
   /**
@@ -62,18 +69,24 @@ object Async {
     val flags = adoptFlags(f)
     try
       if (flags.printCode)
-        println(s"before transformed: ${f.show}")
+        try
+           println(s"before transformed: ${f.show}")
+        catch
+           case ex: Exception =>
+              println(s"before transformed: show failed for $f, use printTree to show plain tree")
       if (flags.printTree)
         println(s"value: ${f.asTerm}")
       if (flags.debugLevel > 5) 
         println(s"customValueDiscard=${flags.customValueDiscard}, warnValueDiscard=${flags.warnValueDiscard}")
-      //TransformUtil.dummyMapper(f.asTerm, quotes.reflect.Symbol.spliceOwner)
       val r = rootTransform[F,T](f,dm,flags,TopLevel,0, None).transformed
-      //TransformUtil.dummyMapper(f.asTerm, quotes.reflect.Symbol.spliceOwner)
       if (flags.printCode)
-        println(s"transformed value: ${r.show}")
-        if (flags.printTree)
-          println(s"transformed tree: ${r.asTerm}")
+        try
+           println(s"transformed value: ${r.show}")
+        catch
+           case ex: Exception =>
+              println(s"after transformed: show failed for $r, use printTree to show plain tree")
+      if (flags.printTree)
+        println(s"transformed tree: ${r.asTerm}")
       r
     catch
       case ex: MacroError =>

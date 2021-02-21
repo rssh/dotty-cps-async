@@ -86,6 +86,14 @@ object TransformUtil:
      else
          Typed(term, Inferred(tp))
 
+
+  def safeShow(using Quotes)(t: quotes.reflect.Tree): String =
+    try
+      t.show
+    catch
+      case ex: Exception =>
+         t.toString
+
   // used for debugging instrumentation
   def dummyMapper(using Quotes)(t: quotes.reflect.Term, owner: quotes.reflect.Symbol): Boolean =
      import quotes.reflect._

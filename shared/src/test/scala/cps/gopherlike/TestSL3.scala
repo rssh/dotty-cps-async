@@ -14,7 +14,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class TestSL3:
 
+  def qqq: Int = 0
 
+  /*
+    - disabled in RC1
   @Test def reproduce(): Unit = 
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
@@ -41,4 +44,5 @@ class TestSL3:
          }
      }
 
+   */
 

@@ -24,7 +24,7 @@ object ValDefTransform:
      rhs.asExpr match 
         case '{ $e: et } =>
             if (cpsCtx.flags.debugLevel > 15) 
-               cpsCtx.log(s"rightPart is ${e.show}")
+               cpsCtx.log(s"rightPart is ${TransformUtil.safeShow(e.asTerm)}")
             val cpsRight = Async.nestTransform(e,cpsCtx,TransformationContextMarker.ValDefRight)
             if (cpsRight.isAsync) {
                if (cpsCtx.flags.debugLevel > 15) {
@@ -34,7 +34,7 @@ object ValDefTransform:
                                                 valDef, cpsRight, CpsExpr.unit(monad) )
             } else {
                if (cpsCtx.flags.debugLevel > 15) 
-                 cpsCtx.log(s"ValDef: rightPart no async changed=${cpsRight.isChanged}, cpsRight.transformed=${cpsRight.transformed.show}")
+                 cpsCtx.log(s"ValDef: rightPart no async changed=${cpsRight.isChanged}, cpsRight.transformed=${TransformUtil.safeShow(cpsRight.transformed.asTerm)}")
 
                val nextValDef = if (cpsRight.isChanged) {
                                     ValDef(valDef.symbol, Some(cpsRight.syncOrigin.get.asTerm.changeOwner(valDef.symbol)))
