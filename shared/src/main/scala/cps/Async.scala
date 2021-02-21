@@ -34,7 +34,7 @@ object Async {
   inline def async[F[_]](using am:CpsMonad[F]): InferAsyncArg[F] =
           new InferAsyncArg[F]
 
-  transparent inline def transform[F[_], T](inline expr: T)(using inline m: CpsMonad[F]) =
+  transparent inline def transform[F[_], T](inline expr: T)(using m: CpsMonad[F]) =
     ${
         Async.transformImpl[F,T]('expr)
      }

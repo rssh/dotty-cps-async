@@ -51,7 +51,7 @@ trait RootTreeTransform[F[_], CT]:
                   case _ =>  // TODO: elimi
                     val expr = term.asExpr
                     val monad = cpsCtx.monad
-                    term.tpe.widen.asType match
+                    TransformUtil.veryWiden(term.tpe).asType match
                       case '[ et ] =>
                         val rCpsExpr = try {
                              if cpsCtx.flags.debugLevel >= 15 then

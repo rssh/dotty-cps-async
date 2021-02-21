@@ -140,6 +140,14 @@ trait ApplyTreeTransform[F[_],CT]:
                   // this code is likey depends from implementation details of a compiler
                   // mb create compiler-level API ?
                   runAwait(applyTerm, args.head, targs3.head.tpe, args1.head)
+       case Inlined(_,_,
+                 Lambda(List(xValDef),
+                   Block(List(),Apply(Apply(TypeApply(obj3,targs3),List(x)),args1)))
+            ) if (obj3.symbol == awaitSymbol
+                   && xValDef.symbol == x.symbol) =>
+                  // transient inlines have no 'Typed' entry
+                  //  TODO: handle non-inlined conversion
+                  runAwait(applyTerm, args.head, targs3.head.tpe, args1.head)
        case _ =>
          val cpsObj = runRoot(obj, TCM.ApplySelect)
          if (cpsCtx.flags.debugLevel >= 15)

@@ -18,7 +18,7 @@ trait IFWriter[F[_],A]:
     v = a.asInstanceOf[AnyRef]
     cpsMonad.pure(())
 
-  inline def write(inline a:A): Unit =
+  transparent inline def write(inline a:A): Unit =
     await[F,Unit](awrite(a))(using wCpsMonad)
 
 
@@ -37,13 +37,13 @@ trait IFReader[F[_],A]:
    def aread(): F[A] =
         cpsMonad.pure(value.get)
 
-   inline def read():A =
+   transparent inline def read():A =
         await(aread())(using cpsMonad)
 
    def aOptRead(): F[Option[A]]=
         cpsMonad.pure(value)
 
-   inline def optRead(): Option[A] =
+   transparent inline def optRead(): Option[A] =
         await(aOptRead())(using cpsMonad)
         
 
@@ -61,7 +61,7 @@ trait IFReader[F[_],A]:
          f(value.get)
      }
 
-   inline def foreach(inline f: A=>Unit): Unit =
+   transparent inline def foreach(inline f: A=>Unit): Unit =
         await(aforeach(f))(using cpsMonad)
 
 class CIFReader[F[_]:CpsMonad,A](a:A) extends IFReader[F,A]:

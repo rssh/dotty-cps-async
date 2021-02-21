@@ -28,11 +28,10 @@ class TestImplicitAwait:
            Future successful s"${url}:${theme}:${userId}"
   
 
-  // Regression: compiler bug in dotty
   @Test def withImplicitAwait(): Unit = 
-     implicit val printCode = cps.macroFlags.PrintCode
-     implicit val printTree = cps.macroFlags.PrintTree
-     //implicit val debugLevel = cps.macroFlags.DebugLevel(10)
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printTree = cps.macroFlags.PrintTree
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val api = ApiEmulator
      val c = async[Future]{ 
         import cps.features.implicitAwait.given

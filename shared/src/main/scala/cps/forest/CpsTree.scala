@@ -90,7 +90,14 @@ trait CpsTreeScope[F[_], CT] {
                     else if (otpe <:< TypeRepr.of[T]) then
                        // when F[_] is not covariant, but we know, that
                        // otpe <: T and we can map Typing somewhere inside the expression
-                       safeSealAs[F[T]](castOtpe(TypeRepr.of[T]).transformed)
+                       try {
+                         safeSealAs[F[T]](castOtpe(TypeRepr.of[T]).transformed)
+                       } catch {
+                         case ex: Exception =>
+                            println(s"Exception during sealing to F[T], T=${TypeRepr.of[T].show}, otpe=${candidate.tpe}")
+                            println(s"CpsTree.getClass ${candidate.getClass}")
+                            throw ex;
+                       }
                     else
                        // we should not cast to F[T]
                        safeSealAs[F[T]](candidate)
