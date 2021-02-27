@@ -28,9 +28,10 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
     .jvmSettings(
         scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
                             "-Ydebug", "-uniqid", "-Ycheck:macros"  ),
+                             // -Ydebug-error
         libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
     ).jsSettings(
         scalaJSUseMainModuleInitializer := true,
-        libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.2.0" % Test).withDottyCompat(scalaVersion.value)
+        libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.5.0" % Test).withDottyCompat(scalaVersion.value)
     )
 

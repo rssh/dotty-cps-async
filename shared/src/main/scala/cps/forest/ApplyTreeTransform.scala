@@ -46,8 +46,11 @@ trait ApplyTreeTransform[F[_],CT]:
      r
 
   def sameSelect(funTerm:Term, name:String, targs:List[TypeTree], args:List[Term]):Option[Term] =
-      funTerm.symbol.memberMethod(name) match
-        case None => None
+      if (cpsCtx.flags.debugLevel >= 15 && name=="apply")
+          println(s"sameSelect: funTerm=${funTerm}")
+          println(s"sameSelect: funTerm.tpe.typeSymbol=${funTerm.tpe.typeSymbol}")
+      funTerm.tpe.typeSymbol.memberMethod(name) match
+        case Nil => None
         case m::Nil =>
            val select = Select.unique(funTerm, name)
            if (targs.isEmpty)
@@ -160,11 +163,17 @@ trait ApplyTreeTransform[F[_],CT]:
             case cls: CallChainSubstCpsTree =>
                if (cpsCtx.flags.debugLevel >= 15)
                   cpsCtx.log(s"funSelect: CallChainSubstCpsTree discovered, fun=$fun fun.tpe=${fun.tpe}")
+                  cpsCtx.log(s"funSelect: cls.shifted = ${cls.shifted.show}")
                sameSelect(cls.shifted, methodName, List.empty, args) match 
                   case None => 
+                               if (cpsCtx.flags.debugLevel >= 15) then
+                                  cpsCtx.log(s"not found name ${methodName} for ${cls.shifted.show}")
                                val cpsObj1 = cpsObj.select(fun,fun.symbol, fun.tpe)
                                handleArgs1(applyTerm, fun, cpsObj1, args, tails)
-                  case Some(term) => val cpsObj1 = CpsTree.pure(term, isChanged = true)
+                  case Some(term) => 
+                               if (cpsCtx.flags.debugLevel >= 15) then
+                                  cpsCtx.log(s"found sameSelect: ${term.show} ")
+                               val cpsObj1 = CpsTree.pure(term, isChanged = true)
                                handleArgs1(applyTerm, fun, cpsObj1, args, tails, unpure=true)
             case _ =>
                if (cpsCtx.flags.debugLevel >= 15)
