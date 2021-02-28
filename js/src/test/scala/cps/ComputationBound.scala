@@ -18,7 +18,7 @@ trait ComputationBound[+T] {
     progress(timeout) match 
       case Done(t) => Success(t)
       case Error(e) => Failure(e)
-      case None => Failure(new TimeoutException())
+      case _ => Failure(new TimeoutException())
 
   def progress(timeout: Duration): ComputationBound[T]
 
@@ -101,7 +101,7 @@ object ComputationBound {
                            case Error(x) =>
                               c.ref.set(Some(Failure(x)))
                               nFinished += 1
-                           case None =>
+                           case _ =>
                               secondQueue.add(Deferred(c.ref,Some(nextR)))
                   case None =>
                     // wait next time

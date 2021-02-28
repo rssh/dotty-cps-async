@@ -121,7 +121,7 @@ Note that you should carefully decide whether you need async function support an
 Special semantics for substitutions in call chains
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  Consider chain of calls, which accept async-shifted functions.  One example is  'withFilter' from standard collections library.  Let's look on the next chunk of code:  
+  Consider chain of calls, which accept async-shifted functions.  One example is  'withFilter' from standard collections library.  Let's look on the next code:  
 
 .. code-block:: scala
 
@@ -175,7 +175,9 @@ By convention, the substituted type should be derived from CallChainAsyncSubst[F
 
 This structure has a nice categorical interpreation. If you are curious about thet, read details in :ref:`categorical-interpretation-for-CallChainAsyncSubst`.
 
+ 
+Builder methods.
+^^^^^^^^^^^^^^^^
+ Sometimes   
 
-
-  
 
