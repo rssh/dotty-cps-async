@@ -24,10 +24,17 @@ class ASChannel[F[_]:CpsAsyncMonad,A]
         case Some(writer) =>
                 writer(())
         case None =>
-                val m = summon[CpsAsyncMonad[F]]
-                m.adoptCallbackStyle[A]( callback =>
-                   readers.add(x => m.pure(callback(Success(x))))
-                )
+                  val m = summon[CpsAsyncMonad[F]]
+                  val readFun: ()=>F[A] = this.synchronized{
+                    Option(writers.poll()) match
+                       case Some(writer) => () => writer(())
+                       case None =>
+                         val fv = m.adoptCallbackStyle[A]( callback =>
+                           readers.add(x => m.pure(callback(Success(x))))
+                         )
+                         () => fv
+                  }
+                  readFun.apply()
    }
 
    def write(a:A):F[Unit] = {
@@ -36,9 +43,17 @@ class ASChannel[F[_]:CpsAsyncMonad,A]
                   reader(a)
         case None =>
                 val m = summon[CpsAsyncMonad[F]]
-                m.adoptCallbackStyle[Unit]( callback =>
-                    writers.add(  x => m.pure{ callback(Success(())); a} )
-                )
+                val writeFun: ()=>F[Unit] = this.synchronized{
+                  Option(readers.poll()) match
+                    case Some(reader) => 
+                       () => reader(a)
+                    case None =>
+                       val fv = m.adoptCallbackStyle[Unit]( callback =>
+                                  writers.add(  x => m.pure{ callback(Success(())); a} )
+                                )
+                       () => fv 
+                }
+                writeFun()
    }
  
 
