@@ -17,7 +17,8 @@ class TestSF4:
   def qqq: Int = 0
 
 
-  //compiler bug: TODO: minimize
+  //compiler bug: https://github.com/lampepfl/dotty/issues/11401
+  // fixed in https://github.com/lampepfl/dotty/pull/11552 (not yet in upstream)
   @Test def reproduce(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
@@ -26,33 +27,35 @@ class TestSF4:
      val in = new CIFReader[Future,Boolean](true)
      val select = SLSelect[Future,Unit](summon[CpsMonad[Future]])
 
-     /*
-     val generator = async[Future] {
-         select.fold(in){ (ch,s) =>
-            s.apply{
-                case v: ch.read => ch
-            }
-         }
-     }
-     */
+     // origin
+     //val generator = async[Future] {
+     //    select.fold(in){ (ch,s) =>
+     //       s.apply{
+     //           case v: ch.read => ch
+     //       }
+     //    }
+     //}
 
-     /* 
-     val generator = async[Future] {
+     
+     try
+       val generator = async[Future] {
          select.fold(in){ (ch,s) =>
             s.apply1(ch, v => ch)
          }
-     }
-     */
+       }
+     catch
+       case ex: RuntimeException =>
+        assert(ex.getMessage() == "TestCase:runAsync:NotImplemented")
+     
+     
 
-     /*
-      works
-     val generator = async[Future] {
-         select.fold(in){ (ch,s) =>
-            s.onRead(ch)(v => ch)
-            SLSelect.Done(ch)
-         }
-     }
-     */
+     //  works
+     //val generator = async[Future] {
+     //     select.fold(in){ (ch,s) =>
+     //       s.onRead(ch)(v => ch)
+     //       SLSelect.Done(ch)
+     //    }
+     //}
 
      assert(true)
 

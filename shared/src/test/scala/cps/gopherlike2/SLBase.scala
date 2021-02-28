@@ -37,12 +37,12 @@ class SLSelect[F[_], S](m:CpsMonad[F]):
       asyncMonad.pure(this)
 
 
-  inline def apply(inline pf: PartialFunction[Any,S]): S =
+  transparent inline def apply(inline pf: PartialFunction[Any,S]): S =
     ${  
       SLSelect.applyImpl[F,S]('pf, '{summonInline[CpsMonad[F]]})  
     }    
   
-  inline def apply1[A](inline ch: IFReader[F,A], f: A=>S): S =
+  transparent inline def apply1[A](inline ch: IFReader[F,A], f: A=>S): S =
       val s0 = new SLSelect[F,S](asyncMonad)
       await(s0.onRead(ch)(f).runAsync())(using asyncMonad)
   
@@ -50,10 +50,10 @@ class SLSelect[F[_], S](m:CpsMonad[F]):
       ???
   
 
-  def runAsync():F[S] =
-    ???
+  def runAsync():F[S] = 
+      throw new RuntimeException("TestCase:runAsync:NotImplemented")
 
-  inline def run(): S =
+  transparent inline def run(): S =
     await(runAsync())(using asyncMonad)
       
   def fold[S](s0:S)(step: (S,SLSelect[F,S])=> S|SLSelect.Done[S]): S = {
