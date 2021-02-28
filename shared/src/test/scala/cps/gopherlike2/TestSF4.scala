@@ -19,7 +19,7 @@ class TestSF4:
 
   //compiler bug: TODO: minimize
   @Test def reproduce(): Unit = {
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
 
@@ -36,7 +36,7 @@ class TestSF4:
      }
      */
 
-     /*
+     /* 
      val generator = async[Future] {
          select.fold(in){ (ch,s) =>
             s.apply1(ch, v => ch)
