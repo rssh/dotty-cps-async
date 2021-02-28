@@ -16,7 +16,7 @@ class TestSF4:
 
   def qqq: Int = 0
 
-
+  /*
   //compiler bug: https://github.com/lampepfl/dotty/issues/11401
   // fixed in https://github.com/lampepfl/dotty/pull/11552 (not yet in upstream)
   @Test def reproduce(): Unit = {
@@ -60,6 +60,7 @@ class TestSF4:
      assert(true)
 
   }
+  */
 
 
 

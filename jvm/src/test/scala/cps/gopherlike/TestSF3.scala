@@ -18,7 +18,7 @@ class TestSF3:
 
   // dotty bug: https://github.com/lampepfl/dotty/issues/11251
   @Test def reproduce(): Unit = {
-     implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
 
