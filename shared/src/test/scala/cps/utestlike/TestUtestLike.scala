@@ -10,7 +10,10 @@ import scala.util.Success
 import cps._
 
 class TestUtestLike:
+  
+  def qqq = 0
 
+  
   @Test def reproduce(): Unit =
      val f = T1.cbi(10)
      val c = async{
@@ -18,6 +21,7 @@ class TestUtestLike:
         UtestLikeMacro.assert( r1 == 2 )
      }
      assert(c.run() == Success(()))
+  
 
 // workarround for https://github.com/lampepfl/dotty/issues/11331
 object TestUtestLike:

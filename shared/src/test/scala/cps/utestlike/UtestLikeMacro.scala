@@ -12,28 +12,29 @@ case class AssertEntry[T](label: String, thunk: (TestValue => Unit) => T)
 
 object Tracer {
 
-  def apply[T](func: Expr[Seq[AssertEntry[T]] => Unit], exprs: Expr[Seq[T]])(using Quotes, Type[T]): Expr[Unit] = {
+  def apply[T](exprs: Expr[Seq[T]])(using Quotes, Type[T]): Expr[Unit] = {
     import quotes.reflect._
+
+
+    def makeAssertEntry[T](expr: Expr[T], code: String): Expr[AssertEntry[Boolean]] =
+      '{AssertEntry(
+          ${Expr(code)},
+          logger => ${buildTracingMap('logger, expr).asExprOf[Boolean]})}
+
     exprs match {
       case Varargs(ess) =>
-        val trees: Expr[Seq[AssertEntry[T]]] = Expr.ofSeq(ess.map(e => makeAssertEntry(e, codeOf(e))))
-        Expr.betaReduce('{ $func($trees)})
+        //val trees: Seq[Expr[AssertEntry[Boolean]]] = ess.map(e => makeAssertEntry( e, codeOf(e)))
+        //Expr.betaReduce('{ $func($trees)})
+        '{  UtestLikeMacro.assertImpl(${Expr.ofSeq(ess.map(e=>makeAssertEntry(e, codeOf(e))))}: _*) }
 
       case _ => throw new RuntimeException(s"Only varargs are supported. Got: ${exprs.asTerm}")
     }
   }
 
-  private def makeAssertEntry[T](expr: Expr[T], code: String)(using Quotes, Type[T]) =
-    import quotes.reflect._
-    def entryBody(logger: Expr[TestValue => Unit]) =
-      tracingMap(logger).transformTerm(expr.asTerm)(Symbol.spliceOwner).asExprOf[T]
-    '{AssertEntry(
-      ${Expr(code)},
-      logger => ${entryBody('logger)})}
 
-  private def tracingMap(logger: Expr[TestValue => Unit])(using Quotes) =
+  private def buildTracingMap[T](logger: Expr[TestValue => Unit], expr: Expr[T])(using Quotes): Expr[Any] =
     import quotes.reflect._
-    new TreeMap {
+    val tracingMap = new TreeMap {
       // Do not descend into definitions inside blocks since their arguments are unbound
       override def transformStatement(tree: Statement)(owner: Symbol): Statement = tree match
         case _: DefDef => tree
@@ -55,7 +56,7 @@ object Tracer {
             && !name.toString.contains('$') ) =>
 
             tree.tpe.widen.asType match
-              case '[t] => wrapWithLoggedValue[t](tree.asExpr, logger)
+              case '[t] => wrapWithLoggedValue[t](tree.asExpr, logger).asTerm
        // Don't worry about multiple chained annotations for now...
           //case Typed(_, tpt) =>
           //  tpt.tpe match {
@@ -72,8 +73,9 @@ object Tracer {
         }
       }
     }
+    tracingMap.transformTerm(expr.asTerm)(Symbol.spliceOwner).asExpr
 
-  private def wrapWithLoggedValue[T: Type](expr: Expr[Any], logger: Expr[TestValue => Unit])(using Quotes) = {
+  private def wrapWithLoggedValue[T: Type](expr: Expr[Any], logger: Expr[TestValue => Unit])(using Quotes):Expr[Any] = {
     import quotes.reflect._
     val tpeString =
       try Type.show[T]
@@ -90,7 +92,7 @@ object Tracer {
             tmp
           ))
           tmp
-        }).asTerm
+        })
     }
   }
 
@@ -110,7 +112,7 @@ object UtestLikeMacro {
   inline def assert(inline exprs: Boolean*): Unit = ${assertProxy('exprs)}
 
   def assertProxy(exprs: Expr[Seq[Boolean]])(using ctx: Quotes): Expr[Unit] =
-    Tracer[Boolean]('{ (esx: Seq[AssertEntry[Boolean]]) => UtestLikeMacro.assertImpl(esx: _*) }, exprs)
+    Tracer[Boolean](exprs)
 
   def assertImpl(funcs0: AssertEntry[Boolean]*) = {
     //val funcs = funcs0.toArray
