@@ -12,12 +12,10 @@ import cps.monads.FutureAsyncMonad
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
-class TestSF4:
+class TestSF5:
 
   def qqq: Int = 0
 
-  //compiler bug: https://github.com/lampepfl/dotty/issues/11401
-  // fixed in https://github.com/lampepfl/dotty/pull/11552 (not yet in upstream)
   @Test def reproduce(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
@@ -26,26 +24,19 @@ class TestSF4:
      val in = new CIFReader[Future,Boolean](true)
      val select = SLSelect[Future,Unit](summon[CpsMonad[Future]])
 
-     // origin
-     //val generator = async[Future] {
-     //    select.fold(in){ (ch,s) =>
-     //       s.apply{
-     //           case v: ch.read => ch
-     //       }
-     //    }
-     //}
-
-     
      try
+       // origin
        val generator = async[Future] {
-         select.fold(in){ (ch,s) =>
-            s.apply1(ch, v => ch)
+         select.fold(in){ (chTestSF5,s) =>
+            s.apply{
+                case v: chTestSF5.read => chTestSF5
+            }
          }
        }
      catch
-       case ex: RuntimeException =>
-        assert(ex.getMessage() == "TestCase:runAsync:NotImplemented")
-     
+       case e: RuntimeException =>
+          assert(e.getMessage() == "TestCase:runAsync:NotImplemented")
+
      
 
      //  works

@@ -53,6 +53,8 @@ object TransformUtil:
     import quotes.reflect._
     val paramsMap = oldParams.zipWithIndex.map{case (tree,index)=>(tree.symbol,index)}.toMap
     val indexedArgs = newParams.toIndexedSeq
+
+    // TODO: mege wirh changeSyms
     val argTransformer = new TreeMap() {
             override def transformTerm(tree: Term)(owner: Symbol): Term =
                tree match

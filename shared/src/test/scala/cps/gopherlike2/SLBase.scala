@@ -63,6 +63,7 @@ class SLSelect[F[_], S](m:CpsMonad[F]):
      }
   }
 
+
   def fold_async[S](s0:S)(step: (S,SLSelect[F,S])=> F[S|SLSelect.Done[S]]): F[S] = {
      asyncMonad.flatMap(step(s0, new SLSelect[F,S](asyncMonad))){ r =>
         r match
@@ -70,6 +71,7 @@ class SLSelect[F[_], S](m:CpsMonad[F]):
           case other => fold_async(other.asInstanceOf[S])(step)
      }
   }
+
 
   inline def afold[S](s0:S)(inline step: (S,SLSelect[F,S]) => S|SLSelect.Done[S]): F[S] =
      async[F](using asyncMonad).apply{
@@ -138,7 +140,6 @@ object SLSelect:
     import quotes.reflect._
     pf match
       case Lambda(valDefs, body) =>
-        println(s"valDefs.symbols = ${valDefs.map(_.symbol)}")
         runImplTree[F,A,B](builder, body)
       case Inlined(_,List(),body) => 
         runImplTree[F,A,B](builder, body)
@@ -167,7 +168,7 @@ object SLSelect:
           if (ch.tpe <:< TypeRepr.of[IFWriter[F,?]]) then
             TransformUtil.veryWiden(tp.tpe).asType match
               case '[a] => 
-                WriteExpression(ch.asExprOf[IFWriter[F,a]],e.asExprOf[a], writeFun.asExprOf[a=>S]) 
+                WriteExpression(ch.changeOwner(Symbol.spliceOwner).asExprOf[IFWriter[F,a]],e.asExprOf[a], writeFun.asExprOf[a=>S]) 
               case _ =>
                 reportError("Can't determinate type of write", tp.asExpr) 
           else

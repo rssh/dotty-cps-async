@@ -251,13 +251,14 @@ trait ApplyArgRecordScope[F[_], CT]:
 
        private def createAsyncLambda(mt: MethodType, params: List[ValDef], owner: Symbol): Term =
          val transformedBody = cpsBody.transformed
-         Lambda(owner, mt, (owner,args) => changeArgs(params,args,transformedBody.changeOwner(owner),owner))
+         Lambda(owner, mt, (owner,args) => changeArgs(params,args,transformedBody,owner).changeOwner(owner))
 
        private def rebindCaseDef(caseDef:CaseDef,
                                  body: Term,
                                  assoc: Map[Symbol, Term],
                                  processBody: Boolean,
                                  owner: Symbol): CaseDef = {
+
 
          def rebindPatterns(pattern: Tree, map:Map[Symbol,Term]): (Tree, Map[Symbol, Term]) = {
            pattern match
@@ -297,6 +298,7 @@ trait ApplyArgRecordScope[F[_], CT]:
        private def changeSyms(association: Map[Symbol,Tree], body: Term, owner: Symbol): Term =
          if  cpsCtx.flags.debugLevel >= 20 then
              cpsCtx.log(s"changeSyms, association = $association")
+
          val changes = new TreeMap() {
 
              def lookupParamTerm(symbol:Symbol): Option[Term] =
@@ -306,6 +308,13 @@ trait ApplyArgRecordScope[F[_], CT]:
                       case paramTerm: Term => Some(paramTerm)
                       case _ => throw MacroError(s"term expected for lambda param, we have ${paramTree}",posExprs(term))
                   case _ => None
+
+             override def transformTree(tree: Tree)(owner: Symbol): Tree =
+                tree match
+                  case pattern: Bind =>
+                    Bind.copy(pattern)(pattern.name, transformTree(pattern.pattern)(owner))
+                  case _ =>
+                    super.transformTree(tree)(owner)
 
              override def transformTerm(tree:Term)(owner: Symbol):Term =
                tree match
@@ -331,6 +340,8 @@ trait ApplyArgRecordScope[F[_], CT]:
                            Annotated.copy(a)(transformTypeTree(tp)(owner),transformTerm(annotation)(owner))
                  case i@Inferred() =>
                            Inferred(transformType(i.tpe)(owner))
+                 case t:TypeSelect =>
+                           TypeSelect.copy(t)(transformTerm(t.qualifier)(owner),t.name)
                  case _ => super.transformTypeTree(tree)(owner)
 
              def transformType(tp: TypeRepr)(owner: Symbol): TypeRepr =
@@ -340,10 +351,14 @@ trait ApplyArgRecordScope[F[_], CT]:
                          lookupParamTerm(tref.termSymbol) match
                            case Some(paramTerm) => paramTerm.tpe
                            case None => tp
-                 case tp: TypeRef =>
-                         // it is impossible to create typeRef, so pass is itself
-                         // TODO: add constructor to CompilerReflection
-                         tp
+                 case tp@TypeRef(internal, name) =>
+                         internal match
+                           case tr: TermRef =>
+                              val ref = lookupParamTerm(tr.termSymbol).getOrElse(Ref(tr.termSymbol))
+                              TypeSelect(ref,name).tpe
+                           case _ =>
+                            // we can't get inside, since it is
+                              tp 
                  case SuperType(thisTpe,superTpe) =>
                          SuperType(transformType(thisTpe)(owner),transformType(superTpe)(owner))
                  case Refinement(parent,name,info) =>
@@ -361,12 +376,9 @@ trait ApplyArgRecordScope[F[_], CT]:
                  case ParamRef(x, index) => tp  //transform tp ?
                  case NoPrefix() => tp
                  case TypeBounds(low,hi) => TypeBounds(transformType(low)(owner),transformType(hi)(owner))
-                 case _ => tp  //  hope nobody will put termRef inside recursive type
-
-
+                 case _ => tp
          }
          changes.transformTerm(body)(owner)
-
   }
 
   case class ApplyArgNamedRecord(term: NamedArg, name: String, nested: ApplyArgRecord )
