@@ -48,6 +48,16 @@ class TestBS1ShiftIterableOps:
      }
      assert(c.run() == Success(15))
 
+  @Test def testForeachRange(): Unit = 
+     val c = async[ComputationBound]{
+        var s = 0
+        for(i <- 1 to 3) {
+           s += await(T1.cbi(3)) + i
+        }
+        s
+     }
+     assert(c.run() == Success(15))
+
 
   @Test def testMapSet(): Unit = 
      val c = async[ComputationBound]{

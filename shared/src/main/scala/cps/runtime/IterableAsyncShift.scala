@@ -16,22 +16,29 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
                                       action: A=>F[B],
                                       acc: (S,A,B)=> S, 
                                       epilog:S=>R):F[R] =
-   val r = c.foldLeft(monad.pure(prolog)){(ms,a) =>
-      monad.flatMap(ms){ s=>
-        val mb = action(a)
-        monad.map(mb){ b=> acc(s,a,b) }
-      }
-   }
-   monad.map(r)(epilog)
+   def advance(it: Iterator[A], s:S):F[S] =
+       if it.hasNext then
+          val a = it.next()
+          monad.flatMap(action(a)){ b =>
+             advance(it,acc(s,a,b))
+          }
+       else
+          monad.pure(s)
+   monad.map(advance(c.iterator, prolog))(epilog)
 
+   
   def shiftedStateFold[F[_],S,R](c:CA, monad: CpsMonad[F])(
                             prolog: S,
                             acc: (S,A) => F[S],
                             epilog:S=>R):F[R] =
-   val r = c.foldLeft(monad.pure(prolog)){(ms,a) =>
-                monad.flatMap(ms){ s=> acc(s,a) }
-           }
-   monad.map(r)(epilog)
+   def advance(it: Iterator[A], s:S):F[S] =
+       if it.hasNext then
+          val a = it.next()
+          monad.flatMap(acc(s,a))(s => advance(it, s))
+       else
+          monad.pure(s)
+   monad.map(advance(c.iterator, prolog))(epilog)
+
     
   def shiftedWhile[F[_],S,R](c:CA,monad:CpsMonad[F])(
                                       prolog:S, 

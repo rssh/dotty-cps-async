@@ -27,7 +27,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
     .disablePlugins(SitePlugin)
     .jvmSettings(
         scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
-                            "-Ydebug", "-uniqid", "-Ycheck:macros"  ),
+                            "-Ydebug", "-uniqid", "-Ycheck:macros", "-Yprint-syms"  ),
                              // -Ydebug-error
         libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
     ).jsSettings(
