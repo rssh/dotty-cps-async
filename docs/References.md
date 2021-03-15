@@ -27,6 +27,7 @@ Can we free concurrent programming from the monadic style:
 	- Paper: <http://tomasp.net/academic/papers/computation-zoo/>
         - Joinad language extension (paper): http://tomasp.net/academic/papers/joinads/joinads.pdf
 - C# : Guide:  <https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/task-asynchronous-programming-model>
+- Midori project [ Async OS, writeln in C# ]  http://joeduffyblog.com/2015/11/03/blogging-about-midori/
 - Python: PEP-0492  <https://www.python.org/dev/peps/pep-0492/>
 - JavaScript:  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function>
 - Nim: macro module <https://nim-lang.org/docs/asyncdispatch.html>
