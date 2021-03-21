@@ -41,7 +41,11 @@ class TestBS1ShiftSeq:
      }
      assert(c.run()==Success(-1))
 
-  class MyIndexedSeq[T](values: T*) extends IndexedSeq[T] with scala.collection.IndexedSeqOps[T, MyIndexedSeq, MyIndexedSeq[T]] {
+/*
+  // dotty bug: not compiled. TODO: debug and submit to  updtream
+  class MyIndexedSeq[T](values: T*) extends IndexedSeq[T] 
+                                        with scala.collection.IndexedSeqOps[T,MyIndexedSeq,MyIndexedSeq[T]]
+                                         {
 
      val v: Vector[T] = Vector(values: _*)
 
@@ -51,11 +55,12 @@ class TestBS1ShiftSeq:
      override def iterator: Iterator[T] = ???
 
   }
+*/
 
 
   @Test def testIndexWhereIndexed(): Unit = 
      val c = async[ComputationBound]{
-        val seq = MyIndexedSeq("1234","3452","1","12","21","777777777")
+        val seq = IndexedSeq("1234","3452","1","12","21","777777777")
         seq.indexWhere{ x => await(T1.cbt(x.charAt(0)=='7')) }
      }
      assert(c.run()==Success(5))
