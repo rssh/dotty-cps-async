@@ -106,4 +106,22 @@ class IndexedSeqAsyncShift[A, C[X] <: IndexedSeq[X] & IndexedSeqOps[X,C,C[X]], C
   override def indexWhere[F[_]](c:CA, m: CpsMonad[F])(p: A=>F[Boolean]): F[Int] =
      indexWhere(c,m)(p,0)
 
+
+  override def segmentLength[F[_]](c:CA, m: CpsMonad[F])(p: A=>F[Boolean], from: Int): F[Int] =
+     def run(n:Int, acc:Int): F[Int] =
+       if (n < c.length) then
+         m.flatMap(p(c(n))){ r =>
+           if (r) then
+             run(n+1,acc+1)
+           else
+             m.pure(acc)
+         }
+       else
+         m.pure(acc)
+     run(from,0)
+
+  override def segmentLength[F[_]](c:CA, m: CpsMonad[F])(p: A=>F[Boolean]): F[Int] =
+     segmentLength(c,m)(p,0)
+
+
 }
