@@ -32,6 +32,14 @@ class SeqAsyncShift[A, C[X] <: scala.collection.Seq[X] & scala.collection.SeqOps
        _._2.result
      )
 
+  def advanceIterator(c:CA, from: Int): (Iterator[A], Int) =
+    val it = c.iterator
+    var i = 0
+    while(it.hasNext && i < from)
+       it.next
+       i = i + 1
+    (it, i)
+
   def indexWhere[F[_]](c:CA, m: CpsMonad[F])(p: A=>F[Boolean], from: Int): F[Int] =
     def run(it: Iterator[A], n: Int): F[Int] =
        if (it.hasNext) then
@@ -43,16 +51,28 @@ class SeqAsyncShift[A, C[X] <: scala.collection.Seq[X] & scala.collection.SeqOps
            }
        else
            m.pure(-1) 
-    val it = c.iterator
-    var i = 0
-    while(it.hasNext && i < from)
-       it.next
-       i = i + 1
-    run(c.iterator,i)
+    val (it, i) = advanceIterator(c, from)
+    run(it,i)
 
   def indexWhere[F[_]](c:CA, m: CpsMonad[F])(p: A=>F[Boolean]): F[Int] =
      indexWhere(c,m)(p,0)
 
+  def segmentLength[F[_]](c:CA, m: CpsMonad[F])(p: A=>F[Boolean], from: Int): F[Int] =
+    def run(it: Iterator[A], i:Int, acc:Int):F[Int] =
+      if (it.hasNext) then
+        m.flatMap(p(it.next)){ c =>
+           if c then
+             run(it, i+1, acc+1)
+           else
+             m.pure(acc)
+        }
+      else
+        m.pure(acc)
+    val (it, i) = advanceIterator(c, from)
+    run(it, i, 0)
+     
+  def segmentLength[F[_]](c:CA, m: CpsMonad[F])(p: A=>F[Boolean]): F[Int] =
+    segmentLength(c,m)(p,0)
 
 }
 

@@ -65,4 +65,11 @@ class TestBS1ShiftSeq:
      }
      assert(c.run()==Success(5))
 
+  @Test def testSegmentLength(): Unit = 
+     val c = async[ComputationBound]{
+        val seq = Seq(1,2,3,4,5,6,7,8)
+        seq.segmentLength( x => x < await(T1.cbi(6)) )
+     }
+     assert(c.run()==Success(5))
+
 
