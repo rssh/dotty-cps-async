@@ -30,7 +30,7 @@ If we want all requests to run in parallel, we can start them in one map and whe
 During async transform, dotty-cps-async substitute method map of you List with signature  
    ``List[A].map[B](f: A=>B)`` to  
 
-:: index:: AsyncShift
+.. index:: AsyncShift
 
 .. code-block:: scala
 
@@ -173,11 +173,35 @@ Also, we have the method `_origin`,  which is called when we have no next call i
 By convention, the substituted type should be derived from CallChainAsyncSubst[F,T] 
 
 
-This structure has a nice categorical interpreation. If you are curious about thet, read details in :ref:`categorical-interpretation-for-CallChainAsyncSubst`.
+This structure has a nice categorical interpretation. If you are curious about that, read details in :ref:`categorical-interpretation-for-CallChainAsyncSubst`.
 
  
 Builder methods.
 ^^^^^^^^^^^^^^^^
- Sometimes   
+
+   Yet one common pattern of usage of hight-order functions is builder methods, where we use hight-order functions to build some processing algorithm.
+
+.. code-block:: scala
+
+ trait ReadChannel[F,A]:
+
+    def map(f: A=>B):  ReadChannel[F, B]
+
+
+Here, `map` is using for building streaming interface. We can provide async variant of `map` wich will return the same type as original function:
+
+.. code-block:: scala
+
+ trait ReadChannel[F,A]:
+
+    def map(f: A=>B):  ReadChannel[F, B]
+
+    def mapAsync(f: A=>F[B]): ReadChannel[F, B]
+
+
+Also we can see, that our channel structure is already build on top of `F[_]`, so it is not necessory to pass F to method parameter.
+ 
+About name for `mapAsync` -- dotty-cps-async supports both variant: camelCase `mapAsync` and snake_case `map_async`. We propose to use next convention when naming such methods:  use `method_async` when async method unlikely will be called by programmer directly and used only for substitution in highg-order function; use `methodAsync` when we expect that developer can use this method directly along with cps substitution.
+
 
 
