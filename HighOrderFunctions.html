@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>High-order functions. &#8212; dotty-cps-async 0.5.0-SNAPSHOT documentation</title>
+    <title>High-order functions. &#8212; dotty-cps-async 0.6.0-SNAPSHOT documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.5.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.6.0-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>  
@@ -63,8 +63,7 @@ Assume, that out http client provides next interface:</p>
 <dt>During async transform, dotty-cps-async substitute method map of you List with signature</dt><dd><p><code class="docutils literal notranslate"><span class="pre">List[A].map[B](f:</span> <span class="pre">A=&gt;B)</span></code> to</p>
 </dd>
 </dl>
-<p>:: index:: AsyncShift</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">summon</span><span class="o">[</span><span class="kt">AsyncShift</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">A</span><span class="o">]]].</span><span class="n">map</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span><span class="kt">B</span><span class="o">](</span><span class="n">c</span><span class="o">,</span><span class="n">summon</span><span class="o">[</span><span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">]])</span>
+<div class="highlight-scala notranslate" id="index-0"><div class="highlight"><pre><span></span><span class="n">summon</span><span class="o">[</span><span class="kt">AsyncShift</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">A</span><span class="o">]]].</span><span class="n">map</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span><span class="kt">B</span><span class="o">](</span><span class="n">c</span><span class="o">,</span><span class="n">summon</span><span class="o">[</span><span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">]])</span>
 </pre></div>
 </div>
 <p>which is implemented in cps runtime with signature</p>
@@ -130,7 +129,7 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 <div class="section" id="special-semantics-for-substitutions-in-call-chains">
 <span id="substitutions-in-call-chains"></span><h3>Special semantics for substitutions in call chains<a class="headerlink" href="#special-semantics-for-substitutions-in-call-chains" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><p>Consider chain of calls, which accept async-shifted functions.  One example is  ‘withFilter’ from standard collections library.  Let’s look on the next chunk of code:</p>
+<div><p>Consider chain of calls, which accept async-shifted functions.  One example is  ‘withFilter’ from standard collections library.  Let’s look on the next code:</p>
 </div></blockquote>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="o">{</span> <span class="n">url</span> <span class="k">←</span> <span class="n">urls</span> <span class="k">if</span>  <span class="n">await</span><span class="o">(</span><span class="n">status</span><span class="o">(</span><span class="n">url</span><span class="o">))==</span><span class="nc">Active</span>
       <span class="n">items</span> <span class="k">←</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">retrieveItems</span><span class="o">(</span><span class="n">url</span><span class="o">))</span>
@@ -172,7 +171,28 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 <p>I.e., in delayed variant implemented all original class methods, which should or collect operations into the next delayed object or perform an actual batched call.
 Also, we have the method <cite>_origin</cite>,  which is called when we have no next call in the chain: an example of such a case is   <cite>val x = c.withFilter(p)</cite>.</p>
 <p>By convention, the substituted type should be derived from CallChainAsyncSubst[F,T]</p>
-<p>This structure has a nice categorical interpreation. If you are curious about thet, read details in <a class="reference internal" href="random-notes/AsyncSubstCategoricalInterpretation.html#categorical-interpretation-for-callchainasyncsubst"><span class="std std-ref">Categorical interpretation for substitutions in async call chains:</span></a>.</p>
+<p>This structure has a nice categorical interpretation. If you are curious about that, read details in <a class="reference internal" href="random-notes/AsyncSubstCategoricalInterpretation.html#categorical-interpretation-for-callchainasyncsubst"><span class="std std-ref">Categorical interpretation for substitutions in async call chains:</span></a>.</p>
+</div>
+<div class="section" id="builder-methods">
+<h3>Builder methods.<a class="headerlink" href="#builder-methods" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>Yet one common pattern of usage of hight-order functions is builder methods, where we use hight-order functions to build some processing algorithm.</p>
+</div></blockquote>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span><span class="kt">A</span><span class="o">]</span><span class="k">:</span>
+
+   <span class="kt">def</span> <span class="kt">map</span><span class="o">(</span><span class="kt">f:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="kt">B</span><span class="o">)</span><span class="k">:</span>  <span class="kt">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span> <span class="kt">B</span><span class="o">]</span>
+</pre></div>
+</div>
+<p>Here, <cite>map</cite> is using for building streaming interface. We can provide async variant of <cite>map</cite> wich will return the same type as original function:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span><span class="kt">A</span><span class="o">]</span><span class="k">:</span>
+
+   <span class="kt">def</span> <span class="kt">map</span><span class="o">(</span><span class="kt">f:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="kt">B</span><span class="o">)</span><span class="k">:</span>  <span class="kt">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span> <span class="kt">B</span><span class="o">]</span>
+
+   <span class="k">def</span> <span class="n">mapAsync</span><span class="o">(</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">B</span><span class="o">])</span><span class="k">:</span> <span class="kt">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span> <span class="kt">B</span><span class="o">]</span>
+</pre></div>
+</div>
+<p>Also we can see, that our channel structure is already build on top of <cite>F[_]</cite>, so it is not necessory to pass F to method parameter.</p>
+<p>About name for <cite>mapAsync</cite> – dotty-cps-async supports both variant: camelCase <cite>mapAsync</cite> and snake_case <cite>map_async</cite>. We propose to use next convention when naming such methods:  use <cite>method_async</cite> when async method unlikely will be called by programmer directly and used only for substitution in highg-order function; use <cite>methodAsync</cite> when we expect that developer can use this method directly along with cps substitution.</p>
 </div>
 </div>
 </div>
@@ -191,6 +211,7 @@ Also, we have the method <cite>_origin</cite>,  which is called when we have no 
 <li><a class="reference internal" href="#functional-interface">Functional interface.</a></li>
 <li><a class="reference internal" href="#object-oriented-interface">Object oriented interface.</a></li>
 <li><a class="reference internal" href="#special-semantics-for-substitutions-in-call-chains">Special semantics for substitutions in call chains</a></li>
+<li><a class="reference internal" href="#builder-methods">Builder methods.</a></li>
 </ul>
 </li>
 </ul>
@@ -236,7 +257,7 @@ Also, we have the method <cite>_origin</cite>,  which is called when we have no 
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.5.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.6.0-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>
