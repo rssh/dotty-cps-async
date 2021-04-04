@@ -19,11 +19,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'dotty-cps-async'
-copyright = '2020, Ruslan Shevchenko'
+copyright = '2020-2021, Ruslan Shevchenko'
 author = 'Ruslan Shevchenko'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.6'
+release = '0.6.0-SNAPSHOT'
 
 
 # -- General configuration ---------------------------------------------------
