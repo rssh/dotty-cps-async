@@ -14,6 +14,7 @@ User Manual
    BasicUsage
    HighOrderFunctions
    MonadsInteroperability
+   Integrations
    Features
    random-notes/index.rst
    FAQ
