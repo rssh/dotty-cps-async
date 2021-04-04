@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Integrations &#8212; dotty-cps-async 0.6.0-SNAPSHOT documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Additional Features" href="Features.html" />
+    <link rel="prev" title="Monads interoperability." href="MonadsInteroperability.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Features.html" title="Additional Features"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="MonadsInteroperability.html" title="Monads interoperability."
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.6.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Integrations</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="integrations">
+<h1>Integrations<a class="headerlink" href="#integrations" title="Permalink to this headline">¶</a></h1>
+<blockquote>
+<div><p>dooty-cps-async itself provide type classes for monads, available without external dependencies: this is  <a class="reference external" href="https://https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/monads/FutureAsyncMonad.scala">Future</a> and  JVM-only Java <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/jvm/src/main/scala/cps/monads/CompletableFutureCpsMonad.scala">CompletableFuture</a>.</p>
+<p>Third-party effect stacks are provided in external modules.</p>
+</div></blockquote>
+<div class="section" id="cats-effect">
+<h2>cats-effect<a class="headerlink" href="#cats-effect" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>Implemented in <a class="reference external" href="https://github.com/rssh/cps-async-connect">https://github.com/rssh/cps-async-connect</a></p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-cats-effect&quot;</span> <span class="o">%</span> <span class="s">&quot;0.1.0&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="scalaz-io">
+<h2>scalaz IO<a class="headerlink" href="#scalaz-io" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-cats-effect&quot;</span> <span class="o">%</span> <span class="s">&quot;0.1.0&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="call-for-additions">
+<h2>Call for additions:<a class="headerlink" href="#call-for-additions" title="Permalink to this headline">¶</a></h2>
+<p>If you have implemented CpsMonad support for some effect stack and want to mention it here - please, send a pull request about this.</p>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Integrations</a><ul>
+<li><a class="reference internal" href="#cats-effect">cats-effect</a></li>
+<li><a class="reference internal" href="#scalaz-io">scalaz IO</a></li>
+<li><a class="reference internal" href="#call-for-additions">Call for additions:</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="MonadsInteroperability.html"
+                        title="previous chapter">Monads interoperability.</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Features.html"
+                        title="next chapter">Additional Features</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Integrations.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Features.html" title="Additional Features"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="MonadsInteroperability.html" title="Monads interoperability."
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.6.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Integrations</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Ruslan Shevchenko.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>
