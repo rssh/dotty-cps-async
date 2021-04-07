@@ -109,7 +109,15 @@ object ComputationBound {
       nFinished > 0
    }
 
+   def eagerMemoize[T](f: ComputationBound[T]): ComputationBound[T] =
+        spawn(f)
+      
+   def lazyMemoize[T](f: ComputationBound[T]): ComputationBound[T] =
+        Thunk(() => spawn(f))
+         
+
 }
+
 
 implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBound] {
 
