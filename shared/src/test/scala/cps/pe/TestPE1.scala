@@ -17,7 +17,6 @@ class TestPE1:
    
   @Test def testPureEffectConstant() = 
      val c = async[PureEffect](3)
-     println(s"c = $c")
      val future = c.unsafeRunFuture().map(x => assert(x == 3))
      FutureCompleter(future)
 
