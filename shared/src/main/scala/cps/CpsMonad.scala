@@ -100,7 +100,8 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
 
 /**
- * Monad, interpolable with Future.
+ * Interoperability with Future:
+ * allows  async[F]{ .. await[Future](..) ... }
  **/
 trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
@@ -113,6 +114,10 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 }
 
 
+/**
+ * Interoperability with Future:
+ * allows  async[F]{ .. await[Future](..) ... }
+ **/
 trait CpsSchedulingMonad[F[_]] extends CpsAsyncMonad[F] {
 
 

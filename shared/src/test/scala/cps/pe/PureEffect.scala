@@ -11,22 +11,25 @@ import cps._
  **/
 trait PureEffect[A]  {
 
-   def map[B](f: A=>B): PureEffect[B] = FlatMappedTryThunk(this, 
-      { case Success(x) => PureEffect.pure(f(x))
-        case Failure(ex) => PureEffect.raiseError(ex)
+   def map[B](f: A=>B): PureEffect[B] = MappedThunk(this, 
+      { case Success(x) => Success(f(x))
+        case Failure(ex) => Failure(ex)
       })
 
    def flatMap[B](f: A=>PureEffect[B]): PureEffect[B] = 
-      FlatMappedTryThunk(this, {
+      FlatMappedThunk(this, {
          case Success(x) => f(x)
          case Failure(ex) => PureEffect.raiseError(ex)
       })
 
    def flatMapTry[B](f: Try[A] => PureEffect[B]): PureEffect[B] =
-      FlatMappedTryThunk(this, f)
+      FlatMappedThunk(this, f)
         
    def memoize(): PureEffect[PureEffect[A]] =
-      ???
+      MappedThunk(this,
+         r => Success(TryThunk(()=>r))
+      )
+      
       
 
    def unsafeRunFuture()(using ec: ExecutionContext): Future[A] = 
@@ -36,7 +39,9 @@ trait PureEffect[A]  {
 
 object PureEffect {
 
-  def pure[T](value: =>T): PureEffect[T] = TryThunk(()=>Try(value))
+  def pure[T](value: T): PureEffect[T] = TryThunk(()=>Success(value))
+
+  def delay[T](value: =>T): PureEffect[T] = TryThunk(()=>Try(value))
 
   def adoptFutureRun[T](value: =>Future[T]): PureEffect[T] =
        FutureThunk(() => value)
@@ -49,11 +54,11 @@ object PureEffect {
           case TryThunk(f) => 
                     Future.fromTry(f())
           case FutureThunk(f) => f()
-          case FlatMappedTryThunk(fa,f) =>
+          case MappedThunk(fa,f) =>
+                  unsafeRunFuture(fa).transform(f)
+          case FlatMappedThunk(fa,f) =>
                   // ty example - recursive without trampoline for now
                   unsafeRunFuture(fa).transformWith( x =>  unsafeRunFuture(f(x)))
-          case FlatMappedFutureThunk(fa,f) =>
-                  unsafeRunFuture(fa).transformWith( f )
                                        
  
 
@@ -62,8 +67,8 @@ object PureEffect {
 
 case class TryThunk[T](fun:()=>Try[T]) extends PureEffect[T]
 case class FutureThunk[T](fun:()=>Future[T]) extends PureEffect[T]
-case class FlatMappedTryThunk[A,B](fa: PureEffect[A], f: Try[A] => PureEffect[B]) extends PureEffect[B]
-case class FlatMappedFutureThunk[A,B](fa: PureEffect[A], f: Try[A] => Future[B]) extends PureEffect[B]
+case class MappedThunk[A,B](fa: PureEffect[A], f: Try[A] => Try[B]) extends PureEffect[B]
+case class FlatMappedThunk[A,B](fa: PureEffect[A], f: Try[A] => PureEffect[B]) extends PureEffect[B]
 
 
 given PureEffectCpsMonad: CpsAsyncMonad[PureEffect] with
