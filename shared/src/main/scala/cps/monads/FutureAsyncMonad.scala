@@ -55,7 +55,7 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
 object FutureAsyncMonad:
 
-   given ImplicitAwait: cps.features.implicitAwait.IsPossible[Future] with {}
+   given ImplicitAwait: cps.automaticColoring.IsPossible[Future] with {}
 
 
 given fromFutureConversion[G[_]](using ExecutionContext, CpsAsyncMonad[G]): CpsMonadConversion[Future,G] =

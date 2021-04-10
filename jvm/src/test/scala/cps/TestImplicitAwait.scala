@@ -33,8 +33,8 @@ class TestImplicitAwait:
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val api = ApiEmulator
+     import cps.automaticColoring.given
      val c = async[Future]{ 
-        import cps.features.implicitAwait.given
         val url = "http://www.example.com"
         val data = api.fetchUrl("http://www.example.com")
         val theme = api.classifyText(data)
