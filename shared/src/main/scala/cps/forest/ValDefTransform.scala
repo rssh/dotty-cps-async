@@ -16,8 +16,6 @@ object ValDefTransform:
      import cpsCtx._
      if (cpsCtx.flags.debugLevel >= 15) 
        cpsCtx.log(s"ValDefExpr:fromBlock, valDef=$valDef")
-       if (valDef.name == "t")
-          println("x: t discovered, owner = ${t.owner}");
      val rhs = valDef.rhs.getOrElse(
              throw MacroError(s"val $valDef without right part in block ", cpsCtx.patternCode)
      )
