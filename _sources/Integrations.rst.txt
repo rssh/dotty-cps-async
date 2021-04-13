@@ -6,11 +6,15 @@ Integrations
  
  Third-party effect stacks are provided in external modules.
  
+cps-async-connect
+-----------------
+
+ github project: https://github.com/rssh/cps-async-connect
+
 
 cats-effect
------------
+^^^^^^^^^^^
 
- Implemented in https://github.com/rssh/cps-async-connect
 
  .. code-block:: scala
 
@@ -18,7 +22,7 @@ cats-effect
 
 
 scalaz IO
----------
+^^^^^^^^^
 
  .. code-block:: scala
 
@@ -26,7 +30,7 @@ scalaz IO
 
 
 ZIO
----
+^^^
 
  .. code-block:: scala
 
