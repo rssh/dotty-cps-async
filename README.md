@@ -20,6 +20,9 @@ Currently, doty-cps-async is at an early stage and not ready for production use.
 
 ## Presentations
 
+* Scala3 & Async: Behing Futures.
+   * Svitla Smart Talk. https://www.youtube.com/watch?v=fBcGhjM2s-c (Apr. 2021. In Ukrainian language).
+
 * Can we free concurrent programming from the monadic style:
     * ScalaR:  https://www.youtube.com/watch?v=ImlUuTQUeaQ  (Jun 2020)
     * ScalaUA: https://www.youtube.com/watch?v=w-noRPLxYoA&t=3s  (Apr. 2020)
