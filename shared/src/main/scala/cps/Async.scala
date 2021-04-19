@@ -66,9 +66,9 @@ object Async {
   def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): Expr[F[T]] = 
     import quotes.reflect._
     import TransformationContextMarker._
-    val flags = adoptFlags(f)
+    val flags = adoptFlags(f, dm)
     try
-      if (flags.printCode)
+      if flags.printCode then
         try
            println(s"before transformed: ${f.show}")
         catch
@@ -77,8 +77,12 @@ object Async {
       if (flags.printTree)
         println(s"value: ${f.asTerm}")
       if (flags.debugLevel > 5) 
-        println(s"customValueDiscard=${flags.customValueDiscard}, warnValueDiscard=${flags.warnValueDiscard}")
-      val r = rootTransform[F,T](f,dm,flags,TopLevel,0, None).transformed
+        println(s"customValueDiscard=${flags.customValueDiscard}, warnValueDiscard=${flags.warnValueDiscard}, automaticColoring=${flags.automaticColoring}")
+      val memoization: Option[TransformationContext.Memoization[F]] = 
+        if flags.automaticColoring then
+          Some(resolveMemoization[F,T](f,dm))
+        else None
+      val r = rootTransform[F,T](f,dm,memoization,flags,TopLevel,0, None).transformed
       if (flags.printCode)
         try
            println(s"transformed value: ${r.show}")
@@ -95,7 +99,7 @@ object Async {
         report.throwError(ex.msg, ex.posExpr)
 
 
-  def adoptFlags(f: Expr[_])(using Quotes): AsyncMacroFlags =
+  def adoptFlags[F[_]:Type,T](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): AsyncMacroFlags =
     import quotes.reflect._
     /*
     Expr.summon[AsyncMacroFlags] match
@@ -117,13 +121,47 @@ object Async {
                       case other  =>
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0
-            val customValueDiscard = Expr.summon[cps.features.CustomValueDiscardTag].isDefined
+            val automaticColoring = Expr.summon[cps.automaticColoring.AutomaticColoringTag].isDefined
+            val customValueDiscard = Expr.summon[cps.features.CustomValueDiscardTag].isDefined || automaticColoring
             val warnValueDiscard = Expr.summon[cps.features.WarnValueDiscardTag].isDefined
-            AsyncMacroFlags(printCode,printTree,debugLevel, true, customValueDiscard, warnValueDiscard)
+            if (debugLevel > 5) then
+                println(s"automaticColoring in adoptFlags = ${automaticColoring} ")
+            AsyncMacroFlags(printCode,printTree,debugLevel, true, customValueDiscard, warnValueDiscard, automaticColoring)
 
 
+  def resolveMemoization[F[_]:Type, T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): 
+                                                                  TransformationContext.Memoization[F] =
+     import cps.automaticColoring.{given,*}
+     import quotes.reflect._
+     Expr.summon[ResolveMonadMemoizationKind[F]] match
+       case Some(rmmke) =>
+           rmmke match
+             case '{  ${Expr(rmmk)}  } =>
+                val kind = rmmk.value
+                kind match
+                  case MonadMemoizationKind.BY_DEFAULT => 
+                          TransformationContext.Memoization[F](kind, '{ new CpsMonadDefaultMemoization[F]() })
+                  case MonadMemoizationKind.INPLACE =>
+                          // TODO: switch to Implicts.search for better diagnostings ?
+                          Expr.summon[CpsMonadInplaceMemoization[F]] match
+                            case Some(mm) => 
+                              TransformationContext.Memoization[F](kind, mm )
+                            case _ =>
+                              throw MacroError(s"Can't find CpsMonadInplaceMemoization for ${TypeRepr.of[F].show}", f)
+                  case MonadMemoizationKind.PURE =>
+                          Expr.summon[CpsMonadPureMemoization[F]] match
+                            case Some(mm) => 
+                              TransformationContext.Memoization[F](kind, mm )
+                            case _ =>
+                              throw MacroError(s"Can't find CpsMonadPureMemoization for ${TypeRepr.of[F].show}", f)
+             case _ =>
+                throw MacroError(s"ResolveMemoizationKind for ${summon[Type[F]]} is not compile-time expression: ${rmmke.show}", f)
+       case None =>  
+           throw MacroError(s"Can't get resolveMemoizationKind for ${TypeRepr.of[F].show}", f)
 
-  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]],
+
+  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]], 
+                                      optMemoization: Option[TransformationContext.Memoization[F]],
                                       flags: AsyncMacroFlags,
                                       exprMarker: TransformationContextMarker, 
                                       nesting: Int,
@@ -131,7 +169,7 @@ object Async {
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._
-     val cpsCtx = TransformationContext[F,T](f,tType,dm,flags,exprMarker,nesting,parent)
+     val cpsCtx = TransformationContext[F,T](f,tType,dm,optMemoization, flags,exprMarker,nesting,parent)
      f match 
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
@@ -191,7 +229,7 @@ object Async {
   def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S], 
                               cpsCtx: TransformationContext[F,T], 
                               marker: TransformationContextMarker)(using Quotes):CpsExpr[F,S]=
-        rootTransform(f,cpsCtx.monad,
+        rootTransform(f,cpsCtx.monad, cpsCtx.memoization,
                       cpsCtx.flags,marker,cpsCtx.nesting+1, Some(cpsCtx))
 
 

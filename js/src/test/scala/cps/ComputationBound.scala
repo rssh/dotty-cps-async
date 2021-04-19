@@ -68,6 +68,9 @@ object ComputationBound {
         case Success(a) => Done(a)
         case Failure(e) => Error(e)
         
+   def eagerMemoize[T](f: ComputationBound[T]): ComputationBound[T] =
+        spawn(f)
+
 
    case class Deferred[A](ref: AtomicReference[Option[Try[A]]],
                      optComputations: Option[ComputationBound[A]])

@@ -10,8 +10,8 @@ case class AsyncMacroFlags(
    allowShiftedLambda: Boolean = true,
    customValueDiscard: Boolean = false,
    warnValueDiscard: Boolean = true,
-   muted: Boolean = false,
-   memoizeVals: Boolean = false
+   automaticColoring: Boolean = false,
+   muted: Boolean = false
 )
 
 given FromExpr[AsyncMacroFlags] with
@@ -23,8 +23,8 @@ given FromExpr[AsyncMacroFlags] with
                                ${Expr(allowShiftedLambda)}, 
                                ${Expr(customValueDiscard)},
                                ${Expr(warnValueDiscard)}, 
-                               ${Expr(eMuted)},
-                               ${Expr(memoizeVals)}
+                               ${Expr(automaticColoring)},
+                               ${Expr(eMuted)}
                               ) 
                            } =>
                Some(AsyncMacroFlags(printCode, printTree,
@@ -32,8 +32,8 @@ given FromExpr[AsyncMacroFlags] with
                        allowShiftedLambda,
                        customValueDiscard,
                        warnValueDiscard,
+                       automaticColoring,
                        eMuted,
-                       memoizeVals
                    ))
        case _ => None
 

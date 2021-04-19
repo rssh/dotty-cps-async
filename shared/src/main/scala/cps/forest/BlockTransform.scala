@@ -54,7 +54,12 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                              val tpTree = valueDiscard.appliedTo(tpe)
                              Implicits.search(tpTree) match
                                case sc: ImplicitSearchSuccess =>
-                                  val pd = Apply(Select.unique(sc.tree,"apply"),List(t)).asExprOf[Unit]
+                                  val pd = {
+                                    if sc.tree.tpe <:< TypeRepr.of[cps.AwaitValueDiscard[?,?]] then
+                                      buildAwaitValueDiscardExpr(using qctx)(sc.tree, p)
+                                    else
+                                      Apply(Select.unique(sc.tree,"apply"),List(t)).asExprOf[Unit]
+                                  }
                                   Async.nestTransform(pd, cpsCtx, TransformationContextMarker.BlockInside(i))
                                case fl: ImplicitSearchFailure =>
                                   val tps = safeShow()
@@ -104,6 +109,34 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
       &&
        ( !(t.tpe =:= TypeRepr.of[Unit]) && !(t.tpe =:= TypeRepr.of[Nothing]) )
      )
+
+  def buildAwaitValueDiscardExpr(using Quotes)(discardTerm: quotes.reflect.Term, p: Expr[?]):Expr[Any] =
+      import quotes.reflect._
+      discardTerm.tpe.asType match
+        case '[AwaitValueDiscard[F,tt]] =>
+           val refP = p.asExprOf[F[tt]]
+           '{  await[F,tt]($refP)(using ${cpsCtx.monad})  }
+        //bug in dotty. TODO: submit
+        //case '[AwaitValueDiscard[ft,tt]] =>
+        case _ => 
+           // TODO: wrap exception, when incorrect isage
+           val ftr = TypeSelect(discardTerm, "FT")
+           val ttr = TypeSelect(discardTerm, "TT")
+           val ftm = TypeRepr.of[CpsMonad].appliedTo(ftr.tpe)
+           Implicits.search(ftr.tpe) match
+              case monadSuccess: ImplicitSearchSuccess =>
+                val ftm = monadSuccess.tree
+                Apply(    
+                     Apply(
+                       TypeApply(Ref(Symbol.requiredMethod("cps.await")), 
+                          List(ftr,ttr)),
+                       List(p.asTerm)
+                     ),
+                     List(ftm)
+                ).asExpr
+              case monadFailure: ImplicitSearchFailure =>
+                throw MacroError("Can't find monad for ${TypeRepr.of[ft].show}, ${monadFailure.explanation} : ", p)
+           
 
 
 

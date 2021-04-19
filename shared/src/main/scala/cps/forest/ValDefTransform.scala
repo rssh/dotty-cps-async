@@ -14,34 +14,89 @@ object ValDefTransform:
                            valDef: quotes.reflect.ValDef): CpsExpr[F,Unit] = {
      import quotes.reflect._
      import cpsCtx._
-     if (cpsCtx.flags.debugLevel >= 15) 
+     if cpsCtx.flags.debugLevel >= 15 then
        cpsCtx.log(s"ValDefExpr:fromBlock, valDef=$valDef")
      val rhs = valDef.rhs.getOrElse(
              throw MacroError(s"val $valDef without right part in block ", cpsCtx.patternCode)
      )
-     TransformUtil.veryWiden(rhs.tpe).asType match 
+     val rhsType = TransformUtil.veryWiden(rhs.tpe).asType
+     rhsType match 
         case '[et] =>
-            if (cpsCtx.flags.debugLevel > 15) 
+            if cpsCtx.flags.debugLevel > 15 then
                cpsCtx.log(s"rightPart is ${TransformUtil.safeShow(rhs)}")
             val cpsRight = Async.nestTransform(rhs.asExprOf[et],cpsCtx,TransformationContextMarker.ValDefRight)
+            // TODO: refactor code below, at first determinate correctedCpsRight
             if (cpsRight.isAsync) {
                if (cpsCtx.flags.debugLevel > 15) {
                   cpsCtx.log(s"rightPart is async")
                }
-               RhsFlatMappedCpsExpr(using quotes)(monad, Seq(),
+               if (cpsCtx.memoization.isDefined) then
+                 // TODO: check valDef.tpt ? 
+                 rhsType match
+                   case '[F[r]] =>
+                     val refinedCpsRight = cpsRight.asInstanceOf[CpsExpr[F,F[r]]]
+                     val memoization = cpsCtx.memoization.get
+                     memoization.kind match
+                        case cps.automaticColoring.MonadMemoizationKind.BY_DEFAULT =>
+                               RhsFlatMappedCpsExpr(using quotes)(monad, Seq(),
+                                                 valDef, cpsRight, CpsExpr.unit(monad) )
+                        case cps.automaticColoring.MonadMemoizationKind.INPLACE => 
+                               val mm = memoization.monadMemoization.asExprOf[CpsMonadInplaceMemoization[F]]
+                               val nCpsRight = refinedCpsRight.map( '{ (x:F[r]) => ${mm}.apply(x) } )
+                               RhsFlatMappedCpsExpr(using quotes)(monad, Seq(), valDef, nCpsRight, CpsExpr.unit(monad))
+                        case cps.automaticColoring.MonadMemoizationKind.PURE => 
+                               val mm = memoization.monadMemoization.asExprOf[CpsMonadPureMemoization[F]]
+                               val nCpsRight = refinedCpsRight.flatMap( '{ (x:F[r]) => ${mm}.apply(x) } )
+                               RhsFlatMappedCpsExpr(using quotes)(monad, Seq(), valDef, nCpsRight, CpsExpr.unit(monad))
+                   case _ =>
+                     RhsFlatMappedCpsExpr(using quotes)(monad, Seq(),
+                                                valDef, cpsRight, CpsExpr.unit(monad) )
+               else
+                   RhsFlatMappedCpsExpr(using quotes)(monad, Seq(),
                                                 valDef, cpsRight, CpsExpr.unit(monad) )
             } else {
                if (cpsCtx.flags.debugLevel > 15) 
                  cpsCtx.log(s"ValDef: rightPart no async changed=${cpsRight.isChanged}, cpsRight.transformed=${TransformUtil.safeShow(cpsRight.transformed.asTerm)}")
 
-               val nextValDef = if (cpsRight.isChanged) {
-                                    ValDef(valDef.symbol, Some(cpsRight.syncOrigin.get.asTerm.changeOwner(valDef.symbol)))
+               val rhsExpr = cpsRight.syncOrigin.get
+               val rhsTerm = rhsExpr.asTerm
+               if (cpsCtx.flags.automaticColoring) then
+                   val memoization = cpsCtx.memoization.getOrElse(
+                                 throw MacroError("Memoization is not set for ${TypeRepr.of[F].show}", rhs.asExpr))
+                   rhsTerm.tpe.asType match
+                     case '[F[r]] =>
+                       memoization.kind match
+                         case cps.automaticColoring.MonadMemoizationKind.BY_DEFAULT =>
+                           val nextValDef = if (cpsRight.isChanged) {
+                                    ValDef(valDef.symbol, Some(rhsTerm.changeOwner(valDef.symbol)))
                                 } else 
                                     valDef
-               ValWrappedCpsExpr(using quotes)(monad, Seq(), nextValDef,   CpsExpr.unit(monad) )
+                           ValWrappedCpsExpr(using quotes)(monad, Seq(), nextValDef,   CpsExpr.unit(monad) )
+                         case cps.automaticColoring.MonadMemoizationKind.INPLACE => 
+                           val mm = memoization.monadMemoization.asExprOf[CpsMonadInplaceMemoization[F]]
+                           val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
+                           val nextValDef = ValDef(valDef.symbol, Some(nextRhs.asTerm.changeOwner(valDef.symbol)))
+                           ValWrappedCpsExpr(using quotes)(monad, Seq(), nextValDef,   CpsExpr.unit(monad) )
+                         case cps.automaticColoring.MonadMemoizationKind.PURE => 
+                           val mm = memoization.monadMemoization.asExprOf[CpsMonadPureMemoization[F]]
+                           val refinedCpsRight = cpsRight.asInstanceOf[CpsExpr[F,F[r]]]
+                           val nCpsRight = refinedCpsRight.flatMap( '{ (x: F[r]) => ${mm}.apply(x) } )
+                           RhsFlatMappedCpsExpr(using quotes)(monad, Seq(), valDef, nCpsRight, CpsExpr.unit(monad))
+                     case _ =>
+                         val nextValDef = if (cpsRight.isChanged) {
+                             ValDef(valDef.symbol, Some(rhsTerm.changeOwner(valDef.symbol)))
+                         } else
+                             valDef
+                         ValWrappedCpsExpr(using quotes)(monad, Seq(), nextValDef,   CpsExpr.unit(monad) )
+               else
+                   val nextValDef = if (cpsRight.isChanged) {
+                                      ValDef(valDef.symbol, Some(rhsTerm.changeOwner(valDef.symbol)))
+                                    } else
+                                      valDef
+                   ValWrappedCpsExpr(using quotes)(monad, Seq(), nextValDef,   CpsExpr.unit(monad) )
             }
         case other =>
-            throw MacroError(s"Can't concretize type of right-part $rhs ", cpsCtx.patternCode)
+            throw MacroError(s"Can't concretize type of right-part $rhs ", rhs.asExpr)
 
      
   }

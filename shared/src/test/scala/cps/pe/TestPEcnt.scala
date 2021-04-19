@@ -1,38 +1,50 @@
 package cps.pe
 
 import org.junit.{Test,Ignore}
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scala.quoted._
-import scala.util.Success
+import scala.util.*
 
-import cps._
+import cps.*
+import cps.automaticColoring.{*,given}
 import cps.util.FutureCompleter
+import scala.language.implicitConversions
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TestPEcnt:
+class TestPECnt:
 
-  val LOG_MOD=10
-  val TRESHOLD = 100
+  def qqq:Int = 0
 
-  def runCounterTestV1(initVal:Int, logger: ToyLogger): PureEffect[Unit] = async[PureEffect] {
-       val counter = await(PEIntRef.make(initVal))
-       val value = await(counter.increment())
-       if (value % LOG_MOD == 0) then
-           logger.log(s"counter value is $value")
-       if (value == TRESHOLD) then
-           logger.log(s"counter exceed treshold")
+  val LOG_MOD = 10
+  val LOG_TRESHOLD = 100
+  
+  
+  implicit val printCode: cps.macroFlags.PrintCode.type = cps.macroFlags.PrintCode
+  //implicit val printTree = cps.macroFlags.PrintTree
+  implicit inline def debugLevel: cps.macroFlags.DebugLevel = cps.macroFlags.DebugLevel(10)
+
+
+  def cntAutomaticColoring(counter: PEIntRef): PureEffect[PEToyLogger] = async[PureEffect]{
+    val log = PEToyLogger.make()
+    val value = counter.increment()
+    if value % LOG_MOD == 0 then
+       log.log(s"counter value = ${value}")
+    if (value - 1 == LOG_TRESHOLD) then  
+       // Conversion will not be appliyed for == . For this example we want automatic conversion, so -1
+       log.log("counter TRESHOLD")
+    log 
   }
 
-  @Test def testCntV1_0() = 
-     val logger = new ToyLogger()
-     val c = runCounterTestV1(0,logger)
-     val future = c.unsafeRunFuture().map(_ => 
-        assert(logger.lines.isEmpty)
-     )
+
+  @Test def peCnt_automatic_coloring(): Unit = 
+     val counter = new PEIntRef(9)
+     val c = cntAutomaticColoring(counter)
+     val future = c.unsafeRunFuture().map{ log =>
+       println(s"PE:cnt_automatic_coloring, log.__all=${log.__all()} counter.get()=${counter.__get()} ")
+       assert(log.__all().size == 1)
+       assert(counter.__get() == 10)
+     }
      FutureCompleter(future)
-
-
 
 

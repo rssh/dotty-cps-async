@@ -6,6 +6,7 @@ case class TransformationContext[F[_],T](
    patternCode: Expr[T],  // code, for which we build pattern expression
    patternType: Type[T],
    monad: Expr[CpsMonad[F]],
+   memoization: Option[TransformationContext.Memoization[F]],
    flags: AsyncMacroFlags,
    marker: TransformationContextMarker,
    nesting: Int,
@@ -18,7 +19,7 @@ case class TransformationContext[F[_],T](
   def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], marker: TransformationContextMarker, 
                                                   muted: Boolean = flags.muted): 
              TransformationContext[F,S] =
-      TransformationContext(newPatternCode, newPatternType, monad, flags.copy(muted=muted), 
+      TransformationContext(newPatternCode, newPatternType, monad, memoization, flags.copy(muted=muted), 
                              marker, nesting + 1, parent=Some(this) )
 
   def log(message:String): Unit =
@@ -29,3 +30,11 @@ case class TransformationContext[F[_],T](
 
 }
 
+object TransformationContext {
+
+  case class Memoization[F[_]](
+      kind: cps.automaticColoring.MonadMemoizationKind,
+      monadMemoization: Expr[CpsMonadMemoization[F]]
+  )
+
+}

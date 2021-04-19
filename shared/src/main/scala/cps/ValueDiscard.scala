@@ -1,6 +1,12 @@
 package cps
 
+import scala.annotation._
 
+/**
+ * when customValueDiscard is on,
+ * value can be discarded only for types T for which CustomValueDiscard is enabled.
+ * And ValueDiscard.apply is called when value is discarded.
+ **/
 trait ValueDiscard[T]:
 
   def apply(value:T): Unit
@@ -18,5 +24,15 @@ object ValueDiscard:
   transparent inline given stringValueDiscard: ValueDiscard[String] = EmptyValueDiscard[String]
 
 
+/**
+ * Marker interface for 
+ **/
+class AwaitValueDiscard[F[_]:CpsMonad,T] extends ValueDiscard[F[T]]:
+
+  type FT = F[T]
+  type TT = T
+
+  @compileTimeOnly("AwaitValueDiscard should not be used directly")
+  transparent inline override def apply(value: F[T]): Unit = ???
 
 

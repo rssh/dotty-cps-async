@@ -54,6 +54,10 @@ class PEIntRef(initValue: Int):
   def decrement(): PureEffect[Int] =
     PureEffect.delay(value.decrementAndGet())
 
+  // for checking in test
+  def __get(): Int =
+     value.get()
+
 object PEIntRef:
 
   def make(value:Int = 0):PureEffect[PEIntRef] =
