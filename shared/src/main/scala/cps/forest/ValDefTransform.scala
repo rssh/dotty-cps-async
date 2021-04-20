@@ -31,8 +31,8 @@ object ValDefTransform:
                     val refinedCpsRight = cpsRight.asInstanceOf[CpsExpr[F,F[r]]]
                     val memoization = cpsCtx.memoization.get
                     memoization.kind match
-                      case cps.automaticColoring.MonadMemoizationKind.BY_DEFAULT => cpsRight
-                      case cps.automaticColoring.MonadMemoizationKind.INPLACE => 
+                      case MonadMemoizationKind.BY_DEFAULT => cpsRight
+                      case MonadMemoizationKind.INPLACE => 
                          val mm = memoization.monadMemoization.asExprOf[CpsMonadInplaceMemoization[F]]
                          if (cpsRight.isAsync) then
                             refinedCpsRight.map( '{ (x:F[r]) => ${mm}.apply(x) } ).asInstanceOf[CpsExpr[F,et]]
@@ -40,7 +40,7 @@ object ValDefTransform:
                             val rhsExpr = cpsRight.syncOrigin.get
                             val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
                             CpsExpr.sync(monad, nextRhs, changed=true).asInstanceOf[CpsExpr[F,et]]
-                      case cps.automaticColoring.MonadMemoizationKind.PURE => 
+                      case MonadMemoizationKind.PURE => 
                          val mm = memoization.monadMemoization.asExprOf[CpsMonadPureMemoization[F]]
                          refinedCpsRight.flatMap( '{ (x:F[r]) => ${mm}.apply(x) } ).asInstanceOf[CpsExpr[F,et]]
                  case _ => cpsRight

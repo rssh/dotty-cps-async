@@ -102,7 +102,7 @@ given ComputationBoundIsPossible: automaticColoring.IsPossible[PureEffect] with 
 
 
 inline transparent given automaticColoring.ResolveMonadMemoizationKind[PureEffect] =
-                           cps.automaticColoring.ResolveMonadMemoizationKind(automaticColoring.MonadMemoizationKind.PURE)
+                           cps.automaticColoring.ResolveMonadMemoizationKind(MonadMemoizationKind.PURE)
 
 given CpsMonadPureMemoization[PureEffect] with
 

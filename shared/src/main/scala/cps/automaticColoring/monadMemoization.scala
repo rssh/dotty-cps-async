@@ -4,9 +4,6 @@ import cps._
 
 import scala.quoted._
 
-enum MonadMemoizationKind:
-  case BY_DEFAULT, INPLACE, PURE
-
 class ResolveMonadMemoizationKind[F[_]](val value: MonadMemoizationKind)
 
 given resolveMemoizationKindFromExpr[F[_]:Type]: FromExpr[ResolveMonadMemoizationKind[F]] with 

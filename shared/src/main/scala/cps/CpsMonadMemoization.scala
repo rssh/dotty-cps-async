@@ -1,5 +1,8 @@
 package cps
 
+enum MonadMemoizationKind:
+  case BY_DEFAULT, INPLACE, PURE
+
 sealed trait CpsMonadMemoization[F[_]]
 
 trait CpsMonadInplaceMemoization[F[_]]  extends CpsMonadMemoization[F]:
@@ -17,6 +20,5 @@ trait CpsMonadPureMemoization[F[_]]  extends CpsMonadMemoization[F]:
 
 class CpsMonadDefaultMemoization[F[_]]  extends CpsMonadInplaceMemoization[F]:
   def apply[T](ft:F[T]): F[T] = ft
-
 
 
