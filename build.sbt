@@ -2,7 +2,7 @@
 val dottyVersion = "3.0.0-RC3"
 //val dottyVersion = dottyLatestNightlyBuild.get
 
-ThisBuild/version := "0.6.0-SNAPSHOT"
+ThisBuild/version := "0.6.0"
 
 val sharedSettings = Seq(
     organization := "com.github.rssh",
