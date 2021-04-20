@@ -63,6 +63,7 @@ given ImplicitAwait: IsPossible[Future] with {}
 inline transparent given memoizationKind: ResolveMonadMemoizationKind[Future] = 
                                              ResolveMonadMemoizationKind(MonadMemoizationKind.BY_DEFAULT)
 
+given WarnValueDiscard[Future] with {}
 
 given fromFutureConversion[G[_]](using ExecutionContext, CpsAsyncMonad[G]): CpsMonadConversion[Future,G] =
    new CpsMonadConversion[Future, G] {

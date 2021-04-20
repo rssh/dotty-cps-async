@@ -1,8 +1,9 @@
 Additional Features
 ===================
 
-Implicit await
---------------
+Implicit await [Automatic Coloring after  0.6.0]
+-------------------------------------------------
+
 
 Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  Also, we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem' (see http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/  )
 
@@ -24,6 +25,9 @@ Can be written without await as:
 
 .. code-block:: scala
 
+   import cps.automaticColoring.given   // >= 0.6.0
+   //import cps.feature.implicitAwait.given  // < 0.6.0
+
    val c = async[Future]{
         import cps.features.implicitAwait.given
         val url = "http://www.example.com"
@@ -34,11 +38,10 @@ Can be written without await as:
      }
 
 
-
 The underlying monad should support execution caching for using this feature:  i.e., two awaits on the same expression should not cause reevaluation.
 
 
-To mark your monad as supporting this feature, you should define ``given cps.feature.implicitAwait.IsPossible[M]``.
+To mark your monad as supporting this feature, you should define ``given cps.feature.automaticColoring.IsPossible[M]``.
 
 
 

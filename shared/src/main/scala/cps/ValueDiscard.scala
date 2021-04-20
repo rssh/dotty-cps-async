@@ -25,7 +25,8 @@ object ValueDiscard:
 
 
 /**
- * Marker interface for 
+ * Marker interface for forcing monad evaluation before discard.
+ * Useful for pure effect monads.
  **/
 class AwaitValueDiscard[F[_]:CpsMonad,T] extends ValueDiscard[F[T]]:
 

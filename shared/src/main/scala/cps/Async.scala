@@ -123,9 +123,9 @@ object Async {
                  case None => 0
             val automaticColoring = Expr.summon[cps.automaticColoring.AutomaticColoringTag].isDefined
             val customValueDiscard = Expr.summon[cps.features.CustomValueDiscardTag].isDefined || automaticColoring
-            val warnValueDiscard = Expr.summon[cps.features.WarnValueDiscardTag].isDefined
-            if (debugLevel > 5) then
-                println(s"automaticColoring in adoptFlags = ${automaticColoring} ")
+            val warnValueDiscard = Expr.summon[cps.features.WarnValueDiscardTag].isDefined || 
+                                     (automaticColoring && 
+                                      Expr.summon[cps.automaticColoring.WarnValueDiscard[F]].isDefined )
             AsyncMacroFlags(printCode,printTree,debugLevel, true, customValueDiscard, warnValueDiscard, automaticColoring)
 
 
