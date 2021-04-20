@@ -20,9 +20,9 @@ class TestPECnt:
   val LOG_TRESHOLD = 100
   
   
-  implicit val printCode: cps.macroFlags.PrintCode.type = cps.macroFlags.PrintCode
+  //implicit val printCode: cps.macroFlags.PrintCode.type = cps.macroFlags.PrintCode
   //implicit val printTree = cps.macroFlags.PrintTree
-  implicit inline def debugLevel: cps.macroFlags.DebugLevel = cps.macroFlags.DebugLevel(10)
+  //implicit inline def debugLevel: cps.macroFlags.DebugLevel = cps.macroFlags.DebugLevel(10)
 
 
   def cntAutomaticColoring(counter: PEIntRef): PureEffect[PEToyLogger] = async[PureEffect]{

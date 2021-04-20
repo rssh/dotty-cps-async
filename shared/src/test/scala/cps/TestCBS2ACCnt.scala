@@ -19,7 +19,7 @@ class TestCBS2ACCnt:
   
   def createCounter(n:Int) = new AtomicInteger(n)
   
-  implicit val printCode: cps.macroFlags.PrintCode.type = cps.macroFlags.PrintCode
+  //implicit val printCode: cps.macroFlags.PrintCode.type = cps.macroFlags.PrintCode
   //implicit val printTree = cps.macroFlags.PrintTree
   //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
 
