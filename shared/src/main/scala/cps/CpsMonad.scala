@@ -107,7 +107,7 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
    /**
     * called by the source, which accept callback.
-    * source is called immediatly in adoptCallbackStyle
+    * source is called immediately in adoptCallbackStyle
     **/
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A]
 
