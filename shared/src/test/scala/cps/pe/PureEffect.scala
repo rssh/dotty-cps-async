@@ -98,7 +98,7 @@ given PureEffectCpsMonad: CpsAsyncMonad[PureEffect] with
 
 
 
-given ComputationBoundIsPossible: automaticColoring.IsPossible[PureEffect] with {}
+given ComputationBoundIsPossible: automaticColoring.Enabled[PureEffect] with {}
 
 
 inline transparent given automaticColoring.ResolveMonadMemoizationKind[PureEffect] =

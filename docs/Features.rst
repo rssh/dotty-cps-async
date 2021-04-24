@@ -5,7 +5,10 @@ Implicit await [Automatic Coloring after  0.6.0]
 -------------------------------------------------
 
 
-Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  Also, we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem' (see http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/  )
+Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  Also, we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
+ If we want to put asynchronous expression into synchronous function, we should write await(expr)  instead expr,  for transforming synchronous to asynchronous: async.
+  (s http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/ for more detailed explanation )
+
 
 In scala we have types, so why not to ask the compiler to do async coloring automatically?
 So, next code:
@@ -38,10 +41,14 @@ Can be written without await as:
      }
 
 
-The underlying monad should support execution caching for using this feature:  i.e., two awaits on the same expression should not cause reevaluation.
+If underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation) then implicits await is enough for automatic coloring.  But what to do with pure effect monads, which holds computations without starting it ?
+
+Let's look on the next code fe
 
 
-To mark your monad as supporting this feature, you should define ``given cps.feature.automaticColoring.IsPossible[M]``.
+To mark your monad as supporting automatic coloring feature, you should 
+ - define ``given cps.automaticColoring.IsPossible[M]``.
+ - define Cps
 
 
 
@@ -52,7 +59,7 @@ Custom value discard
 
 During the writing of asynchronous code, common developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.  
 
-``cps.feature.customValueDiscard``  limit the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types T, for which exists an implementation of a special ValueDiscard[T]. If given ValueDiscard[T] is not found in the current scope, then dropping values of this type is prohibited.  If found - ValueDiscard.apply(t) is called. It's defined as no-op for primitive types and can be extended by developer for own types.
+``cps.customValueDiscard``  limit the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types T, for which exists an implementation of a special ValueDiscard[T]. If given ValueDiscard[T] is not found in the current scope, then dropping values of this type is prohibited.  If found - ValueDiscard.apply(t) is called. It's defined as no-op for primitive types and can be extended by developer for own types.
 
 Example:
 
@@ -71,7 +78,8 @@ Let's look at the next code:
 
 .. code-block:: scala
 
- import cps.features.customValueDiscard.{given _}
+ //import cps.feature.customValueDiscard.given  // before 0.7.0
+ import cps.customValueDiscard.given // after 0.7.0
 
  val c = async[Future] {
     val data = await(api.fetch("http://www.example.com"))
@@ -88,7 +96,8 @@ If you want to see warning instead error, you can import `warnValueDiscard` feat
 
 .. code-block:: scala
 
- import cps.features.warnValueDiscard.{given _}
+ //import cps.feature.warnValueDiscard.given  // before 0.7.0
+ import cps.warnValueDiscard.given
 
 
 

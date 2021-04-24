@@ -122,8 +122,8 @@ object Async {
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0
             val automaticColoring = Expr.summon[cps.automaticColoring.AutomaticColoringTag].isDefined
-            val customValueDiscard = Expr.summon[cps.features.CustomValueDiscardTag].isDefined || automaticColoring
-            val warnValueDiscard = Expr.summon[cps.features.WarnValueDiscardTag].isDefined || 
+            val customValueDiscard = Expr.summon[cps.customValueDiscard.Tag].isDefined || automaticColoring
+            val warnValueDiscard = Expr.summon[cps.warnValueDiscard.Tag].isDefined || 
                                      (automaticColoring && 
                                       Expr.summon[cps.automaticColoring.WarnValueDiscard[F]].isDefined )
             AsyncMacroFlags(printCode,printTree,debugLevel, true, customValueDiscard, warnValueDiscard, automaticColoring)

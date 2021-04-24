@@ -16,7 +16,6 @@ class PEToyLogger{
    private val logger = new ToyLogger()
 
    def log(msg:String): PureEffect[Unit] =
-      println(s"PEToyLogger.log($msg)")
       PureEffect.delay(logger.log(msg)) 
 
    def all(): PureEffect[Vector[String]] =

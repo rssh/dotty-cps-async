@@ -57,7 +57,7 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
 
 
-given ImplicitAwait: IsPossible[Future] with {}
+given ImplicitAwait: cps.automaticColoring.Enabled[Future] with {}
 
 
 inline transparent given memoizationKind: ResolveMonadMemoizationKind[Future] = 

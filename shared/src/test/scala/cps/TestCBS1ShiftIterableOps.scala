@@ -338,7 +338,6 @@ class TestBS1ShiftIterableOps:
           l.scanRight(0)( (x,y) => x + await(T1.cbi(y)) )
      }
      val r = c.run().get
-     println(s"scanRight: r=$r")
      assert(r == Seq(0,5,9,12,14,15))
 
 

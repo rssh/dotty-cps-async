@@ -2,7 +2,7 @@ package cps
 
 import automaticColoring._
 
-given ComputationBoundIsPossible: IsPossible[ComputationBound] with {}
+given ComputationBoundIsPossible: automaticColoring.Enabled[ComputationBound] with {}
 
 
 inline transparent given ResolveMonadMemoizationKind[ComputationBound] =
