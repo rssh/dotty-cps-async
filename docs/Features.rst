@@ -6,8 +6,8 @@ Implicit await [Automatic Coloring after  0.6.0]
 
 
 Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  Also, we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
- If we want to put asynchronous expression into synchronous function, we should write await(expr)  instead expr,  for transforming synchronous to asynchronous: async.
-  (s http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/ for more detailed explanation )
+ If we want to put asynchronous expression into synchronous function, we should write `await(expr)`  instead `expri`,  for transforming synchronous to asynchronous: `async`.
+  (see http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/ for more detailed explanation )
 
 
 In scala we have types, so why not to ask the compiler to do async coloring automatically?
@@ -41,15 +41,46 @@ Can be written without await as:
      }
 
 
-If underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation) then implicits await is enough for automatic coloring.  But what to do with pure effect monads, which holds computations without starting it ?
+If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation) then implicit await is enough for automatic coloring.  But what to do with pure effect monads, which holds computations without starting them?
 
-Let's look on the next code fe
+Let's look on the next code:
+
+.. code-block:: scala
 
 
-To mark your monad as supporting automatic coloring feature, you should 
- - define ``given cps.automaticColoring.IsPossible[M]``.
- - define Cps
+  def updateCounter(counter:Counter) = async[IO]{
+    val value = counter.increment()
+    if value % LOG_MOD == 0 then
+       log(s"counter value = ${await(value)}")
+    if (value - 1 == LOG_TRESHOLD) then
+       // Conversion will not be appliyed for == . For this example we want automatic conversion, so -1
+       log("counter TRESHOLD")
+  }
 
+
+Assume IO is some pure effect monad, which holds a computation function that will be evaluated each time we need to get value from the monad. Counter.increment() is an IO action:  
+
+
+.. code-block:: scala
+
+def Counter:
+
+  def increment(): IO[Int]
+
+
+The compiler will insert awaits when testing and printing value. 
+For making two using of `val value` be the same value, we need to memoize value during the creation of `val`. 
+Otherwise, the counter will be incremented three times instead of one.
+
+Signature of memoization operation can be different for different monads, this can be:
+   * `memoize: F[X] => F[X]`  for imperative monads.
+   * `memoize: F[X] => F[F[X]]`  for pure effect monads.  Internal `F[_]` holds cached computation. External `F[_]` - operation of getting a result from received cache. Flattening this expressin will return the original computation.
+
+
+If we want to provide support for automatic coloring for your monad, you should implement CpsMonadMemoization trait, which can be one of:
+ * CpsMonadDefaultMemoization - if computations are cached in your monad by default.
+ * CpsMonadInplaceMemoization - for imperative monads
+ * CpsMonadPureMemoization - for pure effect monads.
 
 
 Custom value discard
@@ -57,9 +88,9 @@ Custom value discard
 
 .. index:: customValueDiscard
 
-During the writing of asynchronous code, common developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.  
+During the writing of asynchronous code, typical developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.  
 
-``cps.customValueDiscard``  limit the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types T, for which exists an implementation of a special ValueDiscard[T]. If given ValueDiscard[T] is not found in the current scope, then dropping values of this type is prohibited.  If found - ValueDiscard.apply(t) is called. It's defined as no-op for primitive types and can be extended by developer for own types.
+``cps.customValueDiscard``  limit the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types T, for which exists an implementation of a special ValueDiscard[T]. If given ValueDiscard[T] is not found in the current scope, then dropping values of this type is prohibited.  If found - ValueDiscard.apply(t) is called. It's defined as a no-op for primitive types and can be extended by the developer for its own types.
 
 Example:
 
@@ -72,7 +103,7 @@ Assume we have next api:
    def  dryRun(data:string): Future[Unit] 
    def  processData(data:string): Future[String]
  
-Where the semantics of dryRun is a raise error if it is impossible to run processData().
+Where the semantics of `dryRun`  - raise an error if it is impossible to run processData().
 
 Let's look at the next code:
 
@@ -99,6 +130,32 @@ If you want to see warning instead error, you can import `warnValueDiscard` feat
  //import cps.feature.warnValueDiscard.given  // before 0.7.0
  import cps.warnValueDiscard.given
 
+Note that custom value discarding is automatically enabled for effect monads to prevent situations where discarding values
+ drop branches in the computation flow.
+Let's look again at the code:
+
+.. code-block:: scala
+
+  def updateCounter(counter:Counter) = async[IO]{
+    val value = counter.increment()
+    if value % LOG_MOD == 0 then
+       log(s"counter value = ${await(value)}")
+    if (value - 1 == LOG_TRESHOLD) then
+       // Conversion will not be appliyed for == . For this example we want automatic conversion, so -1
+       log("counter TRESHOLD")
+  }
+
+Assuming that logging is IO operation, i.e. log have signature
+
+.. code-block:: scala
+
+   def log(message:String): IO[Unit]
+
+
+Without custom value discarding, log statement will be dropped.  (Type of `if` with one branch is 'Unit', so type of the first branch should be 'Unit', so log statement will be discarded).
+Dotty-cps-async provides special `AwaitValueDiscard <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L27>`_  which force monad to be evaluated before be discarded.  We recommend use this discard as default for IO[Unit].
+
+
 
 
 SIP22-compatible interface
@@ -122,7 +179,7 @@ to
 
 and use Future based async/await.
 
-All test cases from original Scala-Async distribution are passed with a change of imports only,
+All test cases from the original Scala-Async distribution are passed with a change of imports only,
 and included in our regression suite.
 
 It is also possible to compile sip22 async code without changing of the source code with `shim--scala-async--dotty-cps-async <https://github.com/rssh/shim--scala-async--dotty-cps-async>`_ -s help. 
