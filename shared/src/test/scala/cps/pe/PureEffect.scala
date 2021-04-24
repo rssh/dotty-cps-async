@@ -101,9 +101,6 @@ given PureEffectCpsMonad: CpsAsyncMonad[PureEffect] with
 given ComputationBoundIsPossible: automaticColoring.Enabled[PureEffect] with {}
 
 
-inline transparent given automaticColoring.ResolveMonadMemoizationKind[PureEffect] =
-                           cps.automaticColoring.ResolveMonadMemoizationKind(MonadMemoizationKind.PURE)
-
 given CpsMonadPureMemoization[PureEffect] with
 
    def apply[T](ft:PureEffect[T]): PureEffect[PureEffect[T]] =

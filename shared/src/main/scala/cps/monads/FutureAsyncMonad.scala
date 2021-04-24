@@ -1,7 +1,6 @@
 package cps.monads
 
 import cps._
-import cps.automaticColoring._
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.quoted._
@@ -57,13 +56,12 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
 
 
-given ImplicitAwait: cps.automaticColoring.Enabled[Future] with {}
+given cps.automaticColoring.Enabled[Future] with {}
+given cps.automaticColoring.WarnValueDiscard[Future] with {}
 
 
-inline transparent given memoizationKind: ResolveMonadMemoizationKind[Future] = 
-                                             ResolveMonadMemoizationKind(MonadMemoizationKind.BY_DEFAULT)
+given CpsMonadDefaultMemoization[Future] with {}
 
-given WarnValueDiscard[Future] with {}
 
 given fromFutureConversion[G[_]](using ExecutionContext, CpsAsyncMonad[G]): CpsMonadConversion[Future,G] =
    new CpsMonadConversion[Future, G] {

@@ -133,31 +133,21 @@ object Async {
                                                                   TransformationContext.Memoization[F] =
      import cps.automaticColoring.{given,*}
      import quotes.reflect._
-     Expr.summon[ResolveMonadMemoizationKind[F]] match
-       case Some(rmmke) =>
-           rmmke match
-             case '{  ${Expr(rmmk)}  } =>
-                val kind = rmmk.value
-                kind match
-                  case MonadMemoizationKind.BY_DEFAULT => 
-                          TransformationContext.Memoization[F](kind, '{ new CpsMonadDefaultMemoization[F]() })
-                  case MonadMemoizationKind.INPLACE =>
-                          // TODO: switch to Implicts.search for better diagnostings ?
-                          Expr.summon[CpsMonadInplaceMemoization[F]] match
-                            case Some(mm) => 
-                              TransformationContext.Memoization[F](kind, mm )
-                            case _ =>
-                              throw MacroError(s"Can't find CpsMonadInplaceMemoization for ${TypeRepr.of[F].show}", f)
-                  case MonadMemoizationKind.PURE =>
-                          Expr.summon[CpsMonadPureMemoization[F]] match
-                            case Some(mm) => 
-                              TransformationContext.Memoization[F](kind, mm )
-                            case _ =>
-                              throw MacroError(s"Can't find CpsMonadPureMemoization for ${TypeRepr.of[F].show}", f)
-             case _ =>
-                throw MacroError(s"ResolveMemoizationKind for ${summon[Type[F]]} is not compile-time expression: ${rmmke.show}", f)
-       case None =>  
-           throw MacroError(s"Can't get resolveMemoizationKind for ${TypeRepr.of[F].show}", f)
+     Expr.summon[CpsMonadMemoization[F]] match
+       case Some(mm) =>
+             val mmtp = mm.asTerm.tpe
+             if (mmtp <:< TypeRepr.of[CpsMonadDefaultMemoization[F]]) then
+                TransformationContext.Memoization[F](MonadMemoizationKind.BY_DEFAULT, mm )
+             else if (mmtp <:< TypeRepr.of[CpsMonadInplaceMemoization[F]]) then
+                TransformationContext.Memoization[F](MonadMemoizationKind.INPLACE, mm )
+             else if (mmtp <:< TypeRepr.of[CpsMonadPureMemoization[F]]) then
+                TransformationContext.Memoization[F](MonadMemoizationKind.PURE, mm )
+             else
+                throw MacroError(s"Can't extract memoization kind from ${mm.show} for ${TypeRepr.of[F].show}", mm)
+       case None =>
+             throw MacroError(s"Can't resolve CpsMonadMemoization for ${TypeRepr.of[F].show}", f)
+             
+                
 
 
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]], 
