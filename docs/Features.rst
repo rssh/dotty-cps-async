@@ -109,8 +109,8 @@ Let's look at the next code:
 
 .. code-block:: scala
 
- //import cps.feature.customValueDiscard.given  // before 0.7.0
- import cps.customValueDiscard.given // after 0.7.0
+ //import cps.feature.customValueDiscard.given  //  < 0.6.1
+ import cps.customValueDiscard.given // >= 0.6.1
 
  val c = async[Future] {
     val data = await(api.fetch("http://www.example.com"))
@@ -127,7 +127,7 @@ If you want to see warning instead error, you can import `warnValueDiscard` feat
 
 .. code-block:: scala
 
- //import cps.feature.warnValueDiscard.given  // before 0.7.0
+ //import cps.feature.warnValueDiscard.given  //  < 0.6.1
  import cps.warnValueDiscard.given
 
 Note that custom value discarding is automatically enabled for effect monads to prevent situations where discarding values
@@ -186,7 +186,7 @@ It is also possible to compile sip22 async code without changing of the source c
 
 .. code-block:: scala
 
- libraryDependencies += "com.github.rssh" %% "shim-scala-async-dotty-cps-async" % "0.6.0",
+ libraryDependencies += "com.github.rssh" %% "shim-scala-async-dotty-cps-async" % "0.6.1",
 
 
 Note that compatibility was not a primary goal during the development of dotty-cps-async. Generated code is quite different, so if you need a bug-to-bug compatible version of scala2 async, you should use the port of the original -XAsync compiler plugin.
