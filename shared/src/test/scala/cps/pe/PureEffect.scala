@@ -98,8 +98,6 @@ given PureEffectCpsMonad: CpsAsyncMonad[PureEffect] with
 
 
 
-given ComputationBoundIsPossible: automaticColoring.Enabled[PureEffect] with {}
-
 
 given CpsMonadPureMemoization[PureEffect] with
 

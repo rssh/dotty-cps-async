@@ -152,7 +152,7 @@ Assuming that logging is IO operation, i.e. log have signature
    def log(message:String): IO[Unit]
 
 
-Without custom value discarding, log statement will be dropped.  (Type of `if` with one branch is 'Unit', so type of the first branch should be 'Unit', so log statement will be discarded).
+Without custom value discarding, the log statement will be dropped.  (Type of `if` with one branch is 'Unit', so type of the first branch should be 'Unit', so log statement will be discarded).
 Dotty-cps-async provides special `AwaitValueDiscard <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L27>`_  which force monad to be evaluated before be discarded.  We recommend use this discard as default for IO[Unit].
 
 

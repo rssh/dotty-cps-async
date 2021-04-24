@@ -56,7 +56,6 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
 
 
-given cps.automaticColoring.Enabled[Future] with {}
 given cps.automaticColoring.WarnValueDiscard[Future] with {}
 
 
