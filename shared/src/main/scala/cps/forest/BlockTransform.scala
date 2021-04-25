@@ -112,30 +112,52 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
 
   def buildAwaitValueDiscardExpr(using Quotes)(discardTerm: quotes.reflect.Term, p: Expr[?]):Expr[Any] =
       import quotes.reflect._
+
+      def parseDiscardTermType(tpe: TypeRepr): (TypeRepr, TypeRepr) =
+        println("parseDiscardTermType, tpe=$tpe")
+        tpe match
+           case AppliedType(base, targs) =>
+                  println(s"applied type detected, base = $base, targs=$targs")
+                  base match
+                    case TypeRef(sup, "AwaitValueDiscard") =>
+                       targs match
+                         case List(tf, tt) => (tf, tt)
+                         case _ =>
+                             val msg = s"Expected that AwaitValueDiscard have 2 type paraleters, but we have $targs"
+                             throw MacroError(msg, discardTerm.asExpr)
+                    case _ =>
+                       val msg = s"Reference to AwaitValueDiscard expected"
+                       throw MacroError(msg, discardTerm.asExpr)
+           case _ =>
+                  val msg = s"Can't parse AwaitValueDiscard type, tpe=${tpe}"
+                  throw MacroError(msg, discardTerm.asExpr)
+
       discardTerm.tpe.asType match
         case '[AwaitValueDiscard[F,tt]] =>
            val refP = p.asExprOf[F[tt]]
            '{  await[F,tt]($refP)(using ${cpsCtx.monad})  }
         //bug in dotty. TODO: submit
-        //case '[AwaitValueDiscard[ft,tt]] =>
+        //case '[AwaitValueDiscard[[xt]=>>ft,tt]] =>
+        //   ???
         case _ => 
+           val (ftr, ttr) = parseDiscardTermType(discardTerm.tpe)
            // TODO: wrap exception, when incorrect isage
-           val ftr = TypeSelect(discardTerm, "FT")
-           val ttr = TypeSelect(discardTerm, "TT")
-           val ftm = TypeRepr.of[CpsMonad].appliedTo(ftr.tpe)
-           Implicits.search(ftr.tpe) match
+           //val ftr = TypeSelect(discardTerm, "FT")
+           //val ttr = TypeSelect(discardTerm, "TT")
+           val ftmt = TypeRepr.of[CpsMonad].appliedTo(ftr)
+           Implicits.search(ftmt) match
               case monadSuccess: ImplicitSearchSuccess =>
                 val ftm = monadSuccess.tree
                 Apply(    
                      Apply(
                        TypeApply(Ref(Symbol.requiredMethod("cps.await")), 
-                          List(ftr,ttr)),
+                          List(Inferred(ftr),Inferred(ttr))),
                        List(p.asTerm)
                      ),
                      List(ftm)
                 ).asExpr
               case monadFailure: ImplicitSearchFailure =>
-                throw MacroError("Can't find monad for ${TypeRepr.of[ft].show}, ${monadFailure.explanation} : ", p)
+                throw MacroError(s"Can't find appropriative monad for ${discardTerm.show}, ${monadFailure.explanation}  : ", p)
            
 
 

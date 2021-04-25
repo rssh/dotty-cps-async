@@ -142,6 +142,8 @@ object Async {
                 TransformationContext.Memoization[F](MonadMemoizationKind.INPLACE, mm )
              else if (mmtp <:< TypeRepr.of[CpsMonadPureMemoization[F]]) then
                 TransformationContext.Memoization[F](MonadMemoizationKind.PURE, mm )
+             else if (mmtp <:< TypeRepr.of[CpsMonadDynamicMemoization[F]]) then
+                TransformationContext.Memoization[F](MonadMemoizationKind.DYNAMIC, mm )
              else
                 throw MacroError(s"Can't extract memoization kind from ${mm.show} for ${TypeRepr.of[F].show}", mm)
        case None =>
