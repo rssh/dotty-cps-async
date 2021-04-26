@@ -23,7 +23,7 @@ class TestFizzBuzz:
   @Test def testFizBuzz: Unit = 
      val c = async[PureEffect] {
        val logger = PEToyLogger.make()
-       val counter = new PEIntRef(-1)
+       val counter = PEIntRef.make(-1)
        while {
          val v = counter.increment()
          logger.log(await(v).toString)

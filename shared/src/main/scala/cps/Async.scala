@@ -44,18 +44,11 @@ object Async {
    **/
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using Quotes): Expr[F[T]] = 
     import quotes.reflect._
-    //TransformUtil.dummyMapper(f.asTerm, quotes.reflect.Symbol.spliceOwner)
     Expr.summon[CpsMonad[F]] match
        case Some(dm) =>
           transformMonad[F,T](f,dm)
        case None =>
           val msg = s"Can't find async monad for ${TypeRepr.of[F].show} (transformImpl)"
-          //if (flags.debugLevel > 0)
-          println(s"code=${f.show}")
-          report.error(msg, f)
-          val ex = new RuntimeException(msg)
-          ex.printStackTrace()
-          //else
           report.throwError(msg, f)
 
 
@@ -142,6 +135,8 @@ object Async {
                 TransformationContext.Memoization[F](MonadMemoizationKind.INPLACE, mm )
              else if (mmtp <:< TypeRepr.of[CpsMonadPureMemoization[F]]) then
                 TransformationContext.Memoization[F](MonadMemoizationKind.PURE, mm )
+             else if (mmtp <:< TypeRepr.of[CpsMonadDynamicMemoization[F]]) then
+                TransformationContext.Memoization[F](MonadMemoizationKind.DYNAMIC, mm )
              else
                 throw MacroError(s"Can't extract memoization kind from ${mm.show} for ${TypeRepr.of[F].show}", mm)
        case None =>

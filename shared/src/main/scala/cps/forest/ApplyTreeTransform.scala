@@ -132,7 +132,7 @@ trait ApplyTreeTransform[F[_],CT]:
        if (cpsCtx.flags.debugLevel >= 15)
           cpsCtx.log(s"obj=${obj}")
      obj match
-       case Inlined(_,_,
+       case conv@Inlined(_,_,
               Typed(
                  Lambda(List(xValDef),
                    Block(List(),Apply(Apply(TypeApply(obj3,targs3),List(x)),args1))),
@@ -142,15 +142,15 @@ trait ApplyTreeTransform[F[_],CT]:
                   // here we catch await, inserted by implicit conversion.
                   // this code is likey depends from implementation details of a compiler
                   // mb create compiler-level API ?
-                  runAwait(applyTerm, args.head, targs3.head.tpe, args1.head)
-       case Inlined(_,_,
+                  withInlineBindings(conv, runAwait(applyTerm, args.head, targs3.head.tpe, args1.head))
+       case conv@Inlined(_,_,
                  Lambda(List(xValDef),
                    Block(List(),Apply(Apply(TypeApply(obj3,targs3),List(x)),args1)))
             ) if (obj3.symbol == awaitSymbol
                    && xValDef.symbol == x.symbol) =>
                   // transient inlines have no 'Typed' entry
                   //  TODO: handle non-inlined conversion
-                  runAwait(applyTerm, args.head, targs3.head.tpe, args1.head)
+                  withInlineBindings(conv,runAwait(applyTerm, args.head, targs3.head.tpe, args1.head))
        case _ =>
          val cpsObj = runRoot(obj, TCM.ApplySelect)
          if (cpsCtx.flags.debugLevel >= 15)
@@ -180,6 +180,11 @@ trait ApplyTreeTransform[F[_],CT]:
                   cpsCtx.log(s"funSelect: ! lambda || Subst, fun=$fun fun.tpe=${fun.tpe}")
                handleArgs1(applyTerm, fun, cpsObj.select(fun, fun.symbol, fun.tpe), args, tails)
 
+  def withInlineBindings(origin: Inlined, tree:CpsTree):CpsTree =
+        if (origin.bindings.isEmpty)
+           tree
+        else
+           InlinedCpsTree(origin, origin.bindings, tree)
 
   def handleFunIdent(applyTerm: Term, fun:Term, args:List[Term], name: String, tails: List[Seq[ApplyArgRecord]]):CpsTree =
         handleArgs1(applyTerm, fun, CpsTree.pure(fun), args, tails)
