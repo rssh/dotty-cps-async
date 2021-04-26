@@ -53,7 +53,8 @@ Let's look on the next code:
     if value % LOG_MOD == 0 then
        log(s"counter value = ${await(value)}")
     if (value - 1 == LOG_TRESHOLD) then
-       // Conversion will not be appliyed for == . For this example we want automatic conversion, so -1
+       // Conversion will not be appliyed for == . 
+       // For this example we want automatic conversion, so -1
        log("counter TRESHOLD")
   }
 
@@ -63,9 +64,9 @@ Assume IO is some pure effect monad, which holds a computation function that wil
 
 .. code-block:: scala
 
-def Counter:
+  def Counter:
 
-  def increment(): IO[Int]
+    def increment(): IO[Int]
 
 
 The compiler will insert awaits when testing and printing value. 
@@ -81,6 +82,7 @@ If we want to provide support for automatic coloring for your monad, you should 
  * CpsMonadDefaultMemoization - if computations are cached in your monad by default.
  * CpsMonadInplaceMemoization - for imperative monads
  * CpsMonadPureMemoization - for pure effect monads.
+ * CpsMonadDynamicMemoization - for monads with custom memoization, which resolved with call-side types.
 
 
 Custom value discard
