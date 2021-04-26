@@ -34,7 +34,7 @@ Can we free concurrent programming from the monadic style:
 - Dart:
 	- Guide: <https://dart.dev/guides/language/language-tour#asynchrony-support>
 	- Formal specs: <https://spec.dart.dev/DartLangSpecDraft.pdf>  (async intro on page 18)
-        - Spicing Up Dart with Side Effects (streams extension) https://dl.acm.org/doi/pdf/10.1145/2742694.2747873
+        - Spicing Up Dart with Side Effects (streams extension) <https://dl.acm.org/doi/pdf/10.1145/2742694.2747873>
 - Rust:
 	- Async-Await working group: <https://rust-lang.github.io/compiler-team/working-groups/async-await/>
 	- Book "Asynchronous Programming in Rust": <https://rust-lang.github.io/async-book/>
@@ -49,13 +49,13 @@ Can we free concurrent programming from the monadic style:
 - Swift:
 	- Proposal: <https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md>
 - Zig:
-	- Description: https://ziglang.org/download/0.5.0/release-notes.html#Async-Functions
-	- Article about doing async implicit ('colorblind'): https://kristoff.it/blog/zig-colorblind-async-await/
+	- Description: <https://ziglang.org/download/0.5.0/release-notes.html#Async-Functions>
+	- Article about doing async implicit ('colorblind'): <https://kristoff.it/blog/zig-colorblind-async-await/>
 - Koka:
-	- Paper: "Structured Asynchrony with Algebraic Effects" https://www.microsoft.com/en-us/research/wp-content/uploads/2017/05/asynceffects-msr-tr-2017-21.pdf
+	- Paper: "Structured Asynchrony with Algebraic Effects" <https://www.microsoft.com/en-us/research/wp-content/uploads/2017/05/asynceffects-msr-tr-2017-21.pdf>
 - OCaml:
-        - Paper: "Concurrent System Programming with Effect Handlers": https://kcsrk.info/papers/system_effects_feb_18.pdf
-        - efects tutorial https://github.com/ocamllabs/ocaml-effects-tutorial
-        - Paper: Retrofitting Effect Handlers onto OCaml. https://arxiv.org/abs/2104.00250
+        - Paper: "Concurrent System Programming with Effect Handlers": <https://kcsrk.info/papers/system_effects_feb_18.pdf>
+        - efects tutorial <https://github.com/ocamllabs/ocaml-effects-tutorial>
+        - Paper: Retrofitting Effect Handlers onto OCaml. <https://arxiv.org/abs/2104.00250>
 
 
