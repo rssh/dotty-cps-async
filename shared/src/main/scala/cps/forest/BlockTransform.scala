@@ -1,5 +1,5 @@
 // CPS Transform for tasty block
-// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020
+// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021
 package cps.forest
 
 import scala.quoted._
@@ -114,10 +114,8 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
       import quotes.reflect._
 
       def parseDiscardTermType(tpe: TypeRepr): (TypeRepr, TypeRepr) =
-        println("parseDiscardTermType, tpe=$tpe")
         tpe match
            case AppliedType(base, targs) =>
-                  println(s"applied type detected, base = $base, targs=$targs")
                   base match
                     case TypeRef(sup, "AwaitValueDiscard") =>
                        targs match
@@ -141,9 +139,6 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
         //   ???
         case _ => 
            val (ftr, ttr) = parseDiscardTermType(discardTerm.tpe)
-           // TODO: wrap exception, when incorrect isage
-           //val ftr = TypeSelect(discardTerm, "FT")
-           //val ttr = TypeSelect(discardTerm, "TT")
            val ftmt = TypeRepr.of[CpsMonad].appliedTo(ftr)
            Implicits.search(ftmt) match
               case monadSuccess: ImplicitSearchSuccess =>

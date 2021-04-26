@@ -44,18 +44,11 @@ object Async {
    **/
   def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using Quotes): Expr[F[T]] = 
     import quotes.reflect._
-    //TransformUtil.dummyMapper(f.asTerm, quotes.reflect.Symbol.spliceOwner)
     Expr.summon[CpsMonad[F]] match
        case Some(dm) =>
           transformMonad[F,T](f,dm)
        case None =>
           val msg = s"Can't find async monad for ${TypeRepr.of[F].show} (transformImpl)"
-          //if (flags.debugLevel > 0)
-          println(s"code=${f.show}")
-          report.error(msg, f)
-          val ex = new RuntimeException(msg)
-          ex.printStackTrace()
-          //else
           report.throwError(msg, f)
 
 
