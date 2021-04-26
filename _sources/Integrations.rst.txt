@@ -18,7 +18,7 @@ cats-effect
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.3.0"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.4.0"
 
 
 scalaz IO
@@ -34,7 +34,7 @@ ZIO
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.3.0"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.4.0"
 
 
 

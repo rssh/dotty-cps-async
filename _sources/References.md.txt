@@ -53,5 +53,9 @@ Can we free concurrent programming from the monadic style:
 	- Article about doing async implicit ('colorblind'): https://kristoff.it/blog/zig-colorblind-async-await/
 - Koka:
 	- Paper: "Structured Asynchrony with Algebraic Effects" https://www.microsoft.com/en-us/research/wp-content/uploads/2017/05/asynceffects-msr-tr-2017-21.pdf
+- OCaml:
+        - Paper: "Concurrent System Programming with Effect Handlers": https://kcsrk.info/papers/system_effects_feb_18.pdf
+        - efects tutorial https://github.com/ocamllabs/ocaml-effects-tutorial
+        - Paper: Retrofitting Effect Handlers onto OCaml. https://arxiv.org/abs/2104.00250
 
 
