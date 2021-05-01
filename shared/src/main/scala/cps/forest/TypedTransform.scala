@@ -13,7 +13,7 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   def run(using Quotes)(t: quotes.reflect.Term, tp: quotes.reflect.TypeTree): CpsExpr[F,T] =
      import quotes.reflect._
-     t.asExpr match 
+     t.asExpr match
        case '{ $t1:tt1 } =>
          val r = Async.nestTransform(t1, cpsCtx, TransformationContextMarker.Typed)
          if (!r.isAsync)  
@@ -25,6 +25,6 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
          else 
             r.map( '{ x => ${Typed('x.asTerm, TypeTree.of[T]).asExprOf[T]} } )
        case _ =>
-         throw MacroError("Can't determinate type for ${t}",t.asExpr) 
+         throw MacroError("Can't determinate type for ${t}",t.asExpr)
 
 

@@ -10,14 +10,14 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
   import cpsCtx._
 
-  // case Assign(left,right) 
-  def run(using Quotes)(left: quotes.reflect.Term, right: quotes.reflect.Term): CpsExpr[F,T] = 
+  // case Assign(left,right)
+  def run(using Quotes)(left: quotes.reflect.Term, right: quotes.reflect.Term): CpsExpr[F,T] =
      import quotes.reflect._
-     left.asExpr match 
+     left.asExpr match
         case '{ $le: lt } =>
             val cpsLeft = Async.nestTransform(le,cpsCtx,TransformationContextMarker.AssignLeft)
             // shpuld have to structure in such waym as workarround against
-            //  
+            //
             runWithLeft(left,right,cpsLeft)
         case _ =>
             throw MacroError("Can't determinate type",left.asExpr)
@@ -48,9 +48,9 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                          '{ (x:R) => ${Assign(left,'x.asTerm).asExprOf[T] } 
                           }).transformed )
      } else { // (cpsLeft.isAsync) {
-        left match 
-          case Select(obj,sym) => 
-              obj.asExpr match 
+        left match
+          case Select(obj,sym) =>
+              obj.asExpr match
                  case '{ $o: ot } =>
                     val lu = Async.nestTransform(o,cpsCtx,TransformationContextMarker.AssignSelect)
                     run2(left,right,cpsLeft,cpsRight,lu)
@@ -75,7 +75,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      } else {
          CpsExpr.async[F,T](monad,
                cpsLu.flatMap[T]('{ l =>
-                                     ${cpsRight.flatMap[T]( 
+                                     ${cpsRight.flatMap[T](
                                         '{ r => ${
                                                Assign('l.asTerm.select(left.symbol),
                                                       'r.asTerm
