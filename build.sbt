@@ -1,5 +1,5 @@
-//val dottyVersion = "3.0.0-RC2-bin-SNAPSHOT"
-val dottyVersion = "3.0.0-RC3"
+val dottyVersion = "3.0.1-RC1-bin-SNAPSHOT"
+//val dottyVersion = "3.0.0-RC3"
 //val dottyVersion = dottyLatestNightlyBuild.get
 
 ThisBuild/version := "0.7.0-SNAPSHOT"
@@ -33,6 +33,6 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
         libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
     ).jsSettings(
         scalaJSUseMainModuleInitializer := true,
-        libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.5.1" % Test).withDottyCompat(scalaVersion.value)
+        libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.5.1" % Test).cross(CrossVersion.for3Use2_13)
     )
 
