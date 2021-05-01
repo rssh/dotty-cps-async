@@ -8,9 +8,11 @@ trait ExprTreeGen:
   def isChanged: Boolean
 
 case class UnsealExprTreeGen[T](expr: Expr[T], changed: Boolean) extends ExprTreeGen:
+
   def extract(using Quotes): quotes.reflect.Statement =
     import quotes.reflect._
     expr.asTerm
+
   def isChanged: Boolean = changed
 
 class StatementExprTreeGen(using Quotes)(stat: quotes.reflect.Statement, changed: Boolean) extends ExprTreeGen:

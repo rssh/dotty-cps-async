@@ -109,7 +109,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                case Some(syncBody) =>
                                  cpsFinalizer.syncOrigin match
                                    case Some(syncFinalizer) =>
-                                      CpsExpr.async[F,T](cpsCtx.monad, 
+                                      CpsExpr.async[F,T](cpsCtx.monad,
                                        '{
                                          ${errorMonad}.withAction(
                                            ${errorMonad}.tryPure($syncBody)

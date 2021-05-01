@@ -83,7 +83,7 @@ object ValDefTransform:
         case other =>
             throw MacroError(s"Can't concretize type of right-part $rhs ", rhs.asExpr)
 
-     
+
   }
 
 
@@ -96,39 +96,39 @@ object ValDefTransform:
                                      )
                                     extends AsyncCpsExpr[F,T](monad, prev) {
 
-       override def fLast(using Quotes) = 
+       override def fLast(using Quotes) =
           import quotes.reflect._
 
           def appendBlockExpr[A:quoted.Type](rhs: quotes.reflect.Term, expr: Expr[A]):Expr[A] =
                 buildAppendBlockExpr(oldValDef.asInstanceOf[quotes.reflect.ValDef],
                                      rhs, expr)
 
-          next.syncOrigin match 
+          next.syncOrigin match
             case Some(nextOrigin) =>
              '{
-               ${monad}.map(${cpsRhs.transformed})((v:V) => 
-                          ${appendBlockExpr('v.asTerm, nextOrigin)}) 
+               ${monad}.map(${cpsRhs.transformed})((v:V) =>
+                          ${appendBlockExpr('v.asTerm, nextOrigin)})
               }
             case  None =>
              '{
                ${monad}.flatMap(${cpsRhs.transformed})((v:V)=>
-                          ${appendBlockExpr('v.asTerm, next.transformed)}) 
+                          ${appendBlockExpr('v.asTerm, next.transformed)})
              }
 
        override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
-          if (exprs.isEmpty) 
+          if (exprs.isEmpty)
              this
           else
              RhsFlatMappedCpsExpr(using thisQuotes)(monad, exprs ++: prev,oldValDef,cpsRhs,next)
 
 
-       override def append[A:quoted.Type](e: CpsExpr[F,A])(using Quotes) = 
+       override def append[A:quoted.Type](e: CpsExpr[F,A])(using Quotes) =
           RhsFlatMappedCpsExpr(using thisQuotes)(monad,prev,oldValDef,cpsRhs,next.append(e))
-                                                          
-             
+
+
        private def buildAppendBlock(using Quotes)(
-                      oldValDef: quotes.reflect.ValDef, rhs:quotes.reflect.Term, 
-                                                    exprTerm:quotes.reflect.Term): quotes.reflect.Term = 
+                      oldValDef: quotes.reflect.ValDef, rhs:quotes.reflect.Term,
+                                                    exprTerm:quotes.reflect.Term): quotes.reflect.Term =
        {
           import quotes.reflect._
           import scala.quoted.Expr
@@ -142,7 +142,7 @@ object ValDefTransform:
 
        }
 
-       private def buildAppendBlockExpr[A:Type](using Quotes)(oldValDef: quotes.reflect.ValDef, rhs: quotes.reflect.Term, expr:Expr[A]):Expr[A] = 
+       private def buildAppendBlockExpr[A:Type](using Quotes)(oldValDef: quotes.reflect.ValDef, rhs: quotes.reflect.Term, expr:Expr[A]):Expr[A] =
           import quotes.reflect._
           buildAppendBlock(oldValDef,rhs,expr.asTerm).asExprOf[A]
 
@@ -157,21 +157,21 @@ object ValDefTransform:
 
        override def isAsync = next.isAsync
 
-       override def syncOrigin(using Quotes): Option[Expr[T]] = next.syncOrigin.map{ n => 
+       override def syncOrigin(using Quotes): Option[Expr[T]] = next.syncOrigin.map{ n =>
          import quotes.reflect._
          val prevStats: List[Statement] = prev.map(_.extract).toList
          val valDef: Statement = oldValDef.asInstanceOf[quotes.reflect.ValDef]
          val outputTerm = n.asTerm match
-            case Block(statements, last) => 
+            case Block(statements, last) =>
                    Block( prevStats ++: (valDef +: statements), last)
-            case other => 
+            case other =>
                    Block( prevStats ++: List(valDef), other)
          outputTerm.asExprOf[T]
        }
-       
+
 
        override def fLast(using Quotes) = next.fLast
-              
+
        override def transformed(using Quotes) = {
           import quotes.reflect._
 
@@ -180,7 +180,7 @@ object ValDefTransform:
              case Block(stats, e) =>
                  Block( prev.map(_.extract) ++: valDef +: stats, e)
              case other =>
-                 Block( prev.map(_.extract) ++: List(valDef) , other) 
+                 Block( prev.map(_.extract) ++: List(valDef) , other)
           block.asExprOf[F[T]]
 
        }
@@ -191,12 +191,12 @@ object ValDefTransform:
           else
             ValWrappedCpsExpr[F,T,V](using quotes)(monad, exprs ++: prev, oldValDef, next)
 
-       override def append[A:quoted.Type](e:CpsExpr[F,A])(using Quotes) = 
-           ValWrappedCpsExpr(using quotes)(monad, prev, 
-                                         oldValDef.asInstanceOf[quotes.reflect.ValDef], 
+       override def append[A:quoted.Type](e:CpsExpr[F,A])(using Quotes) =
+           ValWrappedCpsExpr(using quotes)(monad, prev,
+                                         oldValDef.asInstanceOf[quotes.reflect.ValDef],
                                          next.append(e))
 
-       
+
        def prependPrev(using qctx:Quotes)(term: quotes.reflect.Term): quotes.reflect.Term =
           import quotes.reflect._
           if (prev.isEmpty) {
@@ -208,5 +208,5 @@ object ValDefTransform:
                case other =>
                  Block(prev.toList.map(_.extract) , other)
           }
-     
+
 

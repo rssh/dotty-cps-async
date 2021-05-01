@@ -42,7 +42,7 @@ object Async {
   /**
    * transform expression and get monad from context.
    **/
-  def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using Quotes): Expr[F[T]] = 
+  def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     Expr.summon[CpsMonad[F]] match
        case Some(dm) =>
@@ -56,7 +56,7 @@ object Async {
    * transform expression within given monad.  Use this function is you need to force async-transform
    * from other macros
    **/
-  def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): Expr[F[T]] = 
+  def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     import TransformationContextMarker._
     val flags = adoptFlags(f, dm)
@@ -148,7 +148,7 @@ object Async {
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]], 
                                       optMemoization: Option[TransformationContext.Memoization[F]],
                                       flags: AsyncMacroFlags,
-                                      exprMarker: TransformationContextMarker, 
+                                      exprMarker: TransformationContextMarker,
                                       nesting: Int,
                                       parent: Option[TransformationContext[_,_]])(
                                            using Quotes): CpsExpr[F,T] =
@@ -209,10 +209,10 @@ object Async {
                    println("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)
              }
-     
-   
-  def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S], 
-                              cpsCtx: TransformationContext[F,T], 
+
+
+  def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S],
+                              cpsCtx: TransformationContext[F,T],
                               marker: TransformationContextMarker)(using Quotes):CpsExpr[F,S]=
         rootTransform(f,cpsCtx.monad, cpsCtx.memoization,
                       cpsCtx.flags,marker,cpsCtx.nesting+1, Some(cpsCtx))

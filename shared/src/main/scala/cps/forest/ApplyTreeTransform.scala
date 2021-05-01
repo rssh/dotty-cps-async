@@ -62,7 +62,7 @@ trait ApplyTreeTransform[F[_],CT]:
               case Apply(x,y) => Some(x)
               case other =>
                 throw MacroError("expected that Select.overloaded should match apply", posExprs(other,funTerm))
-           
+
 
   /**
    *applyTerm = Apply(fun, args)
@@ -74,7 +74,7 @@ trait ApplyTreeTransform[F[_],CT]:
                          obj:Term,
                          targs:List[TypeTree],
                          tails:List[Seq[ApplyArgRecord]]): CpsTree =
-      
+
      if (cpsCtx.flags.debugLevel >= 10)
        cpsCtx.log( "runApply:handleFunTypeApply")
        if (cpsCtx.flags.debugLevel >= 15)
@@ -96,7 +96,7 @@ trait ApplyTreeTransform[F[_],CT]:
                  case cls: CallChainSubstCpsTree =>
                           // check - is shifted have such name.
                           val shifted = cls.shifted
-                          sameSelect(shifted, method, targs, args) match 
+                          sameSelect(shifted, method, targs, args) match
                             case None =>
                                // not-found, use origin
                                val cpsObj = cpsObj1.select(obj, obj.symbol, obj.tpe).typeApply(fun, targs, fun.tpe)
@@ -245,7 +245,7 @@ trait ApplyTreeTransform[F[_],CT]:
    *
   **/
   def handleArgs1(applyTerm: Term,
-                  fun: Term, 
+                  fun: Term,
                   cpsFun: CpsTree,
                   args: List[Term],
                   tails: List[Seq[ApplyArgRecord]],
@@ -293,15 +293,15 @@ trait ApplyTreeTransform[F[_],CT]:
               case _ =>
                       cpsFun.syncOrigin match
                          case Some(fun1) =>
-                           if (!cpsFun.isChanged && !unpure) 
+                           if (!cpsFun.isChanged && !unpure)
                              CpsTree.pure(applyTerm)
-                           else 
+                           else
                              if (unpure)
                                 val internalApply = fun1.appliedToArgss(args::tailArgss)
                                 shiftedResultCpsTree(applyTerm, internalApply)
                              else
                                 CpsTree.pure(fun1.appliedToArgss(args::tailArgss), true)
-                         case _ => 
+                         case _ =>
                             cpsFun.monadMap(x => x.appliedToArgss(args::tailArgss), applyTerm.tpe)
         } else {
            var runFold = true
@@ -485,7 +485,6 @@ trait ApplyTreeTransform[F[_],CT]:
 
        val qual = x.qualifier
 
-
        def traceFunNotFound(msg:String, errors:List[MessageWithPos]): Unit =
           if (!errors.isEmpty) then
             report.warning(msg)
@@ -529,7 +528,6 @@ trait ApplyTreeTransform[F[_],CT]:
                         cpsCtx.log(s"arg($i)=${a.show}")
                       }
                    throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} name = ${x.name}, shiftedName=${shiftedName}",posExpr(x))
-
 
 
     if (cpsCtx.flags.debugLevel >= 15)
@@ -607,7 +605,7 @@ trait ApplyTreeTransform[F[_],CT]:
                              shiftedResultCpsTree(applyTerm, applied)
                           else
                              CpsTree.pure(applied, cpsFun.isChanged)
-                       case None => 
+                       case None =>
                           if (inShiftedCallChain)
                              val shifted = cpsFun.transformed
                              shiftedResultCpsTree(applyTerm, shifted.appliedToArgss(argss))
@@ -616,16 +614,16 @@ trait ApplyTreeTransform[F[_],CT]:
 
 
   def shiftedResultCpsTree(origin: Term, shifted: Term): CpsTree =
-      if (shifted.tpe.isFunctionType) 
+      if (shifted.tpe.isFunctionType)
          // TODO: extract argument types. now - one experiment
          shifted.tpe match
            case AppliedType(f,List(a,AppliedType(m,b))) if f <:< TypeRepr.of[Function1] =>
              val sym = Symbol.newVal(Symbol.spliceOwner, "shiftedArg", a.widen, Flags.EmptyFlags, Symbol.noSymbol)
-             AsyncLambdaCpsTree(origin, List(ValDef(sym,None)), 
+             AsyncLambdaCpsTree(origin, List(ValDef(sym,None)),
                   CpsTree.impure(Apply(Select.unique(shifted,"apply"),List(Ref(sym))),b.head),origin.tpe)
            case _ =>
              throw MacroError("Async function with arity != 1 is not supported yet",posExprs(shifted,origin))
-      else if (shifted.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) 
+      else if (shifted.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]])
          CallChainSubstCpsTree(origin, shifted, origin.tpe)
       else if (shifted.tpe.widen =:= origin.tpe.widen) 
          // experimental, when shifted result type is the same as result type.
@@ -633,7 +631,7 @@ trait ApplyTreeTransform[F[_],CT]:
       else
          CpsTree.impure(shifted, origin.tpe)
 
- 
+
 
 
   def buildShiftedApply(
