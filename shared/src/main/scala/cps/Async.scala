@@ -75,7 +75,9 @@ object Async {
         if flags.automaticColoring then
           Some(resolveMemoization[F,T](f,dm))
         else None
-      val r = rootTransform[F,T](f,dm,memoization,flags,TopLevel,0, None).transformed
+      val r = WithOptExprProxy("cpsMonad", dm){
+           dm => rootTransform[F,T](f,dm,memoization,flags,TopLevel,0, None).transformed
+      }
       if (flags.printCode)
         try
            println(s"transformed value: ${r.show}")
