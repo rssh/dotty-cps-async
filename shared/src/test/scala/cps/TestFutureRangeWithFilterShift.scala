@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import cps.monads.given
 import cps.util.FutureCompleter
 
-class TestMultipleMonadsShift:
+class TestFutureRangeWithFilterShift:
 
 
   @Test def testForeachWrapper(): Unit = 
