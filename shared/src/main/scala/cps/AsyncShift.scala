@@ -14,8 +14,6 @@ trait AsyncShiftLowPriority1 {
  transparent inline given shiftedIterable[A,CA <: Iterable[A] ]: AsyncShift[CA] =
       cps.runtime.IterableAsyncShift[A,CA]()
 
- transparent inline given shiftedRange[CA <: Range]: AsyncShift[CA] =
-        cps.runtime.RangeAsyncShift[CA]()
 
 }
 
@@ -27,6 +25,9 @@ trait AsyncShiftLowPriority2 extends AsyncShiftLowPriority1 {
 }
 
 object AsyncShift extends AsyncShiftLowPriority2 {
+
+ transparent inline given shiftedRange[CA <: Range]: AsyncShift[CA] =
+        cps.runtime.RangeAsyncShift[CA]()
 
  transparent inline given shiftedArrayOps[A]: AsyncShift[scala.collection.ArrayOps[A]] =
       new cps.runtime.ArrayOpsAsyncShift[A]()

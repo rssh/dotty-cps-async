@@ -335,11 +335,11 @@ trait ApplyTreeTransform[F[_],CT]:
   }
 
 
-  def findAsyncShiftTerm(e:Term):ImplicitSearchResult =
+  def findAsyncShiftTerm(e:Term):(ImplicitSearchResult, TypeRepr) =
     val tpe = e.tpe.widen
     val asyncShift = TypeIdent(Symbol.classSymbol("cps.AsyncShift")).tpe
-    val tpTree = asyncShift.appliedTo(tpe)
-    Implicits.search(tpTree)
+    val asyncShiftType = asyncShift.appliedTo(tpe)
+    (Implicits.search(asyncShiftType), asyncShiftType)
 
 
 
@@ -501,7 +501,8 @@ trait ApplyTreeTransform[F[_],CT]:
            findInplaceAsyncMethodCall(x, shiftedName1,  targs, args) match
              case Right(t) => t
              case Left(funErrors) =>
-               findAsyncShiftTerm(qual) match
+               val (asyncShiftSearch, askedShiftedType) = findAsyncShiftTerm(qual)
+               asyncShiftSearch match
                  case success2: ImplicitSearchSuccess =>
                    val shiftType = success2.tree.tpe
                    val shiftSymbol = if (shiftType.isSingleton) {
@@ -527,7 +528,7 @@ trait ApplyTreeTransform[F[_],CT]:
                       for((a,i) <- args.zipWithIndex) {
                         cpsCtx.log(s"arg($i)=${a.show}")
                       }
-                   throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} name = ${x.name}, shiftedName=${shiftedName}",posExpr(x))
+                   throw MacroError(s"Can't find AsyncShift (${failure2.explanation}) or async functions) for qual=${qual} name = ${x.name}, shiftedName=${shiftedName}, askedShiftedType=${askedShiftedType.show}",posExpr(x))
 
 
     if (cpsCtx.flags.debugLevel >= 15)
@@ -537,7 +538,8 @@ trait ApplyTreeTransform[F[_],CT]:
                   if (qual.tpe =:= monad.tpe)
                     if (s.symbol == mapSymbol || s.symbol == flatMapSymbol)
                       // TODO: add more symbols
-                      findAsyncShiftTerm(qual) match
+                      val (searchResult, shiftTp) = findAsyncShiftTerm(qual)
+                      searchResult match
                         case shiftQual:ImplicitSearchSuccess =>
                           val newSelect = Select.unique(shiftQual.tree,s.name)
                           Apply(TypeApply(newSelect, targs).appliedTo(qual),shiftedArgs)
