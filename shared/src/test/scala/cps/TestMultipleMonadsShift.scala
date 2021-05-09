@@ -29,5 +29,20 @@ class TestMultipleMonadsShift:
      FutureCompleter(c)
 
 
+  /**
+   * we need special handling for withFilter.
+   **/
+  @Test def testWithFilterForeachWrapper(): Unit = 
+     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     val c = async[Future]{
+        var s = 0
+        for(i <- 1 to 4 if i%2 == 1) {
+           s += await(Future successful 3) + i
+        }
+        s
+        assert(s == 10)
+     }
+     FutureCompleter(c)
 
 

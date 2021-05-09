@@ -227,6 +227,8 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
                                                         extends IterableAsyncShift[A,CA] {
 
 
+  def _cpsWithFilterSubst(ca:CA, predicate: A=>Boolean) =
+        WithFilterSubstAsyncShift[A,C,CA](ca, predicate, this)
 
   def map[F[_], B](c: CA, monad: CpsMonad[F])(f: A=> F[B]):F[C[B]] = 
     shiftedFold(c,monad)(

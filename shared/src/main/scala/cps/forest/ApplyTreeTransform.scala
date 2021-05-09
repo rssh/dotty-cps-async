@@ -480,8 +480,27 @@ trait ApplyTreeTransform[F[_],CT]:
                       ))
             
 
+    def shiftSelectTypeApplyApply(x: Select, targs: List[TypeTree], args: List[Term]): Term =
+       x.qualifier match
+         case qual@Apply(Select(col,"withFilter"),List(predicate)) if (
+                          qual.tpe <:< TypeRepr.of[scala.collection.WithFilter[?,?]]) =>
+            val (colAsyncShiftSearch, askedShiftedType) = findAsyncShiftTerm(col)
+            colAsyncShiftSearch match
+              case success: ImplicitSearchSuccess =>
+                 val csf = success.tree
+                 val withFilterSubstSelect = Select.unique(csf,"_cpsWithFilterSubst")
+                 val newQual = Apply(withFilterSubstSelect,List(col,predicate))       
+                 val newSelect = Select.unique(newQual,x.name)
+                 TypeApply(newSelect, TypeTree.of[F]::targs).appliedTo(monad).appliedToArgs(args)
+              case failure: ImplicitSearchFailure =>
+                 throw MacroError(s"Can't resolve [${askedShiftedType.show}] when parsing withFilter ",posExpr(col))
+         case _ =>
+            shiftSelectTypeApplyApplyClear(x, targs, args)
 
-    def shiftSelectTypeApplyApply(x:Select, targs:List[TypeTree], args: List[Term]): Term =
+                        
+       
+    
+    def shiftSelectTypeApplyApplyClear(x:Select, targs:List[TypeTree], args: List[Term]): Term =
 
        val qual = x.qualifier
 
@@ -547,16 +566,12 @@ trait ApplyTreeTransform[F[_],CT]:
                           throw new MacroError(s"Can't find asyn shift for cpsMonad: ${failure.explanation}", posExpr(term))
                     else
                       throw new MacroError("Unimplemented shift for CpsMonad", posExpr(term))
-                  else
+                  else 
                     shiftSelectTypeApplyApply(s, targs, shiftedArgs)
        case s@Select(qual,name) =>
                     shiftSelectTypeApplyApply(s, Nil, shiftedArgs)
        //case TypeApply(x, targs) =>  // now scala hvw no multiple type params
        //           Apply(TypeApply(shiftCaller(x),targs),args)
-       case Apply(x, args1) =>
-                  // TODO: shift args
-                  ???
-                  //Apply(shiftedApply(x,args1,args1,Set()),shiftedArgs)
        case Lambda(params, body) =>
                   val shiftedSymbols = params.zipWithIndex.filter{
                       (p,i) => shiftedIndexes.contains(i)
