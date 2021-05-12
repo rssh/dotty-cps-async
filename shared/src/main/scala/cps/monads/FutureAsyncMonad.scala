@@ -62,29 +62,20 @@ given cps.automaticColoring.WarnValueDiscard[Future] with {}
 given CpsMonadDefaultMemoization[Future] with {}
 
 
-given fromFutureConversion[G[_]](using ExecutionContext, CpsAsyncMonad[G]): CpsMonadConversion[Future,G] =
-   new CpsMonadConversion[Future, G] {
-     override def apply[T](mf: CpsMonad[Future], mg: CpsMonad[G], ft:Future[T]): G[T] =
-           summon[CpsAsyncMonad[G]].adoptCallbackStyle(
-                                         listener => ft.onComplete(listener) )
-   }
 
+given fromFutureConversion[G[_],T](using ExecutionContext, CpsAsyncMonad[G]): Conversion[Future[T],G[T]] with
 
-given toFutureConversion[F[_]](using ExecutionContext, CpsSchedulingMonad[F]): CpsMonadConversion[F,Future] =
-   new CpsMonadConversion[F, Future] {
-     override def apply[T](mf: CpsMonad[F], mg: CpsMonad[Future], ft:F[T]): Future[T] =
-        val p = Promise[T]()
-        val u = summon[CpsSchedulingMonad[F]].restore(
-                        mf.map(ft)( x => p.success(x) )
-                 )(ex => mf.pure(p.failure(ex)) )
-        // we need from uMonad some method to schedule ?
-        //   TODO: rething monad interfaces, maybe we shoud have something like: "adopt" instead spawn.
-        //     look's like for for cats IO such function can't exists, but application can provide runtime
-        //     which will called all spawns for running
-        summon[CpsSchedulingMonad[F]].spawn(u)
-        p.future
-   }
+  def apply(ft:Future[T]): G[T] =
+    summon[CpsAsyncMonad[G]].adoptCallbackStyle(listener => ft.onComplete(listener) )
+                                         
 
+given toFutureConversion[F[_], T](using ExecutionContext, CpsSchedulingMonad[F]): Conversion[F[T],Future[T]] with
 
-
+  def apply(ft:F[T]): Future[T] =
+    val p = Promise[T]()
+    val u = summon[CpsSchedulingMonad[F]].restore(
+                        summon[CpsMonad[F]].map(ft)( x => p.success(x) )
+                 )(ex => summon[CpsMonad[F]].pure(p.failure(ex)) )
+    summon[CpsSchedulingMonad[F]].spawn(u)
+    p.future
 

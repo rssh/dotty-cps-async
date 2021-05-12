@@ -27,27 +27,18 @@ trait AwaitTreeTransform[F[_],CT]:
   def runMyAwait(awaitTerm: Term, arg: Term): CpsTree =
       val cpsArg = runRoot(arg, TransformationContextMarker.Await)
       cpsArg.applyAwait(awaitTerm.tpe)
-      /*
-      cpsArg.syncOrigin match
-        case Some(sync) => AwaitSyncCpsTree(sync, awaitTerm.tpe)
-        case None =>
-             //AwaitAsyncCpsTree(cpsArg, awaitTerm.tpe)
-             cpsArg.applyAwait()
-      */
 
   def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, otherCpsMonad: Term): CpsTree =
       val myCpsMonad = cpsCtx.monad.asTerm
       val myCpsMonadTpe = myCpsMonad.tpe
       val myF = TypeRepr.of[F]
       val otherF = targ
-      val conversion = TypeIdent(Symbol.classSymbol("cps.CpsMonadConversion")).tpe
-      val taConversion = conversion.appliedTo(List(otherF, myF))
+      val tTpe = awaitTerm.tpe.widen
+      val conversion = TypeIdent(Symbol.classSymbol("scala.Conversion")).tpe
+      val taConversion = conversion.appliedTo(List(otherF.appliedTo(tTpe), myF.appliedTo(tTpe)))
       Implicits.search(taConversion) match
            case implSuccess: ImplicitSearchSuccess =>
-             val convertedArg = Apply(
-                    TypeApply(Select.unique(implSuccess.tree, "apply"),
-                              List(Inferred(awaitTerm.tpe))),
-                    List(otherCpsMonad, myCpsMonad, arg))
+             val convertedArg = Apply(Select.unique(implSuccess.tree, "apply"),List(arg))
              runMyAwait(awaitTerm, convertedArg)
            case implFailure: ImplicitSearchFailure =>
-             throw MacroError(s"Can't find MonadConversion: ${implFailure.explanation}",posExprs(awaitTerm))
+             throw MacroError(s"Can't find ${taConversion.show}: ${implFailure.explanation}",posExprs(awaitTerm))
