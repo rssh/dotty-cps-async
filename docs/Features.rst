@@ -28,8 +28,7 @@ Can be written without await as:
 
 .. code-block:: scala
 
-   import cps.automaticColoring.given   // >= 0.6.0
-   //import cps.feature.implicitAwait.given  // < 0.6.0
+   import cps.automaticColoring.given  
 
    val c = async[Future]{
         import cps.features.implicitAwait.given
@@ -111,8 +110,7 @@ Let's look at the next code:
 
 .. code-block:: scala
 
- //import cps.feature.customValueDiscard.given  //  < 0.6.1
- import cps.customValueDiscard.given // >= 0.6.1
+ import cps.customValueDiscard.given 
 
  val c = async[Future] {
     val data = await(api.fetch("http://www.example.com"))
@@ -188,7 +186,7 @@ It is also possible to compile sip22 async code without changing of the source c
 
 .. code-block:: scala
 
- libraryDependencies += "com.github.rssh" %% "shim-scala-async-dotty-cps-async" % "0.6.2",
+ libraryDependencies += "com.github.rssh" %% "shim-scala-async-dotty-cps-async" % "0.7.0",
 
 
 Note that compatibility was not a primary goal during the development of dotty-cps-async. Generated code is quite different, so if you need a bug-to-bug compatible version of scala2 async, you should use the port of the original -XAsync compiler plugin.
