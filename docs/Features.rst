@@ -1,8 +1,8 @@
 Additional Features
 ===================
 
-Implicit await [Automatic Coloring after  0.6.0]
--------------------------------------------------
+Automatic Coloring 
+------------------
 
 
 Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  Also, we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
