@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Additional Features &#8212; dotty-cps-async 0.7.0-SNAPSHOT documentation</title>
+    <title>Additional Features &#8212; dotty-cps-async 0.7.0 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>  
@@ -43,8 +43,8 @@
             
   <div class="section" id="additional-features">
 <h1>Additional Features<a class="headerlink" href="#additional-features" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="implicit-await-automatic-coloring-after-0-6-0">
-<h2>Implicit await [Automatic Coloring after  0.6.0]<a class="headerlink" href="#implicit-await-automatic-coloring-after-0-6-0" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="automatic-coloring">
+<h2>Automatic Coloring<a class="headerlink" href="#automatic-coloring" title="Permalink to this headline">¶</a></h2>
 <dl class="simple">
 <dt>Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  Also, we should remember what functions we should call as async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).</dt><dd><dl class="simple">
 <dt>If we want to put asynchronous expression into synchronous function, we should write <cite>await(expr)</cite>  instead <cite>expri</cite>,  for transforming synchronous to asynchronous: <cite>async</cite>.</dt><dd><p>(see <a class="reference external" href="http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/</a> for more detailed explanation )</p>
@@ -64,8 +64,7 @@ So, next code:</p>
 </pre></div>
 </div>
 <p>Can be written without await as:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.automaticColoring.given</span>   <span class="c1">// &gt;= 0.6.0</span>
-<span class="c1">//import cps.feature.implicitAwait.given  // &lt; 0.6.0</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.automaticColoring.given</span>
 
 <span class="k">val</span> <span class="n">c</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]{</span>
      <span class="k">import</span> <span class="nn">cps.features.implicitAwait.given</span>
@@ -128,8 +127,7 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 </div>
 <p>Where the semantics of <cite>dryRun</cite>  - raise an error if it is impossible to run processData().</p>
 <p>Let’s look at the next code:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">//import cps.feature.customValueDiscard.given  //  &lt; 0.6.1</span>
-<span class="k">import</span> <span class="nn">cps.customValueDiscard.given</span> <span class="c1">// &gt;= 0.6.1</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.customValueDiscard.given</span>
 
 <span class="k">val</span> <span class="n">c</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]</span> <span class="o">{</span>
    <span class="k">val</span> <span class="n">data</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">fetch</span><span class="o">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="o">))</span>
@@ -182,7 +180,7 @@ When migrating your program from legacy SIP22 to dotty, you can change the heade
 <p>All test cases from the original Scala-Async distribution are passed with a change of imports only,
 and included in our regression suite.</p>
 <p>It is also possible to compile sip22 async code without changing of the source code with <a class="reference external" href="https://github.com/rssh/shim--scala-async--dotty-cps-async">shim–scala-async–dotty-cps-async</a> -s help.</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;shim-scala-async-dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.6.2&quot;</span><span class="o">,</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;shim-scala-async-dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.7.0&quot;</span><span class="o">,</span>
 </pre></div>
 </div>
 <p>Note that compatibility was not a primary goal during the development of dotty-cps-async. Generated code is quite different, so if you need a bug-to-bug compatible version of scala2 async, you should use the port of the original -XAsync compiler plugin.</p>
@@ -199,7 +197,7 @@ and included in our regression suite.</p>
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Additional Features</a><ul>
-<li><a class="reference internal" href="#implicit-await-automatic-coloring-after-0-6-0">Implicit await [Automatic Coloring after  0.6.0]</a></li>
+<li><a class="reference internal" href="#automatic-coloring">Automatic Coloring</a></li>
 <li><a class="reference internal" href="#custom-value-discard">Custom value discard</a></li>
 <li><a class="reference internal" href="#sip22-compatible-interface">SIP22-compatible interface</a></li>
 </ul>
@@ -245,7 +243,7 @@ and included in our regression suite.</p>
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>

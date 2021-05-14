@@ -1,7 +1,7 @@
 Monads interoperability.
 ========================
 
-Monads in async and await can be different:  ``await[F]`` can be applied inside ``async[G]``  when exists ``CpsMonadConversion[F, G]`` (see `CpsMonadConversion.scala <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadConversion.scala>`_ ).
+Monads in async and await can be different:  ``await[F]`` can be applied inside ``async[G]``  when exists ``Conversion[F[T], G[T]]``.
 
 Future Examples
 ---------------
@@ -9,17 +9,16 @@ Future Examples
 ``async[F]{ await[Future](.. ) }``
 ..................................
 
-Here is an example of implementation of ``CpsMonadConversion`` from ``Future`` to any async monad ``G[_]`` :
+Here is an example of implementation of ``Conversion`` from ``Future`` to any async monad ``G[_]`` :
 
 
 .. code-block:: scala
 
- given fromFutureConversion[G[_]](using ExecutionContext, CpsAsyncMonad[G]) as CpsMonadConversion[Future,G] =
-   new CpsMonadConversion[Future, G] {
-     override def apply[T](mf: CpsMonad[Future], mg: CpsMonad[G], ft:Future[T]): G[T] =
+ given fromFutureConversion[G[_],T](using ExecutionContext, CpsAsyncMonad[G]): 
+                                                  Conversion[Future[T],G[T]] with
+     def apply(ft:Future[T]): G[T] =
            summon[CpsAsyncMonad[G]].adoptCallbackStyle(
                                          listener => ft.onComplete(listener) )
-   }
 
 
 Here 'async monad' for ``G[_]`` means that it is possible to receive ``G[T]`` from a callback, which returns ``T``.
@@ -27,7 +26,7 @@ Here 'async monad' for ``G[_]`` means that it is possible to receive ``G[T]`` fr
 
 .. code-block:: scala
 
- trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
+ trait CpsAsyncMonad[F[?]] extends CpsTryMonad[F] {
 
    /**
     * called by the source, which accept callback.
@@ -60,7 +59,7 @@ And how about inserting ``await[F]`` into  ``async[Future]`` ?.
 
 .. code-block:: scala
 
- trait CpsSchedulingMonad[F[_]] extends CpsAsyncMonad[F] {
+ trait CpsSchedulingMonad[F[?]] extends CpsAsyncMonad[F] {
 
    /**
     * schedule execution of op somewhere.

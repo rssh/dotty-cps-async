@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Monads interoperability. &#8212; dotty-cps-async 0.7.0-SNAPSHOT documentation</title>
+    <title>Monads interoperability. &#8212; dotty-cps-async 0.7.0 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="HighOrderFunctions.html" title="High-order functions."
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monads interoperability.</a></li> 
       </ul>
     </div>  
@@ -43,22 +43,21 @@
             
   <div class="section" id="monads-interoperability">
 <h1>Monads interoperability.<a class="headerlink" href="#monads-interoperability" title="Permalink to this headline">¶</a></h1>
-<p>Monads in async and await can be different:  <code class="docutils literal notranslate"><span class="pre">await[F]</span></code> can be applied inside <code class="docutils literal notranslate"><span class="pre">async[G]</span></code>  when exists <code class="docutils literal notranslate"><span class="pre">CpsMonadConversion[F,</span> <span class="pre">G]</span></code> (see <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadConversion.scala">CpsMonadConversion.scala</a> ).</p>
+<p>Monads in async and await can be different:  <code class="docutils literal notranslate"><span class="pre">await[F]</span></code> can be applied inside <code class="docutils literal notranslate"><span class="pre">async[G]</span></code>  when exists <code class="docutils literal notranslate"><span class="pre">Conversion[F[T],</span> <span class="pre">G[T]]</span></code>.</p>
 <div class="section" id="future-examples">
 <h2>Future Examples<a class="headerlink" href="#future-examples" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="async-f-await-future">
 <h3><code class="docutils literal notranslate"><span class="pre">async[F]{</span> <span class="pre">await[Future](..</span> <span class="pre">)</span> <span class="pre">}</span></code><a class="headerlink" href="#async-f-await-future" title="Permalink to this headline">¶</a></h3>
-<p>Here is an example of implementation of <code class="docutils literal notranslate"><span class="pre">CpsMonadConversion</span></code> from <code class="docutils literal notranslate"><span class="pre">Future</span></code> to any async monad <code class="docutils literal notranslate"><span class="pre">G[_]</span></code> :</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">given</span> <span class="n">fromFutureConversion</span><span class="o">[</span><span class="kt">G</span><span class="o">[</span><span class="k">_</span><span class="o">]](</span><span class="n">using</span> <span class="nc">ExecutionContext</span><span class="o">,</span> <span class="nc">CpsAsyncMonad</span><span class="o">[</span><span class="kt">G</span><span class="o">])</span> <span class="n">as</span> <span class="nc">CpsMonadConversion</span><span class="o">[</span><span class="kt">Future</span><span class="p">,</span><span class="kt">G</span><span class="o">]</span> <span class="k">=</span>
-  <span class="k">new</span> <span class="nc">CpsMonadConversion</span><span class="o">[</span><span class="kt">Future</span><span class="p">,</span> <span class="kt">G</span><span class="o">]</span> <span class="o">{</span>
-    <span class="k">override</span> <span class="k">def</span> <span class="n">apply</span><span class="o">[</span><span class="kt">T</span><span class="o">](</span><span class="n">mf</span><span class="k">:</span> <span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">Future</span><span class="o">],</span> <span class="n">mg</span><span class="k">:</span> <span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">G</span><span class="o">],</span> <span class="n">ft</span><span class="k">:</span><span class="kt">Future</span><span class="o">[</span><span class="kt">T</span><span class="o">])</span><span class="k">:</span> <span class="kt">G</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span>
+<p>Here is an example of implementation of <code class="docutils literal notranslate"><span class="pre">Conversion</span></code> from <code class="docutils literal notranslate"><span class="pre">Future</span></code> to any async monad <code class="docutils literal notranslate"><span class="pre">G[_]</span></code> :</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">given</span> <span class="n">fromFutureConversion</span><span class="o">[</span><span class="kt">G</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span><span class="kt">T</span><span class="o">](</span><span class="n">using</span> <span class="nc">ExecutionContext</span><span class="o">,</span> <span class="nc">CpsAsyncMonad</span><span class="o">[</span><span class="kt">G</span><span class="o">])</span><span class="k">:</span>
+                                                 <span class="kt">Conversion</span><span class="o">[</span><span class="kt">Future</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span><span class="p">,</span><span class="kt">G</span><span class="o">[</span><span class="kt">T</span><span class="o">]]</span> <span class="k">with</span>
+    <span class="k">def</span> <span class="n">apply</span><span class="o">(</span><span class="n">ft</span><span class="k">:</span><span class="kt">Future</span><span class="o">[</span><span class="kt">T</span><span class="o">])</span><span class="k">:</span> <span class="kt">G</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span>
           <span class="n">summon</span><span class="o">[</span><span class="kt">CpsAsyncMonad</span><span class="o">[</span><span class="kt">G</span><span class="o">]].</span><span class="n">adoptCallbackStyle</span><span class="o">(</span>
                                         <span class="n">listener</span> <span class="k">=&gt;</span> <span class="n">ft</span><span class="o">.</span><span class="n">onComplete</span><span class="o">(</span><span class="n">listener</span><span class="o">)</span> <span class="o">)</span>
-  <span class="o">}</span>
 </pre></div>
 </div>
 <p>Here ‘async monad’ for <code class="docutils literal notranslate"><span class="pre">G[_]</span></code> means that it is possible to receive <code class="docutils literal notranslate"><span class="pre">G[T]</span></code> from a callback, which returns <code class="docutils literal notranslate"><span class="pre">T</span></code>.</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsAsyncMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]]</span> <span class="k">extends</span> <span class="nc">CpsTryMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">]</span> <span class="o">{</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsAsyncMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="kt">?</span><span class="o">]]</span> <span class="k">extends</span> <span class="nc">CpsTryMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">]</span> <span class="o">{</span>
 
   <span class="cm">/**</span>
 <span class="cm">   * called by the source, which accept callback.</span>
@@ -86,7 +85,7 @@
 <dt>And how about inserting <code class="docutils literal notranslate"><span class="pre">await[F]</span></code> into  <code class="docutils literal notranslate"><span class="pre">async[Future]</span></code> ?.</dt><dd><p>For this it should mean, that our <code class="docutils literal notranslate"><span class="pre">F</span></code> should be able to schedule operation:</p>
 </dd>
 </dl>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsSchedulingMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]]</span> <span class="k">extends</span> <span class="nc">CpsAsyncMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">]</span> <span class="o">{</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsSchedulingMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="kt">?</span><span class="o">]]</span> <span class="k">extends</span> <span class="nc">CpsAsyncMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">]</span> <span class="o">{</span>
 
   <span class="cm">/**</span>
 <span class="cm">   * schedule execution of op somewhere.</span>
@@ -164,7 +163,7 @@ at the end of the world.</p>
         <li class="right" >
           <a href="HighOrderFunctions.html" title="High-order functions."
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monads interoperability.</a></li> 
       </ul>
     </div>
