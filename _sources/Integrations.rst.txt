@@ -21,6 +21,14 @@ cats-effect
    libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.5.0"
 
 
+monix
+^^^^^
+
+ .. code-block:: scala
+
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % "0.5.1"
+
+
 scalaz IO
 ^^^^^^^^^
 
