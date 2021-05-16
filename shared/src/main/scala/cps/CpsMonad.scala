@@ -5,12 +5,13 @@ import scala.util._
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 
+
 /**
  * Basic CpsMonad operations.
  * Implementing this typeclass is enough to use async/await with supports of
  * basic control-flow constructions (if, loops, but no exceptions).
  **/
-trait CpsMonad[F[_]] {
+trait CpsMonad[F[_]] extends CpsAwaitable[F] {
 
    type WF[X] = F[X]
 
@@ -21,6 +22,13 @@ trait CpsMonad[F[_]] {
    def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B]
 
 }
+
+/**
+ * Marker typeclass for wrappers, which we can await.
+ * Such traits can be not monads itself (for example, its impossible to set monad structure over js.Promise)
+ * but can be convertable into cps monads.
+ **/
+trait CpsAwaitable[F[_]] 
 
 
 /**

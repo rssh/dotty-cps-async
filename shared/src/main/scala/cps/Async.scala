@@ -16,7 +16,7 @@ import cps.misc._
 
 
 @compileTimeOnly("await should be inside async block")
-def await[F[_],T](f: F[T])(using am:CpsMonad[F]): T = ???
+def await[F[_],T](f: F[T])(using am:CpsAwaitable[F]): T = ???
 
 
 inline def async[F[_]](using inline am: CpsMonad[F]): Async.InferAsyncArg[F] =
