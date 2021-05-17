@@ -1,5 +1,6 @@
-package cps
+package cps.monads
 
+import cps._
 
 import scala.language.implicitConversions
 
