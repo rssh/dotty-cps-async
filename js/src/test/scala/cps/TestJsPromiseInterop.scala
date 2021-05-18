@@ -1,5 +1,7 @@
 package cps
 
+import scala.language.implicitConversions
+
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
@@ -17,7 +19,7 @@ import cps.monads.given
 
 class JSPromiseBasedTestAPI:
 
-   def retrieveData(uri:String): JsPromise[String] =
+   def retrieveData(uri:String): JsPromise[java.lang.String] =
      uri match
       case "good" => JsPromise.resolve("resolved-data")
       case "bad-special-case"=> JsPromise.reject("bad-special-case")
@@ -44,6 +46,36 @@ class TestJsPromiseInterop:
        assert( v == "resolved-data-22" )
        Success(())
     }
+
+  @Test def testRejectedPromise1(): Future[Try[Unit]] =
+    val api = new JSPromiseBasedTestAPI()
+    val check = async[Future]{
+       try {
+         await(api.retrieveData("bad"))
+       } catch {
+         case ex: Throwable =>
+            ex.getMessage() 
+       }
+    }
+    check.map{ v =>
+       assert( v == "Error: data is not good" )
+       Success(())
+    }
+
+   
+  /*
+  @Test def testGoodWithAutomaticColoring(): Future[Try[Unit]] =
+    import cps.automaticColoring.given
+    val api = new JSPromiseBasedTestAPI()
+    val check = async[Future]{
+       val data = api.retrieveData("good")
+       data + "-22"
+    }
+    check.map{ v =>
+       assert( v == "resolved-data-23" )
+       Success(())
+    }
+  */
 
   /*
   @Test def testGoodWithCB() =

@@ -42,3 +42,4 @@ trait AwaitTreeTransform[F[_],CT]:
              runMyAwait(awaitTerm, convertedArg)
            case implFailure: ImplicitSearchFailure =>
              throw MacroError(s"Can't find ${taConversion.show}: ${implFailure.explanation}",posExprs(awaitTerm))
+
