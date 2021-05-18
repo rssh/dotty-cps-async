@@ -16,6 +16,7 @@ class JSFuture[T](val callbacks: JSFuture.Callbacks[T], val future: Future[T]) e
 {
    future.onComplete(callbacks.fire(_))
 
+
    def map[S](f: T=>S): JSFuture[S] =
      new JSFuture[S](new JSFuture.Callbacks(), future.map(f))
 
@@ -54,23 +55,29 @@ object JSFuture{
       this.onResolve = this.onResolve ++ other.onResolve
       this.onReject = this.onReject ++ other.onReject
 
-    def fire(r: Try[T]): Unit =
+    def fire(r: Try[T|js.Thenable[T]]): Unit =
        r match
         case Success(v) => 
-                   // TODO: think about exception in listener
-                   onResolve.foreach{ _.apply(v) }
+               v match
+                  case vf: Future[?] =>
+                     vf.onComplete( x => fire(x.asInstanceOf[Try[T|js.Thenable[T]]]) )
+                  case _ =>
+                     // TODO: think about exception in listener
+                     onResolve.foreach{ _.apply(v) }
         case Failure(ex) =>
                ex match
                   case js.JavaScriptException(v) =>
                       onReject.foreach{  _.apply(v) }
                   case _ =>
                       onReject.foreach{  _.apply(ex) }
+
   }
+
+
 
   def newCallbacks[T](): Callbacks[T] = new Callbacks[T]()
 
 }
-
 
 given JSFutureCpsMonad: CpsTryMonad[JSFuture] with
 
@@ -91,5 +98,9 @@ given JSFutureCpsMonad: CpsTryMonad[JSFuture] with
    def flatMapTry[A,B](fa: JSFuture[A])(f: Try[A]=> JSFuture[B]): JSFuture[B] =
         fa.flatMapTry(f)
 
+
+given CpsMonadConversion[Future,JSFuture] with
+   def apply[T](ft:Future[T]): JSFuture[T] =
+         new JSFuture(JSFuture.newCallbacks(),ft)
 
 
