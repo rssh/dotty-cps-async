@@ -34,11 +34,14 @@ trait AwaitTreeTransform[F[_],CT]:
       val myF = TypeRepr.of[F]
       val otherF = targ
       val tTpe = awaitTerm.tpe.widen
-      val conversion = TypeIdent(Symbol.classSymbol("scala.Conversion")).tpe
-      val taConversion = conversion.appliedTo(List(otherF.appliedTo(tTpe), myF.appliedTo(tTpe)))
+      //val conversion = TypeIdent(Symbol.classSymbol("scala.Conversion")).tpe
+      //val taConversion = conversion.appliedTo(List(otherF.appliedTo(tTpe), myF.appliedTo(tTpe)))
+      val monadConversion = TypeIdent(Symbol.classSymbol("cps.CpsMonadConversion")).tpe
+      val taConversion = monadConversion.appliedTo(List(otherF, myF))
       Implicits.search(taConversion) match
            case implSuccess: ImplicitSearchSuccess =>
-             val convertedArg = Apply(Select.unique(implSuccess.tree, "apply"),List(arg))
+             //val convertedArg = Apply(Select.unique(implSuccess.tree, "apply"),List(arg))
+             val convertedArg = Apply(TypeApply(Select.unique(implSuccess.tree, "apply"),List(Inferred(tTpe))),List(arg))
              runMyAwait(awaitTerm, convertedArg)
            case implFailure: ImplicitSearchFailure =>
              throw MacroError(s"Can't find ${taConversion.show}: ${implFailure.explanation}",posExprs(awaitTerm))
