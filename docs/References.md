@@ -18,6 +18,10 @@ Can we free concurrent programming from the monadic style:
 - Effectfull: <https://github.com/pelotom/effectful>
 - Scala-gopher tech report: <https://arxiv.org/abs/1611.00602>
    
+## Related work in Scala3
+ 
+ - Monadic-reflection <https://github.com/lampepfl/monadic-reflection>  (require Project Loom enabled JVM)
+
 ## Related work in other languages
 
 - Historical overview: <https://softwareengineering.stackexchange.com/questions/377464/who-did-async-await-first>
