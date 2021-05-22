@@ -10,7 +10,7 @@ Can we free concurrent programming from the monadic style:
 
 ## Related work in Scala2
 
-- Scala-continuations.  paper:  <http://infoscience.epfl.ch/record/149136/files/icfp113-rompf.pdf>
+- Scala-continuations.  paper:  <https://infoscience.epfl.ch/record/149136/files/icfp113-rompf.pdf>
 - Scala-async:   <https://github.com/scala/scala-async>
 - Storm-enroute coroutines:  <https://drops.dagstuhl.de/opus/volltexte/2018/9208/pdf/LIPIcs-ECOOP-2018-3.pdf>
 - Thoughtworks DSL.scala:  <https://github.com/ThoughtWorksInc/Dsl.scala>
