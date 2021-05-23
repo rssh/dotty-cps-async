@@ -21,8 +21,10 @@ object JSFutureExecutor:
             v match
                case vf: Future[_] =>
                       flattenFutureComplete(vf.asInstanceOf[Future[T]], resolve, reject)
-               case thenable: js.Promise[_] =>
-                      thenable.asInstanceOf[js.Thenable[T]].`then`(x => {resolve(x);()} , (e:scala.Any) => {reject(e);()} )
+               //  can't publish:  bug in dotty
+               //case thenable: js.Promise[_] =>
+               //       val castedPromise = thenable.asInstanceOf[js.Promise[T]]
+               //       castedPromise.`then`(x => {resolve(x);()} , (e:scala.Any) => {reject(e);()} )
                case other =>
                       // TODO: check exception
                       resolve(v)
