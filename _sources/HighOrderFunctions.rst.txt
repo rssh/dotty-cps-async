@@ -4,7 +4,7 @@ High-order functions.
 Dotty-cps-async supports the automatic transformation of high-order functions,  where the lambda expression argument contains ``await``.  
 
 For example, let us have a list of remote servers and fetch some data from each of them. 
-Assume, that out http client provides next interface:
+Assume  that our http client provides the next interface:
 
 .. code-block:: scala
 

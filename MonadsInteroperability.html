@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Monads interoperability. &#8212; dotty-cps-async 0.7.0 documentation</title>
+    <title>Monads interoperability. &#8212; dotty-cps-async 0.8.0 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="HighOrderFunctions.html" title="High-order functions."
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.8.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monads interoperability.</a></li> 
       </ul>
     </div>  
@@ -43,15 +43,16 @@
             
   <div class="section" id="monads-interoperability">
 <h1>Monads interoperability.<a class="headerlink" href="#monads-interoperability" title="Permalink to this headline">¶</a></h1>
-<p>Monads in async and await can be different:  <code class="docutils literal notranslate"><span class="pre">await[F]</span></code> can be applied inside <code class="docutils literal notranslate"><span class="pre">async[G]</span></code>  when exists <code class="docutils literal notranslate"><span class="pre">Conversion[F[T],</span> <span class="pre">G[T]]</span></code>.</p>
+<p>Monads in async and await can be different:  <code class="docutils literal notranslate"><span class="pre">await[F]</span></code> can be applied inside <code class="docutils literal notranslate"><span class="pre">async[G]</span></code>  when exists
+<a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadConversion.scala">CpsMonadConversion[F, G]</a>.</p>
 <div class="section" id="future-examples">
 <h2>Future Examples<a class="headerlink" href="#future-examples" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="async-f-await-future">
 <h3><code class="docutils literal notranslate"><span class="pre">async[F]{</span> <span class="pre">await[Future](..</span> <span class="pre">)</span> <span class="pre">}</span></code><a class="headerlink" href="#async-f-await-future" title="Permalink to this headline">¶</a></h3>
 <p>Here is an example of implementation of <code class="docutils literal notranslate"><span class="pre">Conversion</span></code> from <code class="docutils literal notranslate"><span class="pre">Future</span></code> to any async monad <code class="docutils literal notranslate"><span class="pre">G[_]</span></code> :</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">given</span> <span class="n">fromFutureConversion</span><span class="o">[</span><span class="kt">G</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span><span class="kt">T</span><span class="o">](</span><span class="n">using</span> <span class="nc">ExecutionContext</span><span class="o">,</span> <span class="nc">CpsAsyncMonad</span><span class="o">[</span><span class="kt">G</span><span class="o">])</span><span class="k">:</span>
-                                                 <span class="kt">Conversion</span><span class="o">[</span><span class="kt">Future</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span><span class="p">,</span><span class="kt">G</span><span class="o">[</span><span class="kt">T</span><span class="o">]]</span> <span class="k">with</span>
-    <span class="k">def</span> <span class="n">apply</span><span class="o">(</span><span class="n">ft</span><span class="k">:</span><span class="kt">Future</span><span class="o">[</span><span class="kt">T</span><span class="o">])</span><span class="k">:</span> <span class="kt">G</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">given</span> <span class="n">fromFutureConversion</span><span class="o">[</span><span class="kt">G</span><span class="o">[</span><span class="k">_</span><span class="o">]](</span><span class="n">using</span> <span class="nc">ExecutionContext</span><span class="o">,</span> <span class="nc">CpsAsyncMonad</span><span class="o">[</span><span class="kt">G</span><span class="o">])</span><span class="k">:</span>
+                                                 <span class="kt">CpsMonadConversion</span><span class="o">[</span><span class="kt">Future</span><span class="p">,</span><span class="kt">G</span><span class="o">]</span> <span class="k">with</span>
+    <span class="k">def</span> <span class="n">apply</span><span class="o">[</span><span class="kt">T</span><span class="o">](</span><span class="n">ft</span><span class="k">:</span><span class="kt">Future</span><span class="o">[</span><span class="kt">T</span><span class="o">])</span><span class="k">:</span> <span class="kt">G</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span>
           <span class="n">summon</span><span class="o">[</span><span class="kt">CpsAsyncMonad</span><span class="o">[</span><span class="kt">G</span><span class="o">]].</span><span class="n">adoptCallbackStyle</span><span class="o">(</span>
                                         <span class="n">listener</span> <span class="k">=&gt;</span> <span class="n">ft</span><span class="o">.</span><span class="n">onComplete</span><span class="o">(</span><span class="n">listener</span><span class="o">)</span> <span class="o">)</span>
 </pre></div>
@@ -103,6 +104,26 @@ at the end of the world.</p>
 <p>Of course, it is is possible to create other conversions between you monads, based on other principles.</p>
 </div>
 </div>
+<div class="section" id="js-promise">
+<h2>js.Promise<a class="headerlink" href="#js-promise" title="Permalink to this headline">¶</a></h2>
+<p>Not only monads can be subject to await. For example, it is impossible to attach monad structure to <code class="docutils literal notranslate"><span class="pre">js.Promise</span></code> in scalajs,
+because map operation is unimplementable: all <code class="docutils literal notranslate"><span class="pre">Promise</span></code> operation flatten their arguments.  But we can await <code class="docutils literal notranslate"><span class="pre">Promise</span></code> from scala
+<code class="docutils literal notranslate"><span class="pre">async[Future]</span></code> blocks, because <code class="docutils literal notranslate"><span class="pre">CpsMonadConversion[Future,Promise]</span></code> is defined.</p>
+<p>Also, for fluent implementation of JS facades, dotty-cps-async provides <code class="docutils literal notranslate"><span class="pre">JSFuture</span></code> trait, which has monadic operations in scala and visible from JavaScript as <code class="docutils literal notranslate"><span class="pre">Promise</span></code>.
+i.e. with the following definitions:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.monads.jsfuture.</span><span class="o">{</span><span class="n">given</span><span class="o">,*}</span>
+
+<span class="nd">@JSExportTopLevel</span><span class="o">(</span><span class="s">&quot;FromScalaExample&quot;</span><span class="o">)</span>
+<span class="k">object</span> <span class="nc">FromScalaExample</span><span class="k">:</span>
+
+  <span class="kt">@JSExport</span>
+  <span class="k">def</span> <span class="n">myFunction</span><span class="o">(</span><span class="n">x</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">JSFuture</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">JSFuture</span><span class="o">]</span> <span class="o">{</span>
+      <span class="o">....</span> <span class="c1">// can use await from futures and promises</span>
+  <span class="o">}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">FromScalaExampl.myFunction(&quot;string&quot;)</span></code>  can be used as <code class="docutils literal notranslate"><span class="pre">Promise</span></code> on javascript side.</p>
+</div>
 </div>
 
 
@@ -120,6 +141,7 @@ at the end of the world.</p>
 <li><a class="reference internal" href="#async-future-await-f"><code class="docutils literal notranslate"><span class="pre">async[Future]{</span> <span class="pre">await[F](..</span> <span class="pre">)</span> <span class="pre">}</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#js-promise">js.Promise</a></li>
 </ul>
 </li>
 </ul>
@@ -163,7 +185,7 @@ at the end of the world.</p>
         <li class="right" >
           <a href="HighOrderFunctions.html" title="High-order functions."
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.7.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.8.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monads interoperability.</a></li> 
       </ul>
     </div>
