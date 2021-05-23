@@ -1,7 +1,7 @@
 Integrations
 ============
 
- dooty-cps-async itself provide type classes for monads, available without external dependencies: this is  `Future <https://https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/monads/FutureAsyncMonad.scala>`_ and  JVM-only Java `CompletableFuture <https://github.com/rssh/dotty-cps-async/blob/master/jvm/src/main/scala/cps/monads/CompletableFutureCpsMonad.scala>`_. 
+ dooty-cps-async itself provide type classes for monads, available without external dependencies: this is  `Future <https://https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/monads/FutureAsyncMonad.scala>`_ ,  JVM-only Java `CompletableFuture <https://github.com/rssh/dotty-cps-async/blob/master/jvm/src/main/scala/cps/monads/CompletableFutureCpsMonad.scala>`_ and JS-only `js.Promise <https://github.com/rssh/dotty-cps-async/blob/master/js/src/main/scala/cps/monads/PromiseCpsAwaitable.scala>`_  and `JSFuture <https://github.com/rssh/dotty-cps-async/blob/master/js/src/main/scala/cps/monads/jsfuture/JSFuture.scala>`_ .
 
  
  Third-party effect stacks are provided in external modules.
