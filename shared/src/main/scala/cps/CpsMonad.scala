@@ -121,12 +121,27 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
 }
 
+/**
+ * monad, where we can effect of starting monad in
+ *  different execution flow.
+ **/
+trait CpsPureSchedulingMonad[F[_]] extends CpsAsyncMonad[F] {
+
+   type Spawned[A]
+
+   def pureSpawn[A](op: =>F[A]): F[Spawned[A]]
+
+}
+
 
 /**
+ * Monad, where we can spawn some event and be sure that one
+ * be evaluated, event if we drop result.
+ *
  * Interoperability with Future:
  * allows  async[F]{ .. await[Future](..) ... }
  **/
-trait CpsSchedulingMonad[F[_]] extends CpsAsyncMonad[F] {
+trait CpsSchedulingMonad[F[_]] extends CpsPureSchedulingMonad[F] {
 
 
    /**
@@ -135,6 +150,10 @@ trait CpsSchedulingMonad[F[_]] extends CpsAsyncMonad[F] {
     **/
    def spawn[A](op: =>F[A]): F[A]
 
+   type Spawned[A] = F[A]
+
+   def pureSpawn[A](op: =>F[A]): F[F[A]] =
+         pure(spawn(op))
 
 }
 
