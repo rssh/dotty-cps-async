@@ -90,12 +90,8 @@ trait RootTreeTransform[F[_], CT]:
      val monad = cpsCtx.monad
      val r = term match {
        case Select(qual, name) =>
-           runRoot(qual, TransformationContextMarker.Select, muted) match
-              case rq: AsyncCpsTree =>
-                  val cTransformed = rq.transformed.asInstanceOf[qctx.reflect.Term]
-                  CpsTree.impure(Select(cTransformed,term.symbol),term.tpe.widen)
-              case _: PureCpsTree =>
-                  CpsTree.pure(term)
+             val cpsQual = runRoot(qual, TransformationContextMarker.Select, muted)
+             cpsQual.select(term, term.symbol, term.tpe.widen)
        case Ident(name) =>
              CpsTree.pure(term)
        case Apply(x, args) =>

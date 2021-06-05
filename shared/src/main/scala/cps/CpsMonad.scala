@@ -90,6 +90,10 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
         map(tryImpure(action))(_ => x)
     }
 
+   // for cps-transform of monad operations.
+   def withActionAsync[A](fa:F[A])(action: () => F[Unit]):F[A] =
+      withAsyncAction(fa)(action())
+
    def tryPure[A](a: =>A):F[A] =
        try {
          pure(a)

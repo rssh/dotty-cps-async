@@ -150,18 +150,23 @@ trait InlinedTreeTransform[F[_], CT]:
                term match
                  case Apply(TypeApply(Select(obj@Ident(name),"apply"),targs),args) =>
                         funValDefs.changes.get(obj.symbol) match
-                           case Some(binding: InlinedFunBindingRecord) =>
-                              val newArgs = args.map(a => this.transformTerm(a)(owner))
-                              val newApply = Select.unique(Ref(binding.newSym),"apply")
-                              val changed = Apply(TypeApply(newApply,targs),newArgs)
-                              if (binding.cpsTree.isAsync) then
-                                 Apply(Apply(TypeApply(
+                           case Some(binding) =>
+                              binding match
+                                case funBinding: InlinedFunBindingRecord =>
+                                  val newArgs = args.map(a => this.transformTerm(a)(owner))
+                                  val newApply = Select.unique(Ref(funBinding.newSym),"apply")
+                                  val changed = Apply(TypeApply(newApply,targs),newArgs)
+                                  if (funBinding.cpsTree.isAsync) then
+                                     Apply(Apply(TypeApply(
                                                Ref(awaitSymbol),
                                                List(TypeTree.of[F], Inferred(changed.tpe))),
                                              List(changed)),
-                                       List(monad))
-                              else
-                                 changed
+                                       List(monad)
+                                     )
+                                  else
+                                     changed
+                                case _ =>
+                                  super.transformTerm(term)(owner)
                            case None =>
                               super.transformTerm(term)(owner)
                  case Apply(Select(obj@Ident(name),"apply"),args) =>
@@ -178,7 +183,7 @@ trait InlinedTreeTransform[F[_], CT]:
                                        List(monad))
                               else
                                  changed
-                           case None =>
+                           case _ =>
                               super.transformTerm(term)(owner)
                  case obj@Ident(name) => 
                         funValDefs.changes.get(obj.symbol) match

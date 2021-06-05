@@ -56,12 +56,22 @@ object TransformUtil:
 
     // TODO: mege wirh changeSyms
     val argTransformer = new TreeMap() {
+
+            override def transformTree(tree: Tree)(owner: Symbol): Tree =
+                tree match
+                  case pattern: Bind =>
+                    Bind.copy(pattern)(pattern.name, transformTree(pattern.pattern)(owner))
+                  case _ =>
+                    super.transformTree(tree)(owner)
+
+
             override def transformTerm(tree: Term)(owner: Symbol): Term =
                tree match
                  case Ident(name) => paramsMap.get(tree.symbol) match
                                         case Some(index) => Ref(indexedArgs(index).symbol)
                                         case _  => super.transformTerm(tree)(owner)
                  case _ => super.transformTerm(tree)(owner)
+
     }
     argTransformer.transformTerm(body)(owner)
 

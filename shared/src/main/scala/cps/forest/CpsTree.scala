@@ -183,7 +183,7 @@ trait CpsTreeScope[F[_], CT] {
 
 
 
-  abstract class AsyncCpsTree extends CpsTree:
+  abstract sealed class AsyncCpsTree extends CpsTree:
 
     def isAsync = true
 
@@ -205,10 +205,10 @@ trait CpsTreeScope[F[_], CT] {
             case syncNext: PureCpsTree =>
                             monadMap(_ => syncNext.origin, nextOtpe)
             case asyncNext: AsyncCpsTree => monadFlatMap(_ => next.transformed, nextOtpe)
-            case blockNext: BlockCpsTree =>
-                  blockNext.syncOrigin match
+            case _ =>
+                  next.syncOrigin match
                     case Some(syncTerm) => monadMap(_ => syncTerm, nextOtpe)
-                    case None => monadFlatMap(_ => blockNext.transformed, nextOtpe)
+                    case None => monadFlatMap(_ => next.transformed, nextOtpe)
 
     def applyAwait(newOtpe: TypeRepr): CpsTree =
           AwaitAsyncCpsTree(this, newOtpe)

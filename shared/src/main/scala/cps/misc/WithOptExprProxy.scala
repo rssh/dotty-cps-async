@@ -13,11 +13,13 @@ object WithOptExprProxy:
     originExpr.asTerm match
        case Ident(_) => buildExpr(originExpr) 
        case originTerm =>
-         val proxy = Symbol.newVal(Symbol.spliceOwner,name,originExpr.asTerm.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
+         val proxy = Symbol.newVal(Symbol.spliceOwner,name,originExpr.asTerm.tpe.widen,Flags.Local,Symbol.noSymbol)
          val proxyValDef = ValDef(proxy,Some(originTerm))
          val proxyIdent = Ref(proxy).asExprOf[T]
          val resTerm = buildExpr(proxyIdent).asTerm match
-           case Block(stats, expr) => Block(proxyValDef::stats, expr)
+           case lambdaExpr@Lambda(params, body) => Block(List(proxyValDef), lambdaExpr)
+           case blockExpr@Block(stats, expr) => 
+                   Block(proxyValDef::stats, expr)
            case expr => Block(List(proxyValDef), expr)
          resTerm.asExprOf[S]
      
