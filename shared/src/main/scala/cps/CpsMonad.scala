@@ -143,7 +143,7 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F] {
    /**
     * spawn execution of operation in own execution flow.
     **/
-   def pureSpawn[A](op: =>F[A]): F[Spawned[A]]
+   def spawnEffect[A](op: =>F[A]): F[Spawned[A]]
 
    def join[A](op: Spawned[A]): F[A]
 
@@ -153,8 +153,8 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F] {
     * join two computations in such way, that they will execute concurrently.
     **/
    def concurrently[A,B](fa:F[A], fb:F[B]): F[Either[(Try[A],Spawned[B]),(Spawned[A],Try[B])]] =
-       flatMap(pureSpawn(fa)){ sa =>
-         flatMap(pureSpawn(fb)){ sb =>
+       flatMap(spawnEffect(fa)){ sa =>
+         flatMap(spawnEffect(fb)){ sb =>
             val ref = new AtomicReference[Either[(Try[A],Spawned[B]),(Spawned[A],Try[B])]|Null](null)
             val endA = adoptCallbackStyle[Either[(Try[A],Spawned[B]),(Spawned[A],Try[B])]]{ callback => 
               mapTry(join(sa)){ ra => 
@@ -187,14 +187,14 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
 
 
    /**
-    * schedule execution of op somewhere.
+    * schedule execution of op somewhere, immediatly.
     * Note, that characteristics of scheduler can vary.
     **/
    def spawn[A](op: =>F[A]): F[A]
 
    type Spawned[A] = F[A]
 
-   def pureSpawn[A](op: =>F[A]): F[F[A]] =
+   def spawnEffect[A](op: =>F[A]): F[F[A]] =
          pure(spawn(op))
 
    def join[A](op: Spawned[A]): F[A] = op

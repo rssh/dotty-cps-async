@@ -98,7 +98,7 @@ given PureEffectCpsMonad: CpsConcurrentMonad[PureEffect] with
        }
        FutureThunk(()=>p.future)
 
-  def pureSpawn[A](op: =>PureEffect[A]): PureEffect[Spawned[A]] =
+  def spawnEffect[A](op: =>PureEffect[A]): PureEffect[Spawned[A]] =
        FutureThunk{() =>
           given ExecutionContext = ExecutionContext.global
           Future(
