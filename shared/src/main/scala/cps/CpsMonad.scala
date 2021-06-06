@@ -4,6 +4,7 @@ import scala.quoted._
 import scala.util._
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
+import java.util.concurrent.atomic.AtomicReference
 
 
 /**
@@ -123,17 +124,54 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
     **/
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A]
 
+ 
 }
 
+
 /**
- * monad, where we can effect of starting monad in
+ * Monad, where we can define an effect of starting operation in
  *  different execution flow.
  **/
-trait CpsPureSchedulingMonad[F[_]] extends CpsAsyncMonad[F] {
+trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F] {
 
+   /**
+    * Spawned[A] is a computation, which is executed in own flow.
+    * (i.e. Fiber, Future, etc ..)
+    **/
    type Spawned[A]
 
+   /**
+    * spawn execution of operation in own execution flow.
+    **/
    def pureSpawn[A](op: =>F[A]): F[Spawned[A]]
+
+   def join[A](op: Spawned[A]): F[A]
+
+   def tryCancel[A](op: Spawned[A]): F[Unit]
+
+   /**
+    * join two computations in such way, that they will execute concurrently.
+    **/
+   def concurrently[A,B](fa:F[A], fb:F[B]): F[Either[(Try[A],Spawned[B]),(Spawned[A],Try[B])]] =
+       flatMap(pureSpawn(fa)){ sa =>
+         flatMap(pureSpawn(fb)){ sb =>
+            val ref = new AtomicReference[Either[(Try[A],Spawned[B]),(Spawned[A],Try[B])]|Null](null)
+            val endA = adoptCallbackStyle[Either[(Try[A],Spawned[B]),(Spawned[A],Try[B])]]{ callback => 
+              mapTry(join(sa)){ ra => 
+                 val v = Left(ra,sb)
+                 if ref.compareAndSet(null,v) then 
+                    callback(Success(v)) 
+              }
+              mapTry(join(sb)){ rb =>
+                 val v = Right(sa, rb)
+                 if ref.compareAndSet(null,v) then 
+                    callback(Success(v)) 
+              }
+            }
+            endA
+         }
+       }
+
 
 }
 
@@ -143,9 +181,9 @@ trait CpsPureSchedulingMonad[F[_]] extends CpsAsyncMonad[F] {
  * be evaluated, event if we drop result.
  *
  * Interoperability with Future:
- * allows  async[F]{ .. await[Future](..) ... }
+ * allows  async[Future]{ .. await[F](..) ... }
  **/
-trait CpsSchedulingMonad[F[_]] extends CpsPureSchedulingMonad[F] {
+trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
 
 
    /**
@@ -159,14 +197,9 @@ trait CpsSchedulingMonad[F[_]] extends CpsPureSchedulingMonad[F] {
    def pureSpawn[A](op: =>F[A]): F[F[A]] =
          pure(spawn(op))
 
-}
+   def join[A](op: Spawned[A]): F[A] = op
 
-trait CpsProgressingMonad[F[_]] extends CpsAsyncMonad[F] {
-
-   /**
-    * progress and return control to user.
-    **/
-   def progress[T](t:F[T], timeout: Duration): Either[F[T],Try[T]]
+         
 
 }
 

@@ -43,6 +43,9 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
         summon[ExecutionContext].execute( () => p.completeWith(op) )
         p.future
 
+   def tryCancel[A](op: Future[A]): Future[Unit] =
+        Future failed new UnsupportedOperationException("FutureAsyncMonad.tryCancel is unsupported")
+
 
    def fulfill[T](t:F[T], timeout: Duration): Option[Try[T]] =
         try

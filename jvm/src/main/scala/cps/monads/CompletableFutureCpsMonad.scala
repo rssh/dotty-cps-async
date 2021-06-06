@@ -97,6 +97,12 @@ given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with {
         }
         r
 
+    def tryCancel[A](op: CompletableFuture[A]): CompletableFuture[Unit] =
+        if (op.cancel(true)) then
+           CompletableFuture.completedFuture(())
+        else
+           CompletableFuture.failedFuture(new IllegalStateException("CompletableFuture is not cancelled"))
+
 }
 
 
