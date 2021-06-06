@@ -5,9 +5,9 @@ Automatic Coloring
 ------------------
 
 
-Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  Also, we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
- If we want to put asynchronous expression into synchronous function, we should write `await(expr)`  instead `expri`,  for transforming synchronous to asynchronous: `async`.
-  (see http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/ for more detailed explanation )
+Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  And we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
+If we want to put asynchronous expression into synchronous function, we should write `await(expr)`  instead `expr`,  for transforming synchronous code into asynchronous.
+(see http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/ for more detailed explanation )
 
 
 In scala we have types, so why not to ask the compiler to do async coloring automatically?
@@ -31,7 +31,6 @@ Can be written without await as:
    import cps.automaticColoring.given  
 
    val c = async[Future]{
-        import cps.features.implicitAwait.given
         val url = "http://www.example.com"
         val data = api.fetchUrl("http://www.example.com")
         val theme = api.classifyText(data)

@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Additional Features &#8212; dotty-cps-async 0.8.1 documentation</title>
+    <title>Additional Features &#8212; dotty-cps-async 0.9.0-SNAPSHOT documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.8.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>  
@@ -45,13 +45,9 @@
 <h1>Additional Features<a class="headerlink" href="#additional-features" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="automatic-coloring">
 <h2>Automatic Coloring<a class="headerlink" href="#automatic-coloring" title="Permalink to this headline">¶</a></h2>
-<dl class="simple">
-<dt>Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  Also, we should remember what functions we should call as async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).</dt><dd><dl class="simple">
-<dt>If we want to put asynchronous expression into synchronous function, we should write <cite>await(expr)</cite>  instead <cite>expri</cite>,  for transforming synchronous to asynchronous: <cite>async</cite>.</dt><dd><p>(see <a class="reference external" href="http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/</a> for more detailed explanation )</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<p>Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  And we should remember what functions we should call as async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
+If we want to put asynchronous expression into synchronous function, we should write <cite>await(expr)</cite>  instead <cite>expr</cite>,  for transforming synchronous code into asynchronous.
+(see <a class="reference external" href="http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/</a> for more detailed explanation )</p>
 <p>In scala we have types, so why not to ask the compiler to do async coloring automatically?
 So, next code:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]{</span>
@@ -67,7 +63,6 @@ So, next code:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.automaticColoring.given</span>
 
 <span class="k">val</span> <span class="n">c</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]{</span>
-     <span class="k">import</span> <span class="nn">cps.features.implicitAwait.given</span>
      <span class="k">val</span> <span class="n">url</span> <span class="k">=</span> <span class="s">&quot;http://www.example.com&quot;</span>
      <span class="k">val</span> <span class="n">data</span> <span class="k">=</span> <span class="n">api</span><span class="o">.</span><span class="n">fetchUrl</span><span class="o">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="o">)</span>
      <span class="k">val</span> <span class="n">theme</span> <span class="k">=</span> <span class="n">api</span><span class="o">.</span><span class="n">classifyText</span><span class="o">(</span><span class="n">data</span><span class="o">)</span>
@@ -243,7 +238,7 @@ and included in our regression suite.</p>
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.8.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>
