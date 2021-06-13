@@ -73,7 +73,7 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
           action
           pure(x)
         }catch{
-          case ex: Throwable => error(ex)
+          case NonFatal(ex) => error(ex)
         }
       }
 
@@ -99,15 +99,21 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
        try {
          pure(a)
        } catch {
-         case ex: Throwable => error(ex)
+         //TODO: handle control
+         case NonFatal(ex) => error(ex)
        }
 
    def tryImpure[A](a: =>F[A]):F[A] =
        try {
          a
        } catch {
-         case ex: Throwable => error(ex)
+         case NonFatal(ex) => error(ex)
        }
+
+   def fromTry[A](r: Try[A]): F[A] =
+       r match
+         case Success(a) => pure(a)
+         case Failure(ex) => error(ex)
 
 }
 
