@@ -50,8 +50,7 @@ trait ApplyArgRecordScope[F[_], CT]:
       if (usePrepend(existsAsync))
           Typed(Repeated(elements.map(_.identArg(existsAsync)),term.elemtpt), seqTypeTree)
       else if (hasShiftedLambda)
-          // TODO: think about shifted sequence type
-          Repeated(elements.map(_.identArg(existsAsync)),shiftedLambdaTypeTree(term.elemtpt))
+          Typed(Repeated(elements.map(_.identArg(existsAsync)),shiftedElemTpt), shiftSeqTypeTree)
       else
           term
     override def isAsync = elements.exists(_.isAsync)
@@ -71,9 +70,37 @@ trait ApplyArgRecordScope[F[_], CT]:
                   e.append(s)
             case _: ApplyArgLambdaRecord => s
             case _ => // incorrect warning
-               throw MacroError("Impossible: repeated inside repeated",cpsCtx.patternCode)
+               throw MacroError("Impossible: repeated inside repeated",term.asExpr)
          }
 
+    private def shiftedElemTpt: TypeTree = 
+         if (term.elemtpt.tpe =:= TypeRepr.of[Any]) then
+           // this can be dynamic, leave as is
+           term.elemtpt
+         else
+           shiftedLambdaTypeTree(term.elemtpt)
+
+    private def shiftSeqTypeTree: TypeTree = 
+
+         def notFoundBackup: TypeTree =
+              report.warning(s"strange type repeated: $seqTypeTree", term.asExpr)
+              seqTypeTree
+
+         seqTypeTree match
+           case Applied(rep,args) =>
+                 if (rep.tpe.typeSymbol == defn.RepeatedParamClass) then
+                    Inferred(rep.tpe.appliedTo(shiftedElemTpt.tpe))
+                 else
+                    notFoundBackup
+           case Inferred() =>
+                 seqTypeTree.tpe match
+                    case AppliedType(rep,List(v)) =>
+                          if (rep.typeSymbol == defn.RepeatedParamClass) then
+                              Inferred(rep.appliedTo(shiftedElemTpt.tpe))
+                          else
+                              notFoundBackup
+           case _ =>
+                 notFoundBackup
 
   }
 
