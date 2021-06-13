@@ -215,7 +215,7 @@ trait ApplyTreeTransform[F[_],CT]:
       case PolyType(paramNames,paramBounds,resType) =>
                PolyType(paramNames)(pt => paramBounds,
                                     pt => TypeRepr.of[F].appliedTo(resType))
-      case _ => throw MacroError("Not supported type for shifting: ${tpe}",cpsCtx.patternCode)
+      case _ => throw MacroError(s"Not supported type for shifting: ${tpe.show}",cpsCtx.patternCode)
     }
 
   /**
