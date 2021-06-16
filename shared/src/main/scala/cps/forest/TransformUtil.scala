@@ -72,6 +72,18 @@ object TransformUtil:
                                         case _  => super.transformTerm(tree)(owner)
                  case _ => super.transformTerm(tree)(owner)
 
+            override def transformTypeTree(tree: TypeTree)(owner: Symbol):TypeTree =
+               tree match
+                 case Singleton(ref) => 
+                       paramsMap.get(ref.symbol) match
+                          case Some(index) => Singleton(Ref(indexedArgs(index).symbol))
+                          case None => super.transformTypeTree(tree)(owner)
+                 case a@Annotated(tp, annotation) =>
+                          // bug in default TreeTransform, should process Annotated
+                          Annotated.copy(a)(transformTypeTree(tp)(owner),transformTerm(annotation)(owner))
+                 //TODO: move more, Inferred and Select
+                 case _ => super.transformTypeTree(tree)(owner)
+
     }
     argTransformer.transformTerm(body)(owner)
 
