@@ -25,7 +25,7 @@ class TestPELazyEffect:
 
 
   //  pending now
-  @Test @Ignore def testLazyEffectPrint(): Unit = 
+  @Test def testLazyEffectPrint(): Unit = 
      val logger = new ToyLogger()
      val c = Async.async[PureEffect]{ logger.log("W") }
      println(s"logger lines now: ${logger.lines}")

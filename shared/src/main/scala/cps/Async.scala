@@ -76,7 +76,12 @@ object Async {
           Some(resolveMemoization[F,T](f,dm))
         else None
       val r = WithOptExprProxy("cpsMonad", dm){
-           dm => rootTransform[F,T](f,dm,memoization,flags,TopLevel,0, None).transformed
+           dm => 
+              val cpsExpr = rootTransform[F,T](f,dm,memoization,flags,TopLevel,0, None)
+              if (dm.asTerm.tpe <:< TypeRepr.of[CpsDelayMonad[F]]) then       
+                 '{ ${dm}.flatMap(${dm.asExprOf[CpsDelayMonad[F]]}.delayedUnit)( _ => ${cpsExpr.transformed}) }
+              else
+                 cpsExpr.transformed
       }
       if (flags.printCode)
         try

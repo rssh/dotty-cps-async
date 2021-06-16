@@ -24,6 +24,7 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
 
 }
 
+
 /**
  * Marker typeclass for wrappers, which we can await.
  * Such traits can be not monads itself (for example, its impossible to set monad structure over js.Promise)
@@ -119,6 +120,8 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
 
 /**
+ * Monad, which is compatible with passing data via callbacks.
+ *
  * Interoperability with Future:
  * allows  async[F]{ .. await[Future](..) ... }
  **/
@@ -131,6 +134,16 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A]
 
  
+}
+
+/**
+ * Monad, where we can define a delay effect, as
+ * expression, which will be evaluated later,
+ **/
+trait CpsDelayMonad[F[_]] extends CpsAsyncMonad[F] {
+
+   def delayedUnit:F[Unit]
+
 }
 
 
