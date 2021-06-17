@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference
  * Basic CpsMonad operations.
  * Implementing this typeclass is enough to use async/await with supports of
  * basic control-flow constructions (if, loops, but no exceptions).
- **/
+ */
 trait CpsMonad[F[_]] extends CpsAwaitable[F] {
 
    type WF[X] = F[X]
@@ -137,21 +137,31 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 }
 
 /**
- * Monad, where we can define a delay effect, as
- * expression, which will be evaluated later,
- **/
-trait CpsDelayMonad[F[_]] extends CpsAsyncMonad[F] {
+ * Marker trait, which mark effect monad, where
+ * actual evaluation of expression happens after 
+ * building a monad, during effect evaluation stage.
+ *
+ * evaluation of expression inside async block always delayed.
+ */
+trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
 
-   def delayedUnit:F[Unit]
+   def delayedUnit:F[Unit] = pure(())
 
 }
+
+/**
+ * Async Effect Monad
+ */
+trait CpsAsyncEffectMonad[F[_]] extends CpsAsyncMonad[F] with CpsEffectMonad[F]
+
+
 
 
 /**
  * Monad, where we can define an effect of starting operation in
  *  different execution flow.
- **/
-trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F] {
+ */
+trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F]  {
 
    /**
     * Spawned[A] is a computation, which is executed in own flow.
@@ -191,8 +201,12 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F] {
          }
        }
 
-
 }
+
+/**
+ * Marker trait for concurrent effect monads.
+ */
+trait CpsConcurrentEffectMonad[F[_]] extends CpsConcurrentMonad[F] with CpsEffectMonad[F]
 
 
 /**

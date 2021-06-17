@@ -71,13 +71,11 @@ case class MappedThunk[A,B](fa: PureEffect[A], f: Try[A] => Try[B]) extends Pure
 case class FlatMappedThunk[A,B](fa: PureEffect[A], f: Try[A] => PureEffect[B]) extends PureEffect[B]
 
 
-given PureEffectCpsMonad: CpsConcurrentMonad[PureEffect] with CpsDelayMonad[PureEffect] with
+given PureEffectCpsMonad: CpsConcurrentEffectMonad[PureEffect] with
 
   type F[T] = PureEffect[T]
 
   type Spawned[A] = Future[A]
-
-  def delayedUnit: F[Unit] = PureEffect.delay(())
 
   def pure[A](x:A): PureEffect[A] = PureEffect.pure(x)
 

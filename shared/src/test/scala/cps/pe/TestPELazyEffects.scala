@@ -24,7 +24,6 @@ class TestPELazyEffect:
      FutureCompleter(future)
 
 
-  //  pending now
   @Test def testLazyEffectPrint(): Unit = 
      val logger = new ToyLogger()
      val c = Async.async[PureEffect]{ logger.log("W") }

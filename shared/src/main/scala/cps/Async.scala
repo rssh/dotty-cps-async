@@ -78,9 +78,11 @@ object Async {
       val r = WithOptExprProxy("cpsMonad", dm){
            dm => 
               val cpsExpr = rootTransform[F,T](f,dm,memoization,flags,TopLevel,0, None)
-              if (dm.asTerm.tpe <:< TypeRepr.of[CpsDelayMonad[F]]) then       
-                 '{ ${dm}.flatMap(${dm.asExprOf[CpsDelayMonad[F]]}.delayedUnit)( _ => ${cpsExpr.transformed}) }
+              if (dm.asTerm.tpe <:< TypeRepr.of[CpsEffectMonad[F]]) then       
+                 '{ ${dm}.flatMap(${dm.asExprOf[CpsEffectMonad[F]]}.delayedUnit)( _ => ${cpsExpr.transformed}) }
               else
+                 if (flags.debugLevel > 10) then
+                    println(s"dm.asTerm.tpe = ${dm.asTerm.tpe.show} not implements CpsEffectMonad[F], f=$Type[F].show")
                  cpsExpr.transformed
       }
       if (flags.printCode)
