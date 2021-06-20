@@ -82,6 +82,8 @@ If we want to provide support for automatic coloring for your monad, you should 
  * CpsMonadPureMemoization - for pure effect monads.
  * CpsMonadDynamicMemoization - for monads with custom memoization, which resolved with call-side types.
 
+Note, that automatic coloring for monads wich is not memoized by default (i.e. all effect monads) is hightly experimental and
+ likely will be changed in future.
 
 Custom value discard
 --------------------
