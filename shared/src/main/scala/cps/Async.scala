@@ -113,7 +113,7 @@ object Async {
                     s"AsyncMacroFlags ($flagsExpr) is not a compile-time value", flagsExpr )
       case None =>
      */
-            import cps.macroFlags.{_, given}
+       import cps.macroFlags.{_, given}
             val printTree = Expr.summon[PrintTree.type].isDefined
             val printCode = Expr.summon[PrintCode.type].isDefined
             val debugLevel = Expr.summon[DebugLevel] match
@@ -123,7 +123,10 @@ object Async {
                       case other  =>
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0
-            val automaticColoring = Expr.summon[cps.automaticColoring.AutomaticColoringTag].isDefined
+            val automaticColoringTag = Expr.summon[cps.automaticColoring.AutomaticColoringTag[F]]
+            val automaticColoring = automaticColoringTag.isDefined
+            if (debugLevel > 0)
+               println(s"automaticColoringTag: ${automaticColoringTag.map(_.show)}")
             val customValueDiscard = Expr.summon[cps.customValueDiscard.Tag].isDefined || automaticColoring
             val warnValueDiscard = Expr.summon[cps.warnValueDiscard.Tag].isDefined || 
                                      (automaticColoring && 

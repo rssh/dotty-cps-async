@@ -1,11 +1,11 @@
 package cps.automaticColoring
 
-trait AutomaticColoringTag
+trait AutomaticColoringTag[F[_]]
  
 /**
  * import of this tag enable automatic  coloring 
  **/
-given tag: AutomaticColoringTag with {}
+given tag[F[_]]: AutomaticColoringTag[F] with {}
 
 
 /**
