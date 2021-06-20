@@ -54,12 +54,28 @@ object TransformUtil:
     val paramsMap = oldParams.zipWithIndex.map{case (tree,index)=>(tree.symbol,index)}.toMap
     val indexedArgs = newParams.toIndexedSeq
 
+    //def lookupParamTerm(sym: Symbol): Option[Term] =
+    //      paramsMap.get(sym).map(i => Ref(indexedArgs(i).symbol))
+    val assoc: Map[Symbol, Tree] = paramsMap.map((k,i) => (k, Ref(indexedArgs(i).symbol)))
+    changeSyms(assoc, body, owner)
+
+  def changeSyms(using qctx:Quotes)(association: Map[qctx.reflect.Symbol,qctx.reflect.Tree], 
+                                    body: quotes.reflect.Term, 
+                                    owner: quotes.reflect.Symbol): quotes.reflect.Term =
+    import quotes.reflect._
+
     // TODO: mege wirh changeSyms
     val argTransformer = new TreeMap() {
 
             def lookupParamTerm(sym: Symbol): Option[Term] =
-                 paramsMap.get(sym).map(i => Ref(indexedArgs(i).symbol))
-                 
+                association.get(sym) match
+                  case Some(paramTree) =>
+                    paramTree match
+                      case paramTerm: Term => Some(paramTerm)
+                      case _ => 
+                           throw MacroError(s"term expected for lambda param, we have ${paramTree}",body.asExpr)
+                  case _ => None
+
 
             override def transformTree(tree: Tree)(owner: Symbol): Tree =
                 tree match

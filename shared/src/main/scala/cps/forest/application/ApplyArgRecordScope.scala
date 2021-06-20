@@ -308,104 +308,18 @@ trait ApplyArgRecordScope[F[_], CT]:
          }
 
          val (nPattern, newBindings) = rebindPatterns(caseDef.pattern, assoc)
-         val nGuard = caseDef.guard.map( changeSyms(newBindings, _, owner ) )
-         val nBody = if (processBody) changeSyms(newBindings, body, owner) else body
+         val nGuard = caseDef.guard.map( TransformUtil.changeSyms(newBindings, _, owner ) )
+         val nBody = if (processBody) TransformUtil.changeSyms(newBindings, body, owner) else body
          CaseDef(nPattern, nGuard, nBody)
        }
 
        private def changeArgs(params:List[ValDef], nParams:List[Tree], body: Term, owner: Symbol): Term =
-         val association: Map[Symbol, Tree] = (params zip nParams).foldLeft(Map.empty){
-             case (m, (oldParam, newParam)) => m.updated(oldParam.symbol, newParam)
-         }
-         changeSyms(association, body, owner: Symbol)
+         TransformUtil.substituteLambdaParams(params, nParams, body, owner)
+
 
        private def changeIdent(body:Term, oldSym: Symbol, newSym: Symbol, owner: Symbol): Term =
-         changeSyms(Map(oldSym->Ref(newSym)), body, owner)
+         TransformUtil.changeSyms(Map(oldSym->Ref(newSym)), body, owner)
 
-       private def changeSyms(association: Map[Symbol,Tree], body: Term, owner: Symbol): Term =
-         if  cpsCtx.flags.debugLevel >= 20 then
-             cpsCtx.log(s"changeSyms, association = $association")
-
-         val changes = new TreeMap() {
-
-             def lookupParamTerm(symbol:Symbol): Option[Term] =
-                association.get(symbol) match
-                  case Some(paramTree) =>
-                    paramTree match
-                      case paramTerm: Term => Some(paramTerm)
-                      case _ => throw MacroError(s"term expected for lambda param, we have ${paramTree}",posExprs(term))
-                  case _ => None
-
-             override def transformTree(tree: Tree)(owner: Symbol): Tree =
-                tree match
-                  case pattern: Bind =>
-                    Bind.copy(pattern)(pattern.name, transformTree(pattern.pattern)(owner))
-                  case _ =>
-                    super.transformTree(tree)(owner)
-
-             override def transformTerm(tree:Term)(owner: Symbol):Term =
-               tree match
-                 case ident@Ident(name) => lookupParamTerm(ident.symbol) match
-                                             case Some(paramTerm) =>
-                                                          if (cpsCtx.flags.debugLevel >= 20) then
-                                                              cpsCtx.log(s"changeSym, changed $ident to $paramTerm")
-                                                              cpsCtx.log(s"oldHashcode: ${ident.symbol.hashCode}, new Hash: ${paramTerm.symbol.hashCode}")
-                                                              cpsCtx.log(s"oldOwner: ${ident.symbol.owner} , newOwner: ${paramTerm.symbol.owner}")
-                                                              cpsCtx.log(s"oldOwner.hashCode: ${ident.symbol.owner.hashCode} , newOwner.hashCode: ${paramTerm.symbol.owner.hashCode}")
-                                                          paramTerm.changeOwner(owner)
-                                             case None => super.transformTerm(tree)(owner)
-                 case _ => super.transformTerm(tree)(owner)
-
-             override def transformTypeTree(tree:TypeTree)(owner: Symbol):TypeTree =
-               tree match
-                 case Singleton(ref) =>
-                           lookupParamTerm(ref.symbol) match
-                               case Some(paramTerm) => Singleton(paramTerm)
-                               case None => super.transformTypeTree(tree)(owner)
-                 case a@Annotated(tp,annotation) =>
-                           // bug in default TreeTransform, should process Annotated
-                           Annotated.copy(a)(transformTypeTree(tp)(owner),transformTerm(annotation)(owner))
-                 case i@Inferred() =>
-                           Inferred(transformType(i.tpe)(owner))
-                 case t:TypeSelect =>
-                           TypeSelect.copy(t)(transformTerm(t.qualifier)(owner),t.name)
-                 case _ => super.transformTypeTree(tree)(owner)
-
-             def transformType(tp: TypeRepr)(owner: Symbol): TypeRepr =
-               tp match
-                 case ConstantType(c) => tp
-                 case tref@TermRef(qual, name) =>
-                         lookupParamTerm(tref.termSymbol) match
-                           case Some(paramTerm) => paramTerm.tpe
-                           case None => tp
-                 case tp@TypeRef(internal, name) =>
-                         internal match
-                           case tr: TermRef =>
-                              val ref = lookupParamTerm(tr.termSymbol).getOrElse(Ref(tr.termSymbol))
-                              TypeSelect(ref,name).tpe
-                           case _ =>
-                            // we can't get inside, since it is
-                              tp 
-                 case SuperType(thisTpe,superTpe) =>
-                         SuperType(transformType(thisTpe)(owner),transformType(superTpe)(owner))
-                 case Refinement(parent,name,info) =>
-                         Refinement(transformType(parent)(owner),name,transformType(info)(owner))
-                 case AppliedType(tycon, args) =>
-                         transformType(tycon)(owner).appliedTo(args.map(x => transformType(x)(owner)))
-                 case AnnotatedType(underlying, annot) =>
-                         AnnotatedType(transformType(underlying)(owner), transformTerm(annot)(owner))
-                 case AndType(rhs,lhs) => AndType(transformType(rhs)(owner),transformType(lhs)(owner))
-                 case OrType(rhs,lhs) => OrType(transformType(rhs)(owner),transformType(lhs)(owner))
-                 case MatchType(bound,scrutinee,cases) =>
-                            MatchType(transformType(bound)(owner),transformType(scrutinee)(owner),
-                                                        cases.map(x => transformType(x)(owner)))
-                 case ByNameType(tp1) => ByNameType(transformType(tp1)(owner))
-                 case ParamRef(x, index) => tp  //transform tp ?
-                 case NoPrefix() => tp
-                 case TypeBounds(low,hi) => TypeBounds(transformType(low)(owner),transformType(hi)(owner))
-                 case _ => tp
-         }
-         changes.transformTerm(body)(owner)
   }
 
   case class ApplyArgNamedRecord(term: NamedArg, name: String, nested: ApplyArgRecord )
