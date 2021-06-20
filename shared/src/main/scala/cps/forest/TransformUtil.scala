@@ -57,6 +57,10 @@ object TransformUtil:
     // TODO: mege wirh changeSyms
     val argTransformer = new TreeMap() {
 
+            def lookupParamTerm(sym: Symbol): Option[Term] =
+                 paramsMap.get(sym).map(i => Ref(indexedArgs(i).symbol))
+                 
+
             override def transformTree(tree: Tree)(owner: Symbol): Tree =
                 tree match
                   case pattern: Bind =>
@@ -67,22 +71,60 @@ object TransformUtil:
 
             override def transformTerm(tree: Term)(owner: Symbol): Term =
                tree match
-                 case Ident(name) => paramsMap.get(tree.symbol) match
-                                        case Some(index) => Ref(indexedArgs(index).symbol)
+                 case Ident(name) => lookupParamTerm(tree.symbol) match
+                                        case Some(paramTerm) => paramTerm
                                         case _  => super.transformTerm(tree)(owner)
                  case _ => super.transformTerm(tree)(owner)
 
             override def transformTypeTree(tree: TypeTree)(owner: Symbol):TypeTree =
                tree match
                  case Singleton(ref) => 
-                       paramsMap.get(ref.symbol) match
-                          case Some(index) => Singleton(Ref(indexedArgs(index).symbol))
+                       lookupParamTerm(ref.symbol) match
+                          case Some(paramTerm) => Singleton(paramTerm)
                           case None => super.transformTypeTree(tree)(owner)
                  case a@Annotated(tp, annotation) =>
                           // bug in default TreeTransform, should process Annotated
                           Annotated.copy(a)(transformTypeTree(tp)(owner),transformTerm(annotation)(owner))
-                 //TODO: move more, Inferred and Select
-                 case _ => super.transformTypeTree(tree)(owner)
+                 case i@Inferred() =>
+                          Inferred(transformType(i.tpe)(owner))
+                 case t:TypeSelect =>
+                          TypeSelect.copy(t)(transformTerm(t.qualifier)(owner),t.name)
+                 case _ => 
+                          super.transformTypeTree(tree)(owner)
+
+            def transformType(tp: TypeRepr)(owner: Symbol): TypeRepr =
+               tp match
+                 case ConstantType(c) => tp
+                 case tref@TermRef(qual, name) =>
+                         lookupParamTerm(tref.termSymbol) match
+                           case Some(paramTerm) => paramTerm.tpe
+                           case None => tp
+                 case tp@TypeRef(internal, name) =>
+                         internal match
+                           case tr: TermRef =>
+                              val ref = lookupParamTerm(tr.termSymbol).getOrElse(Ref(tr.termSymbol))
+                              TypeSelect(ref,name).tpe
+                           case _ =>
+                            // we can't get inside, since it is
+                            tp
+                 case SuperType(thisTpe,superTpe) =>
+                         SuperType(transformType(thisTpe)(owner),transformType(superTpe)(owner))
+                 case Refinement(parent,name,info) =>
+                         Refinement(transformType(parent)(owner),name,transformType(info)(owner))
+                 case AppliedType(tycon, args) =>
+                         transformType(tycon)(owner).appliedTo(args.map(x => transformType(x)(owner)))
+                 case AnnotatedType(underlying, annot) =>
+                         AnnotatedType(transformType(underlying)(owner), transformTerm(annot)(owner))
+                 case AndType(rhs,lhs) => AndType(transformType(rhs)(owner),transformType(lhs)(owner))
+                 case OrType(rhs,lhs) => OrType(transformType(rhs)(owner),transformType(lhs)(owner))
+                 case MatchType(bound,scrutinee,cases) =>
+                            MatchType(transformType(bound)(owner),transformType(scrutinee)(owner),
+                                                        cases.map(x => transformType(x)(owner)))
+                 case ByNameType(tp1) => ByNameType(transformType(tp1)(owner))
+                 case ParamRef(x, index) => tp  //transform tp ?
+                 case NoPrefix() => tp
+                 case TypeBounds(low,hi) => TypeBounds(transformType(low)(owner),transformType(hi)(owner))
+                 case _ => tp
 
     }
     argTransformer.transformTerm(body)(owner)
