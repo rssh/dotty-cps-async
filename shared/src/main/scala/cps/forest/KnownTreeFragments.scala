@@ -14,11 +14,7 @@ trait KnownTreeFragments[F[_], CT]:
 
   lazy val awaitPure = '{ _root_.cps.await[F,Int](${cpsCtx.monad}.pure(3))(using ${cpsCtx.monad}) }.asTerm
 
-  lazy val awaitSymbol = TransformUtil.find(awaitPure,
-                           { case v@Select(x,m) if m == "await" => Some(v)
-                             case v@Ident("await") => Some(v)
-                             case _ => None
-                           }).get.symbol
+  lazy val awaitSymbol = Symbol.requiredMethod("cps.await")
 
   lazy val monadTypeTree = TransformUtil.find(awaitPure,
                        { case TypeApply(Select(x,"await"),List(f1,f2)) => Some(f1)
