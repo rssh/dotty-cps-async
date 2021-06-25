@@ -15,7 +15,7 @@ class TypedTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import quotes.reflect._
      t.asExpr match
        case '{ $t1:tt1 } =>
-         val r = Async.nestTransform(t1, cpsCtx, TransformationContextMarker.Typed)
+         val r = Async.nestTransform(t1, cpsCtx)
          if (!r.isAsync)  
             if (!r.isChanged)
                CpsExpr.sync(monad, patternCode, false)

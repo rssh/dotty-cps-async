@@ -17,8 +17,8 @@ object WhileTransform:
      import quotes.reflect._
      import util._
      import cpsCtx._
-     val cpsCond = Async.nestTransform(cond, cpsCtx, TransformationContextMarker.WhileCond)
-     val cpsRepeat = Async.nestTransform(repeat, cpsCtx, TransformationContextMarker.WhileBody)
+     val cpsCond = Async.nestTransform(cond, cpsCtx)
+     val cpsRepeat = Async.nestTransform(repeat, cpsCtx)
      val isAsync = cpsCond.isAsync || cpsRepeat.isAsync
 
      val unitBuilder = {

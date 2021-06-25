@@ -5,9 +5,8 @@ import scala.collection.mutable.ListBuffer
 import scala.quoted.*
 import cps.*
 
-trait Observatory:
+class Observatory:
 
-   
    val effectColoring = new AutomaticColoringOfEffects()
    val allAnalysers = Seq(
        effectColoring

@@ -24,7 +24,7 @@ object ValDefTransform:
         case '[et] =>
             if cpsCtx.flags.debugLevel > 15 then
                cpsCtx.log(s"rightPart is ${TransformUtil.safeShow(rhs)}")
-            val cpsRight = Async.nestTransform(rhs.asExprOf[et],cpsCtx,TransformationContextMarker.ValDefRight)
+            val cpsRight = Async.nestTransform(rhs.asExprOf[et],cpsCtx)
             val memCpsRight:CpsExpr[F,et] = if (cpsCtx.flags.automaticColoring && cpsCtx.memoization.isDefined) {
                rhsType match
                  case '[F[r]] =>

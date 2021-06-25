@@ -13,6 +13,7 @@ import scala.compiletime._
 
 import cps.forest._
 import cps.misc._
+import cps.observatory._
 
 
 @compileTimeOnly("await should be inside async block")
@@ -58,7 +59,6 @@ object Async {
    **/
   def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
-    import TransformationContextMarker._
     val flags = adoptFlags(f, dm)
     try
       if flags.printCode then
@@ -75,9 +75,11 @@ object Async {
         if flags.automaticColoring then
           Some(resolveMemoization[F,T](f,dm))
         else None
+      val observatory = new Observatory
+      observatory.analyzeTree[F,T](f.asTerm)
       val r = WithOptExprProxy("cpsMonad", dm){
            dm => 
-              val cpsExpr = rootTransform[F,T](f,dm,memoization,flags,TopLevel,0, None)
+              val cpsExpr = rootTransform[F,T](f,dm,memoization,flags,observatory,0, None)
               if (dm.asTerm.tpe <:< TypeRepr.of[CpsEffectMonad[F]]) then       
                  '{ ${dm}.flatMap(${dm.asExprOf[CpsEffectMonad[F]]}.delayedUnit)( _ => ${cpsExpr.transformed}) }
               else
@@ -160,13 +162,13 @@ object Async {
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]], 
                                       optMemoization: Option[TransformationContext.Memoization[F]],
                                       flags: AsyncMacroFlags,
-                                      exprMarker: TransformationContextMarker,
+                                      observatory: Observatory,
                                       nesting: Int,
                                       parent: Option[TransformationContext[_,_]])(
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._
-     val cpsCtx = TransformationContext[F,T](f,tType,dm,optMemoization, flags,exprMarker,nesting,parent)
+     val cpsCtx = TransformationContext[F,T](f,tType,dm,optMemoization,flags,observatory,nesting,parent)
      f match 
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
@@ -224,10 +226,10 @@ object Async {
 
 
   def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S],
-                              cpsCtx: TransformationContext[F,T],
-                              marker: TransformationContextMarker)(using Quotes):CpsExpr[F,S]=
+                              cpsCtx: TransformationContext[F,T]
+                              )(using Quotes):CpsExpr[F,S]=
         rootTransform(f,cpsCtx.monad, cpsCtx.memoization,
-                      cpsCtx.flags,marker,cpsCtx.nesting+1, Some(cpsCtx))
+                      cpsCtx.flags,cpsCtx.observatory,cpsCtx.nesting+1, Some(cpsCtx))
 
 
 }

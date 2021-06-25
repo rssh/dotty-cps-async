@@ -45,7 +45,7 @@ trait InlinedTreeTransform[F[_], CT]:
                  case Some(lambda) => 
                     lambda match
                       case Lambda(params, body) =>
-                         val cpsBinding = runRoot(body, TransformationContextMarker.InlinedBinding(i))
+                         val cpsBinding = runRoot(body)
                          val resultType = vx.tpt.tpe match
                              case AppliedType(fun, args) => args.last
                              case _ => body.tpe.widen
@@ -81,7 +81,7 @@ trait InlinedTreeTransform[F[_], CT]:
                          s.copy(newBindings = vx::s.newBindings)
                  case None => 
                     val cpsRhs = try {
-                            runRoot(rhs, TransformationContextMarker.InlinedBinding(i))
+                            runRoot(rhs)
                       } catch {
                          case ex: MacroError =>
                            report.warning(s"error during transformation of valdef in inline, tpt=${tpt.show}\n, rhs=${rhs.show}\n, ex=${ex}", posExprs(rhs))
@@ -240,7 +240,7 @@ trait InlinedTreeTransform[F[_], CT]:
         funValDefs.changes.foreach{ b =>
            cpsCtx.log(s"fubValDef changes binding: ${b}")
         } 
-    val cpsBody = runRoot(body, TransformationContextMarker.InlinedBody)
+    val cpsBody = runRoot(body)
     if (origin.bindings.isEmpty) then
        cpsBody
     else

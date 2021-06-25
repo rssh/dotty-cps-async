@@ -14,7 +14,7 @@ trait SelectOuterTreeTransform[F[_], CT]:
 
   // case selectOuterTerm @ SelectOuter(qualifier,name,level) 
   def runSelectOuter( term: SelectOuter ): CpsTree =
-     val qual = runRoot(term.qualifier, TransformationContextMarker.SelectOuter)
+     val qual = runRoot(term.qualifier)
      if (!qual.isChanged)
         // TODO: mb not use pure ?
         CpsTree.pure(term)

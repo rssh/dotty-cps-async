@@ -2,7 +2,7 @@ package cps.forest
 
 import scala.quoted._
 
-import cps.{TransformationContextMarker=>TCM, _}
+import cps._
 import cps.misc._
 
 trait ApplyTreeTransform[F[_],CT]:
@@ -85,7 +85,7 @@ trait ApplyTreeTransform[F[_],CT]:
        cpsCtx.log(s"targs=${targs}")
      obj match {
         case Select(obj1,method) =>
-          val cpsObj1 = runRoot(obj1, TCM.ApplyTypeApplySelect)
+          val cpsObj1 = runRoot(obj1)
           if (cpsObj1.isAsync)
               cpsObj1 match
                  case lt: AsyncLambdaCpsTree =>
@@ -116,7 +116,7 @@ trait ApplyTreeTransform[F[_],CT]:
         case Ident(name) =>
           handleArgs1(applyTerm, fun, CpsTree.pure(fun), args, tails)
         case _ =>
-          val cpsObj = runRoot(obj, TCM.ApplyTypeApply)
+          val cpsObj = runRoot(obj)
           handleArgs1(applyTerm, fun, cpsObj, args, tails)
      }
 
@@ -152,7 +152,7 @@ trait ApplyTreeTransform[F[_],CT]:
                   //  TODO: handle non-inlined conversion
                   withInlineBindings(conv,runAwait(applyTerm, args.head, targs3.head.tpe, args1.head))
        case _ =>
-         val cpsObj = runRoot(obj, TCM.ApplySelect)
+         val cpsObj = runRoot(obj)
          if (cpsCtx.flags.debugLevel >= 15)
             cpsCtx.log(s"funSelect: cpsObj=${cpsObj}")
          cpsObj match
@@ -198,7 +198,7 @@ trait ApplyTreeTransform[F[_],CT]:
 
 
   def handleFun(applyTerm: Term, fun:Term, args:List[Term], tails: List[Seq[ApplyArgRecord]]):CpsTree =
-       val cpsFun = runRoot(fun, TCM.ApplyFun)
+       val cpsFun = runRoot(fun)
        handleArgs1(applyTerm, fun, cpsFun, args, tails)
 
 

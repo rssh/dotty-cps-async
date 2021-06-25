@@ -1,6 +1,7 @@
 package cps
 
-import scala.quoted._
+import scala.quoted.*
+import cps.observatory.*
 
 case class TransformationContext[F[_],T](
    patternCode: Expr[T],  // code, for which we build pattern expression
@@ -8,19 +9,18 @@ case class TransformationContext[F[_],T](
    monad: Expr[CpsMonad[F]],
    memoization: Option[TransformationContext.Memoization[F]],
    flags: AsyncMacroFlags,
-   marker: TransformationContextMarker,
+   observatory: Observatory,
    nesting: Int,
    parent: Option[TransformationContext[_,_]],
 )  {
 
-  def nestSame(marker: TransformationContextMarker, muted: Boolean = flags.muted): TransformationContext[F,T] = 
-           copy(marker=marker, nesting=nesting+1, parent=Some(this))
+  def nestSame(muted: Boolean = flags.muted): TransformationContext[F,T] = 
+           copy(flags = flags.copy(muted = muted), nesting=nesting+1, parent=Some(this))
 
-  def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], marker: TransformationContextMarker, 
-                                                  muted: Boolean = flags.muted): 
-             TransformationContext[F,S] =
+  def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], 
+                                         muted: Boolean = flags.muted):   TransformationContext[F,S] =
       TransformationContext(newPatternCode, newPatternType, monad, memoization, flags.copy(muted=muted), 
-                             marker, nesting + 1, parent=Some(this) )
+                             observatory, nesting + 1, parent=Some(this) )
 
   def log(message:String): Unit =
        if !flags.muted then

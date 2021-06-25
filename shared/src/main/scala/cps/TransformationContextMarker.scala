@@ -1,5 +1,6 @@
 package cps
 
+/*
 sealed trait TransformationContextMarker 
 
 object TransformationContextMarker {
@@ -39,3 +40,4 @@ object TransformationContextMarker {
   case object Other extends TransformationContextMarker
 
 }
+*/

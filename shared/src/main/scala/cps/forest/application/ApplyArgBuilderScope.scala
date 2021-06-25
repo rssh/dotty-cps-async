@@ -1,6 +1,6 @@
 package cps.forest.application
 
-import cps.{TransformationContextMarker=>TCM, _}
+import cps._
 import cps.forest._
 import cps.misc._
 
@@ -62,20 +62,20 @@ trait ApplyArgBuilderScope[F[_],CT] {
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) =>
             val accRepeated = O.buildApplyArgsRecordsAcc(paramsDescriptor,
-                               rargs, cpsCtx.nestSame(TCM.Repeated),
+                               rargs, cpsCtx.nestSame(),
                                acc.copy(inRepeat=true,records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt1)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case r@Repeated(rargs, tpt) =>
             val accRepeated = O.buildApplyArgsRecordsAcc(paramsDescriptor,
-                               rargs, cpsCtx.nestSame(TCM.Repeated),
+                               rargs, cpsCtx.nestSame(),
                                acc.copy(inRepeat=true, records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case lambda@Lambda(params, body) =>
             // mb, this will not work, for expressions, which return block.
             //  look's like somewhere in future, better add 'shifted' case to CpsExpr
-            val cpsBody = runRoot(body, TCM.ApplyArg(acc.posIndex))
+            val cpsBody = runRoot(body)
             val nextRecord = if (paramsDescriptor.isByName(acc.paramIndex)) {
                                throw MacroError("passing lamda as byName params is not supported yet",posExpr(t))
                              } else {
@@ -112,7 +112,7 @@ trait ApplyArgBuilderScope[F[_],CT] {
             if cpsCtx.flags.debugLevel >= 15 then
                cpsCtx.log(s"paramType=${paramsDescriptor.paramType(acc.paramIndex)}")
                cpsCtx.log(s"byName=${paramsDescriptor.isByName(acc.paramIndex)}")
-            val termCpsTree = runRoot(t, TCM.ApplyArg(acc.posIndex) )
+            val termCpsTree = runRoot(t)
             buildCpsTreeApplyArgRecord(paramsDescriptor, t, termCpsTree, cpsCtx, acc)
 
        }

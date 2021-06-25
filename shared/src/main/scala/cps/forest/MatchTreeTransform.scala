@@ -1,10 +1,10 @@
 // transform for match
-//  (C) Ruslan Shevchenko, 2019-2020, Kiev, Ukraine
+//  (C) Ruslan Shevchenko, 2019-2021, Kiev, Ukraine
 package cps.forest
 
 import scala.quoted._
 
-import cps.{TransformationContextMarker=>TCM, _}
+import cps._
 import cps.misc._
 
 
@@ -24,8 +24,8 @@ trait MatchTreeTransform[F[_], CT]:
      //val otpe = widenOtpe
      val otpe = matchTerm.tpe
      val scrutinee = matchTerm.scrutinee
-     val cpsScrutinee = runRoot(scrutinee, TCM.MatchScrutinee)
-     val cpsCases = matchTerm.cases.map( caseDef => runRoot(caseDef.rhs, TCM.MatchCase ) )
+     val cpsScrutinee = runRoot(scrutinee)
+     val cpsCases = matchTerm.cases.map( caseDef => runRoot(caseDef.rhs) )
      val asyncCases = cpsCases.exists( _.isAsync )
      val nCases = if (asyncCases) {
                       (matchTerm.cases zip cpsCases).map{(old,cpstree) =>

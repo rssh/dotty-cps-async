@@ -17,9 +17,9 @@ object IfTransform:
      import quotes.reflect._
      import util._
      import cpsCtx._
-     val cR = Async.nestTransform(cond, cpsCtx, TransformationContextMarker.IfCond)
-     val tR = Async.nestTransform(ifTrue, cpsCtx, TransformationContextMarker.IfTrue)
-     val fR = Async.nestTransform(ifFalse, cpsCtx, TransformationContextMarker.IfFalse)
+     val cR = Async.nestTransform(cond, cpsCtx)
+     val tR = Async.nestTransform(ifTrue, cpsCtx)
+     val fR = Async.nestTransform(ifFalse, cpsCtx)
      var isAsync = true
 
      val cnBuild = {

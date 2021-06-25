@@ -15,7 +15,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import quotes.reflect._
      left.asExpr match
         case '{ $le: lt } =>
-            val cpsLeft = Async.nestTransform(le,cpsCtx,TransformationContextMarker.AssignLeft)
+            val cpsLeft = Async.nestTransform(le,cpsCtx)
             // shpuld have to structure in such waym as workarround against
             //
             runWithLeft(left,right,cpsLeft)
@@ -28,7 +28,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
      import quotes.reflect._
      right.asExpr match {
         case '{ $re: rt } =>
-            val cpsRight = Async.nestTransform(re,cpsCtx,TransformationContextMarker.AssignRight)
+            val cpsRight = Async.nestTransform(re,cpsCtx)
             run1(left,right,cpsLeft,cpsRight)
         case _ =>
             throw MacroError("Can't determinate type",right.asExpr)
@@ -52,7 +52,7 @@ class AssignTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
           case Select(obj,sym) =>
               obj.asExpr match
                  case '{ $o: ot } =>
-                    val lu = Async.nestTransform(o,cpsCtx,TransformationContextMarker.AssignSelect)
+                    val lu = Async.nestTransform(o,cpsCtx)
                     run2(left,right,cpsLeft,cpsRight,lu)
                  case _ =>
                     throw MacroError("Can't determinate type",obj.asExpr)

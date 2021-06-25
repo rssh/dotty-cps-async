@@ -25,7 +25,7 @@ trait AwaitTreeTransform[F[_],CT]:
 
 
   def runMyAwait(awaitTerm: Term, arg: Term): CpsTree =
-      val cpsArg = runRoot(arg, TransformationContextMarker.Await)
+      val cpsArg = runRoot(arg)
       cpsArg.applyAwait(awaitTerm.tpe)
 
   def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, otherCpsMonad: Term): CpsTree =

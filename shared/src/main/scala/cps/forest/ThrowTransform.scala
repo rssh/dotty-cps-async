@@ -18,7 +18,7 @@ object ThrowTransform:
      import quotes.reflect._
      import util._
      import cpsCtx._
-     val cpsEx = Async.nestTransform(ex, cpsCtx, TransformationContextMarker.ThrowException)
+     val cpsEx = Async.nestTransform(ex, cpsCtx)
 
      if (cpsCtx.monad.asTerm.tpe <:< TypeRepr.of[CpsTryMonad[F]])
        val errorMonad = monad.asExprOf[CpsTryMonad[F]]

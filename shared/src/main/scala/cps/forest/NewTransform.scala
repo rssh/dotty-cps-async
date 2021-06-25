@@ -1,3 +1,5 @@
+// transform for new
+//  (C) Ruslan Shevchenko, 2019-2021, Kiev, Ukraine
 package cps.forest
 
 import scala.quoted._

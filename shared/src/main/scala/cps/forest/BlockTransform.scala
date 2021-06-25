@@ -28,8 +28,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
            d match {
              case v@ValDef(vName,vtt,optRhs) =>
                val valDefExpr = Block(List(v),Literal(UnitConstant())).asExprOf[Unit]
-               val nestCtx = cpsCtx.nest(valDefExpr, uType,
-                                         TransformationContextMarker.BlockInside(i))
+               val nestCtx = cpsCtx.nest(valDefExpr, uType)
                ValDefTransform.fromBlock(using qctx)(nestCtx, v)
              case _ =>
                DefCpsExpr(using qctx)(cpsCtx.monad,Seq(),d, false)
@@ -60,7 +59,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                                     else
                                       Apply(Select.unique(sc.tree,"apply"),List(t)).asExprOf[Unit]
                                   }
-                                  Async.nestTransform(pd, cpsCtx, TransformationContextMarker.BlockInside(i))
+                                  Async.nestTransform(pd, cpsCtx)
                                case fl: ImplicitSearchFailure =>
                                   val tps = safeShow()
                                   val msg = s"discarding non-unit value without custom discard $tps (${fl.explanation})"
@@ -68,12 +67,12 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
                                       report.warning(msg, t.pos)
                                   else
                                       report.error(msg, t.pos)
-                                  Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
+                                  Async.nestTransform(p, cpsCtx)
                            else
                              report.warning(s"discarding non-unit value ${safeShow()}", t.pos)
-                             Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
+                             Async.nestTransform(p, cpsCtx)
                        else
-                         Async.nestTransform(p, cpsCtx, TransformationContextMarker.BlockInside(i))
+                         Async.nestTransform(p, cpsCtx)
                case other =>
                        printf(other.show)
                        throw MacroError(s"can't handle term in block: $other",t.asExpr)
@@ -87,7 +86,7 @@ class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
             printf(other.show)
             throw MacroError(s"unknown tree type in block: $other",patternCode)
      }
-     val rLast = Async.nestTransform(last.asExprOf[T],cpsCtx,TransformationContextMarker.BlockLast)
+     val rLast = Async.nestTransform(last.asExprOf[T],cpsCtx)
      val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
      // wrap yet in one Expr, to avoid unrolling during append in enclosing block).
      val retval = CpsExpr.wrap(blockResult)
