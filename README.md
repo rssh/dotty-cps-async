@@ -1,7 +1,7 @@
 # dotty-cps-async
 
 
-This is the implementation of async/await transformation for Dotty (next version of the Scala programming language), based on an optimized version of cps[continuation passing style] transformation, where continuation is ‘pushed’ to the monad. 
+This is the implementation of async/await transformation for Scala3 (Dotty), based on an optimized version of cps[continuation passing style] transformation, where continuation is ‘pushed’ to the monad. 
 
 ## Highlightings:
 
