@@ -39,7 +39,7 @@ class TestCBS2ACCnt:
     val log = new Log
     val value = increment(counter) 
     if value % LOG_MOD == 0 then
-       log.log(s"counter value = ${value}")
+       log.log(s"counter value = ${await(value)}")
     if (value - 1 == LOG_TRESHOLD) then  
        // Conversion will not be appliyed for == . For this example we want automatic conversion, so -1
        log.log("counter TRESHOLD")

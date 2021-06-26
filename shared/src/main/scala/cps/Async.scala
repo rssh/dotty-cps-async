@@ -71,12 +71,15 @@ object Async {
         println(s"value: ${f.asTerm}")
       if (flags.debugLevel > 5) 
         println(s"customValueDiscard=${flags.customValueDiscard}, warnValueDiscard=${flags.warnValueDiscard}, automaticColoring=${flags.automaticColoring}")
+      val observatory = Observatory(f.asTerm, flags)
       val memoization: Option[TransformationContext.Memoization[F]] = 
         if flags.automaticColoring then
+          val resolvedMemoization = resolveMemoization[F,T](f,dm)
+          if (resolvedMemoization.kind !=  MonadMemoizationKind.BY_DEFAULT) then
+             observatory.effectColoring.enabled = true
           Some(resolveMemoization[F,T](f,dm))
         else None
-      val observatory = new Observatory
-      observatory.analyzeTree[F,T](f.asTerm)
+      observatory.analyzeTree[F]
       val r = WithOptExprProxy("cpsMonad", dm){
            dm => 
               val cpsExpr = rootTransform[F,T](f,dm,memoization,flags,observatory,0, None)
@@ -162,7 +165,7 @@ object Async {
   def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]], 
                                       optMemoization: Option[TransformationContext.Memoization[F]],
                                       flags: AsyncMacroFlags,
-                                      observatory: Observatory,
+                                      observatory: Observatory.Scope#Observatory,
                                       nesting: Int,
                                       parent: Option[TransformationContext[_,_]])(
                                            using Quotes): CpsExpr[F,T] =

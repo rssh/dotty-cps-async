@@ -3,29 +3,29 @@ package cps.observatory
 import cps.*
 import scala.quoted.*
 
-trait Analysis
-{
+trait AnalysisQuoteScope:
 
-  var enabled: Boolean = false
+  this: ObservatoryFullQuoteScope  =>
 
-  /**
-   * Called for each element of tree batched with other analysis in traversor.
-   *
-   * During prelimnary analysis stge, preliminaryTreeVisit will called
-   * for each tree and each subtrees.
-   *
-   *@return - true if we want to process subtrees of this tree, otherwise - false.
-   **/
-  def visitStart[F[_]:Type](using qctx: Quotes)(
-                   tree: qctx.reflect.Tree, ctx: ObservationContext[F])(owner: qctx.reflect.Symbol) : Unit = { }
+  import quotes.reflect.*
 
-  def visitDone[F[_]:Type](using qctx: Quotes)( 
-                   tree: qctx.reflect.Tree, ctx: ObservationContext[F]): Unit = { }
+  trait Analysis:
 
-  /**
-   * run after all preliminary anlayses has been runned.
-   *
-   **/
-  def cpsVisit[F[_],T](using qctx: Quotes)(tree: qctx.reflect.Tree, ctx: TransformationContext[F,T]): Unit = { }
+    var enabled: Boolean = false
 
-}
+    /**
+     * Called for each element of tree batched with other analysis in traversor.
+     *
+     * During prelimnary analysis stge, preliminaryTreeVisit will called
+     * for each tree and each subtrees.
+     *
+     *@return - true if we want to process subtrees of this tree, otherwise - false.
+     **/
+    def visitStart[F[_]:Type](tree: Tree, ctx: ObservationContext[F])(owner: Symbol) : Unit = { }
+
+    /**
+     * called for each tree when we leave node.
+     **/
+    def visitDone[F[_]:Type](tree: Tree, ctx: ObservationContext[F])(owner: Symbol): Unit = { }
+                 
+

@@ -3,21 +3,25 @@ package cps.observatory
 import scala.quoted.*
 import cps.*
 
+trait ObservationContextQuoteScope:
 
-trait ObservationContext[F[_]:Type]:
+  this: ObservatoryFullQuoteScope =>
 
-   def scheduleChildrenVisit(using qctx: Quotes)(
-                       tree: qctx.reflect.Tree, analysis: Analysis)(owner: qctx.reflect.Symbol): Unit =
-     import qctx.reflect.*
-     val acc = new TreeAccumulator[Unit]() {
-        override def foldTree(u:Unit, tree:Tree)(owner: Symbol) =
-           scheduleVisit(tree, analysis)(owner)
-     }
-     acc.foldOverTree((),tree)(owner)
+  trait ObservationContext[F[_]:Type]:
 
-   def scheduleVisit(using qctx: Quotes)(tree: qctx.reflect.Tree, analysis: Analysis)(owner: qctx.reflect.Symbol): Unit
+     import quotes.reflect.*
 
-   def fTypeRepr(using qctx: Quotes): qctx.reflect.TypeRepr = 
-      qctx.reflect.TypeRepr.of[F]
+     def scheduleChildrenVisit(tree: Tree, analysis: Analysis)(owner: Symbol): Unit =
+         val acc = new TreeAccumulator[Unit]() {
+            override def foldTree(u:Unit, tree:Tree)(owner: Symbol) =
+            scheduleVisit(tree, analysis)(owner)
+         }
+         acc.foldOverTree((),tree)(owner)
+
+     def scheduleVisit(tree: Tree, analysis: Analysis)(owner: Symbol): Unit
+
+     def fTypeRepr: TypeRepr = TypeRepr.of[F]
+
+     def flags: AsyncMacroFlags 
 
 

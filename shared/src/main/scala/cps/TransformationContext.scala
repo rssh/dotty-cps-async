@@ -9,7 +9,7 @@ case class TransformationContext[F[_],T](
    monad: Expr[CpsMonad[F]],
    memoization: Option[TransformationContext.Memoization[F]],
    flags: AsyncMacroFlags,
-   observatory: Observatory,
+   observatory: Observatory.Scope#Observatory,
    nesting: Int,
    parent: Option[TransformationContext[_,_]],
 )  {

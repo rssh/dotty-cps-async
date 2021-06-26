@@ -25,31 +25,44 @@ object ValDefTransform:
             if cpsCtx.flags.debugLevel > 15 then
                cpsCtx.log(s"rightPart is ${TransformUtil.safeShow(rhs)}")
             val cpsRight = Async.nestTransform(rhs.asExprOf[et],cpsCtx)
-            val memCpsRight:CpsExpr[F,et] = if (cpsCtx.flags.automaticColoring && cpsCtx.memoization.isDefined) {
+            val memCpsRight:CpsExpr[F,et] = if (cpsCtx.flags.automaticColoring 
+                                              && cpsCtx.memoization.isDefined
+                                              && cpsCtx.memoization.get.kind != MonadMemoizationKind.BY_DEFAULT) {
                rhsType match
                  case '[F[r]] =>
                     val refinedCpsRight = cpsRight.asInstanceOf[CpsExpr[F,F[r]]]
-                    val memoization = cpsCtx.memoization.get
-                    memoization.kind match
-                      case MonadMemoizationKind.BY_DEFAULT => cpsRight
-                      case MonadMemoizationKind.INPLACE => 
-                         val mm = memoization.monadMemoization.asExprOf[CpsMonadInplaceMemoization[F]]
-                         if (cpsRight.isAsync) then
-                            refinedCpsRight.map( '{ (x:F[r]) => ${mm}.apply(x) } ).asInstanceOf[CpsExpr[F,et]]
-                         else
-                            val rhsExpr = cpsRight.syncOrigin.get
-                            val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
-                            CpsExpr.sync(monad, nextRhs, changed=true).asInstanceOf[CpsExpr[F,et]]
-                      case MonadMemoizationKind.PURE => 
-                         val mm = memoization.monadMemoization.asExprOf[CpsMonadPureMemoization[F]]
-                         if (cpsRight.isAsync) then
-                            refinedCpsRight.flatMap( '{ (x:F[r]) => ${mm}.apply(x) } ).asInstanceOf[CpsExpr[F,et]]
-                         else
-                            val rhsExpr = cpsRight.syncOrigin.get
-                            val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
-                            CpsExpr.async(monad, nextRhs.asExprOf[F[F[r]]]).asInstanceOf[CpsExpr[F,et]]
-                      case MonadMemoizationKind.DYNAMIC => 
-                            Expr.summon[CpsMonadDynamicMemoizationAp[F,r,et]] match
+                    val analysis = cpsCtx.observatory.effectColoring
+                    val usageRecord = analysis.usageRecords.get(valDef.symbol).getOrElse{
+                              val msg = "Can't find analysis record for usage of ${valDef.symbol}"
+                              throw MacroError(msg, rhs.asExpr)
+                    } 
+                    if (usageRecord.nInAwaits > 0 && usageRecord.nWithoutAwaits > 0) then
+                        // TODO:  diagnostic
+                        report.error(s"value ${valDef.symbol} passed in sync and async form at the same time",valDef.pos)
+                        usageRecord.reportCases()
+                    val toMemoize = usageRecord.nInAwaits > 0
+                    if (toMemoize) then
+                      val memoization = cpsCtx.memoization.get
+                      memoization.kind match
+                        case MonadMemoizationKind.BY_DEFAULT => cpsRight
+                        case MonadMemoizationKind.INPLACE => 
+                           val mm = memoization.monadMemoization.asExprOf[CpsMonadInplaceMemoization[F]]
+                           if (cpsRight.isAsync) then
+                              refinedCpsRight.map( '{ (x:F[r]) => ${mm}.apply(x) } ).asInstanceOf[CpsExpr[F,et]]
+                           else
+                              val rhsExpr = cpsRight.syncOrigin.get
+                              val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
+                              CpsExpr.sync(monad, nextRhs, changed=true).asInstanceOf[CpsExpr[F,et]]
+                        case MonadMemoizationKind.PURE => 
+                           val mm = memoization.monadMemoization.asExprOf[CpsMonadPureMemoization[F]]
+                           if (cpsRight.isAsync) then
+                              refinedCpsRight.flatMap( '{ (x:F[r]) => ${mm}.apply(x) } ).asInstanceOf[CpsExpr[F,et]]
+                           else
+                              val rhsExpr = cpsRight.syncOrigin.get
+                              val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
+                              CpsExpr.async(monad, nextRhs.asExprOf[F[F[r]]]).asInstanceOf[CpsExpr[F,et]]
+                        case MonadMemoizationKind.DYNAMIC => 
+                           Expr.summon[CpsMonadDynamicMemoizationAp[F,r,et]] match
                                case Some(mm) => 
                                  if (cpsRight.isAsync) then
                                     refinedCpsRight.flatMap( '{ (x:F[r]) => ${mm}.apply(x.asInstanceOf[et]) } ).asInstanceOf[CpsExpr[F,et]]
@@ -62,7 +75,8 @@ object ValDefTransform:
                                  val msg = 
                                    s"Can't find given instance of ${TypeRepr.of[CpsMonadDynamicMemoizationAp[F,r,et]].show}"
                                  throw MacroError(msg, rhs.asExpr)
-
+                    else
+                      cpsRight
                  case _ => cpsRight
             } else {
                cpsRight
