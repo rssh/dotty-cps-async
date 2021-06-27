@@ -28,4 +28,9 @@ trait AnalysisQuoteScope:
      **/
     def visitDone[F[_]:Type](tree: Tree, ctx: ObservationContext[F])(owner: Symbol): Unit = { }
                  
+     
+    /**
+     * called after tree traverse, to report errors if any
+     */
+    def afterTreeTraverse(flags: AsyncMacroFlags): Unit = { }
 

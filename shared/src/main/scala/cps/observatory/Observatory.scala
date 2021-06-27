@@ -64,6 +64,9 @@ trait ObservatoryQuoteScope:
        if (!enabled.isEmpty) then
           scheduledVisits.put(tree,ListBuffer(enabled: _*))
           batchTraverse.traverseTree(tree)(Symbol.spliceOwner)
+          for(a <- enabled) {
+             a.afterTreeTraverse(asyncMacroFlags)
+          }
 
      end analyzeTree
   

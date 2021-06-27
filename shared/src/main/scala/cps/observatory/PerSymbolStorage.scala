@@ -25,3 +25,6 @@ class PerSymbolStorage[T]:
    def remove(using Quotes)(symbol: quotes.reflect.Symbol): Option[T] =
     storage.remove(symbol.hashCode)
 
+   def foreach(f: T=>Unit): Unit =
+    storage.foreach((k,v) => f(v))
+

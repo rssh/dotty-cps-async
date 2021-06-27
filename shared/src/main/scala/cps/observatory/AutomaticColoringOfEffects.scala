@@ -134,4 +134,16 @@ trait AutomaticColoringOfEffectsQuoteScope:
             ctx.scheduleChildrenVisit(term, this)(owner)
             
 
+    override def afterTreeTraverse(flags: AsyncMacroFlags): Unit = 
+        usageRecords.foreach{ usageRecord =>
+            if (!usageRecord.definedInside && usageRecord.aliases.isEmpty
+                                           && usageRecord.nInAwaits > 1)  then
+                  val allInAwaits = usageRecord.allInAwaits
+                  val frs = allInAwaits.head
+                  report.info("external variable used with await more than once", frs.pos)
+                  for(a <- allInAwaits) {
+                     report.info("await: ", a.pos)
+                  }
+        }
+     
 
