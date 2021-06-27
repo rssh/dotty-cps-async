@@ -85,6 +85,17 @@ If we want to provide support for automatic coloring for your monad, you should 
 Note, that automatic coloring for monads wich is not memoized by default (i.e. all effect monads) is hightly experimental and
  likely will be changed in future.
 
+From 0.9.0:
+
+Coloring rules are following:
+
+ * If some variable is used only in a synchronous context (i.e., via await), the macro will color it as synchronous (i.e., cached if used more than once). 
+ * If some variable is passed to other functions as effect - it is colored as asynchronous (i.e., uncached).   
+ * If the variable is used in synchronous and asynchronous contexts simultaneously, we can't deduce the programmer’s intention, and the coloring macro will report an error. 
+ * If the variable, defined outside of the async block, is used in synchronous context more than once - the macro also will report an error.
+
+
+
 Custom value discard
 --------------------
 
