@@ -145,7 +145,26 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
  */
 trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
 
+   /**
+    * Delayed evaluation of unit. 
+    * If you want to override this for you monad, you should overrid delayed to.
+    **/
    def delayedUnit:F[Unit] = pure(())
+
+   /**
+    *For effect monads it is usually the same, as pure, but
+    * unlike pure, argument of evaluation is lazy.
+    *Note, that delay is close to original `return` in haskell 
+    * with lazy evaluation semantics. So, for effect monads,
+    * representing pure as eager function is a simplification of semantics,
+    * real binding to monads in math sence, should be with `delayi` instead `pure`
+    **/
+   def delay[T](x: =>T) = map(delayedUnit)(_ => x)
+
+   /**
+    * shortcat for delayed evaluation of effect.
+    **/
+   def flatDelay[T](x: => F[T]) = flatMap(delayedUnit)(_ => x)
 
 }
 
