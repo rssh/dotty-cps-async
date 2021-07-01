@@ -1,11 +1,12 @@
 package cps.gopherlike
 
 import cps._
+import cps.macros._
+import cps.macros.forest.TransformUtil
 
 import scala.quoted._
 import scala.compiletime._
 
-import cps.forest.TransformUtil
 
 class SLSelectLoop[F[_]:CpsMonad]:
 

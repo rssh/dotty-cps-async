@@ -11,9 +11,10 @@ import scala.annotation._
 import scala.quoted._
 import scala.compiletime._
 
-import cps.forest._
-import cps.misc._
-import cps.observatory._
+import cps.macros.*
+import cps.macros.forest.*
+import cps.macros.misc.*
+import cps.macros.observatory.*
 
 
 @compileTimeOnly("await should be inside async block")
@@ -118,7 +119,7 @@ object Async {
                     s"AsyncMacroFlags ($flagsExpr) is not a compile-time value", flagsExpr )
       case None =>
      */
-       import cps.macroFlags.{_, given}
+       import cps.macros.flags.{*, given}
             val printTree = Expr.summon[PrintTree.type].isDefined
             val printCode = Expr.summon[PrintCode.type].isDefined
             val debugLevel = Expr.summon[DebugLevel] match

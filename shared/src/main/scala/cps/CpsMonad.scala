@@ -157,7 +157,7 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
     *Note, that delay is close to original `return` in haskell 
     * with lazy evaluation semantics. So, for effect monads,
     * representing pure as eager function is a simplification of semantics,
-    * real binding to monads in math sence, should be with `delayi` instead `pure`
+    * real binding to monads in math sence, should be with `delay` instead `pure`
     **/
    def delay[T](x: =>T) = map(delayedUnit)(_ => x)
 
