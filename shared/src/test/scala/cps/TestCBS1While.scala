@@ -59,7 +59,7 @@ class TestBS1While:
  //    https://github.com/lampepfl/dotty/pull/8057
  //
   @Test def tWhileC1_11(): Unit = 
-     val c = Async.transform[ComputationBound,Int]{
+     val c = macros.Async.transform[ComputationBound,Int]{
         val n = 10
         var s = 0
         var i = 0

@@ -35,7 +35,7 @@ class TestPEMemoizing:
   @Test def test2ValsInBlock(): Unit = 
      var ref = 0
      val effect = PureEffect.delay[Int]({ ref = ref+1; ref})
-     val c = Async.async[PureEffect]{
+     val c = async[PureEffect]{
          val m = effect.memoize()
          val v1 = await(m)
          val x = await(v1)

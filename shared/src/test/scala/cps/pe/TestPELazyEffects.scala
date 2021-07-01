@@ -26,7 +26,7 @@ class TestPELazyEffect:
 
   @Test def testLazyEffectPrint(): Unit = 
      val logger = new ToyLogger()
-     val c = Async.async[PureEffect]{ logger.log("W") }
+     val c = async[PureEffect]{ logger.log("W") }
      println(s"logger lines now: ${logger.lines}")
      assert(logger.lines.isEmpty)
      val future = c.unsafeRunFuture().map(x => assert(logger.lines(0)=="W") )

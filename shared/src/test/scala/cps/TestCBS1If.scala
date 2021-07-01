@@ -6,6 +6,7 @@ import org.junit.Assert._
 import scala.quoted._
 import scala.util.Success
 
+import cps.macros._
 
 class TestBS1If:
 

@@ -21,7 +21,7 @@ class TestPE1:
      FutureCompleter(future)
 
   @Test def tBlockNoAsync(): Unit = 
-     val c = Async.async[PureEffect]{
+     val c = async[PureEffect]{
          val x1 = 3
          val x2 = 4 //await(T1.cbi(4))
          x1 + x2

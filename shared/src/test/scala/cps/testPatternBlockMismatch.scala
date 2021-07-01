@@ -9,7 +9,7 @@ import scala.util.Success
 class TestPatternBlockMismatch:
 
   @Test def tValDef(): Unit = 
-     val c = Async.async[ComputationBound]{
+     val c = async[ComputationBound]{
               { val t = 3 }
               val t = 4 
              }
