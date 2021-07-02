@@ -1,5 +1,6 @@
 package cps
 
+
 enum MonadMemoizationKind:
   case BY_DEFAULT, INPLACE, PURE, DYNAMIC
 

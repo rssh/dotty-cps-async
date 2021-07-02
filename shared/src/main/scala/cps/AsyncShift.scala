@@ -7,6 +7,44 @@ import scala.collection.IndexedSeqOps
 import scala.collection.MapOps
 import scala.collection.immutable
 
+/**
+ * AsynsShift is a marker base trait for typeclass, which provides 'shifted' variants of the hight-order methods 
+ * of `T,` which called when we need to pass a cps-transformed function as an argument for this method.
+ * 
+ *
+ * The general convention is next:
+ *  - Let us have object `O` and method `m(f: A=>B):R` which accept hight-order argument `f: A=>B.`  
+ * (for example - map in List).
+ *  - If we want to defined transformation of argument for any monad F, we should define the `AsyncShift[O]`  
+ * with method 
+ *  ```m[F[_],...](o:O, m:CpsMonad[F])(f: A=>F[B])```.
+ *  - Return type of this method can be F[R]  or R or AsyncSubst[R].
+ * 
+ * Also we should define a given instance of AsyncShift[O], visible from our async block.
+ * I.e. implementation for our list will look as:
+ *
+ * ```
+ *     class MyShiftedList[T] extentds AsyncShift[List[T]] {
+ *
+ *       def map[F[_],S](m:CpsMonad[M], c:List[T])(f: T=>F[S]): F[List[T]] = 
+ *           ... // implementation here
+ *
+ *     }
+ *
+ *     transparent inline given myShiftedList[T]: AsyncShift[List[T]] = MyShiftedList[T]()
+ * ```
+ * 
+ * After this, you can freely use awaits inside "List.map":
+ *
+ *```
+ *    async {
+ *      ....
+ *      val fetched = uris.map(uri => await(fetch(uri)))
+ *      ...
+ *    }
+ *```
+ * see https://rssh.github.io/dotty-cps-async/HighOrderFunctions.html
+ **/
 trait AsyncShift[T]
 
 trait AsyncShiftLowPriority1 {

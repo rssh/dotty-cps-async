@@ -3,17 +3,25 @@ package cps
 import scala.annotation._
 
 /**
- * when customValueDiscard is on,
- * value can be discarded only for types T for which CustomValueDiscard is enabled.
- * And ValueDiscard.apply is called when value is discarded.
+ * When [[cps.customValueDiscard]] is on,
+ * value can be discarded only for types `T` for which exists `ValueDiscard[T]`
+ *
+ * see [chapter in User Guide](https://rssh.github.io/dotty-cps-async/Features.html#custom-value-discard)
  **/
 trait ValueDiscard[T]:
 
+  /**
+   * called when value is discarded. 
+   */
   def apply(value:T): Unit
 
 
 object ValueDiscard:
 
+  /**
+   * Discard when apply do nothing.
+   * Usefule for promitive objects, which can be freely discarded.
+   */
   class EmptyValueDiscard[T] extends ValueDiscard[T]:
 
     inline override def apply(value: T): Unit = {}

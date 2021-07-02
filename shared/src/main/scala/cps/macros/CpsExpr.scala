@@ -1,4 +1,4 @@
-// CPS Transform for tasty block
+// CPS Transform expression building block
 // (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021
 package cps.macros
 

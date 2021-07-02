@@ -16,10 +16,20 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
 
    type WF[X] = F[X]
 
+   /**
+    * Pure - wrap value `t` inside monad. 
+    * Note, that pure use eager evaluation, which is different from Haskell.
+    **/
    def pure[T](t:T):F[T]
 
+   /**
+    * map a function `f` over `fa`
+    **/
    def map[A,B](fa:F[A])(f: A=>B):F[B]
 
+   /**
+    * bind combinator, which compose `f` over `fa` 
+    **/
    def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B]
 
 }
@@ -39,6 +49,9 @@ trait CpsAwaitable[F[_]]
  **/
 trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
+   /**
+    * represent error `e` in monadic context.
+    **/
    def error[A](e: Throwable): F[A]
 
    def flatMapTry[A,B](fa:F[A])(f: Try[A] => F[B]):F[B]
