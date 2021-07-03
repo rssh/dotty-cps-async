@@ -18,6 +18,7 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
 
    /**
     * Pure - wrap value `t` inside monad. 
+    *
     * Note, that pure use eager evaluation, which is different from Haskell.
     **/
    def pure[T](t:T):F[T]
@@ -54,11 +55,21 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
     **/
    def error[A](e: Throwable): F[A]
 
+   /**
+    * flatMap over result of checked evaluation of `A` 
+    **/
    def flatMapTry[A,B](fa:F[A])(f: Try[A] => F[B]):F[B]
 
+   /**
+    * map over result of checked evaluation of `A` 
+    **/
    def mapTry[A,B](fa:F[A])(f: Try[A] => B):F[B] =
        flatMapTry(fa)(x => pure(f(x)))
 
+   /**
+    * restore fa, ie if fa sucessful - return fa, 
+    *  otherwise apply fx to received error.
+    **/
    def restore[A](fa: F[A])(fx:Throwable => F[A]): F[A] =
          flatMapTry[A,A](fa){ x =>
            x match
@@ -71,6 +82,9 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
          }
 
 
+   /**
+    * ensure that `action` will run before getting value from `fa`
+    **/
    def withAction[A](fa:F[A])(action: =>Unit):F[A] =
     flatMap(
        restore(fa){ ex =>
@@ -124,6 +138,7 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
          case NonFatal(ex) => error(ex)
        }
 
+
    def fromTry[A](r: Try[A]): F[A] =
        r match
          case Success(a) => pure(a)
@@ -136,7 +151,10 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
  * Monad, which is compatible with passing data via callbacks.
  *
  * Interoperability with Future:
- * allows  async[F]{ .. await[Future](..) ... }
+ * allows  
+ * ```
+ *     async[F]{ .. await[Future](..) ... }
+ * ```
  **/
 trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
@@ -167,6 +185,7 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
    /**
     *For effect monads it is usually the same, as pure, but
     * unlike pure, argument of evaluation is lazy.
+    *
     *Note, that delay is close to original `return` in haskell 
     * with lazy evaluation semantics. So, for effect monads,
     * representing pure as eager function is a simplification of semantics,
@@ -206,8 +225,15 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F]  {
     **/
    def spawnEffect[A](op: =>F[A]): F[Spawned[A]]
 
+   /**
+    * join the `op` computation: i.e. result is `op` which will become available
+    * after the spawned execution will be done.
+    **/
    def join[A](op: Spawned[A]): F[A]
 
+   /**
+    * Send cancel signal, which can be accepted or rejected by `op` flow.
+    **/
    def tryCancel[A](op: Spawned[A]): F[Unit]
 
    /**
@@ -246,7 +272,14 @@ trait CpsConcurrentEffectMonad[F[_]] extends CpsConcurrentMonad[F] with CpsEffec
  * be evaluated, event if we drop result.
  *
  * Interoperability with Future:
- * allows  async[Future]{ .. await[F](..) ... }
+ * allows  
+ *```
+ *    async[Future]{ 
+ *       ... 
+ *       await[F](..)
+ *       ... 
+ *    }
+ *```
  **/
 trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
 
@@ -268,16 +301,6 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
 
 }
 
-
-trait CpsFulfillingMonad[F[_]] extends CpsAsyncMonad[F] {
-
-   /**
-    * block until monad will be finished or timeout will be expired.
-    * Note, that using this operation inside async is dangerous.
-    **/
-   def fulfill[T](t:F[T], timeout: Duration): Option[Try[T]]
-
-}
 
 
 object CpsMonad:
