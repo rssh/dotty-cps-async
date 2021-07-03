@@ -67,6 +67,13 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
        flatMapTry(fa)(x => pure(f(x)))
 
    /**
+    * synonym for flatMapTry
+    * needed for processing  awaits inside mapTry.
+    **/
+   def mapTryAsync[A,B](fa:F[A])(f: Try[A]=>F[B]):F[B]=
+        flatMapTry(fa)(f)
+
+   /**
     * restore fa, ie if fa sucessful - return fa, 
     *  otherwise apply fx to received error.
     **/
@@ -105,7 +112,17 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
         }
       }
 
+   /**
+    * async shift of `withAction`. 
+    *
+    * This method is substituted instead withAction, when we use `await` inside `withAction` argument.
+    **/
+   def withActionAsync[A](fa:F[A])(action: () => F[Unit]):F[A] =
+    withAsyncAction(fa)(action())
 
+   /**
+    * return result of `fa` after completition of `action`.
+    **/
    def withAsyncAction[A](fa:F[A])(action: => F[Unit]):F[A] =
     flatMap(
        restore(fa){ ex =>
@@ -119,10 +136,9 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
         map(tryImpure(action))(_ => x)
     }
 
-   // for cps-transform of monad operations.
-   def withActionAsync[A](fa:F[A])(action: () => F[Unit]):F[A] =
-      withAsyncAction(fa)(action())
-
+   /**
+    * try to evaluate synchonious operation and wrap successful or failed result into `F`.
+    **/
    def tryPure[A](a: =>A):F[A] =
        try {
          pure(a)
@@ -131,6 +147,20 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
          case NonFatal(ex) => error(ex)
        }
 
+   /**
+    * async shift of tryPure.
+    **/
+   def tryPureAsync[A](a: ()=>F[A]): F[A] =
+       try {
+         a()
+       } catch {
+         case NonFatal(ex) => error(ex)
+       }
+
+
+   /**
+    * try to evaluate async operation and wrap successful or failed result into `F`.
+    **/
    def tryImpure[A](a: =>F[A]):F[A] =
        try {
          a
@@ -191,12 +221,12 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
     * representing pure as eager function is a simplification of semantics,
     * real binding to monads in math sence, should be with `delay` instead `pure`
     **/
-   def delay[T](x: =>T) = map(delayedUnit)(_ => x)
+   def delay[T](x: =>T):F[T] = map(delayedUnit)(_ => x)
 
    /**
     * shortcat for delayed evaluation of effect.
     **/
-   def flatDelay[T](x: => F[T]) = flatMap(delayedUnit)(_ => x)
+   def flatDelay[T](x: => F[T]):F[T] = flatMap(delayedUnit)(_ => x)
 
 }
 

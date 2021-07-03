@@ -566,7 +566,8 @@ trait ApplyTreeTransform[F[_],CT]:
                         case failure:ImplicitSearchFailure =>
                           throw new MacroError(s"Can't find asyn shift for cpsMonad: ${failure.explanation}", posExpr(term))
                     else
-                      throw new MacroError("Unimplemented shift for CpsMonad", posExpr(term))
+                      //throw new MacroError("Unimplemented shift for CpsMonad", posExpr(term))
+                      shiftSelectTypeApplyApply(s, targs, shiftedArgs)
                   else 
                     shiftSelectTypeApplyApply(s, targs, shiftedArgs)
        case s@Select(qual,name) =>
