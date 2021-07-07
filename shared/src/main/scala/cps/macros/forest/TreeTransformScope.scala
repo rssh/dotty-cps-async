@@ -73,6 +73,13 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
 
    case class MessageWithPos(message:String, pos: qctx.reflect.Position)
 
+   def isInMonad(tpe: qctx.reflect.TypeRepr): Boolean =
+      given Type[F] = fType
+      tpe.widen.asType match
+        case '[F[r]] => true
+        case _  => false
+
+
 }
 
 

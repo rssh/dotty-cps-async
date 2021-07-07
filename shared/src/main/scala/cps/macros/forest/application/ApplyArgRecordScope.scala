@@ -16,6 +16,56 @@ trait ApplyArgRecordScope[F[_], CT]:
 
   import qctx.reflect._
 
+  case class ApplyArgsSummaryPropertiesStep1(
+    hasAsync: Boolean,
+    hasShiftedLambda: Boolean,
+    shouldBeChangedSync: Boolean
+  ):
+
+    def merge(other: ApplyArgRecord): ApplyArgsSummaryPropertiesStep1 =
+      ApplyArgsSummaryPropertiesStep1(
+        hasAsync || other.isAsync,
+        hasShiftedLambda || other.hasShiftedLambda,
+        shouldBeChangedSync || other.shouldBeChangedSync,
+      )
+
+    def mergeSeq(seq: Seq[ApplyArgRecord]): ApplyArgsSummaryPropertiesStep1 =
+      seq.foldLeft(this)((s,e) => s.merge(e))
+
+    def mergeSeqSeq(seqSeq: Seq[Seq[ApplyArgRecord]]): ApplyArgsSummaryPropertiesStep1 =
+      seqSeq.foldLeft(this)((s,e) => s.mergeSeq(e))
+
+
+  object ApplyArgsSummaryPropertiesStep1:
+
+     def mergeSeqSeq(args: Seq[Seq[ApplyArgRecord]]): ApplyArgsSummaryPropertiesStep1 =
+        val zero = ApplyArgsSummaryPropertiesStep1(false,false,false)
+        zero.mergeSeqSeq(args)
+
+  case class ApplyArgsSummaryProperties(
+        step1: ApplyArgsSummaryPropertiesStep1,
+        usePrepend: Boolean
+  ):
+
+     def hasAsync: Boolean = step1.hasAsync
+     def hasShiftedLambda: Boolean = step1.hasShiftedLambda
+     def shouldBeChangedSync: Boolean = step1.shouldBeChangedSync
+
+     def mergeStep2SeqSeq(seqSeq: Seq[Seq[ApplyArgRecord]]): ApplyArgsSummaryProperties =
+       seqSeq.foldLeft(this)((s,e)=> s.mergeStep2Seq(e))
+
+     def mergeStep2Seq(seq: Seq[ApplyArgRecord]): ApplyArgsSummaryProperties =
+       seq.foldLeft(this)((s,e)=> s.mergeStep2(e))
+
+     def mergeStep2(r: ApplyArgRecord): ApplyArgsSummaryProperties =
+       ApplyArgsSummaryProperties(step1=step1, usePrepend = usePrepend || r.usePrepend(step1.hasAsync))
+
+  object ApplyArgsSummaryProperties:
+
+     def mergeSeqSeq(seqSeq: Seq[Seq[ApplyArgRecord]]): ApplyArgsSummaryProperties =
+        val step1 = ApplyArgsSummaryPropertiesStep1.mergeSeqSeq(seqSeq)
+        ApplyArgsSummaryProperties(step1,false).mergeStep2SeqSeq(seqSeq)
+
 
   sealed trait ApplyArgRecord:
     def term: Term
@@ -23,6 +73,9 @@ trait ApplyArgRecordScope[F[_], CT]:
     def identArg(existAsync:Boolean): Term
     def isAsync: Boolean
     def hasShiftedLambda: Boolean
+
+     // means, that the value should be changed during regeneration, event it is sync.
+    def shouldBeChangedSync: Boolean
 
     // means, that the value of argument is independed from the order of evaluation of aguments in a function.
     def noOrderDepended: Boolean
@@ -57,6 +110,7 @@ trait ApplyArgRecordScope[F[_], CT]:
     override def isAsync = elements.exists(_.isAsync)
     override def hasShiftedLambda = elements.exists(_.hasShiftedLambda)
     override def noOrderDepended = elements.forall(_.noOrderDepended)
+    override def shouldBeChangedSync:Boolean = elements.exists(_.shouldBeChangedSync)
     override def shift() = copy(elements = elements.map(_.shift()))
 
     override def append(tree: CpsTree): CpsTree =
@@ -113,6 +167,7 @@ trait ApplyArgRecordScope[F[_], CT]:
      def isAsync = false
      def hasShiftedLambda: Boolean = false
      def noOrderDepended = termIsNoOrderDepended(term)
+     def shouldBeChangedSync:Boolean = false
      def identArg(existsAsync: Boolean): Term = term
      def shift(): ApplyArgRecord = this
      override def append(tree: CpsTree): CpsTree = tree
@@ -129,6 +184,7 @@ trait ApplyArgRecordScope[F[_], CT]:
      def isAsync = termCpsTree.isAsync
      def hasShiftedLambda: Boolean = false
      def noOrderDepended = termIsNoOrderDepended(term)
+     def shouldBeChangedSync:Boolean = false
      def identArg(existsAsync: Boolean): Term =
             if (existsAsync) ident else term
      def shift(): ApplyArgRecord = this
@@ -141,28 +197,55 @@ trait ApplyArgRecordScope[F[_], CT]:
        term: Term,   // Lambda,  see coding of Lambda in Tasty Reflect.
        index: Int,
        cpsBody: CpsTree,
-       shifted: Boolean
+       shifted: Boolean,
+       existsLambdaUnshift: Boolean
   ) extends ApplyArgRecord {
 
-       def hasShiftedLambda: Boolean = cpsBody.isAsync
+       def hasShiftedLambda: Boolean = cpsBody.isAsync && !existsLambdaUnshift
 
        def isAsync: Boolean = false
 
        def noOrderDepended: Boolean = true
 
+       def shouldBeChangedSync:Boolean = cpsBody.isChanged || (cpsBody.isAsync && existsLambdaUnshift )
+
        def identArg(existsAsync:Boolean): Term =
          if (cpsCtx.flags.debugLevel >= 15) then
             cpsCtx.log(s"ApplyArgLambdaRecord::identArg, cpsBody=${cpsBody}")
             cpsCtx.log(s"ApplyArgLambdaRecord::identArg, hasShiftedLambda=${hasShiftedLambda}, shifted=${shifted}")
-         if (hasShiftedLambda || shifted)
-            val (params, body) = term match
-              case Lambda(params, body) => (params, body)
-              case _ =>
-                 throw MacroError(s"Lambda expexted, we have ${term.asExpr.show}",term.asExpr)
+         if (hasShiftedLambda || shifted) then
+            val (params, body) = extractParamsAndBody()
             shiftedArgExpr(existsAsync, term.tpe, params, body)
+         else if (shouldBeChangedSync) then
+            val (params, body) = extractParamsAndBody()
+            val paramNames = params.map(_.name)
+            val paramTypes = params.map(_.tpt.tpe)
+            cpsBody.syncOrigin match
+              case Some(changedBody) => 
+                 val mt = MethodType(paramNames)(_ => paramTypes, _ => changedBody.tpe.widen)
+                 Lambda(Symbol.spliceOwner, mt,
+                       (owner,args) => changeArgs(params,args,changedBody,owner).changeOwner(owner))
+              case None =>
+                 if (existsLambdaUnshift) then
+                    body.tpe.widen.asType match
+                      case '[F[r]] =>
+                         val nBody = '{ ${cpsCtx.monad}.flatMap(
+                                             ${cpsBody.transformed.asExprOf[F[F[r]]]})((x:F[r])=>x) }.asTerm
+                         val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
+                         Lambda(Symbol.spliceOwner, mt, 
+                              (owner,args) => changeArgs(params,args,nBody,owner).changeOwner(owner))
+                      case _ =>
+                         throw MacroError(s"F[?] expected, we have ${body.tpe.widen.show}",term.asExpr)
+                 else
+                    throw MacroError(s"Internal error: unshift is called when it not exists",term.asExpr)
          else
             term
 
+       def extractParamsAndBody(): (List[ValDef], Term) =
+         term match
+           case Lambda(params, body) => (params, body)
+           case _ =>
+              throw MacroError(s"Lambda expexted, we have ${term.asExpr.show}",term.asExpr)
 
        def shiftedArgExpr(existsAsync:Boolean, identType: TypeRepr, params: List[ValDef], body:Term): Term =
          identType match
@@ -331,6 +414,7 @@ trait ApplyArgRecordScope[F[_], CT]:
        def hasShiftedLambda: Boolean = nested.hasShiftedLambda
        def isAsync: Boolean = nested.isAsync
        def noOrderDepended = nested.noOrderDepended
+       def shouldBeChangedSync = nested.shouldBeChangedSync
        def identArg(existsAsync: Boolean): Term = NamedArg(name, nested.identArg(existsAsync))
        def shift(): ApplyArgRecord = copy(nested=nested.shift())
        def append(a: CpsTree): CpsTree = nested.append(a)
@@ -353,6 +437,7 @@ trait ApplyArgRecordScope[F[_], CT]:
     def isAsync: Boolean = cpsTree.isAsync
     def hasShiftedLambda: Boolean = shifted
     def noOrderDepended: Boolean = true
+    def shouldBeChangedSync: Boolean = false
     def shift() = copy(shifted = true)
     def append(tree: CpsTree): CpsTree = tree
 
@@ -367,6 +452,7 @@ trait ApplyArgRecordScope[F[_], CT]:
        def hasShiftedLambda: Boolean = nested.hasShiftedLambda
        def isAsync: Boolean = nested.isAsync
        def noOrderDepended = nested.noOrderDepended
+       def shouldBeChangedSync: Boolean = nested.shouldBeChangedSync
        def identArg(existsAsync:Boolean): Term = nested.identArg(existsAsync)
        def shift(): ApplyArgRecord = copy(nested=nested.shift())
        def append(a: CpsTree): CpsTree =

@@ -24,7 +24,7 @@ object ValDefTransform:
      rhsType match 
         case '[et] =>
             if cpsCtx.flags.debugLevel > 15 then
-               cpsCtx.log(s"rightPart is ${TransformUtil.safeShow(rhs)}")
+               cpsCtx.log(s"ValDef::rightPart is ${TransformUtil.safeShow(rhs)}")
             val cpsRight = Async.nestTransform(rhs.asExprOf[et],cpsCtx)
             val memCpsRight:CpsExpr[F,et] = if (cpsCtx.flags.automaticColoring 
                                               && cpsCtx.memoization.isDefined
@@ -88,7 +88,7 @@ object ValDefTransform:
                RhsFlatMappedCpsExpr(using quotes)(monad, Seq(), valDef, memCpsRight, CpsExpr.unit(monad))
             else 
                if (cpsCtx.flags.debugLevel > 15) 
-                 cpsCtx.log(s"ValDef: rightPart no async, memCpsRight.transformed=${TransformUtil.safeShow(memCpsRight.transformed.asTerm)}")
+                 cpsCtx.log(s"ValDef: rightPart no async, rhs.isChanged = ${memCpsRight.isChanged}  memCpsRight.transformed=${TransformUtil.safeShow(memCpsRight.transformed.asTerm)}")
                val rhsTerm = memCpsRight.syncOrigin.get.asTerm
                val nextValDef = if (memCpsRight.isChanged) {
                                      ValDef(valDef.symbol, Some(rhsTerm.changeOwner(valDef.symbol)))

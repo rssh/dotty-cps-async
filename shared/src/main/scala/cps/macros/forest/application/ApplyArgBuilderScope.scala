@@ -80,7 +80,7 @@ trait ApplyArgBuilderScope[F[_],CT] {
             val nextRecord = if (paramsDescriptor.isByName(acc.paramIndex)) {
                                throw MacroError("passing lamda as byName params is not supported yet",posExpr(t))
                              } else {
-                               ApplyArgLambdaRecord(lambda,acc.posIndex,cpsBody, false)
+                               ApplyArgLambdaRecord(lambda,acc.posIndex,cpsBody, false, isInMonad(body.tpe))
                              }
             acc.advance(nextRecord)
          case namedArg@NamedArg(name, arg) =>
@@ -133,13 +133,13 @@ trait ApplyArgBuilderScope[F[_],CT] {
              if (termCpsTree.isLambda) 
                termCpsTree match
                   case AsyncLambdaCpsTree(originLambda,params,cpsBody,otpe) =>
-                          val nextRecord = ApplyArgLambdaRecord(originLambda,acc.posIndex,cpsBody, false)
-                          acc.advance(nextRecord)
+                     val nextRecord = ApplyArgLambdaRecord(originLambda,acc.posIndex,cpsBody,false,isInMonad(otpe))
+                     acc.advance(nextRecord)
                   case BlockCpsTree(prevs, last) => 
-                          // TODO: create instance of ApplyArgLambdaBlockRecord   
-                          throw MacroError(s"Lambda inside blocks is not supported in arguments yet", posExpr(t))
+                     // TODO: create instance of ApplyArgLambdaBlockRecord   
+                     throw MacroError(s"Lambda inside blocks is not supported in arguments yet", posExpr(t))
                   case _ =>
-                          throw MacroError(s"Lambda expected", posExpr(t))
+                     throw MacroError(s"Lambda expected", posExpr(t))
              else
                val argName: String = "a" + acc.posIndex // TODO: get name from params
                val widenType = TransformUtil.veryWiden(t.tpe)
