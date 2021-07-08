@@ -547,21 +547,7 @@ trait ApplyTreeTransform[F[_],CT]:
         cpsCtx.log(s"shiftCaller, t=$term")
     term match
        case TypeApply(s@Select(qual,name),targs) =>
-                  if (qual.tpe =:= monad.tpe)
-                    if (s.symbol == mapSymbol || s.symbol == flatMapSymbol)
-                      // TODO: add more symbols
-                      val (searchResult, shiftTp) = findAsyncShiftTerm(qual)
-                      searchResult match
-                        case shiftQual:ImplicitSearchSuccess =>
-                          val newSelect = Select.unique(shiftQual.tree,s.name)
-                          Apply(TypeApply(newSelect, targs).appliedTo(qual),shiftedArgs)
-                        case failure:ImplicitSearchFailure =>
-                          throw new MacroError(s"Can't find asyn shift for cpsMonad: ${failure.explanation}", posExpr(term))
-                    else
-                      //throw new MacroError("Unimplemented shift for CpsMonad", posExpr(term))
-                      shiftSelectTypeApplyApply(s, targs, shiftedArgs)
-                  else 
-                    shiftSelectTypeApplyApply(s, targs, shiftedArgs)
+                  shiftSelectTypeApplyApply(s, targs, shiftedArgs)
        case s@Select(qual,name) =>
                     shiftSelectTypeApplyApply(s, Nil, shiftedArgs)
        //case TypeApply(x, targs) =>  // now scala hvw no multiple type params
