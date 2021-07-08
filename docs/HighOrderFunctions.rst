@@ -204,7 +204,7 @@ Also we can see, that our channel structure is already build on top of `F[_]`, s
 About name for `mapAsync` -- dotty-cps-async supports both variant: camelCase `mapAsync` and snake_case `map_async`. We propose to use next convention when naming such methods:  use `method_async` when async method unlikely will be called by programmer directly and used only for substitution in highg-order function; use `methodAsync` when we expect that developer can use this method directly along with cps substitution.
 
 
-Async high-order functional interfaces
+Async high-order functional interfaces  (from 0.9.0)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
  For a case with an acynchronous high-order function:  `f:(A=>F[B])`, the `async` macro can automatically transform the asynchronous result to have the same signature, so you can use awaits inside async lambdas without implementing additional methods or typeclasses.
