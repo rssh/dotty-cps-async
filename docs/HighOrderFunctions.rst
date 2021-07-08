@@ -207,6 +207,6 @@ About name for `mapAsync` -- dotty-cps-async supports both variant: camelCase `m
 Async high-order functional interfaces  (from 0.9.0)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- For a case with an acynchronous high-order function:  `f:(A=>F[B])`, the `async` macro can automatically transform the asynchronous result to have the same signature, so you can use awaits inside async lambdas without implementing additional methods or typeclasses.
+ For a case with an acynchronous high-order function interfaces (i.e., methods wich accept functions like `f:(A=>F[B])` ), the `async` macro can automatically transform the asynchronous result to have the same signature, so you can use awaits inside async lambdas without implementing additional methods or typeclasses.
 
 
