@@ -5,7 +5,8 @@ Automatic Coloring
 ------------------
 
 
-Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  And we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
+Sometimes, especially when we work with distributes systems, most of our API call are asynchronous and should be prefixed by `await`.  And we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
+
 If we want to put asynchronous expression into synchronous function, we should write `await(expr)`  instead `expr`,  for transforming synchronous code into asynchronous.
 (see http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/ for more detailed explanation )
 
