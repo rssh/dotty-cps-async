@@ -1,8 +1,8 @@
 //val dottyVersion = "3.0.2-RC1-bin-SNAPSHOT"
-val dottyVersion = "3.0.1-RC2"
-//val dottyVersion = "3.0.0"
+//val dottyVersion = "3.0.1-RC2"
+val dottyVersion = "3.0.1"
 
-ThisBuild/version := "0.9.0-SNAPSHOT"
+ThisBuild/version := "0.9.0"
 ThisBuild/versionScheme := Some("semver-spec")
 
 
@@ -42,6 +42,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
                 "-source-links:shared=github://rssh/dotty-cps-async/master#shared",
                 "-source-links:jvm=github://rssh/dotty-cps-asyncc/master/#jvm"),
         libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
+        mimaPreviousArtifacts := Set("com.github.rssh" %% "dotty-cps-async" % "0.8.1")
     ).jsSettings(
         scalaJSUseMainModuleInitializer := true,
         Compile / doc / scalacOptions := Seq("-groups",  
