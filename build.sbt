@@ -2,7 +2,7 @@
 //val dottyVersion = "3.0.1-RC2"
 val dottyVersion = "3.0.1"
 
-ThisBuild/version := "0.9.0"
+ThisBuild/version := "0.9.1-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
 
 
@@ -47,7 +47,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
         scalaJSUseMainModuleInitializer := true,
         Compile / doc / scalacOptions := Seq("-groups",  
                 "-source-links:shared=github://rssh/dotty-cps-async/master#shared",
-                "-source-links:js=github://rssh/dotty-cps-asyncc/master/#js"),
+                "-source-links:js=github://rssh/dotty-cps-async/master/#js"),
         libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.5.1" % Test).cross(CrossVersion.for3Use2_13)
     )
 
