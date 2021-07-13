@@ -48,7 +48,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
         Compile / doc / scalacOptions := Seq("-groups",  
                 "-source-links:shared=github://rssh/dotty-cps-async/master#shared",
                 "-source-links:js=github://rssh/dotty-cps-async/master/#js"),
-        libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.5.1" % Test).cross(CrossVersion.for3Use2_13)
+        libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.6.0" % Test).cross(CrossVersion.for3Use2_13)
     )
 
 lazy val CpsJVM = config("cps.jvm")
