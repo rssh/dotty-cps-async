@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>High-order functions. &#8212; dotty-cps-async 0.9.0-SNAPSHOT documentation</title>
+    <title>High-order functions. &#8212; dotty-cps-async 0.9.0 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>  
@@ -194,6 +194,12 @@ Also, we have the method <cite>_origin</cite>,  which is called when we have no 
 <p>Also we can see, that our channel structure is already build on top of <cite>F[_]</cite>, so it is not necessory to pass F to method parameter.</p>
 <p>About name for <cite>mapAsync</cite> – dotty-cps-async supports both variant: camelCase <cite>mapAsync</cite> and snake_case <cite>map_async</cite>. We propose to use next convention when naming such methods:  use <cite>method_async</cite> when async method unlikely will be called by programmer directly and used only for substitution in highg-order function; use <cite>methodAsync</cite> when we expect that developer can use this method directly along with cps substitution.</p>
 </div>
+<div class="section" id="async-high-order-functional-interfaces-from-0-9-0">
+<h3>Async high-order functional interfaces  (from 0.9.0)<a class="headerlink" href="#async-high-order-functional-interfaces-from-0-9-0" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>For a case with an acynchronous high-order function interfaces (i.e., methods wich accept functions like <cite>f:(A=&gt;F[B])</cite> ), the <cite>async</cite> macro can automatically transform the asynchronous result to have the same signature, so you can use awaits inside async lambdas without implementing additional methods or typeclasses.</p>
+</div></blockquote>
+</div>
 </div>
 </div>
 
@@ -212,6 +218,7 @@ Also, we have the method <cite>_origin</cite>,  which is called when we have no 
 <li><a class="reference internal" href="#object-oriented-interface">Object oriented interface.</a></li>
 <li><a class="reference internal" href="#special-semantics-for-substitutions-in-call-chains">Special semantics for substitutions in call chains</a></li>
 <li><a class="reference internal" href="#builder-methods">Builder methods.</a></li>
+<li><a class="reference internal" href="#async-high-order-functional-interfaces-from-0-9-0">Async high-order functional interfaces  (from 0.9.0)</a></li>
 </ul>
 </li>
 </ul>
@@ -257,7 +264,7 @@ Also, we have the method <cite>_origin</cite>,  which is called when we have no 
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>

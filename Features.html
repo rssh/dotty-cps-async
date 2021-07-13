@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Additional Features &#8212; dotty-cps-async 0.9.0-SNAPSHOT documentation</title>
+    <title>Additional Features &#8212; dotty-cps-async 0.9.0 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>  
@@ -45,8 +45,8 @@
 <h1>Additional Features<a class="headerlink" href="#additional-features" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="automatic-coloring">
 <h2>Automatic Coloring<a class="headerlink" href="#automatic-coloring" title="Permalink to this headline">¶</a></h2>
-<p>Sometimes, especially when we work with distributes systems, most of our API call are asynchronous, and near each API call should be prefixed y await.  And we should remember what functions we should call as async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
-If we want to put asynchronous expression into synchronous function, we should write <cite>await(expr)</cite>  instead <cite>expr</cite>,  for transforming synchronous code into asynchronous.
+<p>Sometimes, especially when we work with distributes systems, most of our API call are asynchronous and should be prefixed by <cite>await</cite>.  And we should remember what functions we should call as async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).</p>
+<p>If we want to put asynchronous expression into synchronous function, we should write <cite>await(expr)</cite>  instead <cite>expr</cite>,  for transforming synchronous code into asynchronous.
 (see <a class="reference external" href="http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/</a> for more detailed explanation )</p>
 <p>In scala we have types, so why not to ask the compiler to do async coloring automatically?
 So, next code:</p>
@@ -109,6 +109,16 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 <dt>Note, that automatic coloring for monads wich is not memoized by default (i.e. all effect monads) is hightly experimental and</dt><dd><p>likely will be changed in future.</p>
 </dd>
 </dl>
+<p>From 0.9.0:</p>
+<p>Coloring rules are following:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If some variable is used only in a synchronous context (i.e., via await), the macro will color it as synchronous (i.e., cached if used more than once).</p></li>
+<li><p>If some variable is passed to other functions as effect - it is colored as asynchronous (i.e., uncached).</p></li>
+<li><p>If the variable is used in synchronous and asynchronous contexts simultaneously, we can’t deduce the programmer’s intention, and the coloring macro will report an error.</p></li>
+<li><p>If the variable, defined outside of the async block, is used in synchronous context more than once - the macro also will report an error.</p></li>
+</ul>
+</div></blockquote>
 </div>
 <div class="section" id="custom-value-discard">
 <h2>Custom value discard<a class="headerlink" href="#custom-value-discard" title="Permalink to this headline">¶</a></h2>
@@ -240,7 +250,7 @@ and included in our regression suite.</p>
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>
