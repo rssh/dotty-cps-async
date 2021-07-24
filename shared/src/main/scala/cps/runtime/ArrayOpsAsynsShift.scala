@@ -19,7 +19,7 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
   }
 
   def foreachSequential[F[_],U](arrayOps: ArrayOps[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] =  {
-     import CpsMonad.ForSyntax._
+     import cps.syntax.*
      given CpsMonad[F] = monad
      arrayOps.foldLeft[F[Unit]](monad.pure(())){ (s,e) =>
         // use run f(e) only when prev. is evaluated

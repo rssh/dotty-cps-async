@@ -6,6 +6,8 @@ import org.junit.Assert._
 import scala.quoted._
 import scala.util.Success
 
+import cps.syntax.*
+
 def TestCBS1Apply_toplevelfun(x: =>Int):Int = x + x
 
 class TestCBS1Apply:
@@ -48,14 +50,12 @@ class TestCBS1Apply:
 
      def znt_async[F[_],T <: Any](m:CpsMonad[F],x:()=>F[T]): F[String] =
             given CpsMonad[F] = m
-            import CpsMonad.ForSyntax._
             for{ fx1 <- x()
                 fx2 <- x()
             } yield fx1.toString + fx2.toString
 
      def zntCurried_async[F[_],T <: Any](m: CpsMonad[F], x: ()=>F[T])(y: ()=>F[T]): F[String] =
             given CpsMonad[F] = m
-            import CpsMonad.ForSyntax._
             for{ fx1 <- x()
                  fy1 <- y()
                  fx2 <- x()

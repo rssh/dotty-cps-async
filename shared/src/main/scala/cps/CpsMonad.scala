@@ -336,19 +336,3 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
 
 }
 
-
-
-object CpsMonad:
-
-  object ForSyntax:
-
-    extension [F[_],T,S](x:F[T])(using m:CpsMonad[F])
-
-      def flatMap(f: T=>F[S]): F[S] =
-         m.flatMap(x)(f)
-
-      def map(f: T=>S): F[S] =
-         m.map(x)(f)
-
-
-
