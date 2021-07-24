@@ -40,7 +40,7 @@ Can be written without await as:
      }
 
 
-If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation) then implicit await is enough for automatic coloring.  But what to do with pure effect monads, which holds computations without starting them?
+If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation), then implicit await is enough for automatic coloring.  But what to do with pure effect monads, which holds computations without starting them?
 
 Let's look on the next code:
 
@@ -167,6 +167,28 @@ Assuming that logging is IO operation, i.e. log have signature
 
 Without custom value discarding, the log statement will be dropped.  (Type of `if` with one branch is 'Unit', so type of the first branch should be 'Unit', so log statement will be discarded).
 Dotty-cps-async provides special `AwaitValueDiscard <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L27>`_  which force monad to be evaluated before be discarded.  We recommend use this discard as default for IO[Unit].
+
+
+Short syntax for await
+----------------------
+
+It can be helpful when monad or environment does not support automatic coloring, but the default `await` syntax is too heavy.  For this case, we define `unary_!` operator for use instead of `await`. 
+
+Example:
+
+.. code-block:: scala
+
+    import cps.syntax.`unary_!`
+
+    val x = username + !fetchToken(data)
+
+
+Inside the async block this will be a synonim for
+
+.. code-block:: scala
+
+    val x = username + await(fetchToken(data))
+
 
 
 

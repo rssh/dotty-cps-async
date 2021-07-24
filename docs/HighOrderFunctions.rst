@@ -133,7 +133,7 @@ Special semantics for substitutions in call chains
 
 Here usual semantics of `withFilter` assume that we iterate `urls` only once.  But if we will translate this expression according to standard rules, we will receive two passes: one pass in async `withFilter` and the second in `flatMap`.
 
-To perform iteration once, we translate `withFilter` not to F[WithFilter] but to a substituted type DelayedWithFilter , which holds received predicate and delays actual evaluation upon the call of the next operation in chain.
+To perform iteration once, we translate `withFilter` not to F[WithFilter] but to a substituted type DelayedWithFilter , which holds the received predicate and delays actual evaluation upon the call of the next operation in the chain.
 
 The implementation of this class looks like:
 

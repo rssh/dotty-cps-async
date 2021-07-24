@@ -9,6 +9,8 @@ import cps.*
 
 /**
  * short synonym of `await`
+ * It can be helpful when monad or environment does not support automatic coloring, but the default `await` 
+ * syntax is too heavy. 
  **/
 extension [F[_],T](ft:F[T])(using CpsAwaitable[F])
 
