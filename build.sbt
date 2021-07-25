@@ -2,7 +2,7 @@
 //val dottyVersion = "3.0.1-RC2"
 val dottyVersion = "3.0.1"
 
-ThisBuild/version := "0.9.1-SNAPSHOT"
+ThisBuild/version := "0.9.1"
 ThisBuild/versionScheme := Some("semver-spec")
 
 

@@ -86,7 +86,6 @@ If we want to provide support for automatic coloring for your monad, you should 
 Note, that automatic coloring for monads wich is not memoized by default (i.e. all effect monads) is hightly experimental and
  likely will be changed in future.
 
-From 0.9.0:
 
 Coloring rules are following:
 
@@ -221,7 +220,7 @@ It is also possible to compile sip22 async code without changing of the source c
 
 .. code-block:: scala
 
- libraryDependencies += "com.github.rssh" %% "shim-scala-async-dotty-cps-async" % "0.8.1",
+ libraryDependencies += "com.github.rssh" %% "shim-scala-async-dotty-cps-async" % "0.9.1",
 
 
 Note that compatibility was not a primary goal during the development of dotty-cps-async. Generated code is quite different, so if you need a bug-to-bug compatible version of scala2 async, you should use the port of the original -XAsync compiler plugin.
