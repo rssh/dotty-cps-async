@@ -19,7 +19,7 @@ class TestIssue45:
   import scala.concurrent.ExecutionContext.Implicits.global 
 
 
-  @Test @Ignore def runSpawn(): Unit =
+  @Test def runSpawn(): Unit =
     val threadIndexOutside1 = Thread.currentThread().getId()
     val beforeStart = System.currentTimeMillis()
     val f = async[Future]{
@@ -30,7 +30,9 @@ class TestIssue45:
     val afterStart = System.currentTimeMillis()
     val threadIndexOutside2 = Thread.currentThread().getId()
     assert(threadIndexOutside1  == threadIndexOutside2)
-    assert(afterStart - beforeStart < 100)
+    val startDuration = afterStart - beforeStart 
+    println(s"startDuration=${startDuration}")
+    assert(startDuration < 100)
     val r: Long = Await.result(f, 1000 milliseconds)
-    assert(r == threadIndexOutside2)
+    assert(r != threadIndexOutside2)
     

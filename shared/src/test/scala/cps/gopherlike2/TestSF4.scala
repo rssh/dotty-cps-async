@@ -36,15 +36,15 @@ class TestSF4:
      //}
 
      
-     try
-       val generator = async[Future] {
-         select.fold(in){ (ch,s) =>
-            s.apply1(ch, v => ch)
-         }
-       }
-     catch
-       case ex: RuntimeException =>
-        assert(ex.getMessage() == "TestCase:runAsync:NotImplemented")
+     val generator = async[Future] {
+         try
+           select.fold(in){ (ch,s) =>
+              s.apply1(ch, v => ch)
+           }
+         catch
+           case ex: RuntimeException =>
+              assert(ex.getMessage() == "TestCase:runAsync:NotImplemented")
+     }
      
      
 

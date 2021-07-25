@@ -79,6 +79,8 @@ object Async {
               val cpsExpr = rootTransform[F,T](f,dm,memoization,flags,observatory,0, None)
               if (dm.asTerm.tpe <:< TypeRepr.of[CpsEffectMonad[F]]) then       
                  '{ ${dm.asExprOf[CpsEffectMonad[F]]}.flatDelay(${cpsExpr.transformed}) }
+              else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then       
+                 '{ ${dm.asExprOf[CpsSchedulingMonad[F]]}.spawn(${cpsExpr.transformed}) }
               else
                  if (flags.debugLevel > 10) then
                     println(s"dm.asTerm.tpe = ${dm.asTerm.tpe.show} not implements CpsEffectMonad[F], f=$Type[F].show")

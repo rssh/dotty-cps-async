@@ -24,18 +24,18 @@ class TestSF5:
      val in = new CIFReader[Future,Boolean](true)
      val select = SLSelect[Future,Unit](summon[CpsMonad[Future]])
 
-     try
-       // origin
-       val generator = async[Future] {
-         select.fold(in){ (chTestSF5,s) =>
-            s.apply{
+     // origin
+     val generator = async[Future] {
+       try 
+           select.fold(in){ (chTestSF5,s) =>
+              s.apply{
                 case v: chTestSF5.read => chTestSF5
-            }
-         }
-       }
-     catch
-       case e: RuntimeException =>
-          assert(e.getMessage() == "TestCase:runAsync:NotImplemented")
+              }
+           }
+       catch
+         case e: RuntimeException =>
+           assert(e.getMessage() == "TestCase:runAsync:NotImplemented")
+     }
 
      
 
