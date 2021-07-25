@@ -133,7 +133,7 @@ Special semantics for substitutions in call chains
 
 Here usual semantics of `withFilter` assume that we iterate `urls` only once.  But if we will translate this expression according to standard rules, we will receive two passes: one pass in async `withFilter` and the second in `flatMap`.
 
-To perform iteration once, we translate `withFilter` not to F[WithFilter] but to a substituted type DelayedWithFilter , which holds received predicate and delays actual evaluation upon the call of the next operation in chain.
+To perform iteration once, we translate `withFilter` not to F[WithFilter] but to a substituted type DelayedWithFilter , which holds the received predicate and delays actual evaluation upon the call of the next operation in the chain.
 
 The implementation of this class looks like:
 
@@ -204,7 +204,7 @@ Also we can see, that our channel structure is already build on top of `F[_]`, s
 About name for `mapAsync` -- dotty-cps-async supports both variant: camelCase `mapAsync` and snake_case `map_async`. We propose to use next convention when naming such methods:  use `method_async` when async method unlikely will be called by programmer directly and used only for substitution in highg-order function; use `methodAsync` when we expect that developer can use this method directly along with cps substitution.
 
 
-Async high-order functional interfaces  (from 0.9.0)
+Async high-order functional interfaces  
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
  For a case with an acynchronous high-order function interfaces (i.e., methods wich accept functions like `f:(A=>F[B])` ), the `async` macro can automatically transform the asynchronous result to have the same signature, so you can use awaits inside async lambdas without implementing additional methods or typeclasses.
