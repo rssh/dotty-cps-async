@@ -36,7 +36,7 @@ class TestCBS1ShiftTryMonad:
      assert(c.run() == Success(5))
 
   @Test def testFlatMapTry(): Unit = 
-     implicit val printCode = cps.macros.flags.PrintCode
+     //implicit val printCode = cps.macros.flags.PrintCode
      //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
      val c = async[ComputationBound]{
           val q = summon[CpsTryMonad[ComputationBound]].flatMapTry(T1.cbi(2)){ v =>

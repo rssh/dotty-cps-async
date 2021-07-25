@@ -61,7 +61,7 @@ class TestCBS2ACCnt:
      val counter = createCounter(9)
      val c = cntAutomaticColoring(counter)
      val r: Try[Log] = c.run()
-     println(s"cn_automatic_coloring, r=$r, r.get.all=${r.get.all} counter.get()=${counter.get()} ")
+     //println(s"cn_automatic_coloring, r=$r, r.get.all=${r.get.all} counter.get()=${counter.get()} ")
      assert(r.isSuccess)
      assert(r.get.all.size == 1)
      assert(counter.get() == 10)

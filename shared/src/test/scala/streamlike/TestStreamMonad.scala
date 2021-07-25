@@ -16,10 +16,8 @@ class TestStreamMonad:
         val y = await(in2)
         (x,y)
      }
-     println(s"c.head==${c.head}")
      assert(c.head == (1,4))
      val c1 = c.tail
-     println(s"c1.head==${c1.head}")
      assert(c1.head == (1,5))
      val c2 = c1.tail
      assert(c2.head == (1,6))

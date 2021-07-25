@@ -41,7 +41,7 @@ class TestPECnt:
      val counter = new PEIntRef(9)
      val c = cntAutomaticColoring(counter)
      val future = c.unsafeRunFuture().map{ log =>
-       println(s"PE:cnt_automatic_coloring, log.__all=${log.__all()} counter.get()=${counter.__get()} ")
+       //println(s"PE:cnt_automatic_coloring, log.__all=${log.__all()} counter.get()=${counter.__get()} ")
        assert(log.__all().size == 1)
        assert(counter.__get() == 10)
      }

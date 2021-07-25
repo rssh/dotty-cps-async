@@ -31,7 +31,7 @@ class TestIssue45:
     val threadIndexOutside2 = Thread.currentThread().getId()
     assert(threadIndexOutside1  == threadIndexOutside2)
     val startDuration = afterStart - beforeStart 
-    println(s"startDuration=${startDuration}")
+    //println(s"startDuration=${startDuration}")
     assert(startDuration < 100)
     val r: Long = Await.result(f, 1000 milliseconds)
     assert(r != threadIndexOutside2)

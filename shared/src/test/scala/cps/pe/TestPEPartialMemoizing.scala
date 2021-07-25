@@ -46,12 +46,7 @@ class TestPEPartialMemoizing:
          await(doTenTimes(effect(ref2,logger2)))
      }
      val c = c1.flatMap(_ =>c2)
-     val future = c.unsafeRunFuture().map{ _ =>
-         println(s"ref1 = ${ref1}")
-         println(s"log1 = ${logger1.__all()}")
-         println(s"ref2 = ${ref2}")
-         println(s"log2 = ${logger2.__all()}")
-     }
+     val future = c.unsafeRunFuture()
      FutureCompleter(future)
 
 
@@ -68,7 +63,7 @@ class TestPEPartialMemoizing:
       }
      """
      val errors = compiletime.testing.typeCheckErrors(code)
-     println(s"errors: $errors")
+     //println(s"errors: $errors")
      assert(!compiletime.testing.typeChecks(code))
 
 
