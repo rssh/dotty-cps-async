@@ -13,7 +13,7 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
    override type WF[T] = F[T]
 
-   def pure[T](t:T):Future[T] = Future(t)
+   def pure[T](t:T):Future[T] = Future.successful(t)
 
    def map[A,B](fa:F[A])(f: A=>B):F[B] =
         fa.map(f)
