@@ -5,6 +5,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.quoted._
 import scala.util._
+import scala.util.control._
 
 given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
@@ -40,7 +41,14 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
    def spawn[A](op: => F[A]): F[A] =
         val p = Promise[A]
-        summon[ExecutionContext].execute( () => p.completeWith(op) )
+        summon[ExecutionContext].execute{ 
+          () => 
+              try
+                p.completeWith(op) 
+              catch
+                case NonFatal(ex) =>
+                  p.complete(Failure(ex))
+        }
         p.future
 
    def tryCancel[A](op: Future[A]): Future[Unit] =
