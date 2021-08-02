@@ -9,26 +9,26 @@ import scala.util.*
 
 import cps.*
 import scala.concurrent.ExecutionContext.Implicits.global
-import cps.monads.FutureAsyncMonad
+import cps.monads.{*,given}
+
+import java.util.concurrent.CompletableFuture
+
 
 class TestIssue51:
 
-  given CpsSchedulingMonad[Future] = FutureAsyncMonad
 
-  @Test /*@Ignore*/ def asyncShouldReportErrors() = {
+  def raise(x: Throwable): Unit = throw x
 
-    def raise(x: Throwable): Unit = throw x
+  @Test def asyncShouldReportErrors() = {
+
+    given CpsSchedulingMonad[Future] = FutureAsyncMonad
 
     val ex1 = IllegalArgumentException("blah")
     val ex2 = IllegalArgumentException("blah 2")
     val ex3 = IllegalArgumentException("blah 3")
-    println("before-a1")
     val a1 = async { raise(ex1) }
-    println("after-a1")
     val a2 = async { await(a1) }
-    println("after-a2")
     val a3 = async { raise(ex2); await(a1) }
-    println("after-a3")
     val a4 = async { 5 }
     val a5 = async { await(a4); raise(ex3) }
     val a6 = async { await(a4); await(a4); await(a5); await(a1) }
@@ -49,6 +49,19 @@ class TestIssue51:
     assert( a5.value == Some(Failure(ex3)) )
     assert( a6.value == Some(Failure(ex3)) )
     assert( a7.value == Some(Failure(ex1)) )
+
+  }
+
+
+  @Test def asyncShouldReportErrorsCompletableFuture() = {
+
+    given CpsSchedulingMonad[CompletableFuture] = CompletableFutureCpsMonad
+
+    val a1 = async { raise(new RuntimeException("CompletableFuture:a1")) }
+    val f1 = toFutureConversion[CompletableFuture, Unit](a1)
+    Await.ready(f1, 1.second)
+    assert( f1.value.get.isFailure )
+    val Some(Failure(ex1)) = f1.value
 
   }
 

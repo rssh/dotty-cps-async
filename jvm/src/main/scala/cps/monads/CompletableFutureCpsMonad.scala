@@ -88,12 +88,16 @@ given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with {
    def spawn[A](op: => CompletableFuture[A]): CompletableFuture[A] =
         val r = new CompletableFuture[A]()
         CompletableFuture.runAsync{()=>
-          op.handle{ (v,e) =>
-            if (e eq null)
-               r.complete(v)
-            else
+          try
+            op.handle{ (v,e) =>
+              if (e eq null)
+                 r.complete(v)
+              else
+                 r.completeExceptionally(e)
+            }
+          catch
+            case NonFatal(e) =>
                r.completeExceptionally(e)
-          }
         }
         r
 
