@@ -27,9 +27,9 @@ given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with {
 
    override def mapTry[A,B](fa:CompletableFuture[A])(f: Try[A]=>B):CompletableFuture[B] =
         fa.handle{ (v,e) =>
-          if (e eq null) then
+            if (e eq null) then
                f(Success(v))
-          else
+            else
                f(Failure(e))
         }.toCompletableFuture
 
@@ -68,12 +68,17 @@ given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with {
           if (e eq null) then
              retval.complete(v)
           else
-             fx(e).handle{ (v1,e1) =>
-                if (e1 eq null) then
-                   retval.complete(v1)
-                else
-                   retval.completeExceptionally(e1)
-             }
+             try
+                fx(e).handle{ (v1,e1) =>
+                   if (e1 eq null) then
+                      retval.complete(v1)
+                   else
+                      retval.completeExceptionally(e1)
+                }
+             catch
+                case NonFatal(ex) =>
+                   ex.addSuppressed(e)
+                   retval.completeExceptionally(ex)
         }
         retval
 
