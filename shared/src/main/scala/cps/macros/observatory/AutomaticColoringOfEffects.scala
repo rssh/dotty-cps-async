@@ -13,7 +13,7 @@ trait AutomaticColoringOfEffectsQuoteScope:
   import quotes.reflect.*
 
   case class ValUsage(
-             var definedInside: Boolean = false,
+             var optValDef: Option[ValDef] = None,
              val inAwaits: ArrayBuffer[Tree] = ArrayBuffer(),
              val withoutAwaits: ArrayBuffer[Tree] = ArrayBuffer(),
              val aliases: ArrayBuffer[ValUsage] = ArrayBuffer()
@@ -27,6 +27,8 @@ trait AutomaticColoringOfEffectsQuoteScope:
                  
      def allWithoutAwaits: Seq[Tree] = 
        (Seq.empty ++ withoutAwaits.toSeq ++  aliases.toSeq.flatMap(_.allWithoutAwaits) )
+
+     def definedInside: Boolean = !optValDef.isEmpty
 
      def reportCases():Unit =
        val firstWithout = allWithoutAwaits.headOption
@@ -51,7 +53,7 @@ trait AutomaticColoringOfEffectsQuoteScope:
       tree match
         case v@ValDef(name, vtt, Some(rhs)) =>
             val usageRecord = usageRecords.getOrUpdate(v.symbol, ValUsage())
-            usageRecord.definedInside = true
+            usageRecord.optValDef = Some(v)
             rhs match
               case idRhs@Ident(_) =>
                  val parentUsageRecord = usageRecords.getOrUpdate(idRhs.symbol, ValUsage()) 
@@ -140,6 +142,11 @@ trait AutomaticColoringOfEffectsQuoteScope:
                   for(a <- allInAwaits) {
                      report.info("await: ", a.pos)
                   }
+            else if (usageRecord.definedInside && usageRecord.aliases.isEmpty
+                      && usageRecord.inAwaits.isEmpty && usageRecord.withoutAwaits.isEmpty) then
+                  val valDef = usageRecord.optValDef.get
+                  report.warning("unused variable creation, effect may be lost", usageRecord.optValDef.get.pos)
+     
         }
      
 
