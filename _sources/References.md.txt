@@ -31,6 +31,7 @@ Can we free concurrent programming from the monadic style:
 	- Guide: <https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/computation-expressions>
 	- Paper: <http://tomasp.net/academic/papers/computation-zoo/>
         - Joinad language extension (paper): http://tomasp.net/academic/papers/joinads/joinads.pdf
+        - F# Computation Expression Zoo (paper): http://tomasp.net/academic/papers/computation-zoo/computation-zoo.pdf
 - C# : Guide:  <https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/task-asynchronous-programming-model>
 - Midori project [ Async OS, writeln in C# ]  http://joeduffyblog.com/2015/11/03/blogging-about-midori/
 - Python: PEP-0492  <https://www.python.org/dev/peps/pep-0492/>
@@ -63,4 +64,9 @@ Can we free concurrent programming from the monadic style:
         - efects tutorial <https://github.com/ocamllabs/ocaml-effects-tutorial>
         - Paper: Retrofitting Effect Handlers onto OCaml. <https://arxiv.org/abs/2104.00250>
 
+
+## Monadic Computations in Functional Programming (unrelated to PO Syntax, most examples are Haskell).
+
+
+   - Extenging monads via pattern matching (joinads for haskell):  http://tomasp.net/academic/papers/docase/docase.pdf
 
