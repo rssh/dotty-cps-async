@@ -50,19 +50,14 @@ trait AutomaticColoringOfEffectsQuoteScope:
     override def visitStart[F[_]:Type](tree: Tree, ctx: ObservationContext[F])(owner: Symbol): Unit =
       tree match
         case v@ValDef(name, vtt, Some(rhs)) =>
-            val vType = TransformUtil.veryWiden(rhs.tpe).asType   
-            vType match
-               case '[F[r]] =>
-                 val usageRecord = usageRecords.getOrUpdate(v.symbol, ValUsage())
-                 usageRecord.definedInside = true
-                 rhs match
-                   case idRhs@Ident(_) =>
-                     val parentUsageRecord = usageRecords.getOrUpdate(idRhs.symbol, ValUsage()) 
-                     parentUsageRecord.aliases.addOne(usageRecord)
-                     // not count await/not await in aliases.
-                   case _ =>
-                     ctx.scheduleVisit(rhs, this)(owner)
-               case _ =>
+            val usageRecord = usageRecords.getOrUpdate(v.symbol, ValUsage())
+            usageRecord.definedInside = true
+            rhs match
+              case idRhs@Ident(_) =>
+                 val parentUsageRecord = usageRecords.getOrUpdate(idRhs.symbol, ValUsage()) 
+                 parentUsageRecord.aliases.addOne(usageRecord)
+                 // not count await/not await in aliases.
+              case _ =>
                  ctx.scheduleVisit(rhs, this)(owner)
         case term@Apply(fun, args) => 
                  // to have the same structure as forest/ApplyTransform for the same patterns
