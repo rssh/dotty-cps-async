@@ -6,6 +6,7 @@ Integrations
  
  Third-party effect stacks are provided in external modules.
  
+
 cps-async-connect
 -----------------
 
@@ -18,7 +19,10 @@ cats-effect
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.7.0"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.8.1"
+
+
+Note, that for cats-effect also exists https://github.com/typelevel/cats-effect-cps, integrated with typelevel stack.
 
 
 monix
@@ -26,7 +30,7 @@ monix
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % "0.7.0"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % "0.8.1"
 
 
 scalaz IO
@@ -34,7 +38,7 @@ scalaz IO
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-scalaz" % "0.7.0"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-scalaz" % "0.8.1"
 
 
 ZIO
@@ -42,8 +46,14 @@ ZIO
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.7.0"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.8.1"
 
+
+typelevel/cats-effect-cps
+-------------------------
+
+ Can be found on https://github.com/typelevel/cats-effect-cps   
+ This is an experimental library to support uniform async/await syntax fori cats-effect in Scala2 and Scala3, integrated with typelevel ecosystem.
 
 
 Call for additions:
