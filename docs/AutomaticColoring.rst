@@ -92,10 +92,10 @@ Safety rules for using memoized effect.
 
   Safety rules for variable memoization are enforced with the help of additional preliminary analysis. If some variable is used only in a synchronous context (i.e., via await), it should be colored as synchronous (i.e., cached). If some variable is passed to other functions as effect - it should be colored asynchronous (i.e., uncached). If the variable is used in both synchronous and asynchronous contexts, we can't deduce the programmer’s intention and report an error.
 
-Preliminary analysis use next algorithm:
+Preliminary analysis using next algorithm:
 
  * For each invocation of a variable inside async block - count the number of calls with and without awaits.
- * If we have call with await, then using the same variable in call without await reported as error (and vice-versa)
+ * If we have a call with await, then using the same variable in ia call without await reported as an error (and vice-versa)
  * If the variable, defined outside of the async block, is used in synchronous context more than once - the macro also will report an error.
 
 
