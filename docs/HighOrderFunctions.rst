@@ -121,7 +121,7 @@ Note that you should carefully decide whether you need async function support an
 Special semantics for substitutions in call chains
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  Consider chain of calls, which accept async-shifted functions.  One example is  'withFilter' from standard collections library.  Let's look on the next code:  
+  Consider a chain of calls, which accepts async-shifted functions.  One example is  'withFilter' from standard collections library.  Let's look on the next code:  
 
 .. code-block:: scala
 

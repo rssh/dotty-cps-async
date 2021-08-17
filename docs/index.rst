@@ -15,6 +15,7 @@ User Manual
    HighOrderFunctions
    MonadsInteroperability
    Integrations
+   AutomaticColoring
    Features
    random-notes/index.rst
    FAQ
