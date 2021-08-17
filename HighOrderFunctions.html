@@ -129,7 +129,7 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 <div class="section" id="special-semantics-for-substitutions-in-call-chains">
 <span id="substitutions-in-call-chains"></span><h3>Special semantics for substitutions in call chains<a class="headerlink" href="#special-semantics-for-substitutions-in-call-chains" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><p>Consider chain of calls, which accept async-shifted functions.  One example is  ‘withFilter’ from standard collections library.  Let’s look on the next code:</p>
+<div><p>Consider a chain of calls, which accepts async-shifted functions.  One example is  ‘withFilter’ from standard collections library.  Let’s look on the next code:</p>
 </div></blockquote>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="o">{</span> <span class="n">url</span> <span class="k">←</span> <span class="n">urls</span> <span class="k">if</span>  <span class="n">await</span><span class="o">(</span><span class="n">status</span><span class="o">(</span><span class="n">url</span><span class="o">))==</span><span class="nc">Active</span>
       <span class="n">items</span> <span class="k">←</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">retrieveItems</span><span class="o">(</span><span class="n">url</span><span class="o">))</span>
