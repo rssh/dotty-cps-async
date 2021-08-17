@@ -18,7 +18,13 @@ import scala.compiletime._
 def await[F[_],T](f: F[T])(using am:CpsAwaitable[F]): T = ???
 
 /*
- * async block, which can contains awaits
+ * async block, which can contains awaits.
+ * better look on this as the first part of the next signature:
+ * ```
+ *    async[F](using CpsMonad[F])[T](inline body:T):F[T]
+ * ```
+ * i.e. async return a transitional object, which accepts body and perform async transform with the given 
+ * `CpsMonad[F]`.
  **/
 inline def async[F[_]](using inline am: CpsMonad[F]): macros.Async.InferAsyncArg[F] =
    new macros.Async.InferAsyncArg[F]
