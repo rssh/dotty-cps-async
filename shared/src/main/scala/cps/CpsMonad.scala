@@ -303,7 +303,7 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F]  {
 /**
  * Marker trait for concurrent effect monads.
  */
-trait CpsConcurrentEffectMonad[F[_]] extends CpsConcurrentMonad[F] with CpsEffectMonad[F]
+trait CpsConcurrentEffectMonad[F[_]] extends CpsConcurrentMonad[F] with CpsAsyncEffectMonad[F]
 
 
 /**
