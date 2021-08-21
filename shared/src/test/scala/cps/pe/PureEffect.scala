@@ -116,7 +116,7 @@ given PureEffectCpsMonad: CpsConcurrentEffectMonad[PureEffect] with
 
 
 
-given CpsMonadPureMemoization[PureEffect] with
+given CpsMonadMemoization.Pure[PureEffect] with
 
    def apply[T](ft:PureEffect[T]): PureEffect[PureEffect[T]] =
       ft.memoize()

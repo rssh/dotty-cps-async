@@ -70,7 +70,7 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 given cps.automaticColoring.WarnValueDiscard[Future] with {}
 
 
-given CpsMonadDefaultMemoization[Future] with {}
+given CpsMonadMemoization.Default[Future] with {}
 
 
 

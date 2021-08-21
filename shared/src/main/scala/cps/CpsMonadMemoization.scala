@@ -1,32 +1,39 @@
 package cps
 
 
-enum MonadMemoizationKind:
-  case BY_DEFAULT, INPLACE, PURE, DYNAMIC
-
+/**
+ * How this monad can be memoized.
+ */
 sealed trait CpsMonadMemoization[F[_]]
 
-trait CpsMonadInplaceMemoization[F[_]]  extends CpsMonadMemoization[F]:
-  def apply[T](ft:F[T]): F[T]
+object CpsMonadMemoization:
 
-object CpsMonadInplaceMemoization:
+  enum Kind:
+    case BY_DEFAULT, INPLACE, PURE, DYNAMIC
 
-  def run[F[_],E <: F[T], T](mm: CpsMonadInplaceMemoization[F], value:E): E =
+  trait Inplace[F[_]]  extends CpsMonadMemoization[F]:
+    def apply[T](ft:F[T]): F[T]
+
+  object Inplace:
+
+    def run[F[_],E <: F[T], T](mm: Inplace[F], value:E): E =
        mm.apply(value).asInstanceOf[E]
  
 
-trait CpsMonadPureMemoization[F[_]]  extends CpsMonadMemoization[F]:
-  def apply[T](ft:F[T]): F[F[T]]
+  trait Pure[F[_]]  extends CpsMonadMemoization[F]:
+    def apply[T](ft:F[T]): F[F[T]]
 
 
-trait CpsMonadDynamicMemoization[F[_]] extends CpsMonadMemoization[F]
+  trait Dynamic[F[_]] extends CpsMonadMemoization[F]
+
+  trait DynamicAp[F[_],T,FT]:
+    def apply(ft:FT):F[FT]
 
 
-class CpsMonadDefaultMemoization[F[_]]  extends CpsMonadInplaceMemoization[F]:
-  def apply[T](ft:F[T]): F[T] = ft
+  class Default[F[_]]  extends Inplace[F]:
+    def apply[T](ft:F[T]): F[T] = ft
 
 
-trait CpsMonadDynamicMemoizationAp[F[_],T,FT]:
-  def apply(ft:FT):F[FT]
+
 
 

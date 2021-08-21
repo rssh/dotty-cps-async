@@ -9,7 +9,7 @@ import scala.concurrent.Future
 
 given CpsAwaitable[js.Promise] with {}
 
-given CpsMonadMemoization[js.Promise] = CpsMonadDefaultMemoization[js.Promise]()
+given CpsMonadMemoization[js.Promise] = CpsMonadMemoization.Default[js.Promise]()
 
 given CpsMonadConversion[js.Promise, Future] with
    def apply[T](ft: js.Promise[T]): Future[T] = ft.toFuture

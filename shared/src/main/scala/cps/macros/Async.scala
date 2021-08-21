@@ -69,7 +69,7 @@ object Async {
       val memoization: Option[TransformationContext.Memoization[F]] = 
         if flags.automaticColoring then
           val resolvedMemoization = resolveMemoization[F,T](f,dm)
-          if (resolvedMemoization.kind !=  MonadMemoizationKind.BY_DEFAULT) then
+          if (resolvedMemoization.kind !=  CpsMonadMemoization.Kind.BY_DEFAULT) then
              observatory.effectColoring.enabled = true
           Some(resolveMemoization[F,T](f,dm))
         else None
@@ -142,14 +142,14 @@ object Async {
      Expr.summon[CpsMonadMemoization[F]] match
        case Some(mm) =>
              val mmtp = mm.asTerm.tpe
-             if (mmtp <:< TypeRepr.of[CpsMonadDefaultMemoization[F]]) then
-                TransformationContext.Memoization[F](MonadMemoizationKind.BY_DEFAULT, mm )
-             else if (mmtp <:< TypeRepr.of[CpsMonadInplaceMemoization[F]]) then
-                TransformationContext.Memoization[F](MonadMemoizationKind.INPLACE, mm )
-             else if (mmtp <:< TypeRepr.of[CpsMonadPureMemoization[F]]) then
-                TransformationContext.Memoization[F](MonadMemoizationKind.PURE, mm )
-             else if (mmtp <:< TypeRepr.of[CpsMonadDynamicMemoization[F]]) then
-                TransformationContext.Memoization[F](MonadMemoizationKind.DYNAMIC, mm )
+             if (mmtp <:< TypeRepr.of[CpsMonadMemoization.Default[F]]) then
+                TransformationContext.Memoization[F](CpsMonadMemoization.Kind.BY_DEFAULT, mm )
+             else if (mmtp <:< TypeRepr.of[CpsMonadMemoization.Inplace[F]]) then
+                TransformationContext.Memoization[F](CpsMonadMemoization.Kind.INPLACE, mm )
+             else if (mmtp <:< TypeRepr.of[CpsMonadMemoization.Pure[F]]) then
+                TransformationContext.Memoization[F](CpsMonadMemoization.Kind.PURE, mm )
+             else if (mmtp <:< TypeRepr.of[CpsMonadMemoization.Dynamic[F]]) then
+                TransformationContext.Memoization[F](CpsMonadMemoization.Kind.DYNAMIC, mm )
              else
                 throw MacroError(s"Can't extract memoization kind from ${mm.show} for ${TypeRepr.of[F].show}", mm)
        case None =>

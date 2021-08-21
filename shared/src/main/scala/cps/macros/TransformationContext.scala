@@ -36,7 +36,7 @@ case class TransformationContext[F[_],T](
 object TransformationContext {
 
   case class Memoization[F[_]](
-      kind: MonadMemoizationKind,
+      kind: CpsMonadMemoization.Kind,
       monadMemoization: Expr[CpsMonadMemoization[F]]
   )
 
