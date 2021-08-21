@@ -125,7 +125,8 @@ Let's look at the next code:
 
 .. code-block:: scala
 
- import cps.customValueDiscard.given 
+ //import cps.customValueDiscard.given  // < 0.9.3
+ import cps.customValueDiscard
 
  val c = async[Future] {
     val data = await(api.fetch("http://www.example.com"))
@@ -142,8 +143,8 @@ If you want to see warning instead error, you can import `warnValueDiscard` feat
 
 .. code-block:: scala
 
- //import cps.feature.warnValueDiscard.given  //  < 0.6.1
- import cps.warnValueDiscard.given
+ //import cps.warnValueDiscard.given  //  < 0.9.3
+ import cps.warnValueDiscard
 
 Note that custom value discarding is automatically enabled for effect monads to prevent situations where discarding values
  drop branches in the computation flow.
