@@ -7,6 +7,8 @@ import scala.quoted._
 import scala.util._
 import scala.util.control._
 
+
+
 given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
    type F[+T] = Future[T]
@@ -66,11 +68,10 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
 
 
+given futureDiscard: cps.automaticColoring.WarnValueDiscard[Future] with {}
 
-given cps.automaticColoring.WarnValueDiscard[Future] with {}
 
-
-given CpsMonadMemoization.Default[Future] with {}
+given futureMemoization: CpsMonadMemoization.Default[Future] with {}
 
 
 

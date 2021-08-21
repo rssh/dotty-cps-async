@@ -5,7 +5,7 @@ import org.junit.Assert.*
 
 import scala.util.*
 
-import cps.automaticColoring.{*,given}
+import cps.automaticColoring.given
 import scala.language.implicitConversions
 
 import java.util.concurrent.atomic.*

@@ -6,7 +6,7 @@ import org.junit.Assert.*
 import scala.util.*
 
 import cps.*
-import cps.automaticColoring.{*,given}
+import cps.automaticColoring.given
 import cps.util.FutureCompleter
 import scala.language.implicitConversions
 

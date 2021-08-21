@@ -128,8 +128,8 @@ object Async {
             val automaticColoring = automaticColoringTag.isDefined
             if (debugLevel > 0)
                println(s"automaticColoringTag: ${automaticColoringTag.map(_.show)}")
-            val customValueDiscard = Expr.summon[cps.customValueDiscard.Tag].isDefined || automaticColoring
-            val warnValueDiscard = Expr.summon[cps.warnValueDiscard.Tag].isDefined || 
+            val customValueDiscard = Expr.summon[cps.ValueDiscard.CustomTag].isDefined || automaticColoring
+            val warnValueDiscard = Expr.summon[cps.ValueDiscard.WarnTag].isDefined || 
                                      (automaticColoring && 
                                       Expr.summon[cps.automaticColoring.WarnValueDiscard[F]].isDefined )
             AsyncMacroFlags(printCode,printTree,debugLevel, true, customValueDiscard, warnValueDiscard, automaticColoring)
@@ -137,7 +137,7 @@ object Async {
 
   def resolveMemoization[F[_]:Type, T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): 
                                                                   TransformationContext.Memoization[F] =
-     import cps.automaticColoring.{given,*}
+     import cps.monads._
      import quotes.reflect._
      Expr.summon[CpsMonadMemoization[F]] match
        case Some(mm) =>
