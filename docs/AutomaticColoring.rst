@@ -81,10 +81,10 @@ Signature of memoization operation can be different for different monads; this c
 
 
 If we want to provide support for automatic coloring for your monad, you should implement CpsMonadMemoization trait, which can be one of:
- * CpsMonadDefaultMemoization - if computations are cached in your monad by default.
- * CpsMonadInplaceMemoization - for imperative monads
- * CpsMonadPureMemoization - for pure effect monads.
- * CpsMonadDynamicMemoization - for monads with custom memoization, which resolved with call-side types.
+ * CpsMonadMemoization.Default - if computations are cached in your monad by default.
+ * CpsMonadMemoization.Inplace - for imperative monads
+ * CpsMonadMemoization.Pure - for pure effect monads.
+ * CpsMonadMemoization.Dynamic - for monads with custom memoization, which resolved with call-side types.
 
 
 Safety rules for using memoized effect.
