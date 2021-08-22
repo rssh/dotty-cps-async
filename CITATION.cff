@@ -1,0 +1,16 @@
+# YAML 1.2
+---
+authors: 
+  -
+    family-names: Shevchenko
+    given-names: Ruslan
+    orcid: "https://orcid.org/0000-0002-1554-2019"
+cff-version: "1.1.0"
+keywords: 
+  - scala
+  - async
+license: "Apache-2.0"
+message: "If you use this software, please cite it using these metadata."
+repository-code: "https://github.com/rssh/dotty-cps-async"
+title: "dotty-cps-async"
+...
