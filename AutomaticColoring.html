@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Automatic Coloring &#8212; dotty-cps-async 0.9.2 documentation</title>
+    <title>Automatic Coloring &#8212; dotty-cps-async 0.9.3-SNAPSHOT documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Automatic Coloring</a></li> 
       </ul>
     </div>  
@@ -103,10 +103,10 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 </ul>
 </dd>
 <dt>If we want to provide support for automatic coloring for your monad, you should implement CpsMonadMemoization trait, which can be one of:</dt><dd><ul class="simple">
-<li><p>CpsMonadDefaultMemoization - if computations are cached in your monad by default.</p></li>
-<li><p>CpsMonadInplaceMemoization - for imperative monads</p></li>
-<li><p>CpsMonadPureMemoization - for pure effect monads.</p></li>
-<li><p>CpsMonadDynamicMemoization - for monads with custom memoization, which resolved with call-side types.</p></li>
+<li><p>CpsMonadMemoization.Default - if computations are cached in your monad by default.</p></li>
+<li><p>CpsMonadMemoization.Inplace - for imperative monads</p></li>
+<li><p>CpsMonadMemoization.Pure - for pure effect monads.</p></li>
+<li><p>CpsMonadMemoization.Dynamic - for monads with custom memoization, which resolved with call-side types.</p></li>
 </ul>
 </dd>
 </dl>
@@ -139,7 +139,8 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 </div>
 <p>Where the semantics of <cite>dryRun</cite>  - raise an error if it is impossible to run processData().</p>
 <p>Let’s look at the next code:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.customValueDiscard.given</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">//import cps.customValueDiscard.given  // &lt; 0.9.3</span>
+<span class="k">import</span> <span class="nn">cps.customValueDiscard</span>
 
 <span class="k">val</span> <span class="n">c</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]</span> <span class="o">{</span>
    <span class="k">val</span> <span class="n">data</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">fetch</span><span class="o">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="o">))</span>
@@ -150,8 +151,8 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 </div>
 <p>Here developer forgott to wrap <code class="docutils literal notranslate"><span class="pre">dryRun</span></code> in <code class="docutils literal notranslate"><span class="pre">await.</span></code>  But <code class="docutils literal notranslate"><span class="pre">customValueDiscard</span></code> feature is enabled and value discard operation is not defined for <code class="docutils literal notranslate"><span class="pre">`Future</span></code>, so this code will not compile.</p>
 <p id="index-1">If you want to see warning instead error, you can import <cite>warnValueDiscard</cite> feature:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">//import cps.feature.warnValueDiscard.given  //  &lt; 0.6.1</span>
-<span class="k">import</span> <span class="nn">cps.warnValueDiscard.given</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">//import cps.warnValueDiscard.given  //  &lt; 0.9.3</span>
+<span class="k">import</span> <span class="nn">cps.warnValueDiscard</span>
 </pre></div>
 </div>
 <dl class="simple">
@@ -235,7 +236,7 @@ Dotty-cps-async provides special <a class="reference external" href="https://git
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Automatic Coloring</a></li> 
       </ul>
     </div>

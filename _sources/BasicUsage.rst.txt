@@ -52,8 +52,35 @@ Inside the async block, we can use await pseudo-function.
 
 `MyMonad` should be a type for which we have implemented `CpsMonad <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala>`_ or `CpsTryMonad <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L25>`_ (the latest supports try/catch) typeclass.
 
+The minimal complete snippet looks next:
 
-Monad can-be abstracted out as in next example:
+
+ .. code-block:: scala
+
+    package com.example.myModule
+
+    import scala.concurrent.*
+    import scala.concurrent.ExecutionContext.Implicits.global
+    import cps.*                          //  cps itself
+    import cps.monads.{*,given}           //  support for build-in monads (i.e. Future)
+
+    class TestMinimalExample:
+
+      def fetchGreeting(): Future[String] =    // dummy async function
+         Future successful "Hi"
+
+      def greet() = async[Future] {
+         val greeting = await(fetchGreeting())
+         println(greeting)
+      }
+  
+
+
+This minimal example is for Future monad, support for which is bundled in dotty-cps-async. 
+You can look at the :ref:`Integrations` section for the libraries needed for well-known monadic frameworks. 
+
+
+Also monad can-be abstracted out as in next example:
 
 
  .. code-block:: scala
