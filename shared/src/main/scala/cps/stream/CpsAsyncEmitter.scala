@@ -21,6 +21,7 @@ import cps.macros.misc.*
  *   }
  * ```
  * Here out have a `CpsAsyncEmitter[AsyncList[F,Int],F,E]` type.
+ *@see [cps.stream.asyncStream]
  **/
 trait CpsAsyncEmitter[R, F[_]: CpsAsyncMonad, E]:
 
@@ -30,7 +31,18 @@ trait CpsAsyncEmitter[R, F[_]: CpsAsyncMonad, E]:
    def emitAsync(v:E): F[Unit]
 
 
-
+/**
+ * This typeclass should be implemented for streams, which can be 
+ * a target of asyncStream.
+ * i.e. if we want use generator of form
+ * ```
+ *  asyncStream[R] { out =>
+ *     ...
+ *     out.emit(value)
+ *  }
+ * ```
+ * Then we should have an implementation of given `CpsAsyncEmitAbsorber[R]` in the current scope.
+ **/
 trait CpsAsyncEmitAbsorber[R]:
 
    type Monad[_]
@@ -57,7 +69,15 @@ trait CpsAsyncEmitAbsorber3[R, F[_]: CpsAsyncMonad, T] extends CpsAsyncEmitAbsor
    override type Monad[X] = F[X]
 
 
-   
+/**
+ * Generator syntax.
+ * usage:
+ * ```
+ * val s = asyncStream[fs.Stream[IO,Int]] { out =>
+ *    for(i <- 1 to N) out.emit(i)
+ * }
+ * ```
+ **/   
 transparent inline def asyncStream[R](using a: CpsAsyncEmitAbsorber[R]) =
      AsyncStreamHelper(a)
 
