@@ -8,7 +8,9 @@ import scala.util._
 import scala.util.control._
 
 
-
+/**
+ * Default CpsMonad implementation for `Future`
+ **/
 given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
 
    type F[+T] = Future[T]
