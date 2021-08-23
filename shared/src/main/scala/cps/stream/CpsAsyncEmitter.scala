@@ -21,7 +21,7 @@ import cps.macros.misc.*
  *   }
  * ```
  * Here out have a `CpsAsyncEmitter[AsyncList[F,Int],F,E]` type.
- *@see [cps.stream.asyncStream]
+ *@see [cps.asyncStream]
  **/
 trait CpsAsyncEmitter[R, F[_]: CpsAsyncMonad, E]:
 
@@ -67,19 +67,6 @@ trait CpsAsyncEmitAbsorber3[R, F[_]: CpsAsyncMonad, T] extends CpsAsyncEmitAbsor
 
    override type Element = T
    override type Monad[X] = F[X]
-
-
-/**
- * Generator syntax.
- * usage:
- * ```
- * val s = asyncStream[fs.Stream[IO,Int]] { out =>
- *    for(i <- 1 to N) out.emit(i)
- * }
- * ```
- **/   
-transparent inline def asyncStream[R](using a: CpsAsyncEmitAbsorber[R]) =
-     AsyncStreamHelper(a)
 
 
 
