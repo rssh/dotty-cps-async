@@ -17,6 +17,7 @@ class TestFbBAsyncListFilter:
 
   val N = 10000
 
+
   @Test def filterOdd() =
 
      val stream = asyncStream[AsyncList[Future, Int]]{ out =>
@@ -42,6 +43,30 @@ class TestFbBAsyncListFilter:
      }
      FutureCompleter(read)
 
+  def asyncTest(p: Int=>Boolean, x:Int): Future[Boolean] =
+    Future.successful(p(x))   
 
+  @Test def testFilterAsync()=
+    val r = async[Future] {
+
+      val stream = asyncStream[AsyncList[Future, Int]]{ out =>
+        for(i <- 1 to N) 
+         out.emit(i)
+      }
+
+      val filtered = stream.filter(x => await(asyncTest(_ % 2 == 0, x)))
+
+      val firstTen = await(filtered.take(10))
+
+      assert(firstTen(0)==2)
+      assert(firstTen(1)==4)
+      assert(firstTen(2)==6)
+      assert(firstTen(3)==8)
+
+    }
+    FutureCompleter(r)
+
+
+    
 
 
