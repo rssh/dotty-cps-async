@@ -3,7 +3,12 @@ package cps.stream
 import cps.*
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.*
+import scala.collection.mutable.AbstractBuffer
+import scala.collection.mutable.ListBuffer
 
+/**
+ * Mininal async stream.
+ **/
 sealed trait AsyncList[F[_]:CpsAsyncMonad, +T]:
 
   def next: F[Option[(T,AsyncList[F,T])]@uncheckedVariance] 
@@ -33,6 +38,13 @@ sealed trait AsyncList[F[_]:CpsAsyncMonad, +T]:
 
   def filterAsync(p: T=>F[Boolean]): AsyncList[F,T]
 
+  def take(n:Int): F[List[T]@uncheckedVariance] =
+       summon[CpsMonad[F]].map(takeTo( new ListBuffer(), n))(_.toList)
+
+  def takeAll(): F[List[T]@uncheckedVariance] =
+       take(-1)
+
+  def takeTo[B <: AbstractBuffer[T]@uncheckedVariance](buffer: B, n: Int):F[B]       
                 
 
 object AsyncList {
@@ -67,7 +79,12 @@ object AsyncList {
      def filterAsync(p: T=>F[Boolean]): AsyncList[F,T] =
           Wait(summon[CpsMonad[F]].map(fs)(_.filterAsync(p)))
 
-            
+     def takeTo[B <: AbstractBuffer[T]](buffer: B, n: Int):F[B] =
+          if n == 0 then
+               summon[CpsMonad[F]].pure(buffer)
+          else
+               summon[CpsMonad[F]].flatMap(fs)(_.takeTo(buffer,n))      
+         
 
 
   case class Cons[F[_]:CpsAsyncMonad,T](head:T, tailFun: ()=>AsyncList[F,T]) extends AsyncList[F,T]:
@@ -111,7 +128,26 @@ object AsyncList {
                     tailFun().filterAsync(p)
           })
 
-   
+     def takeTo[B <: AbstractBuffer[T]](buffer: B, n: Int):F[B] =
+          if (n == 0) then
+               summon[CpsMonad[F]].pure(buffer)
+          var next: AsyncList[F,T] = this
+          var current: Cons[F, T] = this
+          var endLoop = false
+          var nRest = n
+          while(nRest != 0 && !endLoop) {
+               buffer.addOne(current.head)
+               next = current.tailFun()   
+               next match
+                    case c: Cons[F,T] =>
+                         current = c
+                    case _ =>
+                         endLoop = true
+               nRest = nRest - 1
+          }
+          next.takeTo(buffer, nRest)
+     
+      
             
 
   case class Empty[F[_]: CpsAsyncMonad]() extends AsyncList[F,Nothing]:
@@ -135,7 +171,8 @@ object AsyncList {
      
      def filterAsync(p: Nothing => F[Boolean]): Empty[F] = this
 
-     
+     def takeTo[B <: AbstractBuffer[Nothing]](buffer: B, n: Int):F[B] =
+          summon[CpsMonad[F]].pure(buffer)
        
 
 
