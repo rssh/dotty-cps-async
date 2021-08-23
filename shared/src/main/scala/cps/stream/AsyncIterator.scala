@@ -6,6 +6,9 @@ import scala.concurrent.*
 import scala.util.*
 
 
+/**
+ * Minimal mutable async stream.
+ **/
 trait AsyncIterator[F[_]:CpsAsyncMonad, T]:
 
    def  next: F[Option[T]]
