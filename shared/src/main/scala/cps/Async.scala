@@ -11,7 +11,6 @@ import scala.annotation._
 import scala.quoted._
 import scala.compiletime._
 
-import cps.stream.*
 
 /*
  * Pseudofunction, which can be used inside async block, to 'await' (i.e. receive value of `t:T` from `ft:F[T]`).
@@ -31,14 +30,4 @@ def await[F[_],T](f: F[T])(using am:CpsAwaitable[F]): T = ???
 inline def async[F[_]](using inline am: CpsMonad[F]): macros.Async.InferAsyncArg[F] =
    new macros.Async.InferAsyncArg[F]
 
-/**
- * Generator syntax.
- * usage:
- * ```
- * val s = asyncStream[fs.Stream[IO,Int]] { out =>
- *    for(i <- 1 to N) out.emit(i)
- * }
- * ```
- **/   
-transparent inline def asyncStream[R](using a: CpsAsyncEmitAbsorber[R]) =
-   AsyncStreamHelper(a)
+
