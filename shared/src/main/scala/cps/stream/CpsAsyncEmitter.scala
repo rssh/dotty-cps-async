@@ -21,7 +21,7 @@ import cps.macros.misc.*
  *   }
  * ```
  * Here out have a `CpsAsyncEmitter[AsyncList[F,Int],F,E]` type.
- *@see [cps.asyncStream]
+ *@see [cps.   asyncStream]
  **/
 trait CpsAsyncEmitter[R, F[_]: CpsAsyncMonad, E]:
 
