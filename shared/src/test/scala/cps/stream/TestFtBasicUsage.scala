@@ -54,6 +54,32 @@ class TestFbBasicUsage:
      val res = listSum.failed.map(ex => assert(ex.getMessage()=="bye"))
      FutureCompleter(res)
 
+  @Test def fewSmallLoopsInAsyncList() = 
+
+      val M = 1000
+      val N = 100
+ 
+      val folds: Seq[Future[Int]] = for(i <- 1 to M) yield {
+         val list = asyncStream[AsyncList[Future,Int]] { out =>
+           for(i <- 1 to N) {
+               out.emit(i)
+               //println("emitted: "+i)
+           }
+         }
+         list.fold(0)(_ + _)
+      }
+ 
+      val expected = (1 to N).sum
+       
+      val retval = folds.foldLeft(Future.successful(())){ (s,e) =>
+         s.flatMap{ r =>
+             e.map{ x =>
+               assert(x == expected)
+         }  }
+      }
+      FutureCompleter(retval)
+
+ 
 
   @Test def testFib() =
      val stream = asyncStream[AsyncList[Future,Int]] { out =>
@@ -82,4 +108,6 @@ class TestFbBasicUsage:
      }
      FutureCompleter(res)
     
+
+
 

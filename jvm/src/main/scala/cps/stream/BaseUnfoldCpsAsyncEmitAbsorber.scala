@@ -15,7 +15,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
 
    sealed class SupplyEventRecord
    case object SpawnEmitter extends SupplyEventRecord
-   case class Emitted(value: T, emitCallback: Try[Unit]=>Unit) extends SupplyEventRecord
+   case class Emitted(value: T, emitPromise: Promise[Unit]) extends SupplyEventRecord
    case class Finished(result: Try[Unit]) extends SupplyEventRecord
 
    type ConsumerCallback = Try[SupplyEventRecord]=>Unit
@@ -25,7 +25,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
       val finishRef = new AtomicReference[Try[Unit]|Null]()
       val emitStart = new AtomicBoolean
       val supplyEvents = new ConcurrentLinkedDeque[SupplyEventRecord]()
-      val consumerEvents = new ConcurrentLinkedDeque[ConsumerCallback]()
+      val consumerEvents = new ConcurrentLinkedDeque[Promise[SupplyEventRecord]]()
       val stepStage = new AtomicInteger(0)
       final val StageFree = 0
       final val StageBusy = 1
@@ -33,7 +33,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
 
       def queueEmit(v:T): F[Unit] =
          val p = Promise[Unit]()
-         val emitted = Emitted(v, x => p.tryComplete(x) )
+         val emitted = Emitted(v, p)
          supplyEvents.offer(emitted)
          val retval = asyncMonad.adoptCallbackStyle[Unit]{ emitCallback => 
             p.future.onComplete(emitCallback)
@@ -43,12 +43,15 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
          
       def queueConsumer(): F[SupplyEventRecord] =
          val p = Promise[SupplyEventRecord]()
-         consumerEvents.offer( x => p.complete(x))
+         consumerEvents.offer(p)
          enterStep()
          asyncMonad.adoptCallbackStyle[SupplyEventRecord]{ evalCallback =>
             p.future.onComplete(evalCallback)
-            //consumerEvents.offer(evalCallback)
          }
+
+      def finish(r: Try[Unit]):Unit =
+         finishRef.set(r)
+         enterStep()
       
 
       private def enterStep(): Unit = {
@@ -73,10 +76,11 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
                   val supply = supplyEvents.poll() 
                   if !(supply eq null) then
                      // can we hope the
-                     consumer(Success(supply))
+                     consumer.success(supply)
                   else
                      consumerEvents.addFirst(consumer) 
             }
+            checkFinish()
             if (stepStage.compareAndSet(StageBusy, StageFree)) then
                done = true
             else 
@@ -84,10 +88,23 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
          }
       }
 
-
-
-      
-   val unitSuccess = Success(())
+      private def checkFinish(): Unit = {
+         val r = finishRef.get()
+         if !(r eq null) then
+            while(! consumerEvents.isEmpty ) {
+               val consumer = consumerEvents.poll()
+               if ! (consumer eq null) then
+                  consumer.success(Finished(r))
+            }
+            while(! supplyEvents.isEmpty) {
+               val ev = supplyEvents.poll()
+               if ! (ev eq null) then
+                  ev match
+                     case Emitted(v,p) =>
+                        p.failure(new CancellationException("Stream is closed"))
+                     case _ =>
+            }
+      } 
 
 
    class StepsObserver(state: State
@@ -95,15 +112,16 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
    
    
      def emitAsync(v:T): F[Unit] =  
-
          if (state.supplyEvents.isEmpty) then
             val consumer = state.consumerEvents.poll()
             if (consumer eq null) then
                state.queueEmit(v)
             else      
+               val p = Promise[Unit]()
+               val emitted = Emitted(v, p)
+               consumer.success(emitted)
                asyncMonad.adoptCallbackStyle{ emitCallback =>
-                  val emitted = Emitted(v, emitCallback)
-                  consumer(Success(emitted))
+                  p.future.onComplete(emitCallback)
                }
          else
             state.queueEmit(v)
@@ -111,20 +129,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
 
       
      def finish(r: Try[Unit]): Unit =
-          state.finishRef.set(r)
-          while(! state.consumerEvents.isEmpty ) {
-             val consumer = state.consumerEvents.poll()
-             if ! (consumer eq null) then
-               consumer(Success(Finished(r)))
-          }
-          while(! state.supplyEvents.isEmpty) {
-             val ev = state.supplyEvents.poll()
-             if ! (ev eq null) then
-               ev match
-                  case Emitted(v,cb) =>
-                     cb(Failure(new CancellationException("Stream is closed")))
-                  case _ =>
-          }
+          state.finish(r)
           
           
    end StepsObserver
@@ -151,8 +156,8 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
                            handleEvent(e)
                         } 
                      }
-              case Emitted(v, emitCallback) =>
-                     emitCallback(unitSuccess)
+              case Emitted(v, emitPromise) =>
+                     emitPromise.success(())
                      summon[CpsAsyncMonad[F]].pure(Some(v,state))
               case Finished(r) =>
                      r match
