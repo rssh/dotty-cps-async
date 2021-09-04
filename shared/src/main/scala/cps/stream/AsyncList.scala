@@ -38,11 +38,11 @@ sealed trait AsyncList[F[_]:CpsAsyncMonad, +T]:
 
   def filterAsync(p: T=>F[Boolean]): AsyncList[F,T]
 
-  def take(n:Int): F[List[T]@uncheckedVariance] =
+  def takeList(n:Int): F[List[T]@uncheckedVariance] =
        summon[CpsMonad[F]].map(takeTo( new ListBuffer(), n))(_.toList)
 
-  def takeAll(): F[List[T]@uncheckedVariance] =
-       take(-1)
+  def takeListAll(): F[List[T]@uncheckedVariance] =
+       takeList(-1)
 
   def takeTo[B <: AbstractBuffer[T]@uncheckedVariance](buffer: B, n: Int):F[B]       
                 

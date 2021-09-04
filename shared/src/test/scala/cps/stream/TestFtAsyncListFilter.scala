@@ -56,7 +56,7 @@ class TestFbBAsyncListFilter:
 
       val filtered = stream.filter(x => await(asyncTest(_ % 2 == 0, x)))
 
-      val firstTen = await(filtered.take(10))
+      val firstTen = await(filtered.takeList(10))
 
       assert(firstTen(0)==2)
       assert(firstTen(1)==4)
