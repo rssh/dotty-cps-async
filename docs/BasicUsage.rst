@@ -80,7 +80,7 @@ This minimal example is for Future monad, support for which is bundled in dotty-
 You can look at the :ref:`Integrations` section for the libraries needed for well-known monadic frameworks. 
 
 
-Also monad can-be abstracted out as in next example:
+Also monad can be abstracted out as in the following example:
 
 
  .. code-block:: scala
