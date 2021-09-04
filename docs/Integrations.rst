@@ -21,7 +21,7 @@ cats-effect
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.8.1"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.9.0"
 
 
 Note, that for cats-effect also exists https://github.com/typelevel/cats-effect-cps, integrated with typelevel stack.
@@ -32,7 +32,7 @@ monix
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % "0.8.1"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % "0.9.0"
 
 
 scalaz IO
@@ -40,15 +40,33 @@ scalaz IO
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-scalaz" % "0.8.1"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-scalaz" % "0.9.0"
 
 
-ZIO
-^^^
+ZIO and ZIO Streams
+^^^^^^^^^^^^^^^^^^^
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.8.1"
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.9.0"
+
+
+Akka Streams
+^^^^^^^^^^^^^
+
+ .. code-block:: scala
+
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-akka-stream" % "0.9.0"
+
+
+Fs2 Stream
+^^^^^^^^^^^^^
+
+ .. code-block:: scala
+
+   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-fs2" % "0.9.0"
+
+
 
 
 typelevel/cats-effect-cps
