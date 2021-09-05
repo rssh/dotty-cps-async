@@ -14,8 +14,9 @@ User Manual
    BasicUsage
    HighOrderFunctions
    MonadsInteroperability
-   Integrations
    AutomaticColoring
+   AsyncStreams
+   Integrations
    Features
    random-notes/index.rst
    FAQ

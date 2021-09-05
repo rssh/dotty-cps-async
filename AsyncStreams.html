@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generators &#8212; dotty-cps-async 0.9.3 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Integrations" href="Integrations.html" />
+    <link rel="prev" title="Autcmatic Coloring" href="AutomaticColoring.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Integrations.html" title="Integrations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="AutomaticColoring.html" title="Autcmatic Coloring"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Generators</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="generators">
+<h1>Generators<a class="headerlink" href="#generators" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="async-streaming">
+<h2>Async Streaming<a class="headerlink" href="#async-streaming" title="Permalink to this headline">¶</a></h2>
+<p>Generator syntax is a way to deliver values into some form of a stream asynchronously.</p>
+<p>Example:</p>
+<p>Here <a class="reference external" href="https://rssh.github.io/dotty-cps-async/api/jvm/api/cps/stream.AsyncList.html">AsyncList</a> is a minimal implementation of async stream supplied with dotty-cps-async.
+Exists integration modules for well-known async streaming libraries (see <a class="reference internal" href="Integrations.html#integrations"><span class="std std-ref">Integrations</span></a>).</p>
+<p>The input to asyncStream is a block of code, which should be a lambda-expression that accepts an emitter argument.
+I.e., simplified definition looks next:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">inline</span> <span class="k">def</span> <span class="n">asyncStream</span><span class="o">[</span><span class="kt">R</span><span class="o">](</span><span class="n">using</span> <span class="n">a</span><span class="k">:</span> <span class="kt">CpsAsyncAbsorber</span><span class="o">[</span><span class="kt">R</span><span class="o">])(</span><span class="n">f</span><span class="k">:</span> <span class="kt">CpsAsyncEmitter</span><span class="o">[</span><span class="kt">a.Stream</span><span class="p">,</span> <span class="kt">a.Monad</span><span class="p">,</span> <span class="kt">a.Element</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Unit</span><span class="o">)</span><span class="k">:</span> <span class="kt">R</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>For a full definition, look at the source:</dt><dd><ul class="simple">
+<li><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/AsyncStream.scala">asyncStream</a>  - entry point for macro</p></li>
+<li><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitAbsorber.scala">CpsAsyncEmitAbsorber</a>  - is an adapter from a generator to a stream of the given type.</p></li>
+<li><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitter.scala">CpsAsyncEmitter</a> is a trait with operations <cite>emit</cite>, which should be called inside asyncStream or async block.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="writing-generator-adapters-for-custom-streams">
+<h2>Writing generator adapters for custom streams<a class="headerlink" href="#writing-generator-adapters-for-custom-streams" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>To allow generator syntax for your stream, you need to implement</dt><dd><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitter.scala#L46">CpsAsyncEmitAbsorber[R]</a> where <cite>evalAsync</cite> accept cps-transformed function and output the result stream.</p>
+</dd>
+</dl>
+<p>Dotty-cps-async provide a platform-specific trait <cite>BaseUnfoldCpsAsyncEmitAbsorber</cite> which can simplicify generator implementations for streams which has something like <cite>unfoldAsync[S,E](s:S)(f:S =&gt; F[Option[(S,E)]]):R</cite>.</p>
+<p>For example, looks at the implementation of CpsAsyncEmitAbsorber for Akka-stream Source:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">given</span> <span class="nc">AkkaStreamEmitAbsorber</span><span class="o">[</span><span class="kt">T</span><span class="o">](</span><span class="n">using</span> <span class="nc">ExecutionContext</span><span class="o">)</span><span class="k">:</span>
+                             <span class="kt">BaseUnfoldCpsAsyncEmitAbsorber</span><span class="o">[</span><span class="kt">Source</span><span class="o">[</span><span class="kt">T</span><span class="p">,</span><span class="kt">NotUsed</span><span class="o">]</span><span class="p">,</span><span class="kt">Future</span><span class="p">,</span><span class="kt">T</span><span class="o">]</span> <span class="k">with</span>
+
+   <span class="k">override</span> <span class="k">type</span> <span class="kt">Element</span> <span class="o">=</span> <span class="n">T</span>
+
+   <span class="k">def</span> <span class="n">unfold</span><span class="o">[</span><span class="kt">S</span><span class="o">](</span><span class="n">s0</span><span class="k">:</span><span class="kt">S</span><span class="o">)(</span><span class="n">f</span><span class="k">:</span><span class="kt">S</span> <span class="o">=&gt;</span> <span class="nc">Future</span><span class="o">[</span><span class="kt">Option</span><span class="o">[(</span><span class="kt">T</span><span class="p">,</span><span class="kt">S</span><span class="o">)]])</span><span class="k">:</span> <span class="kt">Source</span><span class="o">[</span><span class="kt">T</span><span class="p">,</span> <span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span>
+     <span class="nc">Source</span><span class="o">.</span><span class="n">unfoldAsync</span><span class="o">[</span><span class="kt">S</span><span class="p">,</span><span class="kt">T</span><span class="o">](</span><span class="n">s0</span><span class="o">)((</span><span class="n">s</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">f</span><span class="o">(</span><span class="n">s</span><span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">map</span><span class="o">{</span> <span class="k">case</span> <span class="o">(</span><span class="n">x</span><span class="o">,</span><span class="n">y</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">y</span><span class="o">,</span><span class="n">x</span><span class="o">)</span> <span class="o">})</span> <span class="o">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Generators</a><ul>
+<li><a class="reference internal" href="#async-streaming">Async Streaming</a></li>
+<li><a class="reference internal" href="#writing-generator-adapters-for-custom-streams">Writing generator adapters for custom streams</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="AutomaticColoring.html"
+                        title="previous chapter">Autcmatic Coloring</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Integrations.html"
+                        title="next chapter">Integrations</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/AsyncStreams.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Integrations.html" title="Integrations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="AutomaticColoring.html" title="Autcmatic Coloring"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Generators</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020-2021, Ruslan Shevchenko.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>

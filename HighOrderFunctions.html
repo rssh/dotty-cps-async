@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>High-order functions. &#8212; dotty-cps-async 0.9.3-SNAPSHOT documentation</title>
+    <title>High-order functions. &#8212; dotty-cps-async 0.9.3 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>  
@@ -44,7 +44,7 @@
   <div class="section" id="high-order-functions">
 <h1>High-order functions.<a class="headerlink" href="#high-order-functions" title="Permalink to this headline">¶</a></h1>
 <p>Dotty-cps-async supports the automatic transformation of high-order functions,  where the lambda expression argument contains <code class="docutils literal notranslate"><span class="pre">await</span></code>.</p>
-<p>For example, let us have a list of remote servers and fetch some data from each of them.
+<p>For example, let us have a list of remote servers and fetch some data from them.
 Assume  that our http client provides the next interface:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">HttpClient</span><span class="k">:</span>
    <span class="kt">def</span> <span class="kt">fetchData</span><span class="o">(</span><span class="kt">url:</span> <span class="kt">String</span><span class="o">)</span><span class="kt">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
@@ -54,8 +54,8 @@ Assume  that our http client provides the next interface:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">urls</span><span class="o">.</span><span class="n">map</span><span class="o">(</span> <span class="n">await</span><span class="o">(</span><span class="n">httpClient</span><span class="o">.</span><span class="n">fetchData</span><span class="o">(</span><span class="k">_</span><span class="o">))</span> <span class="o">)</span>
 </pre></div>
 </div>
-<p>Note that the default <code class="docutils literal notranslate"><span class="pre">map</span></code> will run all operations sequentially. Sequential order of evaluation is needed to allow the code, like updating the multidimensional array in for loop, works correctly in an asynchronous case.</p>
-<p>If we want all requests to run in parallel, we can start them in one map and when all started - wait for the end of requests:</p>
+<p>Note that the default <code class="docutils literal notranslate"><span class="pre">map</span></code> will run all operations sequentially. Sequential evaluation is needed to allow the code to work correctly for a case of updating the multidimensional array in for loop with asynchronous operations.</p>
+<p>If we want all requests to run in parallel, we can start them in one map and, when all started - wait for the end of requests:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">urls</span><span class="o">.</span><span class="n">map</span><span class="o">(</span> <span class="n">httpClient</span><span class="o">.</span><span class="n">fetchData</span><span class="o">(</span><span class="k">_</span><span class="o">)</span> <span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="n">await</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
 </pre></div>
 </div>
@@ -71,13 +71,13 @@ Assume  that our http client provides the next interface:</p>
 </pre></div>
 </div>
 <p>Dotty-cps-async includes implementations of shifted methods for most of the standard library objects. So, it is possible to write something like <code class="docutils literal notranslate"><span class="pre">x=cache.getOrElse(</span> <span class="pre">await(fetchData()</span> <span class="pre">)</span></code> .</p>
-<div class="section" id="providing-shifted-functions">
-<h2>Providing shifted functions.<a class="headerlink" href="#providing-shifted-functions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="how-to-provide-shifted-functions">
+<h2>How to provide shifted functions.<a class="headerlink" href="#how-to-provide-shifted-functions" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="functional-interface">
 <h3>Functional interface.<a class="headerlink" href="#functional-interface" title="Permalink to this headline">¶</a></h3>
 <p>Suppose you want to make high-order methods of your class <code class="docutils literal notranslate"><span class="pre">C</span></code> be able to accept lambda functions with await.
-In that case, you should implement <code class="docutils literal notranslate"><span class="pre">given</span> <span class="pre">AsynsShift[C]</span></code> typeclass with a shifted version of your high-order methods.
-Such a ‘shifted’ version has an additional type parameter: <code class="docutils literal notranslate"><span class="pre">F[_]</span></code>  and an additional list of arguments, inserted first, which contains the original object instance and an appropriative <code class="docutils literal notranslate"><span class="pre">CpsMonad[F]</span></code>.</p>
+In that case, you should implement the <code class="docutils literal notranslate"><span class="pre">given</span> <span class="pre">AsynsShift[C]</span></code> typeclass with a shifted version of your high-order methods.
+Such a ‘shifted’ version has an additional type parameter: <code class="docutils literal notranslate"><span class="pre">F[_]</span></code>  and an additional list of arguments, inserted first, containing the original object instance and an appropriative <code class="docutils literal notranslate"><span class="pre">CpsMonad[F]</span></code>.</p>
 <p>Parameters should be changed in the following way:</p>
 <ul class="simple">
 <li><p>If the origin parameter has type  <code class="docutils literal notranslate"><span class="pre">A=&gt;B</span></code>, then changed: <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">=&gt;</span> <span class="pre">F[B]</span></code></p></li>
@@ -129,7 +129,7 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 <div class="section" id="special-semantics-for-substitutions-in-call-chains">
 <span id="substitutions-in-call-chains"></span><h3>Special semantics for substitutions in call chains<a class="headerlink" href="#special-semantics-for-substitutions-in-call-chains" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><p>Consider a chain of calls, which accepts async-shifted functions.  One example is  ‘withFilter’ from standard collections library.  Let’s look on the next code:</p>
+<div><p>Consider a chain of calls, which accepts async-shifted functions.  One example is  ‘withFilter’ from the standard collections library.  Let’s look ath the next code:</p>
 </div></blockquote>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="o">{</span> <span class="n">url</span> <span class="k">←</span> <span class="n">urls</span> <span class="k">if</span>  <span class="n">await</span><span class="o">(</span><span class="n">status</span><span class="o">(</span><span class="n">url</span><span class="o">))==</span><span class="nc">Active</span>
       <span class="n">items</span> <span class="k">←</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">retrieveItems</span><span class="o">(</span><span class="n">url</span><span class="o">))</span>
@@ -168,7 +168,7 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 <span class="o">}</span>
 </pre></div>
 </div>
-<p>I.e., in delayed variant implemented all original class methods, which should or collect operations into the next delayed object or perform an actual batched call.
+<p>I.e., in delayed variant, all original class methods should or collect operations into the next delayed object or perform an actual batched call.
 Also, we have the method <cite>_origin</cite>,  which is called when we have no next call in the chain: an example of such a case is   <cite>val x = c.withFilter(p)</cite>.</p>
 <p>By convention, the substituted type should be derived from CallChainAsyncSubst[F,T]</p>
 <p>This structure has a nice categorical interpretation. If you are curious about that, read details in <a class="reference internal" href="random-notes/AsyncSubstCategoricalInterpretation.html#categorical-interpretation-for-callchainasyncsubst"><span class="std std-ref">Categorical interpretation for substitutions in async call chains:</span></a>.</p>
@@ -213,7 +213,7 @@ Also, we have the method <cite>_origin</cite>,  which is called when we have no 
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">High-order functions.</a><ul>
-<li><a class="reference internal" href="#providing-shifted-functions">Providing shifted functions.</a><ul>
+<li><a class="reference internal" href="#how-to-provide-shifted-functions">How to provide shifted functions.</a><ul>
 <li><a class="reference internal" href="#functional-interface">Functional interface.</a></li>
 <li><a class="reference internal" href="#object-oriented-interface">Object oriented interface.</a></li>
 <li><a class="reference internal" href="#special-semantics-for-substitutions-in-call-chains">Special semantics for substitutions in call chains</a></li>
@@ -264,7 +264,7 @@ Also, we have the method <cite>_origin</cite>,  which is called when we have no 
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>

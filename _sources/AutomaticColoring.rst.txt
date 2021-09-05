@@ -1,16 +1,16 @@
-Automatic Coloring 
+Autcmatic Coloring 
 ===================
 
 Overview
 -------- 
 
-Sometimes, especially when we work with distributes systems, most API call are asynchronous and should be prefixed by `await`.  And we should remember what functions we should call as async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
+Sometimes, especially when we work with distributes systems, most API call are asynchronous and should be prefixed by `await`.  And we should remember what functions we should call async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).
 
 If we want to put asynchronous expression into synchronous function, we should write `await(expr)`  instead `expr`,  for transforming synchronous code into asynchronous.
 (see http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/ for more detailed explanation )
 
 
-In scala we have types, so why not to ask the compiler to do async coloring automatically?
+In scala, we have types, so why not ask the compiler to do async coloring automatically?
 So, next code:
 
 .. code-block:: scala
@@ -169,7 +169,7 @@ Assuming that logging is IO operation, i.e. log have signature
 
 
 Without custom value discarding, the log statement will be dropped.  (Type of `if` with one branch is 'Unit', so type of the first branch should be 'Unit', so log statement will be discarded).
-Dotty-cps-async provides special `AwaitValueDiscard <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L27>`_  which force monad to be evaluated before be discarded.  We recommend use this discard as default for IO[Unit].
+Dotty-cps-async provides special `AwaitValueDiscard <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L27>`_  which forces monad to be evaluated before being discarded.  We recommend use this discard as default for IO[Unit].
 
 
 

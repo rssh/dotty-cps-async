@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Integrations &#8212; dotty-cps-async 0.9.3-SNAPSHOT documentation</title>
+    <title>Integrations &#8212; dotty-cps-async 0.9.3 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -16,8 +16,8 @@
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Automatic Coloring" href="AutomaticColoring.html" />
-    <link rel="prev" title="Monads interoperability." href="MonadsInteroperability.html" /> 
+    <link rel="next" title="Additional Features" href="Features.html" />
+    <link rel="prev" title="Generators" href="AsyncStreams.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -26,12 +26,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="AutomaticColoring.html" title="Automatic Coloring"
+          <a href="Features.html" title="Additional Features"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="MonadsInteroperability.html" title="Monads interoperability."
+          <a href="AsyncStreams.html" title="Generators"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Integrations</a></li> 
       </ul>
     </div>  
@@ -56,7 +56,7 @@
 <div class="section" id="cats-effect">
 <h3>cats-effect<a class="headerlink" href="#cats-effect" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-cats-effect&quot;</span> <span class="o">%</span> <span class="s">&quot;0.8.1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-cats-effect&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.0&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -65,7 +65,7 @@
 <div class="section" id="monix">
 <h3>monix<a class="headerlink" href="#monix" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-monix&quot;</span> <span class="o">%</span> <span class="s">&quot;0.8.1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-monix&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.0&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -73,15 +73,31 @@
 <div class="section" id="scalaz-io">
 <h3>scalaz IO<a class="headerlink" href="#scalaz-io" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-scalaz&quot;</span> <span class="o">%</span> <span class="s">&quot;0.8.1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-scalaz&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.0&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
 </div>
-<div class="section" id="zio">
-<h3>ZIO<a class="headerlink" href="#zio" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="zio-and-zio-streams">
+<h3>ZIO and ZIO Streams<a class="headerlink" href="#zio-and-zio-streams" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-zio&quot;</span> <span class="o">%</span> <span class="s">&quot;0.8.1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-zio&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.0&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="akka-streams">
+<h3>Akka Streams<a class="headerlink" href="#akka-streams" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-akka-stream&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.0&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="fs2-stream">
+<h3>Fs2 Stream<a class="headerlink" href="#fs2-stream" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-fs2&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.0&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -114,7 +130,9 @@ This is an experimental library to support uniform async/await syntax fori cats-
 <li><a class="reference internal" href="#cats-effect">cats-effect</a></li>
 <li><a class="reference internal" href="#monix">monix</a></li>
 <li><a class="reference internal" href="#scalaz-io">scalaz IO</a></li>
-<li><a class="reference internal" href="#zio">ZIO</a></li>
+<li><a class="reference internal" href="#zio-and-zio-streams">ZIO and ZIO Streams</a></li>
+<li><a class="reference internal" href="#akka-streams">Akka Streams</a></li>
+<li><a class="reference internal" href="#fs2-stream">Fs2 Stream</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#typelevel-cats-effect-cps">typelevel/cats-effect-cps</a></li>
@@ -124,11 +142,11 @@ This is an experimental library to support uniform async/await syntax fori cats-
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="MonadsInteroperability.html"
-                        title="previous chapter">Monads interoperability.</a></p>
+  <p class="topless"><a href="AsyncStreams.html"
+                        title="previous chapter">Generators</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="AutomaticColoring.html"
-                        title="next chapter">Automatic Coloring</a></p>
+  <p class="topless"><a href="Features.html"
+                        title="next chapter">Additional Features</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -157,12 +175,12 @@ This is an experimental library to support uniform async/await syntax fori cats-
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="AutomaticColoring.html" title="Automatic Coloring"
+          <a href="Features.html" title="Additional Features"
              >next</a> |</li>
         <li class="right" >
-          <a href="MonadsInteroperability.html" title="Monads interoperability."
+          <a href="AsyncStreams.html" title="Generators"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Integrations</a></li> 
       </ul>
     </div>

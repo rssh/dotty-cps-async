@@ -22,7 +22,7 @@ Here is an example of implementation of ``Conversion`` from ``Future`` to any as
                                          listener => ft.onComplete(listener) )
 
 
-Here 'async monad' for ``G[_]`` means that it is possible to receive ``G[T]`` from a callback, which returns ``T``.
+Here 'async monad' for ``G[_]`` means it is possible to receive ``G[T]`` from a callback, which returns ``T``.
 
 
 .. code-block:: scala

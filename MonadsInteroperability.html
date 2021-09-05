@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Monads interoperability. &#8212; dotty-cps-async 0.9.3-SNAPSHOT documentation</title>
+    <title>Monads interoperability. &#8212; dotty-cps-async 0.9.3 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -16,7 +16,7 @@
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Integrations" href="Integrations.html" />
+    <link rel="next" title="Autcmatic Coloring" href="AutomaticColoring.html" />
     <link rel="prev" title="High-order functions." href="HighOrderFunctions.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -26,12 +26,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="Integrations.html" title="Integrations"
+          <a href="AutomaticColoring.html" title="Autcmatic Coloring"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="HighOrderFunctions.html" title="High-order functions."
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monads interoperability.</a></li> 
       </ul>
     </div>  
@@ -57,7 +57,7 @@
                                         <span class="n">listener</span> <span class="k">=&gt;</span> <span class="n">ft</span><span class="o">.</span><span class="n">onComplete</span><span class="o">(</span><span class="n">listener</span><span class="o">)</span> <span class="o">)</span>
 </pre></div>
 </div>
-<p>Here ‘async monad’ for <code class="docutils literal notranslate"><span class="pre">G[_]</span></code> means that it is possible to receive <code class="docutils literal notranslate"><span class="pre">G[T]</span></code> from a callback, which returns <code class="docutils literal notranslate"><span class="pre">T</span></code>.</p>
+<p>Here ‘async monad’ for <code class="docutils literal notranslate"><span class="pre">G[_]</span></code> means it is possible to receive <code class="docutils literal notranslate"><span class="pre">G[T]</span></code> from a callback, which returns <code class="docutils literal notranslate"><span class="pre">T</span></code>.</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsAsyncMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="kt">?</span><span class="o">]]</span> <span class="k">extends</span> <span class="nc">CpsTryMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">]</span> <span class="o">{</span>
 
   <span class="cm">/**</span>
@@ -150,8 +150,8 @@ i.e. with the following definitions:</p>
   <p class="topless"><a href="HighOrderFunctions.html"
                         title="previous chapter">High-order functions.</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="Integrations.html"
-                        title="next chapter">Integrations</a></p>
+  <p class="topless"><a href="AutomaticColoring.html"
+                        title="next chapter">Autcmatic Coloring</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -180,12 +180,12 @@ i.e. with the following definitions:</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="Integrations.html" title="Integrations"
+          <a href="AutomaticColoring.html" title="Autcmatic Coloring"
              >next</a> |</li>
         <li class="right" >
           <a href="HighOrderFunctions.html" title="High-order functions."
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.3 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monads interoperability.</a></li> 
       </ul>
     </div>

@@ -3,7 +3,7 @@ High-order functions.
 
 Dotty-cps-async supports the automatic transformation of high-order functions,  where the lambda expression argument contains ``await``.  
 
-For example, let us have a list of remote servers and fetch some data from each of them. 
+For example, let us have a list of remote servers and fetch some data from them. 
 Assume  that our http client provides the next interface:
 
 .. code-block:: scala
@@ -19,9 +19,9 @@ Then we can fetch data from all servers just by using ``await`` in the ``map`` a
      urls.map( await(httpClient.fetchData(_)) )
 
 
-Note that the default ``map`` will run all operations sequentially. Sequential order of evaluation is needed to allow the code, like updating the multidimensional array in for loop, works correctly in an asynchronous case.
+Note that the default ``map`` will run all operations sequentially. Sequential evaluation is needed to allow the code to work correctly for a case of updating the multidimensional array in for loop with asynchronous operations.
 
-If we want all requests to run in parallel, we can start them in one map and when all started - wait for the end of requests:
+If we want all requests to run in parallel, we can start them in one map and, when all started - wait for the end of requests:
 
 .. code-block:: scala
 
@@ -47,16 +47,16 @@ which is implemented in cps runtime with signature
 Dotty-cps-async includes implementations of shifted methods for most of the standard library objects. So, it is possible to write something like ``x=cache.getOrElse( await(fetchData() )`` .
 
 
-Providing shifted functions.
-----------------------------
+How to provide shifted functions.
+--------------------------------
 
 
 Functional interface.
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Suppose you want to make high-order methods of your class ``C`` be able to accept lambda functions with await. 
-In that case, you should implement ``given AsynsShift[C]`` typeclass with a shifted version of your high-order methods.  
-Such a 'shifted' version has an additional type parameter: ``F[_]``  and an additional list of arguments, inserted first, which contains the original object instance and an appropriative ``CpsMonad[F]``.  
+In that case, you should implement the ``given AsynsShift[C]`` typeclass with a shifted version of your high-order methods.  
+Such a 'shifted' version has an additional type parameter: ``F[_]``  and an additional list of arguments, inserted first, containing the original object instance and an appropriative ``CpsMonad[F]``.  
 
 
 Parameters should be changed in the following way:
@@ -121,7 +121,7 @@ Note that you should carefully decide whether you need async function support an
 Special semantics for substitutions in call chains
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  Consider a chain of calls, which accepts async-shifted functions.  One example is  'withFilter' from standard collections library.  Let's look on the next code:  
+  Consider a chain of calls, which accepts async-shifted functions.  One example is  'withFilter' from the standard collections library.  Let's look ath the next code:  
 
 .. code-block:: scala
 
@@ -167,7 +167,7 @@ The implementation of this class looks like:
  }
 
 
-I.e., in delayed variant implemented all original class methods, which should or collect operations into the next delayed object or perform an actual batched call.   
+I.e., in delayed variant, all original class methods should or collect operations into the next delayed object or perform an actual batched call.   
 Also, we have the method `_origin`,  which is called when we have no next call in the chain: an example of such a case is   `val x = c.withFilter(p)`.  
 
 By convention, the substituted type should be derived from CallChainAsyncSubst[F,T] 

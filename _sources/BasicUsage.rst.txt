@@ -1,18 +1,18 @@
 Dependency
 ===========
 
-The current prerelease is 0.9.2 for using with scala3-3.0.1.
+The current prerelease is 0.9.3 for using with scala-3.0.2.
 
  .. code-block:: scala
 
-   scalaVersion := "3.0.1"
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.2"
+   scalaVersion := "3.0.2"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.3"
 
 JavaScript also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.2"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.3"
 
 
 
@@ -80,7 +80,7 @@ This minimal example is for Future monad, support for which is bundled in dotty-
 You can look at the :ref:`Integrations` section for the libraries needed for well-known monadic frameworks. 
 
 
-Also monad can-be abstracted out as in next example:
+Also monad can be abstracted out as in the following example:
 
 
  .. code-block:: scala
