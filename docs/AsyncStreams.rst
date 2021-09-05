@@ -5,15 +5,17 @@ Generators
 Async Streaming
 ---------------
 
-Generator syntax is a way to deliver values into some form of an async stream asynchronously.
+Generator syntax is a way to deliver values into some form of a stream asynchronously.
 
 
 Example:
 
 .. code-block:: scala
+  import cps.*
+  import cps.monads.{*,given}
+  import cps.stream.*
 
   asyncStream[AsyncList[Future,Int]]{ out =>
-     await(beforeStart())
      out.emit(0)
      for(i <- 1 to 10)
        out.emit(i)
@@ -49,7 +51,8 @@ For example, looks at the implementation of CpsAsyncEmitAbsorber for Akka-stream
 
 .. code-block:: scala
 
-   given AkkaStreamEmitAbsorber[T](using ExecutionContext):  BaseUnfoldCpsAsyncEmitAbsorber[Source[T,NotUsed],Future,T] with 
+   given AkkaStreamEmitAbsorber[T](using ExecutionContext):  
+                                BaseUnfoldCpsAsyncEmitAbsorber[Source[T,NotUsed],Future,T] with 
 
       override type Element = T
 
