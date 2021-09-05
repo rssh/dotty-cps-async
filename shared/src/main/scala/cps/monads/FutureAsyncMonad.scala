@@ -55,8 +55,25 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
         }
         p.future
 
+   /**
+   * returns failed Future, because cancellation is not supported.
+   */     
    def tryCancel[A](op: Future[A]): Future[Unit] =
         Future failed new UnsupportedOperationException("FutureAsyncMonad.tryCancel is unsupported")
+
+   /**
+    * join two computations in such way, that they will execute concurrently.
+    *  Since Future computation is already spawned, we can not spawn waiting for results here
+    **/
+   override def concurrently[A,B](fa:F[A], fb:F[B]): F[Either[(Try[A],Future[B]),(Future[A],Try[B])]] =
+       val p = Promise[Either[(Try[A],Future[B]),(Future[A],Try[B])]]
+       fa.onComplete{ ra =>
+          p.tryComplete(Success(Left((ra,fb))))
+       }
+       fb.onComplete{ rb =>
+          p.tryComplete(Success(Right((fa,rb))))
+       }
+       p.future
 
 
    def fulfill[T](t:F[T], timeout: Duration): Option[Try[T]] =

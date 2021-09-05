@@ -9,7 +9,7 @@ import scala.util.*
 /**
  * Minimal mutable async stream.
  **/
-trait AsyncIterator[F[_]:CpsAsyncMonad, T]:
+trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
 
    def  next: F[Option[T]]
 
@@ -17,7 +17,7 @@ trait AsyncIterator[F[_]:CpsAsyncMonad, T]:
 
 object AsyncIterator:
 
-   def unfold[S,F[_]:CpsAsyncMonad,T](s0:S)(f:S => F[Option[(T,S)]]): AsyncIterator[F,T] =
+   def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]]): AsyncIterator[F,T] =
      AsyncListIterator(AsyncList.unfold(s0)(f))
 
    given absorber[F[_]:CpsConcurrentMonad,T](using ExecutionContext): CpsAsyncEmitAbsorber3[AsyncIterator[F,T],F,T] =
@@ -26,7 +26,7 @@ object AsyncIterator:
 
 
 
-class AsyncListIterator[F[_]:CpsAsyncMonad, T](l: AsyncList[F,T]) extends AsyncIterator[F,T]:
+class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T]) extends AsyncIterator[F,T]:
    val  ref = new AtomicReference[AsyncList[F,T]](l)
 
    def  next: F[Option[T]] =

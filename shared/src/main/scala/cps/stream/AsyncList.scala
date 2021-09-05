@@ -5,11 +5,12 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.*
 import scala.collection.mutable.AbstractBuffer
 import scala.collection.mutable.ListBuffer
+import scala.util.*
 
 /**
  * Mininal async stream.
  **/
-sealed trait AsyncList[F[_]:CpsAsyncMonad, +T]:
+sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
 
   def next: F[Option[(T,AsyncList[F,T])]@uncheckedVariance] 
 
@@ -45,11 +46,13 @@ sealed trait AsyncList[F[_]:CpsAsyncMonad, +T]:
        takeList(-1)
 
   def takeTo[B <: AbstractBuffer[T]@uncheckedVariance](buffer: B, n: Int):F[B]       
-                
+  
+  def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S]
+
 
 object AsyncList {
 
-  case class Wait[F[_]:CpsAsyncMonad, T](fs: F[AsyncList[F,T]])  extends AsyncList[F,T]:
+  case class Wait[F[_]:CpsConcurrentMonad, T](fs: F[AsyncList[F,T]])  extends AsyncList[F,T]:
 
      def next: F[Option[(T,AsyncList[F,T])]] =
           summon[CpsMonad[F]].flatMap(fs)(_.next)
@@ -85,9 +88,36 @@ object AsyncList {
           else
                summon[CpsMonad[F]].flatMap(fs)(_.takeTo(buffer,n))      
          
+     def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S] =
+          other match
+               case Wait(fs1) =>
+                    val fs1cast = fs1.asInstanceOf[F[AsyncList[F,S]]]
+                    val next = summon[CpsMonad[F]].map(summon[CpsConcurrentMonad[F]].concurrently(fs,fs1cast)){ r =>
+                         r match
+                              case Left((trs,fs1spawn)) =>
+                                   trs match
+                                        case Success(v) => 
+                                             v merge Wait(summon[CpsConcurrentMonad[F]].join(fs1spawn))
+                                        case Failure(ex) =>
+                                             Wait(summon[CpsAsyncMonad[F]].error(ex))
+                              case Right((fs0spawn, fs1r)) =>
+                                   fs1r match
+                                        case Success(v) =>
+                                             v merge Wait(summon[CpsConcurrentMonad[F]].join(fs0spawn))
+                                        case Failure(ex) =>
+                                             Wait(summon[CpsAsyncMonad[F]].error(ex))
+                    }
+                    Wait(next)
+               case Cons(s, t) =>
+                    Cons(s, () => this.merge(t()))
+               case Empty() => this
+                    
 
 
-  case class Cons[F[_]:CpsAsyncMonad,T](head:T, tailFun: ()=>AsyncList[F,T]) extends AsyncList[F,T]:
+
+
+
+  case class Cons[F[_]:CpsConcurrentMonad,T](head:T, tailFun: ()=>AsyncList[F,T]) extends AsyncList[F,T]:
 
      def next: F[Option[(T,AsyncList[F,T])]] =
           summon[CpsMonad[F]].pure(Some(head,tailFun()))
@@ -139,18 +169,21 @@ object AsyncList {
                buffer.addOne(current.head)
                next = current.tailFun()   
                next match
-                    case c: Cons[F,T] =>
-                         current = c
+                    case c: Cons[_,_] =>
+                         current = c.asInstanceOf[Cons[F,T]]
                     case _ =>
                          endLoop = true
                nRest = nRest - 1
           }
           next.takeTo(buffer, nRest)
      
+     def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S] =
+          Cons(head, ()=>other.merge(tailFun()))
+
       
             
 
-  case class Empty[F[_]: CpsAsyncMonad]() extends AsyncList[F,Nothing]:
+  case class Empty[F[_]: CpsConcurrentMonad]() extends AsyncList[F,Nothing]:
 
      def next: F[Option[(Nothing,AsyncList[F,Nothing])]] =
           summon[CpsMonad[F]].pure(None)
@@ -174,15 +207,17 @@ object AsyncList {
      def takeTo[B <: AbstractBuffer[Nothing]](buffer: B, n: Int):F[B] =
           summon[CpsMonad[F]].pure(buffer)
        
+     def merge[S](other: AsyncList[F,S]): AsyncList[F,S] =
+          other
+     
 
-
-  def empty[F[_]: CpsAsyncMonad] : AsyncList[F,Nothing] =
+  def empty[F[_]: CpsConcurrentMonad] : AsyncList[F,Nothing] =
      Empty[F]()
 
 
-  def unfold[S,F[_]:CpsAsyncMonad,T](s0:S)(f:S => F[Option[(T,S)]]): AsyncList[F,T] =
+  def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]]): AsyncList[F,T] =
       Wait(
-        summon[CpsAsyncMonad[F]].map(f(s0)){
+        summon[CpsConcurrentMonad[F]].map(f(s0)){
           case Some(a,s1) => Cons(a, () => unfold(s1)(f))
           case None => empty[F]
         }
