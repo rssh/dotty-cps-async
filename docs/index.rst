@@ -25,8 +25,8 @@ User Manual
 API docs
 ========
 
-* `cps for JVM <api/jvm/index.html>`_  
-* `cps for JS <api/js/index.html>`_  
+* `cps for JVM <api/jvm/api/index.html>`_  
+* `cps for JS <api/js/api/index.html>`_  
 
 Indices and tables
 ==================
