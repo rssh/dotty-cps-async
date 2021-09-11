@@ -47,22 +47,19 @@ import scala.collection.immutable
  **/
 trait AsyncShift[T]
 
-trait AsyncShiftLowPriority1 {
+
+/**
+ *Companion object where defined given AsyncShift instances for Scala standard library objects.
+ *
+ *@see [cps.AsyncShift] 
+ **/
+object AsyncShift {
 
  transparent inline given shiftedIterable[A,CA <: Iterable[A] ]: AsyncShift[CA] =
       cps.runtime.IterableAsyncShift[A,CA]()
 
-
-}
-
-trait AsyncShiftLowPriority2 extends AsyncShiftLowPriority1 {
-
  transparent inline given shiftedIterableOps[A,C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]: AsyncShift[C[A]] =
       cps.runtime.IterableOpsAsyncShift[A,C,C[A]]()
-
-}
-
-object AsyncShift extends AsyncShiftLowPriority2 {
 
  transparent inline given shiftedRange[CA <: Range]: AsyncShift[CA] =
         cps.runtime.RangeAsyncShift[CA]()
