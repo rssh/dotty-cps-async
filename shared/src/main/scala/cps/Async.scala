@@ -31,3 +31,7 @@ inline def async[F[_]](using inline am: CpsMonad[F]): macros.Async.InferAsyncArg
    new macros.Async.InferAsyncArg[F]
 
 
+// bug in dotty ?   
+//transparent inline def async[F[_]](using inline am: CpsContextMonad[F]) =
+//      new macros.Async.InferAsyncContextArg(using am)
+   

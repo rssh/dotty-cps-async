@@ -19,20 +19,37 @@ import cps.macros.observatory.*
 
 object Async {
 
-  class InferAsyncArg[F[_]](using am:CpsMonad[F]) {
+  class InferAsyncArg[F[_]](using  am:CpsMonad[F]) {
 
        transparent inline def apply[T](inline expr: T) =
-            transform[F,T](expr)(using am)
+            transform[F,T](using am)(expr)
 
+       //  ?=>  cause compilre crash.     
+       transparent inline def in[T](using mc: CpsMonadContextProvider[F] )(inline expr: mc.Context => T ): F[T]  = 
+            mc.contextualize(transformContextLambda(expr))
+       
   }
 
   inline def async[F[_]](using am:CpsMonad[F]): InferAsyncArg[F] =
           new InferAsyncArg[F]
 
-  transparent inline def transform[F[_], T](inline expr: T)(using m: CpsMonad[F]) =
+   class InferAsyncContextArg[F[_],C](using  am:CpsContextMonad[F] { type Context = C }) {
+
+            transparent inline def apply[T](inline expr: C => T) = 
+                am.in(transformContextLambda(expr))
+     
+   }
+     
+
+  transparent inline def transform[F[_], T](using m: CpsMonad[F])(inline expr: T) =
     ${
         Async.transformImpl[F,T]('expr)
      }
+
+  transparent inline def transformContextLambda[F[_],T,C](inline expr: C => T)(using m: CpsMonad[F]): C => F[T] =
+     ${
+        Async.transformContextLambdaImpl[F,T,C]('expr)
+     } 
 
   /**
    * transform expression and get monad from context.
@@ -46,10 +63,10 @@ object Async {
           val msg = s"Can't find async monad for ${TypeRepr.of[F].show} (transformImpl)"
           report.throwError(msg, f)
 
-
+ 
   /**
    * transform expression within given monad.  Use this function is you need to force async-transform
-   * from other macros
+   * from other macros without context
    **/
   def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
@@ -100,6 +117,7 @@ object Async {
         if (flags.debugLevel > 0)
            ex.printStackTrace
         report.throwError(ex.msg, ex.posExpr)
+
 
 
   def adoptFlags[F[_]:Type,T](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): AsyncMacroFlags =
@@ -229,6 +247,42 @@ object Async {
                               )(using Quotes):CpsExpr[F,S]=
         rootTransform(f,cpsCtx.monad, cpsCtx.memoization,
                       cpsCtx.flags,cpsCtx.observatory,cpsCtx.nesting+1, Some(cpsCtx))
+
+
+  def transformContextLambdaImpl[F[_]:Type, T:Type, C:Type](cexpr: Expr[C => T])(using Quotes): Expr[C => F[T]] =
+      import quotes.reflect._
+
+      def inInlined(t: Term, f: Term => Term): Term =
+         t match
+            case Inlined(call, bindings, body) => Inlined(call, bindings, f(body))
+            case other => other
+
+      def extractLambda(f:Term): (List[ValDef], Term, Term => Term ) =
+         f match
+            case Inlined(call, bindings, body) =>
+               val inner = extractLambda(body)
+               (inner._1, inner._2, t => Inlined(call, bindings, t) )   
+            case Lambda(params,body) =>
+               params match
+                  case List(vd) => (params, body, identity)
+                  case _ => report.throwError(s"lambda with one argument expected, we have ${params}",cexpr)
+            case Block(Nil,nested@Lambda(params,body)) => extractLambda(nested)
+            case _ =>
+               report.throwError(s"lambda expected, have: ${f}", cexpr)
+      
+      def transformNotInlined(t: Term): Term =
+         val (oldParams, body, nestFun) = extractLambda(t)
+         val transformed = transformImpl[F,T](body.asExprOf[T])
+         val oldValDef = oldParams.head
+         val mt = MethodType(List(oldValDef.name))( _ => List(oldValDef.tpt.tpe), _ => TypeRepr.of[F[T]])
+         val nLambda = Lambda(Symbol.spliceOwner, mt, (owner, params) => {
+            TransformUtil.substituteLambdaParams( oldParams, params, transformed.asTerm, owner ).changeOwner(owner)
+         })
+         nestFun(nLambda)
+
+      val retval = inInlined(cexpr.asTerm, transformNotInlined).asExprOf[C => F[T]]
+      retval
+
 
 
 }

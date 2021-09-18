@@ -339,3 +339,11 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
 
 }
 
+trait CpsContextMonad[F[_]] extends CpsMonad[F] {
+
+   type Context 
+
+   def in[T]( f: Context => F[T] ): F[T]
+
+
+}

@@ -10,11 +10,6 @@ import cps.macros._
 
 class TestBS1If:
 
-  @Test def tIfC1_000(): Unit = 
-     val c = async[ComputationBound]{
-        if (true) 1 else 2
-     }
-     assert(c.run() == Success(1))
 
   @Test def tIfC1_001(): Unit = 
      val c = Async.transform[ComputationBound,Int]{
