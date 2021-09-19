@@ -57,7 +57,16 @@ class TestCBS1ShiftArrayOps:
              }
      assert(c.run() == Success(2))
 
-  //TODO: @Test def testDistinctBy(): Unit = ???
+  @Test def testDistinctBy(): Unit = {
+     val c = async[ComputationBound]{
+        Array("a","bbb","c","dd","ee","rrr","rrrr","12345678","1").distinctBy( x => await(T1.cbi(x.length)) )
+     }
+     val r = c.run().get
+     assert(r(0)=="a")
+     assert(r(1)=="bbb")
+     assert(r(2)=="dd")
+     assert(r(3)=="rrrr")
+  }
 
   @Test def testDropWhile(): Unit =
      val c = async[ComputationBound]{

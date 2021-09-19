@@ -107,6 +107,24 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
      }
   }
      
+  def distinctBy[F[_],B](arr: ArrayOps[A], monad: CpsMonad[F])(f: A=>F[B]): F[Array[A]] = {
+      val s0: F[(Set[B],ArrayBuffer[A])] = monad.pure((Set.empty[B], ArrayBuffer[A]()))
+      val fr = arr.foldLeft(s0){ (fs,e) =>
+         monad.flatMap(fs){ s =>
+           monad.map(f(e)){ b =>
+              if ! s._1.contains(b) then {
+                 s._2.addOne(e)
+                 (s._1 + b, s._2)
+              } else s
+           }
+         }
+      }
+      monad.map(fr){ case (set,buffer) =>
+         val r = arr.take(buffer.length)
+         buffer.copyToArray(r)
+         r
+      }
+  }
 
   def dropWhile[F[_]](arr: ArrayOps[A], monad: CpsMonad[F])(p: A=> F[Boolean]): F[Array[A]] = {
      def skipWhile(it: Iterator[A], i:Int):F[Array[A]] =
