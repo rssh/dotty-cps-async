@@ -44,7 +44,7 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
      monad.map(fu)(_ => r)
   }
 
-  def flatMap[F[_],B](arr: ArrayOps[A], monad: CpsMonad[F])(f: A=> F[IterableOnce[B]])(using ct:ClassTag[B]):F[Array[B]] = {
+  def flatMapIterableOnce[F[_],B](arr: ArrayOps[A], monad: CpsMonad[F])(f: A=> F[IterableOnce[B]])(using ct:ClassTag[B]):F[Array[B]] = {
      val b = monad.pure(ArrayBuilder.make[B])
      monad.map(
       arr.foldLeft(b)((s,e) => 
@@ -57,8 +57,18 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
      )( _.result )
   }
 
-  def flatMap[F[_],BS,B](arr: ArrayOps[A], monad: CpsMonad[F])(f: A=> F[BS])(using asIterable:BS=>Iterable[B], ct:ClassTag[B]):F[Array[B]] = {
-     flatMap(arr,monad)(a => monad.map(f(a))(bs => asIterable(bs)))
+
+  def flatMap[F[_],B](arr: ArrayOps[A], monad: CpsMonad[F])(f: A=> F[IterableOnce[B]])(using ct:ClassTag[B]):F[Array[B]] = {
+     flatMapIterableOnce(arr,monad)(f)
+  }
+
+  // note, that implicit parameter also shpuld be transformed.
+  def flatMap[F[_],BS,B](arr: ArrayOps[A], monad: CpsMonad[F])(f: A=> F[BS])(using asIterableF:BS=>F[Iterable[B]], ct:ClassTag[B]):F[Array[B]] = {     
+   def f1(a:A): F[IterableOnce[B]] =
+      monad.flatMap(f(a)){ bs =>
+         monad.map(asIterableF(bs))(x => x.asInstanceOf[IterableOnce[B]])   
+      }
+   this.flatMapIterableOnce(arr,monad)(f1)
   }
 
   def fold[F[_],A1 >: A](arrOps: ArrayOps[A], monad: CpsMonad[F])(z: A1)(op:(A1,A1)=>F[A1]):F[A1] = {

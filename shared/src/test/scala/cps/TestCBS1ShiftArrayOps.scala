@@ -112,24 +112,24 @@ class TestCBS1ShiftArrayOps:
      assert(r(1)==6)
      assert(r(2)==9)
      
-  //TODO: determinate
-  //@Test def testFlatMap(): Unit =
-  //   implicit val printCode = cps.macros.flags.PrintCode
-  //   val c = async[ComputationBound]{
-  //       val bb = Array(Array(1,1,3),Array(1,2,3),Array(1,3,4))
-  //       val aa = Array(0,1,2)
-  //       // chains not work
-  //       //val s = for{ a <- aa
-  //       //     b <- bb(a)
-  //       //} yield a+b+await(T1.cbi(0))
-  //       //val s = aa.flatMap(a => bb(a).map(b => a+b+await(T1.cbi(0))))
-  //       val s = aa.flatMap(a => bb(await(T1.cbi(a))))
-  //       s
-  //   }
-  //   val r = c.run().get
-  //   assert(r(0)==1)
-  //   assert(r(1)==3)
-  //   assert(r(2)==5)
+
+  @Test def testFlatMap(): Unit =
+      //implicit val printCode = cps.macros.flags.PrintCode
+      //implicit val printTree = cps.macros.flags.PrintTree
+      val c = async[ComputationBound]{
+         val bb = Array(Array(1,1,3),Array(1,2,3),Array(1,3,4))
+         val aa = Array(0,1,2)
+           for{ a <- aa
+                b <- bb(a)
+           } yield a+b+await(T1.cbi(0))
+           //val s = aa.flatMap(a => bb(a).map(b => a+b+await(T1.cbi(0))))
+           //aa.flatMap(a => bb(await(T1.cbi(a))))
+      }
+      val r = c.run().get
+      assert(r(0)==1)
+      assert(r(1)==1)
+      assert(r(2)==3)
+      assert(r(3)==2)
 
   @Test def testFold1(): Unit =
      val c = async[ComputationBound]{

@@ -36,7 +36,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
     .disablePlugins(SitePreviewPlugin)
     .jvmSettings(
         scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
-                            "-Ydebug", "-uniqid", "-Ycheck:macros", "-Yprint-syms"  ),
+                            "-Ydebug", "-uniqid", "-Ycheck:macros", "-Yprint-syms", "-explain"  ),
                              // -Ydebug-error
         Compile / doc / scalacOptions := Seq("-groups",  
                 "-source-links:shared=github://rssh/dotty-cps-async/master#shared",
