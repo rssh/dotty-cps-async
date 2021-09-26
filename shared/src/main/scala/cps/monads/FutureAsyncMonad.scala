@@ -75,14 +75,7 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
        }
        p.future
 
-
-   def fulfill[T](t:F[T], timeout: Duration): Option[Try[T]] =
-        try
-          Await.ready(t, timeout)
-          t.value
-        catch
-          case ex: TimeoutException => t.value
-
+  
    def executionContext = summon[ExecutionContext]
 
 
