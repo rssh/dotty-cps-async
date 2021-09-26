@@ -15,7 +15,7 @@ class Function1AsyncShift[T,R] extends AsyncShift[Function1[T,R]]:
 
 class Function1AndThenCallChainSubst[F[_],A,B,C](f: A=>B, g: B=>F[C], m:CpsMonad[F]) extends CallChainAsyncShiftSubst[F,A=>C, A=>F[C]]:
 
-   def _origin: A=>F[C] = f.andThen(g)
+   def _finishChain: A=>F[C] = f.andThen(g)
 
    def apply(x:A): F[C] =
          g(f(x))
@@ -36,7 +36,7 @@ class Function1AndThenCallChainSubst[F[_],A,B,C](f: A=>B, g: B=>F[C], m:CpsMonad
 
 class Function1ComposeCallChainSubst[F[_],A,B,Z](f: A=>B, g: Z=>F[A], m:CpsMonad[F]) extends CallChainAsyncShiftSubst[F,Z=>B, Z=>F[B]]:
 
-   def _origin: Z=>F[B] = (z => m.map(g(z))(f))
+   def _finishChain: Z=>F[B] = (z => m.map(g(z))(f))
 
    def apply(x:Z): F[B] = 
         m.map(g(x))(f)
@@ -57,7 +57,7 @@ class Function1ComposeCallChainSubst[F[_],A,B,Z](f: A=>B, g: Z=>F[A], m:CpsMonad
 class Function1ComposeAndThenCallChainSubst[F[_],A,B,C](f: A=>F[B], g:B => F[C], m:CpsMonad[F]) extends 
                                                                                      CallChainAsyncShiftSubst[F,A=>C, A=>F[C]]:
 
-   def _origin: A=>F[C] = (a => m.flatMap(f(a))(g))
+   def _finishChain: A=>F[C] = (a => m.flatMap(f(a))(g))
 
    def apply(x:A): F[C] = 
           m.flatMap(f(x))(g)

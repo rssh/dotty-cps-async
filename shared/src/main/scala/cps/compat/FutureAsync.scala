@@ -4,6 +4,9 @@ import scala.concurrent._
 import cps._
 import cps.monads.{ given CpsAsyncMonad[Future] }
 
+/**
+ * Import this object instead cps.*  to receive SIP22-compabiliy interface.
+ **/
 object FutureAsync:
 
   inline def async[T](inline x:T)(using ec:ExecutionContext):Future[T]=

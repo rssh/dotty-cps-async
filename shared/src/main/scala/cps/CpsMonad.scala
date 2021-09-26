@@ -328,11 +328,20 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
     **/
    def spawn[A](op: =>F[A]): F[A]
 
+   /***
+    * In eager monad, spawned process can be represented by F[_]
+    **/
    type Spawned[A] = F[A]
 
+   /**
+    * representation of spawnEffect as immediate operation.
+    **/
    def spawnEffect[A](op: =>F[A]): F[F[A]] =
          pure(spawn(op))
 
+   /**
+    * join spawned immediate monad means to receive those spawing monad.
+    **/      
    def join[A](op: Spawned[A]): F[A] = op
 
          

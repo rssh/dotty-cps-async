@@ -24,7 +24,7 @@ trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends
    def applyOrElse_async[A1 <:A, B1 >: B](x: A1, default: (A1)=>F[B1]): F[B1] =
                                applyContOrElse_async(x, x => m.pure(x), default)
 
-   def _origin: A=>F[B] = (x => apply(x))
+   def _finishChain: A=>F[B] = (x => apply(x))
 
    def lift: CallChainAsyncShiftSubst[F,A=>Option[B], A=>F[Option[B]]]  =
       Function1AndThenCallChainSubst[F,A,A,Option[B]](identity,

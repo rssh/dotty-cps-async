@@ -424,7 +424,7 @@ class DelayedWithFilter[F[_], A, C[X] <: Iterable[X]  & IterableOps[X,C,C[X]], C
 {
 
   // return eager copy
-  def _origin: F[WithFilter[A,C]] = {
+  def _finishChain: F[WithFilter[A,C]] = {
      m.map(runScan[A]((s,a)=>s.addOne(a)))(_.withFilter(_ => true))
   }
 

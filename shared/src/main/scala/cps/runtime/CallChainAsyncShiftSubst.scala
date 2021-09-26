@@ -15,7 +15,7 @@ trait CallChainAsyncShiftSubst[F[_], T, FT]:
    /**
     * called when we have no calls in futher chain.
     **/
-   def _origin:  FT 
+   def _finishChain:  FT 
 
    // and we assume, that for each method T which need substitution we will heve
    // appropriative method here, which accept same args and produce argument in monad.

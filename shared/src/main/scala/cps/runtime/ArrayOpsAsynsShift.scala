@@ -9,6 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.Map
 import java.util.concurrent.atomic.AtomicReference
 
+
 class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
 
   def foreachParallel[F[_],U](arrayOps: ArrayOps[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] = {
@@ -379,7 +380,7 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
 
 class ArrayOpsWithFilterAsyncSubst[F[_],A](ops: ArrayOps[A], monad:CpsMonad[F], p: A=>F[Boolean]) extends CallChainAsyncShiftSubst[F, ArrayOps.WithFilter[A], F[ArrayOps.WithFilter[A]] ]
 {
-   override def _origin = monad.map((new ArrayOpsAsyncShift[A]).filter(ops,monad)(p)){ array =>
+   override def _finishChain = monad.map((new ArrayOpsAsyncShift[A]).filter(ops,monad)(p)){ array =>
       array.withFilter(_ => true)
    }
 
