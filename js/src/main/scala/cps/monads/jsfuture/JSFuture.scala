@@ -31,11 +31,25 @@ object JSFutureExecutor:
           case Failure(e) =>
                       reject(e)
       }
-      
+   
                           
 
 
-
+/**
+ * JSFuture is a class, which can be represented on the js-side as a JSPromise and on the scala side - as a Future.
+ *
+ * ```
+ *     @JSExportTopLevel("FromScalaExample")
+ *     object FromScalaExample:
+ *
+ *         @JSExport
+ *         def myFunction(x: String): JSFuture[String] = async[JSFuture] {
+ *              .....
+ *         }
+ * ```
+ * I.e. in the example above we can use FromScalaExample.myFunction("x") as JS-function which return ps.Promise
+ * and inside async use usual async/await monadic API.
+ **/
 class JSFuture[T](
      val executorOrUndef: js.UndefOr[js.Function2[js.Function1[T | js.Thenable[T], _], js.Function1[scala.Any, _], _]],
      val futureOrUndef: js.UndefOr[Future[T]]) extends js.Promise[T](
