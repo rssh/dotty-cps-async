@@ -147,7 +147,7 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
                  <span class="k">extends</span> <span class="nc">CallChainAsyncSubst</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span> <span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]</span><span class="p">,</span> <span class="kt">F</span><span class="o">[</span><span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]]</span> <span class="o">]</span>
 <span class="o">{</span>
  <span class="c1">// return eager copy</span>
- <span class="k">def</span> <span class="nc">_origin</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+ <span class="k">def</span> <span class="nc">_finishChain</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
 
  <span class="k">def</span> <span class="n">withFilter</span><span class="o">(</span><span class="n">q</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="nc">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">DelayedWithFilter</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span><span class="kt">A</span><span class="p">,</span><span class="kt">CX</span><span class="p">,</span><span class="kt">CA</span><span class="o">]</span> <span class="k">=</span>  <span class="o">...</span>
 
@@ -169,7 +169,7 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 </pre></div>
 </div>
 <p>I.e., in delayed variant, all original class methods should or collect operations into the next delayed object or perform an actual batched call.
-Also, we have the method <cite>_origin</cite>,  which is called when we have no next call in the chain: an example of such a case is   <cite>val x = c.withFilter(p)</cite>.</p>
+Also, we have the method <cite>_finishChain</cite>,  which is called when we have no next call in the chain: an example of such a case is   <cite>val x = c.withFilter(p)</cite>.</p>
 <p>By convention, the substituted type should be derived from CallChainAsyncSubst[F,T]</p>
 <p>This structure has a nice categorical interpretation. If you are curious about that, read details in <a class="reference internal" href="random-notes/AsyncSubstCategoricalInterpretation.html#categorical-interpretation-for-callchainasyncsubst"><span class="std std-ref">Categorical interpretation for substitutions in async call chains:</span></a>.</p>
 </div>
