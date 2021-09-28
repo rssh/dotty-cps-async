@@ -12,13 +12,13 @@ import scala.quoted._
 import scala.compiletime._
 
 
-/*
+/**
  * Pseudofunction, which can be used inside async block, to 'await' (i.e. receive value of `t:T` from `ft:F[T]`).
  **/
 @compileTimeOnly("await should be inside async block")
 def await[F[_],T](f: F[T])(using am:CpsAwaitable[F]): T = ???
 
-/*
+/**
  * async block, which can contains awaits.
  * better look on this as the first part of the next signature:
  * ```
