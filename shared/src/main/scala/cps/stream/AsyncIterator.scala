@@ -11,7 +11,10 @@ import scala.util.*
  **/
 trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
 
-   def  next: F[Option[T]]
+  /**
+  * return the next element of stream in option or None if stream is finished.
+  **/
+  def  next: F[Option[T]]
 
 
 
@@ -23,34 +26,7 @@ object AsyncIterator:
    given absorber[F[_]:CpsConcurrentMonad,T](using ExecutionContext): CpsAsyncEmitAbsorber3[AsyncIterator[F,T],F,T] =
      AsyncIteratorEmitAbsorber[F,T]()
 
-
-
-
-class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T]) extends AsyncIterator[F,T]:
-   val  ref = new AtomicReference[AsyncList[F,T]](l)
-
-   def  next: F[Option[T]] =
-     val m = summon[CpsAsyncMonad[F]]
-     m.adoptCallbackStyle[Option[T]]{ elementCallback =>
-         ref.updateAndGet{ lStart =>
-            val delayedList = m.adoptCallbackStyle[AsyncList[F,T]]{
-              listCallback => m.mapTry(lStart.next){ 
-                 case Success(v) =>
-                   v match
-                      case Some((e,l)) => elementCallback(Success(Some(e)))
-                                     listCallback(Success(l))
-                      case None => elementCallback(Success(None))
-                                     listCallback(Success(AsyncList.empty))
-                 case Failure(ex) =>
-                         elementCallback(Failure(ex))
-                         // or also failure ?  need rethinl.
-                         listCallback(Success(AsyncList.empty))
-              }
-            }
-            AsyncList.Wait(delayedList)
-         }
-     }
-        
+     
 
 class AsyncIteratorEmitAbsorber[F[_]:CpsConcurrentMonad,T](using ExecutionContext) extends BaseUnfoldCpsAsyncEmitAbsorber[AsyncIterator[F,T],F,T]:
 

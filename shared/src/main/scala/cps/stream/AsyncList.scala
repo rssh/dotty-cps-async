@@ -59,6 +59,9 @@ sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
   
   def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S]
 
+  def iterator: AsyncIterator[F,T@uncheckedVariance] =
+        new AsyncListIterator(this)
+
 
 object AsyncList {
 
