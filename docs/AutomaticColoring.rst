@@ -1,4 +1,4 @@
-Autcmatic Coloring 
+Automatic Coloring 
 ===================
 
 Overview
