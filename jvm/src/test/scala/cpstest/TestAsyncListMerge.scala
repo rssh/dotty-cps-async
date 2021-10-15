@@ -24,20 +24,27 @@ class TestAsyncListMerge:
 
   @Test def testMergeTwoNonEmptyTimedLists() = {
 
+    var last1: Int = -1
+    var last2: Int = -1
+
     val stream1 = asyncStream[AsyncList[Future,Int]] { out =>
       for(i <- 1 to 10) {
          await(FutureSleep(100.milliseconds))
          out.emit(i) 
+         last1 = i
       }
       out.emit(100)
+      last1 = 100
     }
 
     val stream2 = asyncStream[AsyncList[Future,Int]] { out =>
      for(i <- 200 to 220) {
-      await(FutureSleep(50.milliseconds))
-       out.emit(i)
+        await(FutureSleep(50.milliseconds))
+        out.emit(i)
+        last2 = i
      }
      out.emit(300)
+     last2 = 300
     }
 
     val stream = stream1 merge stream2
@@ -54,7 +61,12 @@ class TestAsyncListMerge:
       assert(set.contains(300))
     }
 
-    val r = Await.result(f, 2.second)
+    try
+      val r = Await.result(f, 2.second)
+    catch
+      case NonFatal(ex) =>
+        println(s"last1=$last1, last2=$last2")
+        throw ex;
 
   }
 
