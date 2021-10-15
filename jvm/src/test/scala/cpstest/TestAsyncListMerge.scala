@@ -62,7 +62,7 @@ class TestAsyncListMerge:
     }
 
     try
-      val r = Await.result(f, 2.second)
+      val r = Await.result(f, 3.second)
     catch
       case NonFatal(ex) =>
         println(s"last1=$last1, last2=$last2")
