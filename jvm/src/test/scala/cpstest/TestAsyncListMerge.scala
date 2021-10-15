@@ -15,6 +15,7 @@ import cps.stream.*
 
 import java.util.concurrent.CompletableFuture
 
+import cps.util.*
 
 class TestAsyncListMerge:
 
@@ -25,7 +26,7 @@ class TestAsyncListMerge:
 
     val stream1 = asyncStream[AsyncList[Future,Int]] { out =>
       for(i <- 1 to 10) {
-         Thread.sleep(100)
+         await(FutureSleep(100.milliseconds))
          out.emit(i) 
       }
       out.emit(100)
@@ -33,7 +34,7 @@ class TestAsyncListMerge:
 
     val stream2 = asyncStream[AsyncList[Future,Int]] { out =>
      for(i <- 200 to 220) {
-       Thread.sleep(50)
+      await(FutureSleep(50.milliseconds))
        out.emit(i)
      }
      out.emit(300)
