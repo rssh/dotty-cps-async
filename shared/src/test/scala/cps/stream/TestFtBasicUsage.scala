@@ -107,7 +107,28 @@ class TestFbBasicUsage:
         assert(l(7)==21) 
      }
      FutureCompleter(res)
-    
+
+  @Test def testIterator() =
+    val stream = asyncStream[AsyncList[Future,Int]] { out =>
+      var s = 0
+      for(i <- 1 to 10) {
+          s+=i
+          out.emit(s)
+      }
+    }
+    val check = async[Future] {
+      val it = stream.iterator
+      var last = 0
+      while{
+        await(it.next) match
+          case Some(e) => last = e
+                          true
+          case None => false
+      } do ()
+      val sampleSum = (1 to 10).sum
+      assert(last == sampleSum)
+    }
+    FutureCompleter(check)
 
 
 

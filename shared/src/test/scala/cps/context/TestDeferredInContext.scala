@@ -72,7 +72,6 @@ class TestDeferredInContextMonad:
   
   ///*
     //Compiler crash in dotty-3.1.0-RC1
-    //TODO: minimize
   @Test def testSimpleContext(): Unit = 
       var x = 0
       val c = async.in{ scope =>

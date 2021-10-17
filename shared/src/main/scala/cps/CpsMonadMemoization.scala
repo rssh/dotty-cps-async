@@ -3,6 +3,8 @@ package cps
 
 /**
  * How this monad can be memoized.
+ * 
+ * see [chapter in User Guide](https://rssh.github.io/dotty-cps-async/AutomaticColoring.html#automatic-coloring-memoization)
  */
 sealed trait CpsMonadMemoization[F[_]]
 
@@ -29,11 +31,10 @@ object CpsMonadMemoization:
   trait DynamicAp[F[_],T,FT]:
     def apply(ft:FT):F[FT]
 
-
+  /**
+   * DefaultMemoization means, that our model is already memoized.
+   **/
   class Default[F[_]]  extends Inplace[F]:
     def apply[T](ft:F[T]): F[T] = ft
-
-
-
 
 

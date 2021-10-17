@@ -146,7 +146,7 @@ The implementation of this class looks like:
                   extends CallChainAsyncSubst[F, WithFilter[A,C], F[WithFilter[A,C]] ]
  {
   // return eager copy
-  def _origin: F[WithFilter[A,C]] = ...
+  def _finishChain: F[WithFilter[A,C]] = ...
 
   def withFilter(q: A=>Boolean): DelayedWithFilter[F,A,CX,CA] =  ...
 
@@ -168,7 +168,7 @@ The implementation of this class looks like:
 
 
 I.e., in delayed variant, all original class methods should or collect operations into the next delayed object or perform an actual batched call.   
-Also, we have the method `_origin`,  which is called when we have no next call in the chain: an example of such a case is   `val x = c.withFilter(p)`.  
+Also, we have the method `_finishChain`,  which is called when we have no next call in the chain: an example of such a case is   `val x = c.withFilter(p)`.  
 
 By convention, the substituted type should be derived from CallChainAsyncSubst[F,T] 
 

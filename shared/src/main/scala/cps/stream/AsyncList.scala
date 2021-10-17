@@ -29,6 +29,16 @@ sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
 
   def foldAsync[S](s0:S)(f:(S,T)=>F[S]): F[S]
 
+  def scan[S](s0:S)(f:(S,T)=>S): AsyncList[F,S] =
+          AsyncList.Cons(s0, ()=>scanTail(s0)(f))
+
+  def scanTail[S](s0:S)(f:(S,T)=>S): AsyncList[F,S]
+
+  def scanAsync[S](s0:S)(f:(S,T)=>F[S]): AsyncList[F,S] =
+          AsyncList.Cons(s0, () => scanTailAsync(s0)(f))
+
+  def scanTailAsync[S](s0:S)(f:(S,T)=>F[S]): AsyncList[F,S]
+  
   def foreach[U](f: T=>U): F[Unit] =
        fold(())((s,t)=>{ f(t); () })
 
@@ -48,6 +58,9 @@ sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
   def takeTo[B <: AbstractBuffer[T]@uncheckedVariance](buffer: B, n: Int):F[B]       
   
   def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S]
+
+  def iterator: AsyncIterator[F,T@uncheckedVariance] =
+        new AsyncListIterator(this)
 
 
 object AsyncList {
@@ -75,6 +88,11 @@ object AsyncList {
      def foldAsync[S](s0:S)(f:(S,T)=>F[S]): F[S] =
           summon[CpsMonad[F]].flatMap(fs)( _.foldAsync(s0)(f) )
 
+     def scanTail[S](s0:S)(f:(S,T)=>S): AsyncList[F,S] =
+          Wait(summon[CpsMonad[F]].map(fs)(_.scanTail(s0)(f)))
+
+     def scanTailAsync[S](s0:S)(f:(S,T)=>F[S]): AsyncList[F,S] =
+          Wait(summon[CpsMonad[F]].map(fs)(_.scanTailAsync(s0)(f)))
 
      def filter(p: T=>Boolean):  AsyncList[F,T] =
           Wait(summon[CpsMonad[F]].map(fs)(_.filter(p)))
@@ -144,6 +162,18 @@ object AsyncList {
      def foldAsync[S](s0:S)(f:(S,T)=>F[S]): F[S] =
           summon[CpsMonad[F]].flatMap(f(s0,head))( s => tailFun().foldAsync(s)(f) )
 
+     def scanTail[S](s0:S)(f:(S,T)=>S): AsyncList[F,S] =
+          val s1 = f(s0,head)
+          Cons(s1, () => tailFun().scanTail(s1)(f))
+     
+     def scanTailAsync[S](s0:S)(f:(S,T)=>F[S]): AsyncList[F,S] =
+          Wait(
+               summon[CpsAsyncMonad[F]].map((f(s0,head))){ s1 =>
+                   Cons(s1, ()=>tailFun().scanTailAsync(s1)(f))
+               }  
+          )
+     
+
      def filter(p: T=>Boolean):  AsyncList[F,T] =
           if p(head) then
                Cons(head, () => tailFun().filter(p))
@@ -200,6 +230,10 @@ object AsyncList {
 
      def foldAsync[S](s0:S)(f:(S,Nothing)=> F[S]): F[S] = summon[CpsMonad[F]].pure(s0)
 
+     def scanTail[S](s0:S)(f:(S,Nothing)=>S): AsyncList[F,S] = this
+     
+     def scanTailAsync[S](s0:S)(f:(S,Nothing)=>F[S]): AsyncList[F,S] = this
+     
      def filter(p: Nothing => Boolean): Empty[F] = this
      
      def filterAsync(p: Nothing => F[Boolean]): Empty[F] = this

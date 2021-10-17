@@ -744,7 +744,7 @@ trait CpsTreeScope[F[_], CT] {
   case class CallChainSubstCpsTree(origin: Term, shifted:Term, override val otpe: TypeRepr) extends CpsTree:
 
     def prunned: CpsTree =
-      val term = Select.unique(shifted,"_origin")
+      val term = Select.unique(shifted,"_finishChain")
       shiftedResultCpsTree(origin, term)
 
     override def isAsync = true

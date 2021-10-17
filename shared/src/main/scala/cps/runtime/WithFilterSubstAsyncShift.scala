@@ -6,6 +6,7 @@ import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayBuilder
 import scala.collection.mutable.Builder
 
+
 class WithFilterSubstAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <: C[A]]( 
                                                                  ca: CA,
                                                                  p: A=>Boolean,

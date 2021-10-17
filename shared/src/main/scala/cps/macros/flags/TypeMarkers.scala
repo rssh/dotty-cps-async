@@ -2,9 +2,26 @@ package cps.macros.flags
 
 import scala.quoted._
 
+/**
+ * define implicit 
+ **/
 object PrintCode
+
 object PrintTree
 
+/**
+ * Use this flag for debugging of async transformation process.
+ *
+ * ```
+ *     implicit val = cps.macros.flags.DebugLevel(10)
+ *     async{ 
+ *        ....
+ *     }
+ * ```
+ *  will output ton of traces during macro translation.
+ *
+ * @param value - debug level, from 0 to 20.  0 - no debug outout, 20 - maximum  
+ **/
 case class DebugLevel(value: Int)
 
 given FromExpr[DebugLevel] with
