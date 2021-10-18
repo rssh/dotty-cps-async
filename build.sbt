@@ -1,8 +1,8 @@
 //val dottyVersion = "3.0.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.0.1-RC2"
-val dottyVersion = "3.1.0-RC3"
+val dottyVersion = "3.1.0"
 
-ThisBuild/version := "0.9.4-SNAPSHOT"
+ThisBuild/version := "0.9.4"
 ThisBuild/versionScheme := Some("semver-spec")
 
 
