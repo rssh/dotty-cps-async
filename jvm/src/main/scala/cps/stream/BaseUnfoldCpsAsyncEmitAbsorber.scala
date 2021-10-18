@@ -44,10 +44,11 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
       def queueConsumer(): F[SupplyEventRecord] =
          val p = Promise[SupplyEventRecord]()
          consumerEvents.offer(p)
-         enterStep()
-         asyncMonad.adoptCallbackStyle[SupplyEventRecord]{ evalCallback =>
+         val retval = asyncMonad.adoptCallbackStyle[SupplyEventRecord]{ evalCallback =>
             p.future.onComplete(evalCallback)
          }
+         enterStep()
+         retval
 
       def finish(r: Try[Unit]):Unit =
          finishRef.set(r)
@@ -81,10 +82,11 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
                      consumerEvents.addFirst(consumer) 
             }
             checkFinish()
-            if (stepStage.compareAndSet(StageBusy, StageFree)) then
-               done = true
-            else 
-               stepStage.set(StageBusy)
+            if supplyEvents.isEmpty() || consumerEvents.isEmpty() then
+               if (stepStage.compareAndSet(StageBusy, StageFree)) then
+                  done = true
+               else 
+                  stepStage.set(StageBusy)
          }
       }
 
