@@ -83,8 +83,11 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
             }
             checkFinish()
             if supplyEvents.isEmpty() || consumerEvents.isEmpty() then
-               if (stepStage.compareAndSet(StageBusy, StageFree)) then
-                  done = true
+               if(stepStage.compareAndSet(StageBusy, StageFree)) then
+                  if supplyEvents.isEmpty() || consumerEvents.isEmpty() then
+                     done = true
+                  else
+                     enterStep()
                else 
                   stepStage.set(StageBusy)
          }
