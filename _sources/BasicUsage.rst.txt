@@ -1,18 +1,18 @@
 Dependency
 ===========
 
-The current prerelease is 0.9.3 for using with scala-3.0.2.
+The current prerelease is 0.9.4 for using with scala-3.1.0.
 
  .. code-block:: scala
 
-   scalaVersion := "3.0.2"
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.3"
+   scalaVersion := "3.1.0"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.4"
 
 JavaScript also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.3"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.4"
 
 
 
