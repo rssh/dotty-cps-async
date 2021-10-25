@@ -114,20 +114,16 @@ object ValDefTransform:
        override def fLast(using Quotes) =
           import quotes.reflect._
 
-          def appendBlockExpr[A:quoted.Type](rhs: quotes.reflect.Term, expr: Expr[A]):Expr[A] =
-                buildAppendBlockExpr(oldValDef.asInstanceOf[quotes.reflect.ValDef],
-                                     rhs, expr)
-
           next.syncOrigin match
             case Some(nextOrigin) =>
              '{
                ${monad}.map(${cpsRhs.transformed})((v:V) =>
-                          ${appendBlockExpr('v.asTerm, nextOrigin)})
+                          ${buildAppendBlockExpr('v, nextOrigin)})
               }
             case  None =>
              '{
                ${monad}.flatMap(${cpsRhs.transformed})((v:V)=>
-                          ${appendBlockExpr('v.asTerm, next.transformed)})
+                          ${buildAppendBlockExpr('v, next.transformed)})
              }
 
        override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
@@ -141,14 +137,14 @@ object ValDefTransform:
           RhsFlatMappedCpsExpr(using thisQuotes)(monad,prev,oldValDef,cpsRhs,next.append(e))
 
 
-       private def buildAppendBlock(using Quotes)(
-                      oldValDef: quotes.reflect.ValDef, rhs:quotes.reflect.Term,
-                                                    exprTerm:quotes.reflect.Term): quotes.reflect.Term =
+       private def buildAppendBlock(using Quotes)(rhs:quotes.reflect.Term,
+                                                  exprTerm:quotes.reflect.Term): quotes.reflect.Term =
        {
           import quotes.reflect._
           import scala.quoted.Expr
 
-          val valDef = ValDef(oldValDef.symbol, Some(rhs.changeOwner(oldValDef.symbol)))
+          val castedOldValDef = oldValDef.asInstanceOf[quotes.reflect.ValDef]
+          val valDef = ValDef(castedOldValDef.symbol, Some(rhs.changeOwner(castedOldValDef.symbol)))
           exprTerm match 
               case Block(stats,last) =>
                     Block(valDef::stats, last)
@@ -157,9 +153,9 @@ object ValDefTransform:
 
        }
 
-       private def buildAppendBlockExpr[A:Type](using Quotes)(oldValDef: quotes.reflect.ValDef, rhs: quotes.reflect.Term, expr:Expr[A]):Expr[A] =
+       private def buildAppendBlockExpr[A:Type](using Quotes)(rhs: Expr[V], expr:Expr[A]):Expr[A] =
           import quotes.reflect._
-          buildAppendBlock(oldValDef,rhs,expr.asTerm).asExprOf[A]
+          buildAppendBlock(rhs.asTerm,expr.asTerm).asExprOf[A]
 
   }
 
