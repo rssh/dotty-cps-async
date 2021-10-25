@@ -10,6 +10,7 @@ object VP1:
 
    /*
     * compiler crash in 3.1.0
+    * see https://github.com/lampepfl/dotty/issues/13809
    def allocateServiceOperator(optInUsername: Option[String]): Future[Unit] = async[Future] {
       val username = optInUsername match
          case None =>
