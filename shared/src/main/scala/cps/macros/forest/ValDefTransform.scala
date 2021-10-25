@@ -113,7 +113,7 @@ object ValDefTransform:
 
        override def fLast(using Quotes) =
           import quotes.reflect._
-
+         
           next.syncOrigin match
             case Some(nextOrigin) =>
              '{
