@@ -145,7 +145,7 @@ object ValDefTransform:
 
           val castedOldValDef = oldValDef.asInstanceOf[quotes.reflect.ValDef]
           val valDef = ValDef(castedOldValDef.symbol, Some(rhs.changeOwner(castedOldValDef.symbol)))
-          exprTerm match 
+          exprTerm.changeOwner(castedOldValDef.symbol.owner) match 
               case Block(stats,last) =>
                     Block(valDef::stats, last)
               case other =>

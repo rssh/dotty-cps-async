@@ -38,7 +38,7 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
      if (prev.isEmpty)
        fLast
      else
-       Block(prev.toList.map(_.extract), fLast.asTerm).asExprOf[F[T]]
+       Block(prev.toList.map(_.extract), fLast.asTerm).changeOwner(Symbol.spliceOwner).asExprOf[F[T]]
 
   def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T]
 
@@ -84,7 +84,7 @@ abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[CpsMonad[F]],
                             } else {
                                 Typed(lastTerm, TypeTree.of[T])
                             }
-            Block(prev.toList.map(_.extract), typedLast).asExprOf[T]
+            Block(prev.toList.map(_.extract), typedLast).changeOwner(Symbol.spliceOwner).asExprOf[T]
        )
 
 
