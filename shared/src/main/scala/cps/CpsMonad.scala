@@ -92,7 +92,7 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
                                   case NonFatal(ex) => error(ex)
                                 }
          }
-
+    
 
    /**
     * ensure that `action` will run before getting value from `fa`
@@ -177,7 +177,9 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
          case NonFatal(ex) => error(ex)
        }
 
-
+   /**
+    * transform `r` into pure value or error.
+    **/
    def fromTry[A](r: Try[A]): F[A] =
        r match
          case Success(a) => pure(a)
