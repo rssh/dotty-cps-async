@@ -191,11 +191,12 @@ object AsyncList {
      def takeTo[B <: AbstractBuffer[T]](buffer: B, n: Int):F[B] =
           if (n == 0) then
                summon[CpsMonad[F]].pure(buffer)
-          var next: AsyncList[F,T] = this
-          var current: Cons[F, T] = this
-          var endLoop = false
-          var nRest = n
-          while(nRest != 0 && !endLoop) {
+          else
+            var next: AsyncList[F,T] = this
+            var current: Cons[F, T] = this
+            var endLoop = false
+            var nRest = n
+            while(nRest != 0 && !endLoop) {
                buffer.addOne(current.head)
                next = current.tailFun()   
                next match
@@ -204,8 +205,8 @@ object AsyncList {
                     case _ =>
                          endLoop = true
                nRest = nRest - 1
-          }
-          next.takeTo(buffer, nRest)
+            }
+            next.takeTo(buffer, nRest)
      
      def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S] =
           Cons(head, ()=>other.merge(tailFun()))
