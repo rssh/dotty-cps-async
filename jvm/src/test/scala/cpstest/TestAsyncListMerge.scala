@@ -19,9 +19,7 @@ import cps.util.*
 
 class TestAsyncListMerge:
 
-  given CpsSchedulingMonad[CompletableFuture] = CompletableFutureCpsMonad
-
-
+ 
   @Test def testMergeTwoNonEmptyTimedLists() = {
 
     var last1: Int = -1
