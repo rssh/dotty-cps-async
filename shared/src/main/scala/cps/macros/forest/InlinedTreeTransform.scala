@@ -228,7 +228,7 @@ trait InlinedTreeTransform[F[_], CT]:
     val awaitVals = funValDefs.awaitVals.filter(x => usedAwaitVals.contains(x.symbol))
     val body  = 
       if (!awaitVals.isEmpty) {
-             bodyWithoutAwaits match
+             bodyWithoutAwaits.changeOwner(Symbol.spliceOwner) match
                  case Block(statements, last) => Block(awaitVals ++ statements, last)
                  case other => Block(awaitVals, other)
       } else 

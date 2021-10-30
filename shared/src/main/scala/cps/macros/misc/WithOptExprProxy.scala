@@ -21,10 +21,5 @@ object WithOptExprProxy:
            case blockExpr@Block(stats, expr) => 
                    Block(proxyValDef::stats, expr)
            case expr => Block(List(proxyValDef), expr)
-         resTerm.asExprOf[S]
-     
+         resTerm.changeOwner(Symbol.spliceOwner).asExprOf[S]
     
-
-
-  
-

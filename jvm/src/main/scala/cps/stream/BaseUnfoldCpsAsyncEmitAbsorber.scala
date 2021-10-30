@@ -23,7 +23,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
 
    class State:
       val finishRef = new AtomicReference[Try[Unit]|Null]()
-      val emitStart = new AtomicBoolean
+      val emitStart = new AtomicBoolean()
       val supplyEvents = new ConcurrentLinkedDeque[SupplyEventRecord]()
       val consumerEvents = new ConcurrentLinkedDeque[Promise[SupplyEventRecord]]()
       val stepStage = new AtomicInteger(0)
@@ -44,10 +44,11 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
       def queueConsumer(): F[SupplyEventRecord] =
          val p = Promise[SupplyEventRecord]()
          consumerEvents.offer(p)
-         enterStep()
-         asyncMonad.adoptCallbackStyle[SupplyEventRecord]{ evalCallback =>
+         val retval = asyncMonad.adoptCallbackStyle[SupplyEventRecord]{ evalCallback =>
             p.future.onComplete(evalCallback)
          }
+         enterStep()
+         retval
 
       def finish(r: Try[Unit]):Unit =
          finishRef.set(r)
@@ -81,10 +82,14 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
                      consumerEvents.addFirst(consumer) 
             }
             checkFinish()
-            if (stepStage.compareAndSet(StageBusy, StageFree)) then
-               done = true
-            else 
-               stepStage.set(StageBusy)
+            if supplyEvents.isEmpty() || consumerEvents.isEmpty() then
+               if(stepStage.compareAndSet(StageBusy, StageFree)) then
+                  if supplyEvents.isEmpty() || consumerEvents.isEmpty() then
+                     done = true
+                  else
+                     enterStep()
+               else 
+                  stepStage.set(StageBusy)
          }
       }
 
@@ -120,7 +125,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
                val p = Promise[Unit]()
                val emitted = Emitted(v, p)
                consumer.success(emitted)
-               asyncMonad.adoptCallbackStyle{ emitCallback =>
+               asyncMonad.adoptCallbackStyle[Unit]{ emitCallback =>
                   p.future.onComplete(emitCallback)
                }
          else

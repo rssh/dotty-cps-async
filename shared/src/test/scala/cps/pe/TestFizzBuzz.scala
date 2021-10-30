@@ -20,7 +20,7 @@ class TestFizzBuzz:
   //implicit inline def debugLevel: cps.macroFlags.DebugLevel = cps.macroFlags.DebugLevel(10)
 
 
-  @Test def testFizBuzz: Unit = 
+  @Test def testFizBuzz = 
      val c = async[PureEffect] {
        val logger = PEToyLogger.make()
        val counter = PEIntRef.make(-1)
