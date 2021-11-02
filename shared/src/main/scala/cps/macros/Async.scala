@@ -65,6 +65,7 @@ object Async {
   def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     val flags = adoptFlags(f, dm)
+    val DEBUG = true
     try
       if flags.printCode then
         try
@@ -88,7 +89,10 @@ object Async {
       val r = WithOptExprProxy("cpsMonad", dm){
            dm => 
               val cpsExpr = rootTransform[F,T](f,dm,memoization,flags,observatory,0, None)
-              if (dm.asTerm.tpe <:< TypeRepr.of[CpsEffectMonad[F]]) then       
+              if (DEBUG) {
+                 TransformUtil.dummyMapper(cpsExpr.transformed.asTerm, Symbol.spliceOwner)
+              }
+              val retval = if (dm.asTerm.tpe <:< TypeRepr.of[CpsEffectMonad[F]]) then       
                  '{ ${dm.asExprOf[CpsEffectMonad[F]]}.flatDelay(${cpsExpr.transformed}) }
               else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then       
                  '{ ${dm.asExprOf[CpsSchedulingMonad[F]]}.spawn(${cpsExpr.transformed}) }
@@ -96,6 +100,19 @@ object Async {
                  if (flags.debugLevel > 10) then
                     println(s"dm.asTerm.tpe = ${dm.asTerm.tpe.show} not implements CpsEffectMonad[F], f=$Type[F].show")
                  cpsExpr.transformed
+              if (DEBUG) {
+                 try {
+                     TransformUtil.dummyMapper(retval.asTerm, Symbol.spliceOwner)
+                 }catch{
+                    case ex: Throwable =>
+                     println(s"failed term: ${retval.show}")
+                     throw ex
+                 }      
+              } 
+              retval
+      }
+      if (DEBUG) {
+         TransformUtil.dummyMapper(r.asTerm, Symbol.spliceOwner)
       }
       if (flags.printCode)
         try
@@ -178,9 +195,9 @@ object Async {
                                       parent: Option[TransformationContext[_,_]])(
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
-     import quotes.reflect._
+     import quotes.reflect._    
      val cpsCtx = TransformationContext[F,T](f,tType,dm,optMemoization,flags,observatory,nesting,parent)
-     f match 
+     val retval = f match 
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
          case '{ while ($cond) { $repeat }  } =>
@@ -234,6 +251,16 @@ object Async {
                    println("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)
              }
+     if (true) then // check
+         val dummyMap = new TreeMap() {}
+         try {
+            val x = dummyMap.transformTerm(retval.transformed.asTerm)(Symbol.spliceOwner) 
+         }catch{
+            case ex: Throwable =>
+               println(s"Here, input term is ${f.show}, tree:${f.asTerm}")
+               throw ex;
+         }  
+     retval
 
 
   def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S],
@@ -265,8 +292,18 @@ object Async {
                report.throwError(s"lambda expected, have: ${f}", cexpr)
       
       def transformNotInlined(t: Term): Term =
+         val DEBUG = true
          val (oldParams, body, nestFun) = extractLambda(t)
          val transformed = transformImpl[F,T](body.asExprOf[T])
+         if (DEBUG) {
+            try {
+               TransformUtil.dummyMapper(transformed.asTerm,Symbol.spliceOwner)
+            } catch {
+               case ex: Throwable =>
+                  println(s"contextLambda, body=${body}")
+                  throw ex;
+            }
+         } 
          val oldValDef = oldParams.head
          val mt = MethodType(List(oldValDef.name))( _ => List(oldValDef.tpt.tpe), _ => TypeRepr.of[F[T]])
          val nLambda = Lambda(Symbol.spliceOwner, mt, (owner, params) => {

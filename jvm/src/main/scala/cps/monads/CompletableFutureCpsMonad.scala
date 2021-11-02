@@ -90,7 +90,7 @@ given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with CpsM
         }
         retval
 
-   def spawn[A](op: Context ?=> CompletableFuture[A]): CompletableFuture[A] =
+   def spawn[A](op: => CompletableFuture[A]): CompletableFuture[A] =
         val r = new CompletableFuture[A]()
         CompletableFuture.runAsync{()=>
           try

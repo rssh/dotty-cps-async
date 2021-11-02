@@ -280,7 +280,7 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F]  {
    /**
     * spawn execution of operation in own execution flow.
     **/
-   def spawnEffect[A](op: Context ?=>F[A]): F[Spawned[A]]
+   def spawnEffect[A](op: =>F[A]): F[Spawned[A]]
 
    /**
     * join the `op` computation: i.e. result is `op` which will become available
@@ -345,7 +345,7 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
     * schedule execution of op somewhere, immediatly.
     * Note, that characteristics of scheduler can vary.
     **/
-   def spawn[A](op: Context ?=> F[A]): F[A]
+   def spawn[A](op: => F[A]): F[A]
 
    /***
     * In eager monad, spawned process can be represented by F[_]
@@ -355,7 +355,7 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
    /**
     * representation of spawnEffect as immediate operation.
     **/
-   def spawnEffect[A](op: Context ?=> F[A]): F[F[A]] =
+   def spawnEffect[A](op: => F[A]): F[F[A]] =
          pure(spawn(op))
 
    /**

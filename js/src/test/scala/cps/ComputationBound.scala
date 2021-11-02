@@ -155,9 +155,11 @@ object ComputationBound {
 
 }
 
-implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBound] {
+implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBound]  {
 
    type WF[T] = ComputationBound[T]
+
+   override type Context = ComputationBound.type
 
    def pure[T](value:T): ComputationBound[T] = ComputationBound.pure(value)
 
@@ -198,6 +200,12 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
    def spawn[A](op: => ComputationBound[A]): ComputationBound[A] =
           ComputationBound.spawn(op)
 
+   def apply[A](f: Context => ComputationBound[A]): ComputationBound[A] =
+          f(ComputationBound)
+          
+   def adoptAwait[A](c: Context, v: ComputationBound[A]):ComputationBound[A] =
+          v
+        
 }
 
 case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] {

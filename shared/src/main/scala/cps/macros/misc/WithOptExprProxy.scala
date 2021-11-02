@@ -5,11 +5,16 @@
 package cps.macros.misc
 
 import scala.quoted._
+import cps.macros.forest.*
 
 object WithOptExprProxy:
 
   def apply[T:Type,S:Type](name: String, originExpr: Expr[T])(buildExpr: Expr[T] => Expr[S])(using Quotes): Expr[S] =
     import quotes.reflect.*
+    val DEBUG = true
+    if (DEBUG) {
+       TransformUtil.dummyMapper(originExpr.asTerm, Symbol.spliceOwner)
+    }   
     originExpr.asTerm match
        case Ident(_) => buildExpr(originExpr) 
        case originTerm =>

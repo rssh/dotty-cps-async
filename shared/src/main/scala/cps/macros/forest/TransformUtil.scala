@@ -183,7 +183,6 @@ object TransformUtil:
      var wasError = false
      val checker = new TreeMap() {
 
-
          override def transformTerm(tree: Term)(owner: Symbol): Term =
             try {
               super.transformTerm(tree)(owner)

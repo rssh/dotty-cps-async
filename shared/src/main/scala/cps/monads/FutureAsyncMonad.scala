@@ -43,12 +43,12 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with 
         source(p.complete(_))
         p.future
 
-   def spawn[A](op: Context ?=> F[A]): F[A] =
+   def spawn[A](op: => F[A]): F[A] =
         val p = Promise[A]
         summon[ExecutionContext].execute{ 
           () => 
               try
-                p.completeWith(op(using this)) 
+                p.completeWith(op) 
               catch
                 case NonFatal(ex) =>
                   p.complete(Failure(ex))

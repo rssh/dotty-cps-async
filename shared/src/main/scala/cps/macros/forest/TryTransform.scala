@@ -43,7 +43,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
 
      def makeRestoreExpr(): Expr[Throwable => F[T]]  =
         val nCaseDefs = makeAsyncCaseDefs()
-        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.asTerm, nCaseDefs).asExprOf[F[T]]} }
+        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.asTerm, nCaseDefs).changeOwner(Symbol.spliceOwner).asExprOf[F[T]]} }
         restoreExpr.asExprOf[Throwable => F[T]]
 
 
@@ -83,7 +83,7 @@ class TryTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
                                  val nBody = '{ ${monad}.pure($syncBody) }.asTerm
                                  CpsExpr.async[F,T](cpsCtx.monad,
                                     Try(nBody, makeAsyncCaseDefs(), None).asExprOf[F[T]]
-                                 )
+                                 ) 
                         case Some(cpsFinalizer) =>
                            if (cpsCaseDefs.isEmpty)
                              cpsBody.syncOrigin match
