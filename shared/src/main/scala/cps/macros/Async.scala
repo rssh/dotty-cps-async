@@ -19,26 +19,20 @@ import cps.macros.observatory.*
 
 object Async {
 
-  class InferAsyncArg[F[_]](using  am:CpsMonad[F]) {
+  class InferAsyncArg[F[_]](using val am:CpsMonad[F]) {
 
-       transparent inline def apply[T](inline expr: T) =
-            transform[F,T](using am)(expr)
+       transparent inline def apply[T](inline expr: am.Context ?=> T) =
+            //transform[F,T](using am)(expr)
+            am.apply(transformContextLambda(expr))
 
-       //  ?=>  cause compilre crash.     
-       transparent inline def in[T](using mc: CpsMonadContextProvider[F] )(inline expr: mc.Context => T ): F[T]  = 
+       
+       transparent inline def in[T](using mc: CpsMonadContextProvider[F] )(inline expr: mc.Context ?=> T ): F[T]  = 
             mc.contextualize(transformContextLambda(expr))
        
   }
 
   inline def async[F[_]](using am:CpsMonad[F]): InferAsyncArg[F] =
           new InferAsyncArg[F]
-
-   class InferAsyncContextArg[F[_],C](using  am:CpsContextMonad[F] { type Context = C }) {
-
-            transparent inline def apply[T](inline expr: C => T) = 
-                am.in(transformContextLambda(expr))
-     
-   }
      
 
   transparent inline def transform[F[_], T](using m: CpsMonad[F])(inline expr: T) =
@@ -46,7 +40,7 @@ object Async {
         Async.transformImpl[F,T]('expr)
      }
 
-  transparent inline def transformContextLambda[F[_],T,C](inline expr: C => T)(using m: CpsMonad[F]): C => F[T] =
+  transparent inline def transformContextLambda[F[_],T,C](inline expr: C ?=> T)(using m: CpsMonad[F]): C => F[T] =
      ${
         Async.transformContextLambdaImpl[F,T,C]('expr)
      } 
@@ -249,7 +243,7 @@ object Async {
                       cpsCtx.flags,cpsCtx.observatory,cpsCtx.nesting+1, Some(cpsCtx))
 
 
-  def transformContextLambdaImpl[F[_]:Type, T:Type, C:Type](cexpr: Expr[C => T])(using Quotes): Expr[C => F[T]] =
+  def transformContextLambdaImpl[F[_]:Type, T:Type, C:Type](cexpr: Expr[C ?=> T])(using Quotes): Expr[C => F[T]] =
       import quotes.reflect._
 
       def inInlined(t: Term, f: Term => Term): Term =

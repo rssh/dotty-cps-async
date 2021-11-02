@@ -71,7 +71,7 @@ case class MappedThunk[A,B](fa: PureEffect[A], f: Try[A] => Try[B]) extends Pure
 case class FlatMappedThunk[A,B](fa: PureEffect[A], f: Try[A] => PureEffect[B]) extends PureEffect[B]
 
 
-given PureEffectCpsMonad: CpsConcurrentEffectMonad[PureEffect] with
+given PureEffectCpsMonad: CpsConcurrentEffectMonad[PureEffect] with CpsMonadInstanceContext[PureEffect] with
 
   type F[T] = PureEffect[T]
 
@@ -98,7 +98,7 @@ given PureEffectCpsMonad: CpsConcurrentEffectMonad[PureEffect] with
        }
        FutureThunk(()=>p.future)
 
-  def spawnEffect[A](op: =>PureEffect[A]): PureEffect[Spawned[A]] =
+  def spawnEffect[A](op: Context ?=> PureEffect[A]): PureEffect[Spawned[A]] =
        FutureThunk{() =>
           given ExecutionContext = ExecutionContext.global
           Future(

@@ -6,4 +6,3 @@ trait CpsMonadContextProvider[F[_]]:
 
     def  contextualize[A](fa: Context => F[A]): F[A]
 
-

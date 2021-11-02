@@ -177,7 +177,7 @@ object ValDefTransform:
                    Block( prevStats ++: (valDef +: statements), last)
             case other =>
                    Block( prevStats ++: List(valDef), other)
-         outputTerm.asExprOf[T]
+         outputTerm.changeOwner(Symbol.spliceOwner).asExprOf[T]
        }
 
 
@@ -192,7 +192,7 @@ object ValDefTransform:
                  Block( prev.map(_.extract) ++: valDef +: stats, e)
              case other =>
                  Block( prev.map(_.extract) ++: List(valDef) , other)
-          block.asExprOf[F[T]]
+          block.changeOwner(Symbol.spliceOwner).asExprOf[F[T]]
 
        }
 
@@ -213,11 +213,12 @@ object ValDefTransform:
           if (prev.isEmpty) {
              term
           } else {
-             term match
+             val retval = term match
                case Block(stats, expr) =>
                  Block(prev.map(_.extract) ++: stats, expr)
                case other =>
                  Block(prev.toList.map(_.extract) , other)
+             retval.changeOwner(Symbol.spliceOwner)
           }
 
 

@@ -8,7 +8,7 @@ import scala.util.Success
 import scala.util.control.NonFatal
 
 
-given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with {
+given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with CpsMonadInstanceContext[CompletableFuture] with {
 
    def pure[T](t:T):CompletableFuture[T] =
          CompletableFuture.completedFuture(t)
@@ -90,7 +90,7 @@ given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with {
         }
         retval
 
-   def spawn[A](op: => CompletableFuture[A]): CompletableFuture[A] =
+   def spawn[A](op: Context ?=> CompletableFuture[A]): CompletableFuture[A] =
         val r = new CompletableFuture[A]()
         CompletableFuture.runAsync{()=>
           try

@@ -11,7 +11,7 @@ import scala.util.control._
 /**
  * Default CpsMonad implementation for `Future`
  **/
-given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
+given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with CpsMonadInstanceContext[Future] with
 
    type F[+T] = Future[T]
 
@@ -43,12 +43,12 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with
         source(p.complete(_))
         p.future
 
-   def spawn[A](op: => F[A]): F[A] =
+   def spawn[A](op: Context ?=> F[A]): F[A] =
         val p = Promise[A]
         summon[ExecutionContext].execute{ 
           () => 
               try
-                p.completeWith(op) 
+                p.completeWith(op(using this)) 
               catch
                 case NonFatal(ex) =>
                   p.complete(Failure(ex))

@@ -277,7 +277,7 @@ trait CpsTreeScope[F[_], CT] {
           val wPrevOtpe = TransformUtil.veryWiden(prev.otpe.widen)
           val tmapTerm = untmapTerm.appliedToTypes(List(wPrevOtpe,otpe))
           val r = tmapTerm.appliedToArgss(
-                     List(List(prev.transformed),
+                     List(List(prev.transformed.changeOwner(Symbol.spliceOwner)),
                           List(
                             Lambda(
                               Symbol.spliceOwner,
@@ -340,7 +340,7 @@ trait CpsTreeScope[F[_], CT] {
         val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
         val r = tpFlatMapTerm.appliedToArgss(
             List(
-              List(prev.castOtpe(wPrevOtpe).transformed),
+              List(prev.castOtpe(wPrevOtpe).transformed.changeOwner(Symbol.spliceOwner)),
               List(
                 Lambda(
                   Symbol.spliceOwner,
@@ -382,13 +382,13 @@ trait CpsTreeScope[F[_], CT] {
       if (prevs.isEmpty)
         last.transformed
       else
-        Block(prevs.toList, last.transformed)
+        Block(prevs.toList, last.transformed).changeOwner(Symbol.spliceOwner)
 
     override def syncOrigin: Option[Term] =
       if prevs.isEmpty then
         last.syncOrigin
       else
-        last.syncOrigin map (l => Block(prevs.toList,l))
+        last.syncOrigin map (l => Block(prevs.toList,l).changeOwner(Symbol.spliceOwner))
 
 
      // TODO: pass other cake ?
@@ -544,14 +544,14 @@ trait CpsTreeScope[F[_], CT] {
        val result = nested match
          case BlockCpsTree.Matcher(prevs,last) =>
            val lastTerm = last.syncOrigin.getOrElse(last.transformed)
-           Block(nValDef +: prevs.toList, lastTerm.asInstanceOf[Term])
+           Block(nValDef +: prevs.toList, lastTerm.asInstanceOf[Term]).changeOwner(Symbol.spliceOwner)
          case _ =>
            val next = nested.syncOrigin.getOrElse(nested.transformed)
            appendValDefToNextTerm(nValDef, next.asInstanceOf[Term])
        result
 
     def appendValDefToNextTerm(valDef: ValDef, next:Term): Term =
-       next match
+       next.changeOwner(valDef.symbol.owner) match
          case x@Lambda(params,term) => Block(List(valDef), x)
          case Block(stats, last) => Block(valDef::stats, last)
          case other => Block(List(valDef), other)
@@ -592,15 +592,15 @@ trait CpsTreeScope[F[_], CT] {
               case Block(xStats, xLast) =>
                 y match
                   case Block(yStats, yLast) =>
-                    Block((xStats :+ xLast) ++ yStats, yLast)
+                    Block((xStats :+ xLast) ++ yStats, yLast).changeOwner(Symbol.spliceOwner)
                   case yOther =>
-                    Block(xStats :+ xLast, yOther)
+                    Block(xStats :+ xLast, yOther).changeOwner(Symbol.spliceOwner)
               case xOther =>
                 y match
                   case Block(yStats, yLast) =>
-                    Block(xOther::yStats, yLast)
+                    Block(xOther::yStats, yLast).changeOwner(Symbol.spliceOwner)
                   case yOther =>
-                    Block(xOther::Nil, yOther)
+                    Block(xOther::Nil, yOther).changeOwner(Symbol.spliceOwner)
           }
     }
 

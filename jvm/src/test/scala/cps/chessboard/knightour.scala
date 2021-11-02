@@ -4,7 +4,7 @@ import cps._
 
 //TODO: move to cps.runtime
 
-given CpsMonad[List] with
+given CpsMonad[List] with CpsMonadInstanceContext[List] with
 
    def pure[T](t:T):List[T] =
         List(t)

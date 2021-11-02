@@ -22,6 +22,11 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
    type WF[X] = F[X]
 
    /**
+    * ''
+    **/
+   type Context
+
+   /**
     * Pure - wrap value `t` inside monad. 
     *
     * Note, that pure use eager evaluation, which is different from Haskell.
@@ -38,7 +43,19 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
     **/
    def flatMap[A,B](fa:F[A])(f: A=>F[B]):F[B]
 
+   /**
+    * run op in the context environment.
+    **/
+   def apply[T](op: Context => F[T]): F[T] 
+
+   /**
+    * adopt monadic value in await to current context.
+    * 
+    **/
+   def adoptAwait[A](c:Context, fa:F[A]):F[A] 
+
 }
+
 
 
 /**
@@ -231,7 +248,7 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
     * representing pure as eager function is a simplification of semantics,
     * real binding to monads in math sence, should be with `delay` instead `pure`
     **/
-   def delay[T](x: =>T):F[T] = map(delayedUnit)(_ => x)
+   def delay[T](x: => T):F[T] = map(delayedUnit)(_ => x)
 
    /**
     * shortcat for delayed evaluation of effect.
@@ -263,7 +280,7 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F]  {
    /**
     * spawn execution of operation in own execution flow.
     **/
-   def spawnEffect[A](op: =>F[A]): F[Spawned[A]]
+   def spawnEffect[A](op: Context ?=>F[A]): F[Spawned[A]]
 
    /**
     * join the `op` computation: i.e. result is `op` which will become available
@@ -328,7 +345,7 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
     * schedule execution of op somewhere, immediatly.
     * Note, that characteristics of scheduler can vary.
     **/
-   def spawn[A](op: =>F[A]): F[A]
+   def spawn[A](op: Context ?=> F[A]): F[A]
 
    /***
     * In eager monad, spawned process can be represented by F[_]
@@ -338,7 +355,7 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
    /**
     * representation of spawnEffect as immediate operation.
     **/
-   def spawnEffect[A](op: =>F[A]): F[F[A]] =
+   def spawnEffect[A](op: Context ?=> F[A]): F[F[A]] =
          pure(spawn(op))
 
    /**
@@ -347,14 +364,6 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
    def join[A](op: Spawned[A]): F[A] = op
 
          
-
 }
 
-trait CpsContextMonad[F[_]] extends CpsMonad[F] {
 
-   type Context 
-
-   def in[T]( f: Context => F[T] ): F[T]
-
-
-}
