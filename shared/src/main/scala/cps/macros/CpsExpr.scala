@@ -7,6 +7,8 @@ import scala.quoted._
 import cps._
 import cps.macros.misc._
 
+import cps.macros.forest.*
+
 trait ExprTreeGen:
   def extract(using Quotes): quotes.reflect.Statement
   def isChanged: Boolean
@@ -35,10 +37,44 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
 
   def transformed(using Quotes): Expr[F[T]] =
      import quotes.reflect._
+     val DEBUG = true
      if (prev.isEmpty)
        fLast
      else
-       Block(prev.toList.map(_.extract), fLast.asTerm).changeOwner(Symbol.spliceOwner).asExprOf[F[T]]
+
+       val lastTerm = fLast.asTerm 
+       val lastOwners = TransformUtil.findOtherOwnersIn(lastTerm)
+
+       val prevTerms = prev.map(_.extract).toList
+
+       // black magic here, setting to Symbol.spliceOwner cause 
+       //     ".... a reference to $sym was used outside the scope where it was defined" 
+       // TODO: research
+       val prevOwners = prevTerms.foldLeft(List.empty[Symbol]){ (s,e) =>
+          e match
+            case td: Definition =>
+              if (td.symbol.maybeOwner != Symbol.noSymbol && td.symbol.maybeOwner != Symbol.spliceOwner ) {
+                e.symbol.maybeOwner::s
+              } else {
+                s
+              }
+            case _ => s  
+       }
+       val newOwner = prevOwners.headOption.getOrElse(Symbol.spliceOwner)
+
+       val changedPrevs = prevTerms.map{ e =>
+         TransformUtil.reallyChangeOwner(e, newOwner).asInstanceOf[Statement]
+       }
+
+       val changedLast = lastTerm.changeOwner(newOwner)
+
+       try {
+          Block(changedPrevs, changedLast).asExprOf[F[T]]
+       } catch {
+         case ex: Throwable =>
+          println(s"here")
+          throw ex;
+       }
 
   def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T]
 

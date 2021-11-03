@@ -170,14 +170,14 @@ object ValDefTransform:
 
        override def syncOrigin(using Quotes): Option[Expr[T]] = next.syncOrigin.map{ n =>
          import quotes.reflect._
-         val prevStats: List[Statement] = prev.map(_.extract).toList
          val valDef: Statement = oldValDef.asInstanceOf[quotes.reflect.ValDef]
-         val outputTerm = n.asTerm match
+         val prevStats: List[Statement] = prev.map(_.extract.changeOwner(valDef.symbol.owner)).toList
+         val outputTerm = n.asTerm.changeOwner(valDef.symbol.owner) match
             case Block(statements, last) =>
                    Block( prevStats ++: (valDef +: statements), last)
             case other =>
                    Block( prevStats ++: List(valDef), other)
-         outputTerm.changeOwner(Symbol.spliceOwner).asExprOf[T]
+         outputTerm.asExprOf[T]
        }
 
 
@@ -187,12 +187,12 @@ object ValDefTransform:
           import quotes.reflect._
 
           val valDef = oldValDef.asInstanceOf[quotes.reflect.ValDef]
-          val block = next.transformed.asTerm match 
+          val block = next.transformed.asTerm.changeOwner(valDef.symbol.owner) match 
              case Block(stats, e) =>
-                 Block( prev.map(_.extract) ++: valDef +: stats, e)
+                 Block( prev.map(_.extract.changeOwner(valDef.symbol.owner)) ++: valDef +: stats, e)
              case other =>
-                 Block( prev.map(_.extract) ++: List(valDef) , other)
-          block.changeOwner(Symbol.spliceOwner).asExprOf[F[T]]
+                 Block( prev.map(_.extract.changeOwner(valDef.symbol.owner)) ++: List(valDef) , other)
+          block.asExprOf[F[T]]
 
        }
 

@@ -1,5 +1,5 @@
 //val dottyVersion = "3.0.2-RC1-bin-SNAPSHOT"
-val dottyVersion = "3.1.1-RC1-bin-SNAPSHOT"
+val dottyVersion = "3.1.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.0.1-RC2"
 //val dottyVersion = "3.1.0"
 

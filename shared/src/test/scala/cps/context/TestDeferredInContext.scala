@@ -2,10 +2,9 @@ package cps.context
 
 import scala.util.*
 import scala.util.control.*
+import scala.collection.mutable.Stack
 
 import cps.*
-
-import java.util.concurrent.ConcurrentLinkedDeque
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
@@ -14,16 +13,19 @@ import org.junit.Assert._
 
 class DeferredDestructorsContext  {
 
-  val  deferred: ConcurrentLinkedDeque[()=>Unit] = new ConcurrentLinkedDeque()
+  // non-reentrable for this example.
+  //val  deferred: ConcurrentLinkedDeque[()=>Unit] = new ConcurrentLinkedDeque()
+  
+  val  deferred = Stack[()=>Unit]()
 
   def  deferr(f: =>Unit): Unit =
-    deferred.addFirst(() => f)
+    deferred.push(() => f)
 
   def  cleanup(): Option[Throwable] = 
   {
     var errors: Seq[Throwable] = Seq.empty
     while(!deferred.isEmpty) {
-       val f = deferred.poll()
+       val f = deferred.pop()
        try {
          f()
        }catch{
