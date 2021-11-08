@@ -8,7 +8,7 @@ import scala.quoted._
 import scala.compiletime._
 
 
-class SLSelectLoop[F[_],C](using am:CpsMonad.Aux[F,C]):
+class SLSelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
 
   case class ReadRecord[A](reader: IFReader[F,A], handler: A=>F[Boolean])
   case class WriteRecord[A](writer: IFWriter[F,A], value: ()=>F[A], handler: A=>F[Boolean])
