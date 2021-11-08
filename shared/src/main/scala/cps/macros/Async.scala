@@ -19,9 +19,9 @@ import cps.macros.observatory.*
 
 object Async {
 
-  class InferAsyncArg[F[_]](using val am:CpsMonad[F]) {
+  class InferAsyncArg[F[_],C](using val am:CpsMonad.Aux[F,C]) {
 
-       transparent inline def apply[T](inline expr: am.Context ?=> T) =
+       transparent inline def apply[T](inline expr: C ?=> T) =
             //transform[F,T](using am)(expr)
             am.apply(transformContextLambda(expr))
 
@@ -31,8 +31,8 @@ object Async {
        
   }
 
-  inline def async[F[_]](using am:CpsMonad[F]): InferAsyncArg[F] =
-          new InferAsyncArg[F]
+  inline def async[F[_]](using am:CpsMonad[F]) =
+          new InferAsyncArg(using am)
      
 
   transparent inline def transform[F[_], T](using m: CpsMonad[F])(inline expr: T) =

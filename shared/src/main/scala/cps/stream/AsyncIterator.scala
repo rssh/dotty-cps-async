@@ -28,11 +28,15 @@ object AsyncIterator:
 
      
 
-class AsyncIteratorEmitAbsorber[F[_]:CpsConcurrentMonad,T](using ExecutionContext) extends BaseUnfoldCpsAsyncEmitAbsorber[AsyncIterator[F,T],F,T]:
+class AsyncIteratorEmitAbsorber[F[_]:CpsConcurrentMonad,T](using ExecutionContext) extends CpsAsyncEmitAbsorber3[AsyncIterator[F,T],F,T]:
 
   override type Element = T
 
-  def unfold[S](s0:S)(f:S => F[Option[(T,S)]]): AsyncIterator[F,T] =
-        AsyncIterator.unfold[S,F,T](s0)(f)
+  override val asyncMonad = summon[CpsConcurrentMonad[F]]
+
+  override def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit]): AsyncIterator[F,T] =
+     val list = AsyncListEmitAbsorber[F,T].eval(f)
+     AsyncListIterator(list)
+
 
 

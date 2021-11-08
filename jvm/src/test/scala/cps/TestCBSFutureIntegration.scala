@@ -20,7 +20,9 @@ class TestCBSFutureIntegration:
      def fun(x:Int):Future[Int] =
        Future successful (x+1)
      
-     val c = async[ComputationBound]{
+     val c = async[ComputationBound]{ ctx ?=>
+       // TODO: dotty bug. this is context function from context, so should be enabed.
+       //val ctx = summon[ComputationBoundAsyncMonad.Context]
        val a = await(fun(10))
        a
      }

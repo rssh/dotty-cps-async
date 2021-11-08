@@ -7,11 +7,18 @@ import scala.util.*
 import java.util.concurrent.atomic.*
 import java.util.concurrent.ConcurrentLinkedDeque
 
-trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using ExecutionContext ) extends CpsAsyncEmitAbsorber3[R,F,T]:
+trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using ExecutionContext) extends CpsAsyncEmitAbsorber3[R,F,T]:
 
+ 
    def unfold[S](s0:S)(f:S => F[Option[(T,S)]]): R
 
+   def asSync(fs:F[R]):R
+
    val asyncMonad: CpsConcurrentMonad[F] = summon[CpsConcurrentMonad[F]]
+
+   def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit]): R =
+      asSync(evalAsync(f))
+
 
    sealed class SupplyEventRecord
    case object SpawnEmitter extends SupplyEventRecord
@@ -21,7 +28,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
    type ConsumerCallback = Try[SupplyEventRecord]=>Unit
    type OneThreadTaskCallback = Unit => Unit
 
-   class State:
+   class State(using asyncMonad.Context):
       val finishRef = new AtomicReference[Try[Unit]|Null]()
       val emitStart = new AtomicBoolean()
       val supplyEvents = new ConcurrentLinkedDeque[SupplyEventRecord]()
@@ -112,8 +119,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
       } 
 
 
-   class StepsObserver(state: State
-                        ) extends CpsAsyncEmitter[R,F,T]:
+   class StepsObserver(state: State)(using asyncMonad.Context) extends CpsAsyncEmitter[F,T]:
    
    
      def emitAsync(v:T): F[Unit] =  
@@ -139,9 +145,12 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
           
    end StepsObserver
 
+    
+   def evalAsync(f: CpsAsyncEmitter[F,T] => F[Unit]):F[R] =
+      asyncMonad.apply( ctx => asyncMonad.pure(evalAsyncInternal(f)(using ctx)) )
 
 
-   def evalAsync(f: CpsAsyncEmitter[R,F,T] => F[Unit]): R =
+   def evalAsyncInternal(f: CpsAsyncEmitter[F,T] => F[Unit])(using asyncMonad.Context): R =
 
       val state = new State()
       val stepsObserver = new StepsObserver(state)
@@ -195,4 +204,4 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
 
       unfold(state)(step)
          
-   end evalAsync
+   end evalAsyncInternal

@@ -30,7 +30,7 @@ class TestSL3:
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
 
      val reader = async[Future] {
-         SLSelectLoop[Future].apply{
+         SLSelectLoop.create[Future].apply{
             case z: info.read => //sum += z
                               //if (sum > 10000) {
                                  //quit.write(1)

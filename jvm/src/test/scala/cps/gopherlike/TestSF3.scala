@@ -25,9 +25,10 @@ class TestSF3:
      
      val ch = new CIFChannel[Future,Boolean]()
      val chDone = new CIFChannel[Future,Boolean]()
-     val select = SLSelectLoop[Future]
+     val select = SLSelectLoop.create[Future]
 
      val sf = select.afold((true)){ (x,s) =>
+            
             s.apply{
                 case v: ch.read => 
                     x || v

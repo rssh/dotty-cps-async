@@ -29,7 +29,7 @@ class TestSL2:
 
 
         val q = 0
-        val selector = SLSelectLoop[Future].runAsync()
+        val selector = SLSelectLoop.create[Future].runAsync()
 
         for(c <- channel4) 
            channel2.write(c)

@@ -10,7 +10,6 @@ import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
 
-
 class DeferredDestructorsContext  {
 
   // non-reentrable for this example.

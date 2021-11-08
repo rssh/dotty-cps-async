@@ -270,8 +270,11 @@ class AsyncListEmitAbsorber[F[_]:CpsConcurrentMonad,T](using ec: ExecutionContex
 
   override type Element = T
 
+  def asSync(fs:F[AsyncList[F,T]]): AsyncList[F,T] =
+     AsyncList.Wait(fs)
+
   def unfold[S](s0:S)(f:S => F[Option[(T,S)]]): AsyncList[F,T] =
-        AsyncList.unfold[S,F,T](s0)(f)
+     AsyncList.unfold[S,F,T](s0)(f)
 
 
 

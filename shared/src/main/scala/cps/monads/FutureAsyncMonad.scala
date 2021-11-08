@@ -87,10 +87,10 @@ given futureMemoization: CpsMonadMemoization.Default[Future] with {}
 
 
 
-given fromFutureConversion[G[_],T](using ExecutionContext, CpsAsyncMonad[G]): CpsMonadConversion[Future,G] with
+given fromFutureConversion[G[_],T, C](using ex: ExecutionContext, m: CpsAsyncMonad.Aux[G,C]): CpsMonadConversion[Future,G] with
 
   def apply[T](ft:Future[T]): G[T] =
-    summon[CpsAsyncMonad[G]].adoptCallbackStyle(listener => ft.onComplete(listener) )
+     summon[CpsAsyncMonad[G]].adoptCallbackStyle(listener => ft.onComplete(listener) )
                                          
 
 given toFutureConversion[F[_], T](using ExecutionContext, CpsSchedulingMonad[F]): CpsMonadConversion[F,Future] with

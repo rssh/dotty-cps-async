@@ -27,8 +27,8 @@ def await[F[_],T](f: F[T])(using am:CpsAwaitable[F]): T = ???
  * i.e. async return a transitional object, which accepts body and perform async transform with the given 
  * `CpsMonad[F]`.
  **/
-inline def async[F[_]](using inline am: CpsMonad[F]): macros.Async.InferAsyncArg[F] =
-   new macros.Async.InferAsyncArg[F]
+transparent inline def async[F[_]](using am: CpsMonad[F]) =
+   macros.Async.InferAsyncArg(using am)
 
 
 // bug in dotty ?   

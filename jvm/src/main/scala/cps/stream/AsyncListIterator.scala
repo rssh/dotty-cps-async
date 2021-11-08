@@ -5,12 +5,15 @@ import java.util.concurrent.atomic.AtomicReference
 import cps.*
 
 
+
 class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T]) extends AsyncIterator[F,T]:
    val  ref = new AtomicReference[AsyncList[F,T]](l)
 
    def  next: F[Option[T]] =
      val m = summon[CpsAsyncMonad[F]]
-     m.adoptCallbackStyle[Option[T]]{ elementCallback =>
+     m.apply{ ctx =>
+      given m.Context = ctx 
+      m.adoptCallbackStyle[Option[T]]{ elementCallback =>
          ref.updateAndGet{ lStart =>
             val delayedList = m.adoptCallbackStyle[AsyncList[F,T]]{
               listCallback => m.mapTry(lStart.next){ 
@@ -28,6 +31,7 @@ class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T]) extends A
             }
             AsyncList.Wait(delayedList)
          }
+      }   
      }
         
 

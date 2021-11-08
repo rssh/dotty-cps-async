@@ -15,16 +15,16 @@ import java.util.concurrent.atomic.AtomicInteger
 class ASChannel[F[_]:CpsAsyncMonad,A]
 {
   
-
    private val readers: ConcurrentLinkedQueue[A => F[Unit]] = new ConcurrentLinkedQueue()
    private val writers: ConcurrentLinkedQueue[Unit=>F[A]] = new ConcurrentLinkedQueue()
+
+   val m = summon[CpsAsyncMonad[F]]
 
    def read():F[A] = {
       Option(writers.poll()) match 
         case Some(writer) =>
                 writer(())
         case None =>
-                  val m = summon[CpsAsyncMonad[F]]
                   val readFun: ()=>F[A] = this.synchronized{
                     Option(writers.poll()) match
                        case Some(writer) => () => writer(())
@@ -42,7 +42,6 @@ class ASChannel[F[_]:CpsAsyncMonad,A]
         case Some(reader) =>
                   reader(a)
         case None =>
-                val m = summon[CpsAsyncMonad[F]]
                 val writeFun: ()=>F[Unit] = this.synchronized{
                   Option(readers.poll()) match
                     case Some(reader) => 

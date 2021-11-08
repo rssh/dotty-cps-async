@@ -24,7 +24,7 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
    /**
     * ''
     **/
-   type Context
+   type Context 
 
    /**
     * Pure - wrap value `t` inside monad. 
@@ -56,6 +56,11 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
 
 }
 
+object CpsMonad  {
+
+   type Aux[F[_],C] = CpsMonad[F] { type Context = C }
+
+}
 
 
 /**
@@ -204,6 +209,10 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
 }
 
+object CpsTryMonad {
+
+   type Aux[F[_],C] = CpsMonad.Aux[F,C] & CpsTryMonad[F]
+}
 
 /**
  * Monad, which is compatible with passing data via callbacks.
@@ -216,13 +225,21 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
  **/
 trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
+   //override type Context <: CpsAsyncMonadContext[F]
+
    /**
-    * called by the source, which accept callback.
+    * called by the source, which accept callback inside 
     **/
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A] 
-
  
 }
+
+object CpsAsyncMonad {
+
+   type Aux[F[_],C] = CpsMonad.Aux[F,C] & CpsAsyncMonad[F] 
+
+}
+
 
 /**
  * Marker trait, which mark effect monad, where
@@ -257,11 +274,23 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
 
 }
 
+object CpsEffectMonad {
+
+   type Aux[F[_],C] = CpsEffectMonad[F] { type Context = C }
+
+}
+
+
 /**
  * Async Effect Monad
  */
 trait CpsAsyncEffectMonad[F[_]] extends CpsAsyncMonad[F] with CpsEffectMonad[F]
 
+object CpsAsyncEffectMonad {
+
+   type Aux[F[_],C] = CpsAsyncEffectMonad[F] { type Context = C }
+
+}
 
 
 
@@ -300,28 +329,44 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F]  {
        flatMap(spawnEffect(fa)){ sa =>
          flatMap(spawnEffect(fb)){ sb =>
             val ref = new AtomicReference[Either[(Try[A],Spawned[B]),(Spawned[A],Try[B])]|Null](null)
-            val endA = adoptCallbackStyle[Either[(Try[A],Spawned[B]),(Spawned[A],Try[B])]]{ callback => 
-              mapTry(join(sa)){ ra => 
+            //apply{ ctx =>
+              val endA = adoptCallbackStyle[Either[(Try[A],Spawned[B]),(Spawned[A],Try[B])]]{ callback => 
+                mapTry(join(sa)){ ra => 
                  val v = Left(ra,sb)
                  if ref.compareAndSet(null,v) then 
                     callback(Success(v)) 
-              }
-              mapTry(join(sb)){ rb =>
+                }
+                mapTry(join(sb)){ rb =>
                  val v = Right(sa, rb)
                  if ref.compareAndSet(null,v) then 
                     callback(Success(v)) 
-              }
-            }
-            endA
+                }
+              }//(using ctx)
+              endA
+            //}
          }
        }
 
 }
 
+
+object CpsConcurrentMonad {
+
+   type Aux[F[_],C] = CpsConcurrentMonad[F] { type Context = C }
+
+}
+
+
 /**
  * Marker trait for concurrent effect monads.
  */
 trait CpsConcurrentEffectMonad[F[_]] extends CpsConcurrentMonad[F] with CpsAsyncEffectMonad[F]
+
+object CpsConcurrentEffectMonad {
+
+   type Aux[F[_],C] = CpsConcurrentEffectMonad[F] { type Context = C }
+
+}
 
 
 /**
@@ -366,4 +411,9 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
          
 }
 
+object CpsSchedulingMonad {
+
+   type Aux[F[_],C] = CpsSchedulingMonad[F] { type Context = C }
+
+}
 

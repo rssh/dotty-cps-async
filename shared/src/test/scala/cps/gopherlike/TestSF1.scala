@@ -23,7 +23,7 @@ class TestSF1:
      async[Future] {
         val ch1 = new CIFChannel[Future,Int]()
         val ch2 = new CIFChannel[Future,Int]()
-        val select = SLSelectLoop[Future]
+        val select = SLSelectLoop.create[Future]
         //implicit val printCode = cps.macroFlags.PrintCode
         //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
         for {
