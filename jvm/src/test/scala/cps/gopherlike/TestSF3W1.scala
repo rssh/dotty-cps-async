@@ -11,35 +11,40 @@ import cps._
 import cps.monads.FutureAsyncMonad
 import scala.concurrent.ExecutionContext.Implicits.global
 
-/*
-class TestSF3:
+class SF3W1SelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
+        
+  def fold[S](s0:S)(step: (S,SF3W1SelectLoop[F,C])=> S): S = 
+   ???
+
+  transparent inline def afold[S](inline s0:S)(inline step: (S,SF3W1SelectLoop[F,C]) => S): F[S] =
+     async[F] { 
+       fold(s0)(step)
+     }
+
+
+object SF3W1SelectLoop:
+   def create[F[_]](using am:CpsMonad[F]) = SF3W1SelectLoop(using am)
+
+
+class TestSF3W1:
 
   def qqq: Int = 0
 
-  // dotty bug: https://github.com/lampepfl/dotty/issues/11251
   @Test def reproduce(): Unit = {
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
 
      
-     val ch = new CIFChannel[Future,Boolean]()
-     val chDone = new CIFChannel[Future,Boolean]()
      val select = SLSelectLoop.create[Future]
 
      val sf = select.afold((true)){ (x,s) =>
-            
-            s.apply{
-                case v: ch.read => 
-                    x || v
-                //case v: chDone.read => v
-            }
             x
          }
    
      assert(true)
   }
   
-*/
+
 
 
