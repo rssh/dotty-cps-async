@@ -119,8 +119,11 @@ object TransformUtil:
                  case tp@TypeRef(internal, name) =>
                          internal match
                            case tr: TermRef =>
-                              val ref = lookupParamTerm(tr.termSymbol).getOrElse(Ref(tr.termSymbol))
-                              TypeSelect(ref,name).tpe
+                              lookupParamTerm(tr.termSymbol) match
+                                case Some(paramTerm) =>
+                                  TypeSelect(paramTerm, name).tpe
+                                case None =>
+                                  tp
                            case _ =>
                             // we can't get inside, since it is
                             tp

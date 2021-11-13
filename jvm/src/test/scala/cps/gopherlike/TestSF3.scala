@@ -11,7 +11,7 @@ import cps._
 import cps.monads.FutureAsyncMonad
 import scala.concurrent.ExecutionContext.Implicits.global
 
-/*
+
 class TestSF3:
 
   def qqq: Int = 0
@@ -40,6 +40,6 @@ class TestSF3:
      assert(true)
   }
   
-*/
+
 
 
