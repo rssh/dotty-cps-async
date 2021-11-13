@@ -30,6 +30,9 @@ def await[F[_],T](f: F[T])(using am:CpsAwaitable[F]): T = ???
 transparent inline def async[F[_]](using am: CpsMonad[F]) =
    macros.Async.InferAsyncArg(using am)
 
+transparent inline def asyncAux[F[_],C](using am: CpsMonad.Aux[F,C]) =
+   macros.Async.InferAsyncArg(using am)
+   
 
 // bug in dotty ?   
 //transparent inline def async[F[_]](using inline am: CpsContextMonad[F]) =

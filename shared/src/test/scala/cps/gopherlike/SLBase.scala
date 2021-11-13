@@ -91,7 +91,7 @@ class SLSelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
   }
 
   transparent inline def afold[S](inline s0:S)(inline step: (S,SLSelectLoop[F,C]) => S|SLSelectLoop.Done[S]): F[S] =
-     async[F] { 
+     asyncAux[F,C] { 
        fold(s0)(step)
      }
 
