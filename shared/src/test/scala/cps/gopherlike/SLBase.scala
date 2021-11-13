@@ -42,12 +42,12 @@ class SLSelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
 
   transparent inline def apply(inline pf: PartialFunction[Any,Boolean]): Unit =
     ${  
-      SLSelectLoop.loopImpl[F,C]('pf, '{summon[CpsMonad[F]]})  
+      SLSelectLoop.loopImpl('pf, 'am )  
     }    
   
   transparent inline def applyAsync(inline pf: PartialFunction[Any,F[Boolean]]): Unit =
     ${
-      SLSelectLoop.loopImplAsync[F,C]('pf, '{summon[CpsMonad[F]]})  
+      SLSelectLoop.loopImplAsync[F,C]('pf, 'am)  
     }
   
 

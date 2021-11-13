@@ -1,4 +1,4 @@
-package cps.gopherlike
+package cps.min1gopherlike
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
@@ -11,8 +11,9 @@ import cps._
 import cps.monads.FutureAsyncMonad
 import scala.concurrent.ExecutionContext.Implicits.global
 
-/*
-class TestSF1:
+import cps.gopherlike._
+
+class TestSF1W1:
 
   def qqq: Int = 0
 
@@ -51,11 +52,6 @@ class TestSF1:
        
      }
   }
-*/
 
 
-// workarround for https://github.com/lampepfl/dotty/issues/11331
-object TestSF1:
-
-   def dummy=0
 
