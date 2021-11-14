@@ -29,7 +29,7 @@ trait CpsAsyncEmitAbsorber[R]:
    type Monad[_]
    type Element
 
-   def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit])(using CpsContextType[Monad]): R
+   def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit]): R
 
    def asyncMonad: CpsAsyncMonad[Monad]
 
@@ -81,22 +81,18 @@ object CpsAsyncStreamMacro:
                    throw MacroError("expected, that lambda in transform have one argument",f.asExpr);
                }
 
-               Expr.summon[CpsContextType[F]] match
-                  case Some(ctp) =>
-                     val param = params.head
-                     val mt = MethodType(List(param.name))(_ => List(param.tpt.tpe), _ => TypeRepr.of[F].appliedTo(body.tpe.widen))
-                     val nLambda = Lambda(Symbol.spliceOwner, mt, (symbol, args) => {
+               val param = params.head
+               val mt = MethodType(List(param.name))(_ => List(param.tpt.tpe), _ => TypeRepr.of[F].appliedTo(body.tpe.widen))
+               val nLambda = Lambda(Symbol.spliceOwner, mt, (symbol, args) => {
                         val argTerm = args.head.asInstanceOf[Term]
 
                         val nBody = cps.macros.forest.TransformUtil.substituteLambdaParams(params,args, body, symbol)
                         val asyncBody = cps.macros.Async.transformMonad[F,Unit](nBody.asExprOf[Unit], '{ ${absorber}.asyncMonad }).asTerm
                         asyncBody.changeOwner(symbol)
-                     })
-                     '{ 
-                       ${absorber}.eval(${nLambda.asExprOf[CpsAsyncEmitter[F,T] => F[Unit]]})(using $ctp) 
-                     }.asTerm
-                  case None =>
-                     throw MacroError(s"Can't resolve CpsMonadContextProvider[${TypeRepr.of[F].show}]",f.asExpr)
+               })
+               '{ 
+                   ${absorber}.eval(${nLambda.asExprOf[CpsAsyncEmitter[F,T] => F[Unit]]})
+               }.asTerm
             case Block(List(), last) => transformTree(last, absorber)
             case Block(stats, last) => Block(stats, transformTree(last, absorber))
             case _ =>

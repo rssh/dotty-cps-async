@@ -64,9 +64,10 @@ class DeadlineContext(initDeadline: Long) extends CpsMonadContext[FutureWithDead
                lastTimerTask.cancel()
           deadline = newDeadline;
           if (deadline > 0L) then
-             val delay = now() - deadline
-             if (delay < 0) then
-                throw new IllegalStateException("attempt to set deadlin in past")
+             val delay = deadline - now()
+             if (delay <= 0) then
+                timeoutPromise.tryFailure(new TimeoutException())
+                //throw new IllegalStateException("attempt to set deadlin in past")
              else
                 lastTimerTask = new TimerTask() {
                     override def run(): Unit = {
@@ -194,11 +195,12 @@ class TestFutureWithDeadline:
         await(FutureSleep(1000.millis))
         x = 1
       }
-      c.future.transform{ 
+      val res = c.future.transform{ 
          case Success(x) => Failure(new IllegalStateException("Timeout exception was expected"))
          case Failure(ex) =>
              assert (x == 0)
              assert(ex.isInstanceOf[TimeoutException])
              Success(())
       }
+      FutureCompleter(res)
   

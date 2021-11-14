@@ -34,7 +34,7 @@ class AsyncIteratorEmitAbsorber[F[_]:CpsConcurrentMonad,T](using ExecutionContex
 
   override val asyncMonad = summon[CpsConcurrentMonad[F]]
 
-  override def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit])(using CpsContextType[Monad]): AsyncIterator[F,T] =
+  override def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit]): AsyncIterator[F,T] =
      val list = AsyncListEmitAbsorber[F,T].eval(f)
      AsyncListIterator(list)
 

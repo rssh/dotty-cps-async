@@ -16,7 +16,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
 
    val asyncMonad: CpsConcurrentMonad[F] = summon[CpsConcurrentMonad[F]]
 
-   def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit])(using CpsContextType[F]): R =
+   def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit]): R =
       asSync(evalAsync(f))
 
 
@@ -146,7 +146,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
    end StepsObserver
 
     
-   def evalAsync(f: CpsAsyncEmitter[F,T] => F[Unit])(using CpsContextType[F]):F[R] =
+   def evalAsync(f: CpsAsyncEmitter[F,T] => F[Unit]):F[R] =
       asyncMonad.apply( ctx => asyncMonad.pure(evalAsyncInternal(f)) )
 
 
