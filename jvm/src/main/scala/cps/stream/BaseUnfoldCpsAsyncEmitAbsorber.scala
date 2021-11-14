@@ -16,7 +16,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
 
    val asyncMonad: CpsConcurrentMonad[F] = summon[CpsConcurrentMonad[F]]
 
-   def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit]): R =
+   def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit])(using CpsContextType[F]): R =
       asSync(evalAsync(f))
 
 
@@ -28,7 +28,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
    type ConsumerCallback = Try[SupplyEventRecord]=>Unit
    type OneThreadTaskCallback = Unit => Unit
 
-   class State(using asyncMonad.Context):
+   class State:
       val finishRef = new AtomicReference[Try[Unit]|Null]()
       val emitStart = new AtomicBoolean()
       val supplyEvents = new ConcurrentLinkedDeque[SupplyEventRecord]()
@@ -119,7 +119,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
       } 
 
 
-   class StepsObserver(state: State)(using asyncMonad.Context) extends CpsAsyncEmitter[F,T]:
+   class StepsObserver(state: State) extends CpsAsyncEmitter[F,T]:
    
    
      def emitAsync(v:T): F[Unit] =  
@@ -146,11 +146,11 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
    end StepsObserver
 
     
-   def evalAsync(f: CpsAsyncEmitter[F,T] => F[Unit]):F[R] =
-      asyncMonad.apply( ctx => asyncMonad.pure(evalAsyncInternal(f)(using ctx)) )
+   def evalAsync(f: CpsAsyncEmitter[F,T] => F[Unit])(using CpsContextType[F]):F[R] =
+      asyncMonad.apply( ctx => asyncMonad.pure(evalAsyncInternal(f)) )
 
 
-   def evalAsyncInternal(f: CpsAsyncEmitter[F,T] => F[Unit])(using asyncMonad.Context): R =
+   def evalAsyncInternal(f: CpsAsyncEmitter[F,T] => F[Unit]): R =
 
       val state = new State()
       val stepsObserver = new StepsObserver(state)

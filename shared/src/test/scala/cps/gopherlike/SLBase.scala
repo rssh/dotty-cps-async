@@ -8,7 +8,7 @@ import scala.quoted._
 import scala.compiletime._
 
 
-class SLSelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
+class SLSelectLoop[F[_]](using val am:CpsMonad[F]):
 
   case class ReadRecord[A](reader: IFReader[F,A], handler: A=>F[Boolean])
   case class WriteRecord[A](writer: IFWriter[F,A], value: ()=>F[A], handler: A=>F[Boolean])
@@ -47,7 +47,7 @@ class SLSelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
   
   transparent inline def applyAsync(inline pf: PartialFunction[Any,F[Boolean]]): Unit =
     ${
-      SLSelectLoop.loopImplAsync[F,C]('pf, 'am)  
+      SLSelectLoop.loopImplAsync[F]('pf, 'am)  
     }
   
 
@@ -60,13 +60,13 @@ class SLSelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
   transparent inline def run(): Unit =
     await(runAsync())
       
-  def fold[S](s0:S)(step: (S,SLSelectLoop[F,C])=> S|SLSelectLoop.Done[S]): S = {
+  def fold[S](s0:S)(step: (S,SLSelectLoop[F])=> S|SLSelectLoop.Done[S]): S = {
      fold1[S](s0)(step, 10)
   }
 
-  def fold1[S](s0:S)(step: (S,SLSelectLoop[F,C])=> S|SLSelectLoop.Done[S], limit: Int): S = {
+  def fold1[S](s0:S)(step: (S,SLSelectLoop[F])=> S|SLSelectLoop.Done[S], limit: Int): S = {
      if (limit > 0) then
-       step(s0, new SLSelectLoop[F,C] ) match {
+       step(s0, new SLSelectLoop[F] ) match {
          case SLSelectLoop.Done(s) => 
                                      s.asInstanceOf[S]
          case other => fold1(other.asInstanceOf[S])(step, limit-1)
@@ -75,13 +75,13 @@ class SLSelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
        s0
   }
 
-  def fold_async[S](s0:S)(step: (S,SLSelectLoop[F,C])=> F[S|SLSelectLoop.Done[S]]): F[S] = {
+  def fold_async[S](s0:S)(step: (S,SLSelectLoop[F])=> F[S|SLSelectLoop.Done[S]]): F[S] = {
       fold1_async[S](s0)(step,10)
   }
 
-  def fold1_async[S](s0:S)(step: (S,SLSelectLoop[F,C])=> F[S|SLSelectLoop.Done[S]], limit: Int): F[S] = {
+  def fold1_async[S](s0:S)(step: (S,SLSelectLoop[F])=> F[S|SLSelectLoop.Done[S]], limit: Int): F[S] = {
      if (limit > 0) then
-       am.flatMap(step(s0, new SLSelectLoop[F,C])){ r =>
+       am.flatMap(step(s0, new SLSelectLoop[F])){ r =>
           r match
             case SLSelectLoop.Done(s) => am.pure(s.asInstanceOf[S])
             case other => fold1_async(other.asInstanceOf[S])(step, limit-1)
@@ -90,13 +90,13 @@ class SLSelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
        am.pure(s0)
   }
 
-  transparent inline def afold[S](inline s0:S)(inline step: (S,SLSelectLoop[F,C]) => S|SLSelectLoop.Done[S]): F[S] =
-     asyncAux[F,C] { 
+  transparent inline def afold[S](inline s0:S)(inline step: (S,SLSelectLoop[F]) => S|SLSelectLoop.Done[S]): F[S] =
+     async[F] { 
        fold(s0)(step)
      }
 
 
-  inline def map1[A](inline step: PartialFunction[SLSelectLoop[F,C], A]): IFReader[F,A] =
+  inline def map1[A](inline step: PartialFunction[SLSelectLoop[F], A]): IFReader[F,A] =
      ???
      
 
@@ -106,39 +106,39 @@ object SLSelectLoop:
 
   case class Done[S](s:S)
 
-  sealed trait SelectGroupExpr[F[_],C]:
-    def  toExpr: Expr[SLSelectLoop[F,C]]
+  sealed trait SelectGroupExpr[F[_]]:
+    def  toExpr: Expr[SLSelectLoop[F]]
 
-  sealed trait SelectorCaseExpr[F[_]:Type,C:Type]:
+  sealed trait SelectorCaseExpr[F[_]:Type]:
      type Monad[X] = F[X]
-     def appended(base: Expr[SLSelectLoop[F,C]])(using Quotes): Expr[SLSelectLoop[F,C]]
-     def appendedAsync(base: Expr[SLSelectLoop[F,C]])(using Quotes): Expr[SLSelectLoop[F,C]]
+     def appended(base: Expr[SLSelectLoop[F]])(using Quotes): Expr[SLSelectLoop[F]]
+     def appendedAsync(base: Expr[SLSelectLoop[F]])(using Quotes): Expr[SLSelectLoop[F]]
 
-  case class ReadExpression[F[_]:Type, C:Type, A:Type, B:Type](ch: Expr[IFReader[F,A]], f: Expr[A => B]) extends SelectorCaseExpr[F,C]:
-     def appended(base: Expr[SLSelectLoop[F,C]])(using Quotes): Expr[SLSelectLoop[F,C]] =
+  case class ReadExpression[F[_]:Type, A:Type, B:Type](ch: Expr[IFReader[F,A]], f: Expr[A => B]) extends SelectorCaseExpr[F]:
+     def appended(base: Expr[SLSelectLoop[F]])(using Quotes): Expr[SLSelectLoop[F]] =
        '{  
            $base.onRead($ch)(${f.asExprOf[A=>Boolean]}) 
         }
 
-     def appendedAsync(base: Expr[SLSelectLoop[F,C]])(using Quotes): Expr[SLSelectLoop[F,C]] =
+     def appendedAsync(base: Expr[SLSelectLoop[F]])(using Quotes): Expr[SLSelectLoop[F]] =
        '{  
            $base.onReadAsync($ch)(${f.asExprOf[A=>F[Boolean]]}) 
         }
        
-  case class WriteExpression[F[_]:Type, C:Type, A:Type, B:Type](ch: Expr[IFWriter[F,A]], a: Expr[A], f: Expr[A => B], m: Expr[CpsMonad.Aux[F,C]]) extends SelectorCaseExpr[F,C]:
-      def appended(base: Expr[SLSelectLoop[F,C]])(using Quotes): Expr[SLSelectLoop[F,C]] =
+  case class WriteExpression[F[_]:Type, A:Type, B:Type](ch: Expr[IFWriter[F,A]], a: Expr[A], f: Expr[A => B], m: Expr[CpsMonad[F]]) extends SelectorCaseExpr[F]:
+      def appended(base: Expr[SLSelectLoop[F]])(using Quotes): Expr[SLSelectLoop[F]] =
       '{  $base.onWrite($ch,$a)(${f.asExprOf[A=>Boolean]}) }
    
-      def appendedAsync(base: Expr[SLSelectLoop[F,C]])(using Quotes): Expr[SLSelectLoop[F,C]] =
+      def appendedAsync(base: Expr[SLSelectLoop[F]])(using Quotes): Expr[SLSelectLoop[F]] =
       '{  $base.onWriteAsync($ch,()=>$m.pure($a))(${f.asExprOf[A=>F[Boolean]]}) }
 
 
-  def loopImpl[F[_]:Type,C:Type](pf: Expr[PartialFunction[Any,Boolean]], m: Expr[CpsMonad.Aux[F,C]])(using Quotes): Expr[Unit] =
-      def builder(caseDefs: List[SelectorCaseExpr[F,C]]):Expr[Unit] = {
+  def loopImpl[F[_]:Type](pf: Expr[PartialFunction[Any,Boolean]], m: Expr[CpsMonad[F]])(using Quotes): Expr[Unit] =
+      def builder(caseDefs: List[SelectorCaseExpr[F]]):Expr[Unit] = {
           val s0 = '{
-              new SLSelectLoop[F,C](using $m)
+              new SLSelectLoop[F](using $m)
           }
-          val g: Expr[SLSelectLoop[F,C]] = caseDefs.foldLeft(s0){(s,e) =>
+          val g: Expr[SLSelectLoop[F]] = caseDefs.foldLeft(s0){(s,e) =>
               e.appended(s)
           }
           val r = '{ $g.run() }
@@ -147,12 +147,12 @@ object SLSelectLoop:
       runImpl( builder, pf, m)
       
 
-  def loopImplAsync[F[_]:Type,C:Type](pf: Expr[PartialFunction[Any,F[Boolean]]], m: Expr[CpsMonad.Aux[F,C]])(using Quotes): Expr[Unit] =
-      def builder(caseDefs: List[SelectorCaseExpr[F,C]]):Expr[Unit] = {
+  def loopImplAsync[F[_]:Type](pf: Expr[PartialFunction[Any,F[Boolean]]], m: Expr[CpsMonad[F]])(using Quotes): Expr[Unit] =
+      def builder(caseDefs: List[SelectorCaseExpr[F]]):Expr[Unit] = {
           val s0 = '{
-              new SLSelectLoop[F,C](using $m)
+              new SLSelectLoop[F](using $m)
           }
-          val g: Expr[SLSelectLoop[F,C]] = caseDefs.foldLeft(s0){(s,e) =>
+          val g: Expr[SLSelectLoop[F]] = caseDefs.foldLeft(s0){(s,e) =>
               e.appendedAsync(s)
           }
           val r = '{ $g.run() }
@@ -160,35 +160,35 @@ object SLSelectLoop:
       }
       runImpl( builder, pf, m)
 
-  def runImpl[F[_]:Type, C:Type, A:Type,B :Type](builder: List[SelectorCaseExpr[F,C]]=>Expr[B],
+  def runImpl[F[_]:Type, C:Type, A:Type,B :Type](builder: List[SelectorCaseExpr[F]]=>Expr[B],
                                  pf: Expr[PartialFunction[Any,A]],
-                                 m: Expr[CpsMonad.Aux[F,C]])(using Quotes): Expr[B] =
+                                 m: Expr[CpsMonad[F]])(using Quotes): Expr[B] =
     import quotes.reflect._
-    runImplTree[F,C,A,B](builder, pf.asTerm, m)
+    runImplTree[F,A,B](builder, pf.asTerm, m)
 
-  def runImplTree[F[_]:Type, C:Type, A:Type, B:Type](using Quotes)(
-                builder: List[SelectorCaseExpr[F,C]] => Expr[B],
+  def runImplTree[F[_]:Type, A:Type, B:Type](using Quotes)(
+                builder: List[SelectorCaseExpr[F]] => Expr[B],
                 pf: quotes.reflect.Term,
-                m: Expr[CpsMonad.Aux[F,C]]
+                m: Expr[CpsMonad[F]]
                 ): Expr[B] =
     import quotes.reflect._
     pf match
       case Lambda(valDefs, body) =>
-        runImplTree[F,C,A,B](builder, body, m)
+        runImplTree[F,A,B](builder, body, m)
       case Inlined(_,List(),body) => 
-        runImplTree[F,C,A,B](builder, body, m)
+        runImplTree[F,A,B](builder, body, m)
       case Match(scrutinee,cases) =>
-        builder(cases.map(parseCaseDef[F,C,A](_,m)))
+        builder(cases.map(parseCaseDef[F,A](_,m)))
       case _ =>
         println(s"can't parse at runImpl, code=${pf.show}")
         reportError("unsupported case", pf.asExpr)
     
 
-  def parseCaseDef[F[_]:Type,C:Type,S:Type](using qctx: Quotes)(caseDef: quotes.reflect.CaseDef, m:Expr[CpsMonad.Aux[F,C]]): SelectorCaseExpr[F,C] =
+  def parseCaseDef[F[_]:Type,S:Type](using qctx: Quotes)(caseDef: quotes.reflect.CaseDef, m:Expr[CpsMonad[F]]): SelectorCaseExpr[F] =
     import qctx.reflect._
     caseDef.pattern match 
       case Inlined(_,List(),body) => 
-            parseCaseDef[F,C,S](CaseDef(body, caseDef.guard, caseDef.rhs),m)
+            parseCaseDef[F,S](CaseDef(body, caseDef.guard, caseDef.rhs),m)
       case b@Bind(v, tp@Typed(expr, TypeSelect(ch,"read"))) =>
           val readFun = makeLambda(v,tp.tpe,b.symbol,caseDef.rhs)
           if (ch.tpe <:< TypeRepr.of[IFReader[F,?]]) 

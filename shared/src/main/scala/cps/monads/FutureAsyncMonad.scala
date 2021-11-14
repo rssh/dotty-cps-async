@@ -11,7 +11,7 @@ import scala.util.control._
 /**
  * Default CpsMonad implementation for `Future`
  **/
-given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with CpsMonadInstanceContext[Future] with
+class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Future] with CpsMonadInstanceContext[Future] {
 
    type F[+T] = Future[T]
 
@@ -78,7 +78,9 @@ given FutureAsyncMonad(using ExecutionContext): CpsSchedulingMonad[Future] with 
   
    def executionContext = summon[ExecutionContext]
 
+}
 
+given FutureAsyncMonad(using ec: ExecutionContext): FutureAsyncMonadAPI = new FutureAsyncMonadAPI
 
 given futureDiscard: cps.automaticColoring.WarnValueDiscard[Future] with {}
 
@@ -87,7 +89,7 @@ given futureMemoization: CpsMonadMemoization.Default[Future] with {}
 
 
 
-given fromFutureConversion[G[_],T, C](using ex: ExecutionContext, m: CpsAsyncMonad.Aux[G,C]): CpsMonadConversion[Future,G] with
+given fromFutureConversion[G[_],T](using ex: ExecutionContext, m: CpsAsyncMonad[G]): CpsMonadConversion[Future,G] with
 
   def apply[T](ft:Future[T]): G[T] =
      summon[CpsAsyncMonad[G]].adoptCallbackStyle(listener => ft.onComplete(listener) )

@@ -22,7 +22,7 @@ trait IFWriter[F[_],A]:
     await[F,Unit](awrite(a))(using wCpsMonad)
 
 
-class CIFWriter[F[_]:CpsMonad,A]  extends IFWriter[F,A]:
+class CIFWriter[F[_]:CpsMonad:CpsContextType,A]  extends IFWriter[F,A]:
    protected override def cpsMonad = summon[CpsMonad[F]]
 
 

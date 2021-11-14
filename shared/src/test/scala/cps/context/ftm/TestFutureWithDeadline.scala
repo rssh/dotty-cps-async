@@ -47,7 +47,7 @@ given cpsMonadConversion(using DeadlineContext): CpsMonadConversion[Future,Futur
 }
 
 
-class DeadlineContext(initDeadline: Long) {
+class DeadlineContext(initDeadline: Long) extends CpsMonadContext[FutureWithDeadline] {
 
     private[this] var deadline: Long = initDeadline;
     private[this] val timeoutPromise: Promise[Nothing] = Promise()
@@ -91,6 +91,10 @@ class DeadlineContext(initDeadline: Long) {
         p.tryCompleteWith(x)
         FutureWithDeadline.Computation(p, this)
 
+    override def adoptAwait[A](fa:FutureWithDeadline[A]):FutureWithDeadline[A] =
+        addComputation(fa.future)    
+    
+
 }
 
 object DeadlineContext {
@@ -100,11 +104,12 @@ object DeadlineContext {
 
 }
 
-class FutureWithDeadlineCpsMonad(using ExecutionContext) extends CpsMonad[FutureWithDeadline] with CpsAsyncMonad[FutureWithDeadline] {
 
-    override type Context = DeadlineContext
+class FutureWithDeadlineCpsMonad(using ExecutionContext) extends CpsAsyncMonad[FutureWithDeadline] with CpsContextMonad[FutureWithDeadline, DeadlineContext] {
 
     def pure[T](t:T):FutureWithDeadline[T] = FutureWithDeadline.Value(Success(t))
+
+
 
     def map[A,B](fa:FutureWithDeadline[A])(f: A=>B):FutureWithDeadline[B] =
         fa match
@@ -134,14 +139,10 @@ class FutureWithDeadlineCpsMonad(using ExecutionContext) extends CpsMonad[Future
                     case Failure(ex) =>
                         failure(ex)
 
-
-    def apply[T](op: Context => FutureWithDeadline[T]): FutureWithDeadline[T] =
+    override def applyContext[T](op: DeadlineContext => FutureWithDeadline[T]): FutureWithDeadline[T] =
         val context  = new DeadlineContext(-1)
         op(context)
- 
-    def adoptAwait[A](c:Context, fa:FutureWithDeadline[A]):FutureWithDeadline[A] =
-        c.addComputation(fa.future)    
-        
+                                  
     def error[A](e: Throwable): FutureWithDeadline[A] =
         FutureWithDeadline.Value(Failure(e))
 
@@ -186,6 +187,8 @@ class TestFutureWithDeadline:
   
   @Test def testTimeoutedAwait() = 
       var x = 0
+      //val resolvedContext = summon[CpsResolveContextType[FutureWithDeadline]]
+      //println(s"resolvedContxt=${resolvedContext}")
       val c = async[FutureWithDeadline] {
         summon[DeadlineContext].setTimeout(100.millis)
         await(FutureSleep(1000.millis))

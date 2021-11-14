@@ -118,11 +118,9 @@ object ComputationBound {
 }
 
 
-implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBound] {
+implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBound] with CpsMonadInstanceContext[ComputationBound] {
 
    type WF[T] = ComputationBound[T]
-
-   override type Context = ComputationBound.type
 
    def pure[T](value:T): ComputationBound[T] = ComputationBound.pure(value)
 
@@ -159,17 +157,13 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit):ComputationBound[A] = 
          ComputationBound.asyncCallback(source)
 
-   def spawn[A](op: Context ?=> ComputationBound[A]): ComputationBound[A] =
-          ComputationBound.spawn(op(using ComputationBound))
+   def spawn[A](op: => ComputationBound[A]): ComputationBound[A] =
+          ComputationBound.spawn(op)
 
    def fulfill[T](t: ComputationBound[T], timeout: Duration): Option[Try[T]] =
           t.fulfill(timeout)
 
-   def apply[T](f: Context => ComputationBound[T]): ComputationBound[T] =
-          f(ComputationBound)   
-          
-   def adoptAwait[A](c: Context, v:ComputationBound[A]):ComputationBound[A] =
-          v
+
 
 }
 

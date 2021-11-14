@@ -11,12 +11,12 @@ import cps._
 import cps.monads.FutureAsyncMonad
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class SF3W1SelectLoop[F[_],C](using val am:CpsMonad.Aux[F,C]):
+class SF3W1SelectLoop[F[_]](using val am:CpsMonad[F]):
         
-  def fold[S](s0:S)(step: (S,SF3W1SelectLoop[F,C])=> S): S = 
+  def fold[S](s0:S)(step: (S,SF3W1SelectLoop[F])=> S): S = 
    ???
 
-  transparent inline def afold[S](inline s0:S)(inline step: (S,SF3W1SelectLoop[F,C]) => S): F[S] =
+  transparent inline def afold[S](inline s0:S)(inline step: (S,SF3W1SelectLoop[F]) => S): F[S] =
      async[F] { 
        fold(s0)(step)
      }

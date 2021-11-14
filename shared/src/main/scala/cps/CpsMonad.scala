@@ -21,11 +21,8 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
 
    type WF[X] = F[X]
 
-   /**
-    * ''
-    **/
-   type Context 
-
+   type Context <: CpsMonadContext[F]
+  
    /**
     * Pure - wrap value `t` inside monad. 
     *
@@ -48,17 +45,12 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
     **/
    def apply[T](op: Context => F[T]): F[T] 
 
-   /**
-    * adopt monadic value in await to current context.
-    * 
-    **/
-   def adoptAwait[A](c:Context, fa:F[A]):F[A] 
 
 }
 
-object CpsMonad  {
+object CpsMonad {
 
-   type Aux[F[_],C] = CpsMonad[F] { type Context = C }
+  type Aux[F[_],C] = CpsMonad[F] { type Context = C }
 
 }
 
@@ -209,10 +201,6 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
 }
 
-object CpsTryMonad {
-
-   type Aux[F[_],C] = CpsMonad.Aux[F,C] & CpsTryMonad[F]
-}
 
 /**
  * Monad, which is compatible with passing data via callbacks.
@@ -232,12 +220,6 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
     **/
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A] 
  
-}
-
-object CpsAsyncMonad {
-
-   type Aux[F[_],C] = CpsMonad.Aux[F,C] & CpsAsyncMonad[F] 
-
 }
 
 
@@ -274,23 +256,12 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
 
 }
 
-object CpsEffectMonad {
-
-   type Aux[F[_],C] = CpsEffectMonad[F] { type Context = C }
-
-}
-
 
 /**
  * Async Effect Monad
  */
 trait CpsAsyncEffectMonad[F[_]] extends CpsAsyncMonad[F] with CpsEffectMonad[F]
 
-object CpsAsyncEffectMonad {
-
-   type Aux[F[_],C] = CpsAsyncEffectMonad[F] { type Context = C }
-
-}
 
 
 
@@ -350,23 +321,11 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F]  {
 }
 
 
-object CpsConcurrentMonad {
-
-   type Aux[F[_],C] = CpsConcurrentMonad[F] { type Context = C }
-
-}
-
-
 /**
  * Marker trait for concurrent effect monads.
  */
 trait CpsConcurrentEffectMonad[F[_]] extends CpsConcurrentMonad[F] with CpsAsyncEffectMonad[F]
 
-object CpsConcurrentEffectMonad {
-
-   type Aux[F[_],C] = CpsConcurrentEffectMonad[F] { type Context = C }
-
-}
 
 
 /**
@@ -411,9 +370,4 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
          
 }
 
-object CpsSchedulingMonad {
-
-   type Aux[F[_],C] = CpsSchedulingMonad[F] { type Context = C }
-
-}
 
