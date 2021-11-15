@@ -9,11 +9,17 @@ import java.util.concurrent.atomic.*
 
 
 
-trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using ExecutionContext ) extends CpsAsyncEmitAbsorber3[R,F,T]:
+trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C, T](using ec: ExecutionContext, auxAsyncMonad: CpsConcurrentMonad.Aux[F,C] ) extends CpsAsyncEmitAbsorber4[R,F,C,T]:
 
   def unfold[S](s0:S)(f:S => F[Option[(T,S)]]): R
 
-  val asyncMonad: CpsConcurrentMonad[F] = summon[CpsConcurrentMonad[F]]
+  def asSync(fs:F[R]):R
+
+  def eval(f: C  => CpsAsyncEmitter[Monad,Element] => Monad[Unit]): R =
+      asSync(evalAsync(f))
+
+
+  val asyncMonad: CpsConcurrentMonad.Aux[F,C] = auxAsyncMonad
 
   sealed class SupplyEventRecord
   case object SpawnEmitter extends SupplyEventRecord
@@ -49,7 +55,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
 
 
   class StepsObserver(state: State
-                     ) extends CpsAsyncEmitter[R,F,T]:
+                     ) extends CpsAsyncEmitter[F,T]:
 
 
     def emitAsync(v:T): F[Unit] =  
@@ -78,9 +84,11 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
        
   end StepsObserver
 
+  def evalAsync(f: C => CpsAsyncEmitter[F,T] => F[Unit]):F[R] =
+   asyncMonad.apply( ctx => asyncMonad.pure(evalAsyncInContext(f(ctx))) )
 
 
-  def evalAsync(f: CpsAsyncEmitter[R,F,T] => F[Unit]): R =
+  def evalAsyncInContext(f: CpsAsyncEmitter[F,T] => F[Unit]): R =
 
     val state = new State()
     val stepsObserver = new StepsObserver(state)
@@ -130,6 +138,6 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
 
     unfold(state)(step)
       
-  end evalAsync
+  end evalAsyncInContext
 
 
