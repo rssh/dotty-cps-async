@@ -59,7 +59,7 @@ class TestBS1While:
  //    https://github.com/lampepfl/dotty/pull/8057
  //
   @Test def tWhileC1_11(): Unit = 
-     val c = macros.Async.transform[ComputationBound,Int]{
+     val c = macros.Async.transform[ComputationBound,Int, ComputationBoundAsyncMonad.type]({
         val n = 10
         var s = 0
         var i = 0
@@ -69,7 +69,7 @@ class TestBS1While:
           i += 1
         }
         s
-     }
+     }, ComputationBoundAsyncMonad)
      assert(c.run() == Success(45))
 
 

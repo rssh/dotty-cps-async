@@ -9,9 +9,9 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait RootTreeTransform[F[_], CT]:
+trait RootTreeTransform[F[_], CT, CC]:
 
-  thisTransform: TreeTransformScope[F, CT] =>
+  thisTransform: TreeTransformScope[F, CT, CC] =>
 
   import qctx.reflect._
 
@@ -99,11 +99,12 @@ trait RootTreeTransform[F[_], CT]:
        case Apply(x, args) =>
              val thisScope = this
              val nestContext = cpsCtx.nestSame(muted)
-             val nestScope = new TreeTransformScope[F,CT] {
+             val nestScope = new TreeTransformScope[F,CT,CC] {
                 override val cpsCtx = nestContext
                 override implicit val qctx = thisScope.qctx
                 override val fType = thisScope.fType
                 override val ctType = thisScope.ctType
+                override val ccType = thisScope.ccType
              }
              nestScope.runApply(term.asInstanceOf[nestScope.qctx.reflect.Term],
                                 x.asInstanceOf[nestScope.qctx.reflect.Term],
@@ -135,7 +136,7 @@ trait RootTreeTransform[F[_], CT]:
 
    def inNestedContext(term: Term,
                       muted: Boolean,
-                      op: TreeTransformScope[F,?] => CpsTree): CpsTree =
+                      op: TreeTransformScope[F,?, ?] => CpsTree): CpsTree =
         val nScope = if (false && term.isExpr) {
            term.asExpr match
              case '{ $e: et} =>
@@ -148,14 +149,16 @@ trait RootTreeTransform[F[_], CT]:
         op(nScope)
 
 
-   def nestScope[E:quoted.Type](e: Expr[E], muted: Boolean): TreeTransformScope[F,E] =
+   def nestScope[E:quoted.Type](e: Expr[E], muted: Boolean): TreeTransformScope[F,E,CC] =
        val et = summon[quoted.Type[E]]
+       val cct = summon[quoted.Type[CC]]
        val nContext = cpsCtx.nest(e, et, muted)
-       new TreeTransformScope[F,E] {
+       new TreeTransformScope[F,E,CC] {
             override val cpsCtx = nContext
             override implicit val qctx = thisTransform.qctx
             override val fType = thisTransform.fType
             override val ctType = et
+            override val ccType = cct
        }
 
   }

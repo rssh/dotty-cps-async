@@ -35,34 +35,36 @@ object Async {
           new InferAsyncArg(using am)
      
 
-  transparent inline def transform[F[_], T](using m: CpsMonad[F])(inline expr: T) =
-    ${
-        Async.transformImpl[F,T]('expr)
-     }
-
   transparent inline def transformContextLambda[F[_],T,C](inline expr: C ?=> T)(using m: CpsMonad[F]): C => F[T] =
      ${
         Async.transformContextLambdaImpl[F,T,C]('expr)
      } 
 
+  transparent inline def transform[F[_],T,C](inline expr: T, inline ctx: C)(using m: CpsMonad[F]): F[T] =
+     ${
+        Async.transformImpl[F,T,C]('expr, 'ctx)
+     } 
+ 
   /**
    * transform expression and get monad from context.
+   *@param f - expression to transform
+   *@param c - monad context parameter
    **/
-  def transformImpl[F[_]:Type,T:Type](f: Expr[T])(using Quotes): Expr[F[T]] =
+  def transformImpl[F[_]:Type,T:Type,C:Type](f: Expr[T], c:Expr[C])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     Expr.summon[CpsMonad[F]] match
        case Some(dm) =>
-          transformMonad[F,T](f,dm)
+          transformMonad[F,T,C](f,dm,c)
        case None =>
           val msg = s"Can't find async monad for ${TypeRepr.of[F].show} (transformImpl)"
           report.throwError(msg, f)
 
- 
+             
   /**
    * transform expression within given monad.  Use this function is you need to force async-transform
-   * from other macros without context
+   * from other macros.
    **/
-  def transformMonad[F[_]:Type,T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): Expr[F[T]] =
+  def transformMonad[F[_]:Type,T:Type, C:Type](f: Expr[T], dm: Expr[CpsMonad[F]], mc:Expr[C])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     val flags = adoptFlags(f, dm)
     val DEBUG = true
@@ -88,7 +90,7 @@ object Async {
       observatory.analyzeTree[F]
       val r = WithOptExprProxy("cpsMonad", dm){
            dm => 
-              val cpsExpr = rootTransform[F,T](f,dm,memoization,flags,observatory,0, None)
+              val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization,flags,observatory,0, None)
               if (DEBUG) {
                  TransformUtil.dummyMapper(cpsExpr.transformed.asTerm, Symbol.spliceOwner)
               }
@@ -187,16 +189,16 @@ object Async {
                 
 
 
-  def rootTransform[F[_]:Type,T:Type](f: Expr[T], dm:Expr[CpsMonad[F]], 
+  def rootTransform[F[_]:Type,T:Type,C:Type](f: Expr[T], dm:Expr[CpsMonad[F]], mc:Expr[C], 
                                       optMemoization: Option[TransformationContext.Memoization[F]],
                                       flags: AsyncMacroFlags,
                                       observatory: Observatory.Scope#Observatory,
                                       nesting: Int,
-                                      parent: Option[TransformationContext[_,_]])(
+                                      parent: Option[TransformationContext[_,_,_]])(
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._    
-     val cpsCtx = TransformationContext[F,T](f,tType,dm,optMemoization,flags,observatory,nesting,parent)
+     val cpsCtx = TransformationContext[F,T,C](f,tType,dm,mc,optMemoization,flags,observatory,nesting,parent)
      val retval = f match 
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
@@ -263,10 +265,10 @@ object Async {
      retval
 
 
-  def nestTransform[F[_]:Type,T:Type,S:Type](f:Expr[S],
-                              cpsCtx: TransformationContext[F,T]
+  def nestTransform[F[_]:Type,T:Type,C:Type,S:Type](f:Expr[S],
+                              cpsCtx: TransformationContext[F,T,C]
                               )(using Quotes):CpsExpr[F,S]=
-        rootTransform(f,cpsCtx.monad, cpsCtx.memoization,
+        rootTransform(f,cpsCtx.monad, cpsCtx.monadContext, cpsCtx.memoization,
                       cpsCtx.flags,cpsCtx.observatory,cpsCtx.nesting+1, Some(cpsCtx))
 
 
@@ -292,19 +294,9 @@ object Async {
                report.throwError(s"lambda expected, have: ${f}", cexpr)
       
       def transformNotInlined(t: Term): Term =
-         val DEBUG = true
          val (oldParams, body, nestFun) = extractLambda(t)
-         val transformed = transformImpl[F,T](body.asExprOf[T])
-         if (DEBUG) {
-            try {
-               TransformUtil.dummyMapper(transformed.asTerm,Symbol.spliceOwner)
-            } catch {
-               case ex: Throwable =>
-                  println(s"contextLambda, body=${body}")
-                  throw ex;
-            }
-         } 
          val oldValDef = oldParams.head
+         val transformed = transformImpl[F,T,C](body.asExprOf[T], Ref(oldValDef.symbol).asExprOf[C])
          val mt = MethodType(List(oldValDef.name))( _ => List(oldValDef.tpt.tpe), _ => TypeRepr.of[F[T]])
          val nLambda = Lambda(Symbol.spliceOwner, mt, (owner, params) => {
             TransformUtil.substituteLambdaParams( oldParams, params, transformed.asTerm, owner ).changeOwner(owner)
@@ -315,5 +307,9 @@ object Async {
       retval
 
 
+  def transformContextInstanceMonad[F[_]:Type,T:Type,C<:CpsMonadInstanceContext[F] :Type](f: Expr[T], dm: Expr[C])(using Quotes): Expr[F[T]] = 
+         '{
+            $dm.apply( mc => ${transformMonad(f, dm, 'mc)})
+          }
 
 }

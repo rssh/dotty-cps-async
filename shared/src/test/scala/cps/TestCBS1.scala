@@ -9,7 +9,7 @@ import scala.util.Success
 class TestBS1:
 
   @Test def tConstantMeta(): Unit = 
-     val c = macros.Async.transform[ComputationBound,Int](3)
+     val c = macros.Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.type](3, ComputationBoundAsyncMonad)
      assert(c == Done(3))
   
   @Test def tConstantMetaTypeInference(): Unit = 

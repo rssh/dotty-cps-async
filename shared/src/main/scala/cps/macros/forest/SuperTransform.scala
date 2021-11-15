@@ -6,7 +6,7 @@ import scala.quoted._
 import cps.macros._
 
 
-class SuperTransform[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T]):
+class SuperTransform[F[_]:Type,T:Type,C:Type](cpsCtx: TransformationContext[F,T,C]):
 
   import cpsCtx._
 

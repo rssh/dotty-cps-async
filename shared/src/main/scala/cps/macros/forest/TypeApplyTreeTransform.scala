@@ -7,9 +7,9 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait TypeApplyTreeTransform[F[_], CT]:
+trait TypeApplyTreeTransform[F[_], CT, CC]:
 
-  thisScope: TreeTransformScope[F, CT] =>
+  thisScope: TreeTransformScope[F, CT, CC] =>
 
   import qctx.reflect._
 
@@ -23,19 +23,21 @@ trait TypeApplyTreeTransform[F[_], CT]:
 object TypeApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type,C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          applyTerm: qctx1.reflect.Term, 
                          fun: qctx1.reflect.Term, 
                          targs: List[qctx1.reflect.TypeTree]): CpsExpr[F,T] = {
      val tmpFType = summon[Type[F]]
      val tmpCTType = summon[Type[T]]
-     class Bridge(tc:TransformationContext[F,T]) extends
-                                                    TreeTransformScope[F,T]
-                                                    with TreeTransformScopeInstance[F,T](tc) {
+     val tmpCCType = summon[Type[C]]
+     class Bridge(tc:TransformationContext[F,T,C]) extends
+                                                    TreeTransformScope[F,T,C]
+                                                    with TreeTransformScopeInstance[F,T,C](tc) {
 
          implicit val fType: quoted.Type[F] = tmpFType
          implicit val ctType: quoted.Type[T] = tmpCTType
-          
+         implicit val ccType: quoted.Type[C] = tmpCCType 
+
          def bridge(): CpsExpr[F,T] =
             runTypeApply(applyTerm.asInstanceOf[quotes.reflect.Term],
                          fun.asInstanceOf[quotes.reflect.Term],

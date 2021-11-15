@@ -12,30 +12,6 @@ trait CpsMonadContext[F[_]] {
  
 }
 
-/*
-trait CpsContextType[F[_]] {
-  type Context <: CpsMonadContext[F]
-}
-
-object CpsContextType {
-
-  type Resolve[X <: CpsMonad[_]] = X match
-    case CpsMonadInstanceContext[f] => CpsMonadInstanceContext[f]
-    case CpsContextMonad[f,c] => c
-
-
-  given instanceContextType[F[_]](using m:CpsMonadInstanceContext[F]): CpsContextType[F] =
-    new CpsContextType[F] {
-       type Context = m.type
-    }
-
-  given suppliedContextType[F[_],C <: CpsMonadContext[F]](using CpsContextMonad[F,C]): CpsContextType[F] with {
-      type Context = C
-  }
-
-
-}
-*/
 
 trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] with CpsMonadContext[F] {
 

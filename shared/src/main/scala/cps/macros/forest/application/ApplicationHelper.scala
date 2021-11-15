@@ -8,10 +8,10 @@ import cps.macros.forest._
 import cps.macros.misc._
 
 
-trait ApplicationHelper[F[_],CT] extends ApplyArgRecordScope[F,CT] 
-                                      with MethodParamsDescriptorScope[F,CT]
-                                      with ApplyArgBuilderScope[F,CT]:
+trait ApplicationHelper[F[_],CT, CC] extends ApplyArgRecordScope[F,CT, CC] 
+                                      with MethodParamsDescriptorScope[F,CT, CC]
+                                      with ApplyArgBuilderScope[F,CT, CC]:
 
-  thisTreeTransform: TreeTransformScope[F,CT] =>
+  thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 
 

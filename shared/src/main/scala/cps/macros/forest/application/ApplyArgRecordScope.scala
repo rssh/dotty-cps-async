@@ -10,9 +10,9 @@ import cps.macros.forest._
 import cps.macros.misc._
 
 
-trait ApplyArgRecordScope[F[_], CT]:
+trait ApplyArgRecordScope[F[_], CT, CC]:
 
-  thisTreeTransform: TreeTransformScope[F,CT] =>
+  thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 
   import qctx.reflect._
 

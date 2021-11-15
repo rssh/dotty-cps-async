@@ -9,7 +9,7 @@ import cps.macros._
 import cps.macros.misc._
 
 
-class BlockTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
+class BlockTransform[F[_]:Type, T:Type, C:Type](cpsCtx: TransformationContext[F,T,C]):
 
   import cpsCtx._
 

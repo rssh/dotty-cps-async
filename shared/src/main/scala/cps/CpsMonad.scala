@@ -202,6 +202,13 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 }
 
 
+object CpsTryMonad {
+
+  type Aux[F[_],C] = CpsTryMonad[F] { type Context = C }
+
+}
+
+
 /**
  * Monad, which is compatible with passing data via callbacks.
  *
@@ -220,6 +227,12 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
     **/
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A] 
  
+}
+
+object CpsAsyncMonad {
+
+  type Aux[F[_],C] = CpsAsyncMonad[F] { type Context = C }
+
 }
 
 
@@ -255,6 +268,7 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
    def flatDelay[T](x: => F[T]):F[T] = flatMap(delayedUnit)(_ => x)
 
 }
+
 
 
 /**
@@ -317,6 +331,13 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F]  {
             //}
          }
        }
+
+}
+
+
+object CpsConcurrentMonad {
+
+  type Aux[F[_],C] = CpsConcurrentMonad[F] { type Context = C }
 
 }
 

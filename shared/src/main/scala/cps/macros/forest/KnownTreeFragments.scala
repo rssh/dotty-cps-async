@@ -7,9 +7,9 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait KnownTreeFragments[F[_], CT]:
+trait KnownTreeFragments[F[_], CT, CC]:
 
-  thisKnownTreeTransform: TreeTransformScope[F, CT] =>
+  thisKnownTreeTransform: TreeTransformScope[F, CT, CC] =>
 
   import qctx.reflect._
 

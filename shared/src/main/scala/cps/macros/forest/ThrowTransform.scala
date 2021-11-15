@@ -15,7 +15,7 @@ object ThrowTransform:
    * '{ throw $ex }
    *'''
    **/
-  def run[F[_]:Type,T:Type, S<:Throwable:Type](cpsCtx: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type, C:Type, S<:Throwable:Type](cpsCtx: TransformationContext[F,T,C],
                                ex: Expr[S]
                                )(using Quotes): CpsExpr[F,T] =
      import quotes.reflect._

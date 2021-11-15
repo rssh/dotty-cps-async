@@ -12,7 +12,7 @@ object ImportTransform:
 
 
 
-  def fromBlock[F[_]:Type,T:Type](using Quotes)(cpsCtx: TransformationContext[F,T],
+  def fromBlock[F[_]:Type,T:Type,C:Type](using Quotes)(cpsCtx: TransformationContext[F,T,C],
                            importTree: quotes.reflect.Import): CpsExpr[F,Unit] = {
      import quotes.reflect._
      import cpsCtx._

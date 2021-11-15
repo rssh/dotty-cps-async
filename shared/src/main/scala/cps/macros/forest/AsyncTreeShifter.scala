@@ -2,9 +2,9 @@ package cps.macros.forest
 
 import cps.macros._
 
-trait AsyncTreeShifter[F[_], CT]:
+trait AsyncTreeShifter[F[_], CT, CC]:
 
-   thisTreeTransform: TreeTransformScope[F, CT] =>
+   thisTreeTransform: TreeTransformScope[F, CT, CC] =>
 
    import qctx.reflect._
 

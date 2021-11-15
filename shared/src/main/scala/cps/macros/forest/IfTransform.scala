@@ -12,7 +12,7 @@ object IfTransform:
    * '{ if ($cond)  $ifTrue  else $ifFalse } 
    *'''
    **/
-  def run[F[_]:Type,T:Type](cpsCtx: TransformationContext[F,T], 
+  def run[F[_]:Type,T:Type,C:Type](cpsCtx: TransformationContext[F,T,C], 
                                cond: Expr[Boolean], ifTrue: Expr[T], ifFalse: Expr[T]
                                )(using Quotes): CpsExpr[F,T] =
      import quotes.reflect._

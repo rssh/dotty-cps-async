@@ -10,9 +10,9 @@ import cps.macros.misc._
 import scala.collection.immutable.HashMap
 
 
-trait InlinedTreeTransform[F[_], CT]:
+trait InlinedTreeTransform[F[_], CT, CC]:
 
-  thisTreeTransform: TreeTransformScope[F,CT] =>
+  thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 
   import qctx.reflect._
 
@@ -259,17 +259,19 @@ trait InlinedTreeTransform[F[_], CT]:
 object InlinedTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type, C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          inlinedTerm: qctx1.reflect.Inlined): CpsExpr[F,T] = {
 
      val tmpFType = summon[Type[F]]
      val tmpCTType = summon[Type[T]]
-     class Bridge(tc:TransformationContext[F,T]) extends
-                                                    TreeTransformScope[F,T]
-                                                    with TreeTransformScopeInstance[F,T](tc) {
+     val tmpCCType = summon[Type[C]]
+     class Bridge(tc:TransformationContext[F,T,C]) extends
+                                                    TreeTransformScope[F,T,C]
+                                                    with TreeTransformScopeInstance[F,T,C](tc) {
 
          implicit val fType: quoted.Type[F] = tmpFType
          implicit val ctType: quoted.Type[T] = tmpCTType
+         implicit val ccType: quoted.Type[C] = tmpCCType
 
          def bridge(): CpsExpr[F,T] =
             val origin = inlinedTerm.asInstanceOf[quotes.reflect.Inlined]

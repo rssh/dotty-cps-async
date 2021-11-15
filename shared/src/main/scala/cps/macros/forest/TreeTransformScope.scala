@@ -5,30 +5,32 @@ import cps.macros._
 import cps.macros.forest.application._
 import scala.quoted._
 
-trait TreeTransformScope[F[_]:Type,CT:Type]
-               extends CpsTreeScope[F, CT]
-                  with KnownTreeFragments[F,CT]
-                  with TypeApplyTreeTransform[F,CT]
-                  with RootTreeTransform[F, CT]
-                  with ApplyTreeTransform[F,CT]
-                  with ApplicationHelper[F,CT]
-                  with AwaitTreeTransform[F, CT]
-                  with SelectTreeTransform[F, CT]
-                  with LambdaTreeTransform[F, CT]
-                  with MatchTreeTransform[F, CT]
-                  with AsyncTreeShifter[F,CT]
-                  with RepeatedTreeTransform[F,CT]
-                  with InlinedTreeTransform[F,CT]
-                  with SelectOuterTreeTransform[F,CT]
+trait TreeTransformScope[F[_]:Type,CT:Type, CC:Type]
+               extends CpsTreeScope[F, CT, CC]
+                  with KnownTreeFragments[F,CT, CC]
+                  with TypeApplyTreeTransform[F,CT, CC]
+                  with RootTreeTransform[F, CT, CC]
+                  with ApplyTreeTransform[F,CT, CC]
+                  with ApplicationHelper[F,CT, CC]
+                  with AwaitTreeTransform[F, CT, CC]
+                  with SelectTreeTransform[F, CT, CC]
+                  with LambdaTreeTransform[F, CT, CC]
+                  with MatchTreeTransform[F, CT, CC]
+                  with AsyncTreeShifter[F,CT, CC]
+                  with RepeatedTreeTransform[F,CT, CC]
+                  with InlinedTreeTransform[F,CT, CC]
+                  with SelectOuterTreeTransform[F,CT, CC]
 {
 
-   val cpsCtx: TransformationContext[F,CT]
+   val cpsCtx: TransformationContext[F,CT, CC]
 
    implicit val qctx: Quotes
 
    implicit val fType: quoted.Type[F]
 
    implicit val ctType: quoted.Type[CT]
+
+   implicit val ccType: quoted.Type[CC]
 
    def posExpr(t: qctx.reflect.Term): Expr[Any] =
        import qctx.reflect._
@@ -83,10 +85,10 @@ trait TreeTransformScope[F[_]:Type,CT:Type]
 }
 
 
-trait TreeTransformScopeInstance[F[_]:Type,T:Type](
-         override val cpsCtx: TransformationContext[F,T])
+trait TreeTransformScopeInstance[F[_]:Type,T:Type, C:Type](
+         override val cpsCtx: TransformationContext[F,T,C])
          (implicit override val qctx: Quotes)
-                                 extends TreeTransformScope[F,T] {
+                                 extends TreeTransformScope[F,T, C] {
 
 
 }

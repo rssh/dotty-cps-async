@@ -10,8 +10,8 @@ import cps.macros.misc._
 object ValDefTransform:
 
 
-  def fromBlock[F[_]:Type](using Quotes)(
-                           cpsCtx: TransformationContext[F,Unit],
+  def fromBlock[F[_]:Type,C:Type](using Quotes)(
+                           cpsCtx: TransformationContext[F,Unit,C],
                            valDef: quotes.reflect.ValDef): CpsExpr[F,Unit] = {
      import quotes.reflect._
      import cpsCtx._

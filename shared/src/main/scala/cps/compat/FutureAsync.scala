@@ -11,7 +11,7 @@ object FutureAsync:
 
   inline def async[T](inline x:T)(using ec:ExecutionContext):Future[T]=
   ${  
-    cps.macros.Async.transformMonad('x, '{FutureAsyncMonad(using ec)} )
+    cps.macros.Async.transformContextInstanceMonad('x, '{FutureAsyncMonad(using ec)} )
   }
 
   inline def await[T](x:Future[T])(using ec: ExecutionContext):T = 

@@ -7,16 +7,14 @@ import scala.util.*
 import java.util.concurrent.atomic.*
 import java.util.concurrent.ConcurrentLinkedDeque
 
-trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using ExecutionContext) extends CpsAsyncEmitAbsorber3[R,F,T]:
+trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C,T](using val ex:ExecutionContext, val asyncMonad: CpsConcurrentMonad.Aux[F,C]) extends CpsAsyncEmitAbsorber4[R,F,C,T]:
 
  
    def unfold[S](s0:S)(f:S => F[Option[(T,S)]]): R
 
    def asSync(fs:F[R]):R
 
-   val asyncMonad: CpsConcurrentMonad[F] = summon[CpsConcurrentMonad[F]]
-
-   def eval(f: CpsAsyncEmitter[Monad,Element] => Monad[Unit]): R =
+   def eval(f: C  => CpsAsyncEmitter[Monad,Element] => Monad[Unit]): R =
       asSync(evalAsync(f))
 
 
@@ -146,8 +144,8 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_]:CpsConcurrentMonad,T](using Executio
    end StepsObserver
 
     
-   def evalAsync(f: CpsAsyncEmitter[F,T] => F[Unit]):F[R] =
-      asyncMonad.apply( ctx => asyncMonad.pure(evalAsyncInternal(f)) )
+   def evalAsync(f: C => CpsAsyncEmitter[F,T] => F[Unit]):F[R] =
+      asyncMonad.apply( ctx => asyncMonad.pure(evalAsyncInternal(f(ctx))) )
 
 
    def evalAsyncInternal(f: CpsAsyncEmitter[F,T] => F[Unit]): R =

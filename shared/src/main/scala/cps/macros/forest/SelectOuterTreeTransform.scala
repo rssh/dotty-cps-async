@@ -7,9 +7,9 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait SelectOuterTreeTransform[F[_], CT]:
+trait SelectOuterTreeTransform[F[_], CT, CC]:
 
-  thisScope: TreeTransformScope[F, CT] =>
+  thisScope: TreeTransformScope[F, CT, CC] =>
 
   import quotes.reflect._
 
@@ -27,17 +27,19 @@ trait SelectOuterTreeTransform[F[_], CT]:
 object SelectOuterTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type, C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          selectOuterTerm: qctx1.reflect.SelectOuter): CpsExpr[F,T] = {
                          
      val tmpFType = summon[Type[F]]
      val tmpCTType = summon[Type[T]]
-     class Bridge(tc:TransformationContext[F,T]) extends
-                                                    TreeTransformScope[F,T]
-                                                    with TreeTransformScopeInstance[F,T](tc) {
+     val tmpCCType = summon[Type[C]]
+     class Bridge(tc:TransformationContext[F,T,C]) extends
+                                                    TreeTransformScope[F,T,C]
+                                                    with TreeTransformScopeInstance[F,T,C](tc) {
 
          implicit val fType: quoted.Type[F] = tmpFType
          implicit val ctType: quoted.Type[T] = tmpCTType
+         implicit val ccType: quoted.Type[C] = tmpCCType
           
          def bridge(): CpsExpr[F,T] =
             val origin = selectOuterTerm.asInstanceOf[quotes.reflect.SelectOuter]

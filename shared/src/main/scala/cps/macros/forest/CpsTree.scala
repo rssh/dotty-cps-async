@@ -8,9 +8,9 @@ import cps.macros.misc._
 
 
 
-trait CpsTreeScope[F[_], CT] {
+trait CpsTreeScope[F[_], CT, CC] {
 
-  cpsTreeScope: TreeTransformScope[F, CT] =>
+  cpsTreeScope: TreeTransformScope[F, CT, CC] =>
 
   import qctx.reflect._
 
@@ -116,7 +116,7 @@ trait CpsTreeScope[F[_], CT] {
              given quoted.Type[T] = qt
              toResult[T]
 
-     def inCake[F1[_],T1](otherScope: TreeTransformScope[F1,T1]): otherScope.CpsTree
+     def inCake[F1[_],T1, C1](otherScope: TreeTransformScope[F1,T1,C1]): otherScope.CpsTree
 
 
   object CpsTree:
@@ -176,7 +176,7 @@ trait CpsTreeScope[F[_], CT] {
     def applyAwait(newOtpe: TypeRepr): CpsTree =
           AwaitSyncCpsTree(origin, newOtpe.widen)
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.PureCpsTree =
+    override def inCake[F1[_],T1, C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.PureCpsTree =
           otherCake.PureCpsTree(otherCake.adopt(origin), isChanged)
 
     override def toString(): String =
@@ -229,7 +229,7 @@ trait CpsTreeScope[F[_], CT] {
           else
               monadMap(x => Typed(x,Inferred(newOtpe)), newOtpe)
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.AwaitSyncCpsTree =
+    override def inCake[F1[_],T1,C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.AwaitSyncCpsTree =
           otherCake.AwaitSyncCpsTree(otherCake.adopt(origin),
                                      otherCake.adoptType(otpe))
 
@@ -248,7 +248,7 @@ trait CpsTreeScope[F[_], CT] {
              MappedCpsTree(this, t => Typed(t,Inferred(ntpe)), ntpe)
 
 
-    def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.CpsTree =
+    def inCake[F1[_],T1,C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.CpsTree =
            otherCake.AwaitAsyncCpsTree(nested.inCake(otherCake), otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr])
 
 
@@ -302,7 +302,7 @@ trait CpsTreeScope[F[_], CT] {
        MappedCpsTree(prev, term => Typed(op(term),Inferred(newOtpe)), newOtpe)
 
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.MappedCpsTree =
+    override def inCake[F1[_],T1,C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.MappedCpsTree =
        otherCake.MappedCpsTree(prev.inCake(otherCake),
                                op.asInstanceOf[otherCake.qctx.reflect.Term => otherCake.qctx.reflect.Term],
                                otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr])
@@ -354,7 +354,7 @@ trait CpsTreeScope[F[_], CT] {
         r
     }
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.FlatMappedCpsTree =
+    override def inCake[F1[_],T1,C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.FlatMappedCpsTree =
         otherCake.FlatMappedCpsTree(
           prev.inCake(otherCake),
           otherCake.adoptTermFun(opm),
@@ -413,19 +413,19 @@ trait CpsTreeScope[F[_], CT] {
     override def applyAwait(newOtpe: TypeRepr): CpsTree =
         BlockCpsTree(prevs, last.applyAwait(newOtpe))
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.BlockCpsTree =
+    override def inCake[F1[_],T1,C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.BlockCpsTree =
         otherCake.BlockCpsTree(prevs.asInstanceOf[Queue[otherCake.qctx.reflect.Term]], last.inCake(otherCake))
 
   end BlockCpsTree
 
   object BlockCpsTree:
 
-     def prevsFrom(block: TreeTransformScope[?,?]#BlockCpsTree): Queue[Statement] =
+     def prevsFrom(block: TreeTransformScope[?,?,?]#BlockCpsTree): Queue[Statement] =
            block.prevs.asInstanceOf[Queue[Statement]]
 
      object Matcher:
 
-       def unapply(cpsTree: TreeTransformScope[?,?]#CpsTree): Option[(Queue[Statement], TreeTransformScope[?,?]#CpsTree)] =
+       def unapply(cpsTree: TreeTransformScope[?,?,?]#CpsTree): Option[(Queue[Statement], TreeTransformScope[?,?,?]#CpsTree)] =
             cpsTree match
               case v: BlockCpsTree =>
                 Some((prevsFrom(v), v.last))
@@ -470,7 +470,7 @@ trait CpsTreeScope[F[_], CT] {
     override def applyAwait(newOtpe:TypeRepr): CpsTree =
          InlinedCpsTree(origin, bindings, nested.applyAwait(newOtpe))
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.InlinedCpsTree =
+    override def inCake[F1[_],T1, C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.InlinedCpsTree =
          otherCake.InlinedCpsTree(origin.asInstanceOf[otherCake.qctx.reflect.Inlined], 
                                   bindings.map(_.asInstanceOf[otherCake.qctx.reflect.Definition]),
                                   nested.inCake(otherCake))
@@ -556,7 +556,7 @@ trait CpsTreeScope[F[_], CT] {
          case Block(stats, last) => Block(valDef::stats, last)
          case other => Block(List(valDef), other)
 
-    def inCake[F1[_],T1](otherScope: TreeTransformScope[F1,T1]): otherScope.ValCpsTree =
+    def inCake[F1[_],T1,C1](otherScope: TreeTransformScope[F1,T1,C1]): otherScope.ValCpsTree =
        otherScope.ValCpsTree(valDef.asInstanceOf[otherScope.qctx.reflect.ValDef],
                              rightPart.inCake(otherScope),
                              nested.inCake(otherScope))
@@ -625,7 +625,7 @@ trait CpsTreeScope[F[_], CT] {
     override def castOtpe(ntpe: TypeRepr): CpsTree =
          AppendCpsTree(frs, snd.castOtpe(ntpe))
 
-    override def inCake[F1[_],T1](otherScope: TreeTransformScope[F1,T1]): otherScope.AppendCpsTree =
+    override def inCake[F1[_],T1,C1](otherScope: TreeTransformScope[F1,T1,C1]): otherScope.AppendCpsTree =
          otherScope.AppendCpsTree(frs.inCake(otherScope), snd.inCake(otherScope))
 
   end AppendCpsTree
@@ -641,7 +641,7 @@ trait CpsTreeScope[F[_], CT] {
 
     override def isLambda = true
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.AsyncLambdaCpsTree =
+    override def inCake[F1[_],T1,C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.AsyncLambdaCpsTree =
       otherCake.AsyncLambdaCpsTree(
         originLambda.asInstanceOf[otherCake.qctx.reflect.Term],
         params.asInstanceOf[List[otherCake.qctx.reflect.ValDef]],
@@ -753,7 +753,7 @@ trait CpsTreeScope[F[_], CT] {
 
     override def isLambda = false
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.CallChainSubstCpsTree =
+    override def inCake[F1[_],T1,C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.CallChainSubstCpsTree =
       otherCake.CallChainSubstCpsTree(
         origin.asInstanceOf[otherCake.qctx.reflect.Term],
         shifted.asInstanceOf[otherCake.qctx.reflect.Term],
@@ -784,7 +784,7 @@ trait CpsTreeScope[F[_], CT] {
   end CallChainSubstCpsTree
 
   case class SelectTypeApplyRecord(prevTpe: TypeRepr, symbol: Symbol, targs: List[TypeTree], level: Int = 0):
-     def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.SelectTypeApplyRecord =
+     def inCake[F1[_],T1,C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.SelectTypeApplyRecord =
          otherCake.SelectTypeApplyRecord(
                                         prevTpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr],
                                         symbol.asInstanceOf[otherCake.qctx.reflect.Symbol],
@@ -811,7 +811,7 @@ trait CpsTreeScope[F[_], CT] {
 
     override def isLambda = nested.isLambda
 
-    override def inCake[F1[_],T1](otherCake: TreeTransformScope[F1,T1]): otherCake.SelectTypeApplyCpsTree =
+    override def inCake[F1[_],T1,C1](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.SelectTypeApplyCpsTree =
        otherCake.SelectTypeApplyCpsTree(
                                origin.map(_.asInstanceOf[otherCake.qctx.reflect.Term]),
                                nested.inCake(otherCake),
@@ -964,7 +964,7 @@ trait CpsTreeScope[F[_], CT] {
 
   end SelectTypeApplyCpsTree
 
-  extension (otherCake: TreeTransformScope[?,?])
+  extension (otherCake: TreeTransformScope[?,?,?])
     def adopt(t: qctx.reflect.Term): otherCake.qctx.reflect.Term = t.asInstanceOf[otherCake.qctx.reflect.Term]
 
     def adoptTerm(t: qctx.reflect.Term): otherCake.qctx.reflect.Term = t.asInstanceOf[otherCake.qctx.reflect.Term]

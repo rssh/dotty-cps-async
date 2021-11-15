@@ -11,7 +11,7 @@ object ConstTransform:
 
   // we know, that f is match to Const
   //(see rootTransform)
-  def run[F[_]:Type,T:Type](using Quotes)(cpsCtx: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type, C:Type](using Quotes)(cpsCtx: TransformationContext[F,T,C],
                                           constTerm: quotes.reflect.Literal):CpsExpr[F,T] =
      import quotes.reflect._
      if (cpsCtx.flags.debugLevel >= 10) then

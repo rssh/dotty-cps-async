@@ -6,9 +6,9 @@ import cps._
 import cps.macros._
 import cps.macros.misc._
 
-trait ApplyTreeTransform[F[_],CT]:
+trait ApplyTreeTransform[F[_],CT, CC]:
 
-  thisTreeTransform: TreeTransformScope[F,CT] =>
+  thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 
   import qctx.reflect._
 
@@ -653,7 +653,7 @@ trait ApplyTreeTransform[F[_],CT]:
 object ApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T],
+  def run[F[_]:Type,T:Type,C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          applyTerm: qctx1.reflect.Term,
                          fun: qctx1.reflect.Term,
                          args: List[qctx1.reflect.Term]): CpsExpr[F,T] = {
@@ -661,13 +661,15 @@ object ApplyTreeTransform:
      val tmpQctx = qctx1
      val tmpFtype = summon[Type[F]]
      val tmpCTtype = summon[Type[T]]
-     class Bridge extends TreeTransformScope[F,T]
+     val tmpCCtype = summon[Type[C]]
+     class Bridge extends TreeTransformScope[F,T,C]
                                                     {
                                                     //with TreeTransformScopeInstance[F,T](tc)(summon[Type[F]], summon[Type[T]], qctx) {
 
          implicit val qctx = qctx1
          implicit val fType = tmpFtype
          implicit val ctType = tmpCTtype
+         implicit val ccType = tmpCCtype
 
          val cpsCtx = cpsCtx1
 

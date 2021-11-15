@@ -5,9 +5,9 @@ import cps.macros._
 import cps.macros.forest._
 import cps.macros.misc._
 
-trait ApplyArgBuilderScope[F[_],CT] {
+trait ApplyArgBuilderScope[F[_],CT, CC] {
 
-  thisTreeTransform: TreeTransformScope[F,CT] =>
+  thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 
   import qctx.reflect._
 
@@ -43,18 +43,18 @@ trait ApplyArgBuilderScope[F[_],CT] {
 
   object O {  // fix arround https://github.com/lampepfl/dotty/issues/9074
 
-    def buildApplyArgsRecords(paramsDescriptor: MethodParamsDescriptor, args: List[qctx.reflect.Term], cpsCtx:TransformationContext[F,?]): List[ApplyArgRecord] = {
+    def buildApplyArgsRecords(paramsDescriptor: MethodParamsDescriptor, args: List[qctx.reflect.Term], cpsCtx:TransformationContext[F,?,?]): List[ApplyArgRecord] = {
      buildApplyArgsRecordsAcc(paramsDescriptor, args, cpsCtx, BuildApplyArgsAcc()).records.toList
     }
 
-    def buildApplyArgsRecordsAcc(paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?], acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
+    def buildApplyArgsRecordsAcc(paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?,?], acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
        args.foldLeft(acc){ (s,e) =>
          buildApplyArgRecord(paramsDescriptor, e, cpsCtx, s)
        }
 
     }
 
-    def buildApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, cpsCtx: TransformationContext[F,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
+    def buildApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, cpsCtx: TransformationContext[F,?,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
        import scala.quoted.Quotes
        import scala.quoted.Expr
 
@@ -119,7 +119,7 @@ trait ApplyArgBuilderScope[F[_],CT] {
        }
     }
 
-    def buildCpsTreeApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, termCpsTree: CpsTree, cpsCtx: TransformationContext[F,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
+    def buildCpsTreeApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, termCpsTree: CpsTree, cpsCtx: TransformationContext[F,?,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
        if cpsCtx.flags.debugLevel >= 15 then
           cpsCtx.log(s"termCpsTree = ${termCpsTree}")
           cpsCtx.log(s"termCpsTree.isAsync = ${termCpsTree.isAsync}")

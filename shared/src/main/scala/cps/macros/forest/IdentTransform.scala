@@ -6,7 +6,7 @@ import cps._
 import cps.macros._
 
 
-class IdentTransform[F[_]:Type, T:Type](cpsCtx: TransformationContext[F,T]):
+class IdentTransform[F[_]:Type, T:Type, C:Type](cpsCtx: TransformationContext[F,T,C]):
 
 
   // case Ident(name) 
