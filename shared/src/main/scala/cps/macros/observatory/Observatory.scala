@@ -37,10 +37,10 @@ trait ObservatoryQuoteScope:
            override def scheduleVisit(tree: Tree, analysis: Analysis)(
                                                owner: Symbol): Unit =
                val analyses = scheduledVisits.get(tree)
-               if analyses eq null then
+               if analyses == null then
                    scheduledVisits.put(tree,ListBuffer(analysis))
                else
-                   analyses.addOne(analysis)
+                   analyses.nn.addOne(analysis)
 
 
            override def flags: AsyncMacroFlags = asyncMacroFlags
@@ -50,12 +50,12 @@ trait ObservatoryQuoteScope:
          override def traverseTree(tree: Tree)(owner: Symbol): Unit =
            val toProcess = Option(scheduledVisits.get(tree))
            toProcess.foreach{analysises =>
-              for(a <- analysises) 
+              for(a <- analysises.nn) 
                  a.visitStart(tree,ctx)(owner)
            }
            traverseTreeChildren(tree)(owner)
            toProcess.foreach{analysises =>
-              for(a <- analysises) 
+              for(a <- analysises.nn) 
                  a.visitDone(tree,ctx)(owner)
               scheduledVisits.remove(tree)
            }

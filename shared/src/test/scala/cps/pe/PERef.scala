@@ -8,19 +8,19 @@ class PERef[T<:AnyRef](initValue: T):
   val value = new AtomicReference[T](initValue)
 
   def get(): PureEffect[T] =
-    PureEffect.delay(value.get())
+    PureEffect.delay(value.get().nn)
 
   def update(f: T=>T): PureEffect[Unit] = 
-    PureEffect.delay{  value.updateAndGet(x => f(x)); }
+    PureEffect.delay{  value.updateAndGet(x => f(x.nn)); }
 
   def updateAndGet(f: T=>T): PureEffect[T] = 
-    PureEffect.delay( value.updateAndGet(x => f(x)) )
+    PureEffect.delay( value.updateAndGet(x => f(x.nn)).nn )
 
   def set(v: T): PureEffect[Unit] =
     PureEffect.delay( value.set(v) )
 
   def getAndSet(v: T): PureEffect[T] =
-    PureEffect.delay( value.getAndSet(v) )
+    PureEffect.delay( value.getAndSet(v).nn )
    
   def compareAndSet(except: T, v: T): PureEffect[Boolean] =
     PureEffect.delay( value.compareAndSet(except, v) )

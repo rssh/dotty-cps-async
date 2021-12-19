@@ -13,7 +13,8 @@ class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T]) extends A
      val m = summon[CpsAsyncMonad[F]]
      //m.apply{ ctx =>
       m.adoptCallbackStyle[Option[T]]{ elementCallback =>
-         ref.updateAndGet{ lStart =>
+         ref.updateAndGet{ lStartMaybeNull =>
+            val lStart = lStartMaybeNull.nn
             val delayedList = m.adoptCallbackStyle[AsyncList[F,T]]{
               listCallback => m.mapTry(lStart.next){ 
                  case Success(v) =>

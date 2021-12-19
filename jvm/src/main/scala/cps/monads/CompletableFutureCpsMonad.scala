@@ -11,49 +11,49 @@ import scala.util.control.NonFatal
 given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with CpsMonadInstanceContext[CompletableFuture] with {
 
    def pure[T](t:T):CompletableFuture[T] =
-         CompletableFuture.completedFuture(t)
+         CompletableFuture.completedFuture(t).nn
 
    def map[A,B](fa:CompletableFuture[A])(f: A=>B):CompletableFuture[B] =
         fa.thenApplyAsync(a => 
-               f(a)
-        )  // TODO:  dotty bug report: Function to java.util.Function
+               f(a.nn)
+        ).nn  // TODO:  dotty bug report: Function to java.util.Function
 
    def flatMap[A,B](fa:CompletableFuture[A])(f: A=> CompletableFuture[B]):CompletableFuture[B] =
-        fa.thenComposeAsync(a => f(a))
+        fa.thenComposeAsync(a => f(a.nn)).nn
 
 
    def error[A](e: Throwable): CompletableFuture[A] =
-        CompletableFuture.failedFuture(e)
+        CompletableFuture.failedFuture(e).nn
 
    override def mapTry[A,B](fa:CompletableFuture[A])(f: Try[A]=>B):CompletableFuture[B] =
         fa.handle{ (v,e) =>
-            if (e eq null) then
-               f(Success(v))
+            if (e == null) then
+               f(Success(v.nn))
             else
-               f(Failure(e))
-        }.toCompletableFuture
+               f(Failure(e.nn))
+        }.nn.toCompletableFuture.nn
 
    override def flatMapTry[A,B](fa:CompletableFuture[A])(f: Try[A]=>CompletableFuture[B]):CompletableFuture[B] =
         val retval = new CompletableFuture[B]
         fa.handle{ (v,e) =>
-          if (e eq null) then
+          if (e == null) then
             try
-              f(Success(v)).handle{ (v1, e1) =>
-                 if (e1 eq null) then
-                    retval.complete(v1)
+              f(Success(v.nn)).handle{ (v1, e1) =>
+                 if (e1 == null) then
+                    retval.complete(v1.nn)
                  else
-                    retval.completeExceptionally(e1)
+                    retval.completeExceptionally(e1.nn)
               } 
             catch
               case NonFatal(ex) =>
                  retval.completeExceptionally(ex)
           else
             try
-              f(Failure(e)).handle{ (v1,e1) =>
-                 if (e1 eq null) then
-                    retval.complete(v1)
+              f(Failure(e.nn)).handle{ (v1,e1) =>
+                 if (e1 == null) then
+                    retval.complete(v1.nn)
                  else
-                    retval.completeExceptionally(e1)
+                    retval.completeExceptionally(e1.nn)
               }
             catch
               case NonFatal(ex) =>
@@ -65,15 +65,15 @@ given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with CpsM
    override def restore[A](fa: CompletableFuture[A])(fx:Throwable => CompletableFuture[A]): CompletableFuture[A] =
         val retval = new CompletableFuture[A]
         fa.handle{ (v,e) =>
-          if (e eq null) then
-             retval.complete(v)
+          if (e == null) then
+             retval.complete(v.nn)
           else
              try
                 fx(e).handle{ (v1,e1) =>
-                   if (e1 eq null) then
-                      retval.complete(v1)
+                   if (e1 == null) then
+                      retval.complete(v1.nn)
                    else
-                      retval.completeExceptionally(e1)
+                      retval.completeExceptionally(e1.nn)
                 }
              catch
                 case NonFatal(ex) =>
@@ -95,7 +95,7 @@ given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with CpsM
         CompletableFuture.runAsync{()=>
           try
             op.handle{ (v,e) =>
-              if (e eq null)
+              if (e == null)
                  r.complete(v)
               else
                  r.completeExceptionally(e)
@@ -108,9 +108,9 @@ given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with CpsM
 
     def tryCancel[A](op: CompletableFuture[A]): CompletableFuture[Unit] =
         if (op.cancel(true)) then
-           CompletableFuture.completedFuture(())
+           CompletableFuture.completedFuture(()).nn
         else
-           CompletableFuture.failedFuture(new IllegalStateException("CompletableFuture is not cancelled"))
+           CompletableFuture.failedFuture(new IllegalStateException("CompletableFuture is not cancelled")).nn
 
 }
 

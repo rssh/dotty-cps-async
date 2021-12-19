@@ -57,7 +57,7 @@ class TestCompletableFutureTryCatch:
     val r = f.value.get
     assert(r.isFailure)
     val Failure(ex) = r
-    assert(ex.getMessage().contains("CompletableFuture:simpleTryCatch:1.2"))
+    assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryCatch:1.2"))
 
   }
 
@@ -78,7 +78,7 @@ class TestCompletableFutureTryCatch:
     val r = f.value.get
     assert(r.isFailure)
     val Failure(ex) = r
-    assert(ex.getMessage().contains("CompletableFuture:simpleTryFinally:2"))
+    assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryFinally:2"))
 
   }
 
@@ -116,7 +116,7 @@ class TestCompletableFutureTryCatch:
     var x = 0
     val a = async { 
                try
-                 await(CompletableFuture.completedFuture(1))
+                 await(CompletableFuture.completedFuture(1).nn)
                  raise(new RuntimeException("CompletableFuture:simpleTryCatch:4.1")) 
                catch
                  case NonFatal(ex) =>
@@ -129,7 +129,7 @@ class TestCompletableFutureTryCatch:
     val r = f.value.get
     assert(r.isFailure)
     val Failure(ex) = r
-    assert(ex.getMessage().contains("CompletableFuture:simpleTryCatch:4.2"))
+    assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryCatch:4.2"))
 
   }
 

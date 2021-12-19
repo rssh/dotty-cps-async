@@ -75,14 +75,15 @@ object ComputationBound {
       val secondQueue = new ConcurrentLinkedQueue[Deferred[?]]
       while(!deferredQueue.isEmpty && System.nanoTime < endNanos) 
         val c = deferredQueue.poll()
-        if (!(c eq null)) then
-          c.ref.get() match 
+        if (c != null) then
+          val cr: Option[?] = c.nn.ref.get().nn
+          cr match 
             case Some(r) => nFinished += 1
             case None =>
                c.optComputations match
                   case Some(r) =>     
                     r match
-                       case Wait(ref1, _) if ref1.get().isEmpty  => // do nothing
+                       case Wait(ref1, _) if ref1.get().nn.isEmpty  => // do nothing
                          secondQueue.add(c)
                        case _ =>
                          val nextR = r.progress((endNanos - System.nanoTime) nanos)
@@ -97,8 +98,8 @@ object ComputationBound {
                     secondQueue.add(c)
       while(!secondQueue.isEmpty)
          val r = secondQueue.poll()
-         if !(r eq null) then
-            deferredQueue.add(r)
+         if r != null then
+            deferredQueue.add(r.nn)
       if (nFinished == 0)
          val timeToWait = math.min(waitQuant, endNanos - System.nanoTime)
          val timeToWaitMillis = (timeToWait nanos).toMillis
@@ -227,13 +228,13 @@ case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => Computa
          val beforeWait = Duration(System.nanoTime, NANOSECONDS)
          if (timeout.isFinite) 
             val endTime = (beforeWait + timeout).toNanos
-            while(ref.get().isEmpty && ( System.nanoTime < endTime ) )
+            while(ref.get().nn.isEmpty && ( System.nanoTime < endTime ) )
                ComputationBound.advanceDeferredQueue(endTime)
          else
-            while(ref.get().isEmpty)
+            while(ref.get().nn.isEmpty)
                val endTime = System.nanoTime + 1000000
                ComputationBound.advanceDeferredQueue(endTime)
-         ref.get.map{ r => 
+         ref.get().nn.map{ r => 
              val afterWait = Duration(System.nanoTime, NANOSECONDS)
              op(r).progress(timeout - (afterWait - beforeWait)) 
          }.getOrElse(this)

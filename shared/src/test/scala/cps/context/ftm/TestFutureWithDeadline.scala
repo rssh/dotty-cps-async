@@ -29,8 +29,7 @@ enum FutureWithDeadline[T]:
     def future: Future[T] =
         this match
             case Computation(p,c) => p.future
-            case Value
-    (r) => Future.fromTry(r)
+            case Value(r) => Future.fromTry(r)
 
     def value: Option[Try[T]] = future.value
 
@@ -60,8 +59,8 @@ class DeadlineContext(initDeadline: Long) extends CpsMonadContext[FutureWithDead
 
     def setDeadline(newDeadline: Long) =
         this.synchronized{
-          if !(lastTimerTask eq null) then 
-               lastTimerTask.cancel()
+          if lastTimerTask != null then 
+               lastTimerTask.nn.cancel()
           deadline = newDeadline;
           if (deadline > 0L) then
              val delay = deadline - now()

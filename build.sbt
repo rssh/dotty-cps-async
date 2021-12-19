@@ -36,7 +36,8 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
     .settings(sharedSettings)
     .disablePlugins(SitePreviewPlugin)
     .jvmSettings(
-        scalacOptions ++= Seq( "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
+        scalacOptions ++= Seq( "-Yexplicit-nulls",
+                            "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
                             "-Ydebug", "-uniqid", "-Xcheck-macros", "-Ycheck:macro", "-Yprint-syms"  ),
                              // -explain
                              // -Ydebug-error

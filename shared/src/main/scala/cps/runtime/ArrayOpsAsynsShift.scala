@@ -16,9 +16,9 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
      val r = new AtomicReference[F[Unit]](monad.pure(()))
      arrayOps.foreach{ a =>
        val b = f(a)
-       r.getAndUpdate(currR => monad.flatMap(currR)(_ => monad.map(b)(_ =>())))
+       r.getAndUpdate(currR => monad.flatMap(currR.nn)(_ => monad.map(b)(_ =>())))
      }
-     r.get
+     r.get.nn
   }
 
   def foreachSequential[F[_],U](arrayOps: ArrayOps[A], monad: CpsMonad[F])(f: A => F[U]): F[Unit] =  {

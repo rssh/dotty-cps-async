@@ -7,7 +7,7 @@ trait IFWriter[F[_],A]:
 
   type write = A
 
-  var v:AnyRef = null
+  var v:AnyRef| Null = null
 
 
   protected def cpsMonad: CpsMonad[F]

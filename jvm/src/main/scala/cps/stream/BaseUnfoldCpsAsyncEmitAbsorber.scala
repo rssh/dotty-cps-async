@@ -78,9 +78,9 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C,T](using val ex:ExecutionContext, 
          while(!done) {
             while(!supplyEvents.isEmpty && !consumerEvents.isEmpty) {
                val consumer = consumerEvents.poll()
-               if !(consumer eq null) then
+               if !(consumer == null) then
                   val supply = supplyEvents.poll() 
-                  if !(supply eq null) then
+                  if !(supply == null) then
                      // can we hope the
                      consumer.success(supply)
                   else
@@ -100,15 +100,15 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C,T](using val ex:ExecutionContext, 
 
       private def checkFinish(): Unit = {
          val r = finishRef.get()
-         if !(r eq null) then
+         if !(r == null) then
             while(! consumerEvents.isEmpty ) {
                val consumer = consumerEvents.poll()
-               if ! (consumer eq null) then
-                  consumer.success(Finished(r))
+               if  (consumer != null) then
+                  consumer.nn.success(Finished(r.nn))
             }
             while(! supplyEvents.isEmpty) {
                val ev = supplyEvents.poll()
-               if ! (ev eq null) then
+               if (ev != null) then
                   ev match
                      case Emitted(v,p) =>
                         p.failure(new CancellationException("Stream is closed"))
@@ -123,7 +123,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C,T](using val ex:ExecutionContext, 
      def emitAsync(v:T): F[Unit] =  
          if (state.supplyEvents.isEmpty) then
             val consumer = state.consumerEvents.poll()
-            if (consumer eq null) then
+            if (consumer == null) then
                state.queueEmit(v)
             else      
                val p = Promise[Unit]()
@@ -186,9 +186,9 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C,T](using val ex:ExecutionContext, 
                state.queueConsumer()
                
          val r = state.finishRef.get()         
-         if r eq null then
+         if r == null then
             val e = state.supplyEvents.poll()
-            if (e eq null) then
+            if (e == null) then
                asyncMonad.flatMap(nextEvent())(e => handleEvent(e))
             else
                handleEvent(e)     

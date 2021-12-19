@@ -20,15 +20,15 @@ class TestIssue45:
 
 
   @Test def runSpawn(): Unit =
-    val threadIndexOutside1 = Thread.currentThread().getId()
+    val threadIndexOutside1 = Thread.currentThread().nn.getId()
     val beforeStart = System.currentTimeMillis()
     val f = async[Future]{
-      val threadIndexInside = Thread.currentThread().getId()
+      val threadIndexInside = Thread.currentThread().nn.getId()
       Thread.sleep(100)
       threadIndexInside
     }
     val afterStart = System.currentTimeMillis()
-    val threadIndexOutside2 = Thread.currentThread().getId()
+    val threadIndexOutside2 = Thread.currentThread().nn.getId()
     assert(threadIndexOutside1  == threadIndexOutside2)
     val startDuration = afterStart - beforeStart 
     //println(s"startDuration=${startDuration}")
