@@ -109,8 +109,6 @@ class FutureWithDeadlineCpsMonad(using ExecutionContext) extends CpsAsyncMonad[F
 
     def pure[T](t:T):FutureWithDeadline[T] = FutureWithDeadline.Value(Success(t))
 
-
-
     def map[A,B](fa:FutureWithDeadline[A])(f: A=>B):FutureWithDeadline[B] =
         fa match
             case FutureWithDeadline.Computation(pa,ca) =>
