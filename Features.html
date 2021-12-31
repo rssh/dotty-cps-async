@@ -4,20 +4,19 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Additional Features &#8212; dotty-cps-async 0.9.5 documentation</title>
-    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Additional Features &#8212; dotty-cps-async 0.9.6-SNAPSHOT documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Random Notes" href="random-notes/index.html" />
-    <link rel="prev" title="Integrations" href="Integrations.html" /> 
+    <link rel="prev" title="Monad Context" href="MonadContexts.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -29,9 +28,9 @@
           <a href="random-notes/index.html" title="Random Notes"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="Integrations.html" title="Integrations"
+          <a href="MonadContexts.html" title="Monad Context"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>  
@@ -41,44 +40,44 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="additional-features">
+  <section id="additional-features">
 <h1>Additional Features<a class="headerlink" href="#additional-features" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="short-syntax-for-await">
+<section id="short-syntax-for-await">
 <h2>Short syntax for await<a class="headerlink" href="#short-syntax-for-await" title="Permalink to this headline">¶</a></h2>
 <p>It can be helpful when monad or environment does not support automatic coloring, but the default <cite>await</cite> syntax is too heavy.  For this case, we define <cite>unary_!</cite> operator for use instead of <cite>await</cite>.</p>
 <p>Example:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.syntax.</span><span class="n">`unary_!`</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">syntax</span><span class="p">.</span><span class="n">`unary_!`</span>
 
-<span class="k">val</span> <span class="n">x</span> <span class="k">=</span> <span class="n">username</span> <span class="o">+</span> <span class="o">!</span><span class="n">fetchToken</span><span class="o">(</span><span class="n">data</span><span class="o">)</span>
+<span class="kd">val</span> <span class="n">x</span> <span class="o">=</span> <span class="n">username</span> <span class="o">+</span> <span class="o">!</span><span class="n">fetchToken</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Inside the async block this will be a synonim for</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">x</span> <span class="k">=</span> <span class="n">username</span> <span class="o">+</span> <span class="n">await</span><span class="o">(</span><span class="n">fetchToken</span><span class="o">(</span><span class="n">data</span><span class="o">))</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="kd">val</span> <span class="n">x</span> <span class="o">=</span> <span class="n">username</span> <span class="o">+</span> <span class="n">await</span><span class="p">(</span><span class="n">fetchToken</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="sip22-compatible-interface">
+</section>
+<section id="sip22-compatible-interface">
 <h2>SIP22-compatible interface<a class="headerlink" href="#sip22-compatible-interface" title="Permalink to this headline">¶</a></h2>
 <p id="index-0">This feature provides a compatibility layer for Scala2 <a class="reference external" href="https://docs.scala-lang.org/sips/async.html">SIP-22</a>
 <a class="reference external" href="https://github.com/scala/scala-async">async</a>.
 When migrating your program from legacy SIP22 to dotty, you can change the headers, from</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">scala.async.Async.</span><span class="o">{</span><span class="n">async</span><span class="o">,</span><span class="n">await</span><span class="o">}</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">async</span><span class="p">.</span><span class="nc">Async</span><span class="p">.{</span><span class="n">async</span><span class="p">,</span><span class="n">await</span><span class="p">}</span>
 </pre></div>
 </div>
 <p>to</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps.compat.sip22.</span><span class="o">{</span><span class="n">async</span><span class="o">,</span><span class="n">await</span><span class="o">}</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">compat</span><span class="p">.</span><span class="nn">sip22</span><span class="p">.{</span><span class="n">async</span><span class="p">,</span><span class="n">await</span><span class="p">}</span>
 </pre></div>
 </div>
 <p>and use Future based async/await.</p>
 <p>All test cases from the original Scala-Async distribution are passed with a change of imports only,
 and included in our regression suite.</p>
 <p>It is also possible to compile sip22 async code without changing of the source code with <a class="reference external" href="https://github.com/rssh/shim--scala-async--dotty-cps-async">shim–scala-async–dotty-cps-async</a> -s help.</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;shim-scala-async-dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.5&quot;</span><span class="o">,</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;shim-scala-async-dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.5&quot;</span><span class="p">,</span>
 </pre></div>
 </div>
 <p>Note that compatibility was not a primary goal during the development of dotty-cps-async. Generated code is quite different, so if you need a bug-to-bug compatible version of scala2 async, you should use the port of the original -XAsync compiler plugin.</p>
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -97,8 +96,8 @@ and included in our regression suite.</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="Integrations.html"
-                        title="previous chapter">Integrations</a></p>
+  <p class="topless"><a href="MonadContexts.html"
+                        title="previous chapter">Monad Context</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="random-notes/index.html"
                         title="next chapter">Random Notes</a></p>
@@ -113,7 +112,7 @@ and included in our regression suite.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -133,15 +132,15 @@ and included in our regression suite.</p>
           <a href="random-notes/index.html" title="Random Notes"
              >next</a> |</li>
         <li class="right" >
-          <a href="Integrations.html" title="Integrations"
+          <a href="MonadContexts.html" title="Monad Context"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2021, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>
 </html>

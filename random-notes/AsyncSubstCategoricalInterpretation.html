@@ -4,16 +4,16 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Categorical interpretation for substitutions in async call chains: &#8212; dotty-cps-async 0.9.5 documentation</title>
-    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Categorical interpretation for substitutions in async call chains: &#8212; dotty-cps-async 0.9.6-SNAPSHOT documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="FAQ" href="../FAQ.html" />
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="CpsAsyncOverview.html" title="CPS-Async transformations:"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Random Notes</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Categorical interpretation for substitutions in async call chains:</a></li> 
       </ul>
@@ -42,7 +42,7 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="categorical-interpretation-for-substitutions-in-async-call-chains">
+  <section id="categorical-interpretation-for-substitutions-in-async-call-chains">
 <span id="categorical-interpretation-for-callchainasyncsubst"></span><h1>Categorical interpretation for substitutions in async call chains:<a class="headerlink" href="#categorical-interpretation-for-substitutions-in-async-call-chains" title="Permalink to this headline">¶</a></h1>
 <p>Substitutions in async call chains is described in <a class="reference internal" href="../HighOrderFunctions.html#substitutions-in-call-chains"><span class="std std-ref">Special semantics for substitutions in call chains</span></a>.</p>
 <p>Let’s look at the folowing diagram:</p>
@@ -64,7 +64,7 @@ The diagram is commutative:
 <dt>This technique can be applied for cases where direct cps transform is impossible.</dt><dd><p>Example: cps transform of functional expression: <cite>cps[S=&gt;T]</cite>, will give us not <cite>F[S=&gt;T]</cite>,  but <cite>S=&gt;F[T]</cite>.  We can’t receive <cite>F[T=&gt;S]</cite> from <cite>T=&gt;F[S]</cite>, but can define an <cite>AsynSubst[T=&gt;S]</cite> with implementation of <cite>apply</cite>, <cite>andThen</cite> and <cite>compose</cite>.</p>
 </dd>
 </dl>
-</div>
+</section>
 
 
             <div class="clearer"></div>
@@ -90,7 +90,7 @@ The diagram is commutative:
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -112,14 +112,14 @@ The diagram is commutative:
         <li class="right" >
           <a href="CpsAsyncOverview.html" title="CPS-Async transformations:"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" >Random Notes</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Categorical interpretation for substitutions in async call chains:</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2021, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>
 </html>

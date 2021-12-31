@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Monad Context &#8212; dotty-cps-async 0.9.6-SNAPSHOT documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Additional Features" href="Features.html" />
+    <link rel="prev" title="Integrations" href="Integrations.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Features.html" title="Additional Features"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Integrations.html" title="Integrations"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monad Context</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="monad-context">
+<h1>Monad Context<a class="headerlink" href="#monad-context" title="Permalink to this headline">¶</a></h1>
+<p>Monad context is a way to provide an additional API, which is available only inside some monad
+(i.e., inside appropriative await block).
+In the introduction chapter, we have shown a simplified representation of await signature:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">async</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span> <span class="nc">T</span><span class="p">](</span><span class="k">using</span> <span class="n">am</span><span class="p">:</span><span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])(</span><span class="n">expr</span><span class="p">:</span> <span class="nc">T</span><span class="p">)</span><span class="o">=&gt;</span><span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The complete definition looks like:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span>  <span class="k">transparent</span> <span class="k">inline</span> <span class="k">def</span> <span class="nf">async</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]](</span><span class="k">using</span> <span class="n">am</span><span class="p">:</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])</span> <span class="o">=</span>
+      <span class="n">macros</span><span class="p">.</span><span class="nc">Async</span><span class="p">.</span><span class="nc">InferAsyncArg</span><span class="p">(</span><span class="k">using</span> <span class="n">am</span><span class="p">)</span>
+
+  <span class="c1">// and then in macros.Async:</span>
+
+  <span class="k">class</span> <span class="nc">InferAsyncArg</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="nc">C</span><span class="p">](</span><span class="k">using</span> <span class="kd">val</span> <span class="n">am</span><span class="p">:</span><span class="nc">CpsMonad</span><span class="p">.</span><span class="nc">Aux</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span><span class="nc">C</span><span class="p">])</span> <span class="p">{</span>
+
+     <span class="k">transparent</span> <span class="k">inline</span> <span class="k">def</span> <span class="nf">apply</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="k">inline</span> <span class="n">expr</span><span class="p">:</span> <span class="nc">C</span> <span class="o">?=&gt;</span> <span class="nc">T</span><span class="p">)</span> <span class="o">=</span>
+      <span class="p">....</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Here we split an application into two parts, to have one type parameter in <code class="docutils literal notranslate"><span class="pre">await</span></code>; this will become possible <code class="docutils literal notranslate"><span class="pre">async[F]</span></code> syntax.
+Take a look at the argument of the <code class="docutils literal notranslate"><span class="pre">InferAsyncArg.apply</span></code> method: <cite>expr: C ?=&gt;T</cite>.
+This is a context function. The context parameter <cite>C</cite> is extracted from the monad definition.
+Inside the <cite>expr</cite> compiler make an implicit instance of <cite>C`</cite> available, which we can use to provide internal monad API.</p>
+<p>Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like structured concurrency.
+Jokingly, we can say that our monad is close to the original Leibnic definition from Monadology, where each monad has unique qualities, not accessible outside.</p>
+<p>The monad context is defined as a type inside CpsMonad:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span> <span class="p">....</span>
+
+    <span class="k">type</span> <span class="nc">Context</span> <span class="o">&lt;:</span> <span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">F</span><span class="p">]</span>
+
+    <span class="p">....</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>CpsMonadContext provides functionality to adopt awaiting another monadic expression into the current context.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span> <span class="p">{</span>
+
+    <span class="cm">/**</span>
+<span class="cm">    * adopt external monadic value to the current context.</span>
+<span class="cm">    **/</span>
+    <span class="k">def</span> <span class="nf">adoptAwait</span><span class="p">[</span><span class="nc">A</span><span class="p">](</span><span class="n">fa</span><span class="p">:</span><span class="nc">F</span><span class="p">[</span><span class="nc">A</span><span class="p">]):</span><span class="nc">F</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>For an example of practical usage, let’s consider adding a timeout to the plain scala future.
+I.e., let’s think about how to build monad FutureWithTimeout, which will complete within a timeout or fire a
+<code class="docutils literal notranslate"><span class="pre">TimeoutException</span></code>. It’s more or less clear how to combine a small <code class="docutils literal notranslate"><span class="pre">Future</span></code>-s with timeouts into one
+(at this point, we can rename timeouts to deadlines), but what to do with the situation when control flow
+is waiting for completing an external <code class="docutils literal notranslate"><span class="pre">Future</span></code> in <code class="docutils literal notranslate"><span class="pre">await</span></code>? The answer is the usage of monad context:
+<code class="docutils literal notranslate"><span class="pre">adoptAwait</span></code> can generate a promise, which will be filled in case of finishing <cite>f</cite> or elapsing timeout.</p>
+<p>To look at the implementation of such approach see a <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/test/scala/cps/context/ftm/TestFutureWithDeadline.scala">test</a></p>
+<p>Note that this is one variant of the code organization approach.  Alternatively, we can signal to <code class="docutils literal notranslate"><span class="pre">f</span></code>,
+if we know that we are exclusively own <code class="docutils literal notranslate"><span class="pre">f</span></code> evaluation. This can be an approach for lazy effect.
+The design space for possible solutions is quite big.</p>
+<p>For monad writers:  as a general design rule,  use monad context when you want to provide access to some API,
+which should be visible only inside a monad (i.e., inside <code class="docutils literal notranslate"><span class="pre">await</span></code>).  For trivial cases, when you don’t need
+context API,  you can mix <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/a6f2bfdf83f4ffb9985b455c57e867e3e9b8c9da/shared/src/main/scala/cps/CpsMonadContext.scala#L22">CpsMonadInstanceContext</a> into your implementation of CpsMonad.
+For more advanced cases, we advise using the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/a6f2bfdf83f4ffb9985b455c57e867e3e9b8c9da/shared/src/main/scala/cps/CpsMonadContext.scala#L47">CpsContextMonad</a> trait.</p>
+<p>Also, you can notice the compatibility of this context with monadic-reflection, based on Flinsky encoding, where <cite>async</cite> become <cite>reify</cite>  and <cite>await</cite> accordingly <cite>reflect</cite>.</p>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Integrations.html"
+                        title="previous chapter">Integrations</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Features.html"
+                        title="next chapter">Additional Features</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/MonadContexts.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Features.html" title="Additional Features"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Integrations.html" title="Integrations"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monad Context</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020-2021, Ruslan Shevchenko.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
+    </div>
+  </body>
+</html>

@@ -4,16 +4,15 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Generators &#8212; dotty-cps-async 0.9.5 documentation</title>
-    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Generators &#8212; dotty-cps-async 0.9.6-SNAPSHOT documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Integrations" href="Integrations.html" />
@@ -31,7 +30,7 @@
         <li class="right" >
           <a href="AutomaticColoring.html" title="Automatic Coloring"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Generators</a></li> 
       </ul>
     </div>  
@@ -41,9 +40,9 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="generators">
+  <section id="generators">
 <h1>Generators<a class="headerlink" href="#generators" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="async-streaming">
+<section id="async-streaming">
 <h2>Async Streaming<a class="headerlink" href="#async-streaming" title="Permalink to this headline">¶</a></h2>
 <p>Generator syntax is a way to deliver values into some form of a stream asynchronously.</p>
 <p>Example:</p>
@@ -51,7 +50,7 @@
 Exists integration modules for well-known async streaming libraries (see <a class="reference internal" href="Integrations.html#integrations"><span class="std std-ref">Integrations</span></a>).</p>
 <p>The input to asyncStream is a block of code, which should be a lambda-expression that accepts an emitter argument.
 I.e., simplified definition looks next:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">inline</span> <span class="k">def</span> <span class="n">asyncStream</span><span class="o">[</span><span class="kt">R</span><span class="o">](</span><span class="n">using</span> <span class="n">a</span><span class="k">:</span> <span class="kt">CpsAsyncAbsorber</span><span class="o">[</span><span class="kt">R</span><span class="o">])(</span><span class="n">f</span><span class="k">:</span> <span class="kt">CpsAsyncEmitter</span><span class="o">[</span><span class="kt">a.Stream</span><span class="p">,</span> <span class="kt">a.Monad</span><span class="p">,</span> <span class="kt">a.Element</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Unit</span><span class="o">)</span><span class="k">:</span> <span class="kt">R</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">inline</span> <span class="k">def</span> <span class="nf">asyncStream</span><span class="p">[</span><span class="nc">R</span><span class="p">](</span><span class="k">using</span> <span class="n">a</span><span class="p">:</span> <span class="nc">CpsAsyncAbsorber</span><span class="p">[</span><span class="nc">R</span><span class="p">])(</span><span class="n">f</span><span class="p">:</span> <span class="nc">CpsAsyncEmitter</span><span class="p">[</span><span class="n">a</span><span class="p">.</span><span class="nc">Stream</span><span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="nc">Monad</span><span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="nc">Element</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nc">Unit</span><span class="p">):</span> <span class="nc">R</span>
 </pre></div>
 </div>
 <dl class="simple">
@@ -62,8 +61,8 @@ I.e., simplified definition looks next:</p>
 </ul>
 </dd>
 </dl>
-</div>
-<div class="section" id="writing-generator-adapters-for-custom-streams">
+</section>
+<section id="writing-generator-adapters-for-custom-streams">
 <h2>Writing generator adapters for custom streams<a class="headerlink" href="#writing-generator-adapters-for-custom-streams" title="Permalink to this headline">¶</a></h2>
 <dl class="simple">
 <dt>To allow generator syntax for your stream, you need to implement</dt><dd><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitter.scala#L46">CpsAsyncEmitAbsorber[R]</a> where <cite>evalAsync</cite> accept cps-transformed function and output the result stream.</p>
@@ -71,17 +70,17 @@ I.e., simplified definition looks next:</p>
 </dl>
 <p>Dotty-cps-async provide a platform-specific trait <cite>BaseUnfoldCpsAsyncEmitAbsorber</cite> which can simplicify generator implementations for streams which has something like <cite>unfoldAsync[S,E](s:S)(f:S =&gt; F[Option[(S,E)]]):R</cite>.</p>
 <p>For example, looks at the implementation of CpsAsyncEmitAbsorber for Akka-stream Source:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">given</span> <span class="nc">AkkaStreamEmitAbsorber</span><span class="o">[</span><span class="kt">T</span><span class="o">](</span><span class="n">using</span> <span class="nc">ExecutionContext</span><span class="o">)</span><span class="k">:</span>
-                             <span class="kt">BaseUnfoldCpsAsyncEmitAbsorber</span><span class="o">[</span><span class="kt">Source</span><span class="o">[</span><span class="kt">T</span><span class="p">,</span><span class="kt">NotUsed</span><span class="o">]</span><span class="p">,</span><span class="kt">Future</span><span class="p">,</span><span class="kt">T</span><span class="o">]</span> <span class="k">with</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">given</span> <span class="nc">AkkaStreamEmitAbsorber</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="k">using</span> <span class="nc">ExecutionContext</span><span class="p">):</span>
+                             <span class="nc">BaseUnfoldCpsAsyncEmitAbsorber</span><span class="p">[</span><span class="nc">Source</span><span class="p">[</span><span class="nc">T</span><span class="p">,</span><span class="nc">NotUsed</span><span class="p">],</span><span class="nc">Future</span><span class="p">,</span><span class="nc">T</span><span class="p">]</span> <span class="k">with</span>
 
-   <span class="k">override</span> <span class="k">type</span> <span class="kt">Element</span> <span class="o">=</span> <span class="n">T</span>
+   <span class="k">override</span> <span class="k">type</span> <span class="nc">Element</span> <span class="o">=</span> <span class="nc">T</span>
 
-   <span class="k">def</span> <span class="n">unfold</span><span class="o">[</span><span class="kt">S</span><span class="o">](</span><span class="n">s0</span><span class="k">:</span><span class="kt">S</span><span class="o">)(</span><span class="n">f</span><span class="k">:</span><span class="kt">S</span> <span class="o">=&gt;</span> <span class="nc">Future</span><span class="o">[</span><span class="kt">Option</span><span class="o">[(</span><span class="kt">T</span><span class="p">,</span><span class="kt">S</span><span class="o">)]])</span><span class="k">:</span> <span class="kt">Source</span><span class="o">[</span><span class="kt">T</span><span class="p">,</span> <span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span>
-     <span class="nc">Source</span><span class="o">.</span><span class="n">unfoldAsync</span><span class="o">[</span><span class="kt">S</span><span class="p">,</span><span class="kt">T</span><span class="o">](</span><span class="n">s0</span><span class="o">)((</span><span class="n">s</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">f</span><span class="o">(</span><span class="n">s</span><span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">map</span><span class="o">{</span> <span class="k">case</span> <span class="o">(</span><span class="n">x</span><span class="o">,</span><span class="n">y</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">y</span><span class="o">,</span><span class="n">x</span><span class="o">)</span> <span class="o">})</span> <span class="o">)</span>
+   <span class="k">def</span> <span class="nf">unfold</span><span class="p">[</span><span class="nc">S</span><span class="p">](</span><span class="n">s0</span><span class="p">:</span><span class="nc">S</span><span class="p">)(</span><span class="n">f</span><span class="p">:</span><span class="nc">S</span> <span class="o">=&gt;</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">Option</span><span class="p">[(</span><span class="nc">T</span><span class="p">,</span><span class="nc">S</span><span class="p">)]]):</span> <span class="nc">Source</span><span class="p">[</span><span class="nc">T</span><span class="p">,</span> <span class="nc">NotUsed</span><span class="p">]</span> <span class="o">=</span>
+     <span class="nc">Source</span><span class="p">.</span><span class="n">unfoldAsync</span><span class="p">[</span><span class="nc">S</span><span class="p">,</span><span class="nc">T</span><span class="p">](</span><span class="n">s0</span><span class="p">)((</span><span class="n">s</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">f</span><span class="p">(</span><span class="n">s</span><span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="n">_</span><span class="p">.</span><span class="n">map</span><span class="p">{</span> <span class="k">case</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="p">})</span> <span class="p">)</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -116,7 +115,7 @@ I.e., simplified definition looks next:</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -138,13 +137,13 @@ I.e., simplified definition looks next:</p>
         <li class="right" >
           <a href="AutomaticColoring.html" title="Automatic Coloring"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Generators</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2021, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>
 </html>

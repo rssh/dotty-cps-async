@@ -17,6 +17,7 @@ User Manual
    AutomaticColoring
    AsyncStreams
    Integrations
+   MonadContexts
    Features
    random-notes/index.rst
    FAQ

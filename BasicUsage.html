@@ -4,16 +4,15 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dependency &#8212; dotty-cps-async 0.9.5 documentation</title>
-    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Dependency &#8212; dotty-cps-async 0.9.6-SNAPSHOT documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="High-order functions." href="HighOrderFunctions.html" />
@@ -31,7 +30,7 @@
         <li class="right" >
           <a href="index.html" title="User Manual"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>  
@@ -41,7 +40,7 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="dependency">
+  <section id="dependency">
 <h1>Dependency<a class="headerlink" href="#dependency" title="Permalink to this headline">¶</a></h1>
 <p>The current prerelease is 0.9.4 for using with scala-3.1.0.</p>
 <blockquote>
@@ -56,49 +55,49 @@
 </pre></div>
 </div>
 </div></blockquote>
-</div>
-<div class="section" id="basic-usage">
+</section>
+<section id="basic-usage">
 <h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
 <p>The usage is quite similar to working with async/await frameworks in Scala2 and other languages.
 We have two ‘pseudo-functions’ <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> <a class="footnote-reference brackets" href="#f1" id="id1">1</a> :</p>
 <blockquote>
-<div><span class="target" id="index-0"></span><div class="highlight-scala notranslate" id="index-1"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="n">async</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">T</span><span class="o">](</span><span class="n">using</span> <span class="n">am</span><span class="k">:</span><span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span><span class="o">(</span><span class="kt">expr:</span> <span class="kt">T</span><span class="o">)=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span>
+<div><span class="target" id="index-0"></span><div class="highlight-scala notranslate" id="index-1"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">async</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span> <span class="nc">T</span><span class="p">](</span><span class="k">using</span> <span class="n">am</span><span class="p">:</span><span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])(</span><span class="n">expr</span><span class="p">:</span> <span class="nc">T</span><span class="p">)</span><span class="o">=&gt;</span><span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span>
 
-<span class="k">def</span>  <span class="n">await</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">T</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">T</span><span class="o">])(</span><span class="n">using</span> <span class="nc">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span> <span class="kt">T</span>
+<span class="k">def</span>  <span class="nf">await</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span> <span class="nc">T</span><span class="p">](</span><span class="n">f</span><span class="p">:</span> <span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">])(</span><span class="k">using</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">]):</span> <span class="nc">T</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>Inside the async block, we can use await pseudo-function.</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps._</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">_</span>
 
-<span class="k">def</span>  <span class="n">myFun</span><span class="o">(</span><span class="n">params</span><span class="o">)</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">MyMonad</span><span class="o">]</span> <span class="o">{</span>
+<span class="k">def</span>  <span class="nf">myFun</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">MyMonad</span><span class="p">]</span> <span class="p">{</span>
      <span class="c1">// ... here is possible to use await:</span>
-     <span class="k">val</span> <span class="n">x</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">something</span><span class="o">)</span>
+     <span class="kd">val</span> <span class="n">x</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">something</span><span class="p">)</span>
      <span class="c1">// ...</span>
-<span class="o">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <span class="target" id="index-2"></span></div></blockquote>
 <p id="index-3"><cite>MyMonad</cite> should be a type for which we have implemented <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala">CpsMonad</a> or <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L25">CpsTryMonad</a> (the latest supports try/catch) typeclass.</p>
 <p>The minimal complete snippet looks next:</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">package</span> <span class="nn">com.example.myModule</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">package</span> <span class="nn">com</span><span class="p">.</span><span class="nn">example</span><span class="p">.</span><span class="n">myModule</span>
 
-<span class="k">import</span> <span class="nn">scala.concurrent.</span><span class="o">*</span>
-<span class="k">import</span> <span class="nn">scala.concurrent.ExecutionContext.Implicits.global</span>
-<span class="k">import</span> <span class="nn">cps.</span><span class="o">*</span>                          <span class="c1">//  cps itself</span>
-<span class="k">import</span> <span class="nn">cps.monads.</span><span class="o">{*,</span><span class="n">given</span><span class="o">}</span>           <span class="c1">//  support for build-in monads (i.e. Future)</span>
+<span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="n">*</span>
+<span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nc">ExecutionContext</span><span class="p">.</span><span class="nc">Implicits</span><span class="p">.</span><span class="n">global</span>
+<span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">*</span>                          <span class="c1">//  cps itself</span>
+<span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">monads</span><span class="p">.{</span><span class="n">*</span><span class="p">,</span><span class="k">given</span><span class="p">}</span>           <span class="c1">//  support for build-in monads (i.e. Future)</span>
 
-<span class="k">class</span> <span class="nc">TestMinimalExample</span><span class="k">:</span>
+<span class="k">class</span> <span class="nc">TestMinimalExample</span><span class="p">:</span>
 
-  <span class="kt">def</span> <span class="kt">fetchGreeting</span><span class="o">()</span><span class="kt">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span>    <span class="c1">// dummy async function</span>
+  <span class="k">def</span> <span class="nf">fetchGreeting</span><span class="p">():</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span> <span class="o">=</span>    <span class="c1">// dummy async function</span>
      <span class="nc">Future</span> <span class="n">successful</span> <span class="s">&quot;Hi&quot;</span>
 
-  <span class="k">def</span> <span class="n">greet</span><span class="o">()</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">Future</span><span class="o">]</span> <span class="o">{</span>
-     <span class="k">val</span> <span class="n">greeting</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">fetchGreeting</span><span class="o">())</span>
-     <span class="n">println</span><span class="o">(</span><span class="n">greeting</span><span class="o">)</span>
-  <span class="o">}</span>
+  <span class="k">def</span> <span class="nf">greet</span><span class="p">()</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span> <span class="p">{</span>
+     <span class="kd">val</span> <span class="n">greeting</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">fetchGreeting</span><span class="p">())</span>
+     <span class="n">println</span><span class="p">(</span><span class="n">greeting</span><span class="p">)</span>
+  <span class="p">}</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -106,50 +105,50 @@ We have two ‘pseudo-functions’ <code class="docutils literal notranslate"><s
 You can look at the <a class="reference internal" href="Integrations.html#integrations"><span class="std std-ref">Integrations</span></a> section for the libraries needed for well-known monadic frameworks.</p>
 <p>Also monad can be abstracted out as in the following example:</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">Hanlder</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">CpsTryMonad</span><span class="o">]</span><span class="k">:</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">Hanlder</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]:</span> <span class="nc">CpsTryMonad</span><span class="p">]:</span>
 
-  <span class="kt">def</span> <span class="kt">run</span><span class="o">()</span><span class="kt">:F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="n">async</span><span class="o">[</span><span class="kt">F</span><span class="o">]{</span>
-    <span class="k">val</span> <span class="n">connection</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">openConnection</span><span class="o">())</span>
+  <span class="k">def</span> <span class="nf">run</span><span class="p">():</span><span class="nc">F</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">F</span><span class="p">]{</span>
+    <span class="kd">val</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">openConnection</span><span class="p">())</span>
     <span class="k">try</span>
       <span class="k">while</span>
-        <span class="k">val</span> <span class="n">command</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">readCommand</span><span class="o">(</span><span class="n">connection</span><span class="o">))</span>
-        <span class="n">logCommand</span><span class="o">(</span><span class="n">command</span><span class="o">)</span>
-        <span class="k">val</span> <span class="n">reply</span> <span class="k">=</span> <span class="n">await</span><span class="o">(</span><span class="n">handle</span><span class="o">(</span><span class="n">command</span><span class="o">))</span>
-        <span class="k">if</span> <span class="o">(!</span><span class="n">reply</span><span class="o">.</span><span class="n">isMuted</span><span class="o">)</span>
-           <span class="n">await</span><span class="o">(</span><span class="n">connection</span><span class="o">.</span><span class="n">send</span><span class="o">(</span><span class="n">reply</span><span class="o">.</span><span class="n">toBytes</span><span class="o">))</span>
-        <span class="o">!</span><span class="n">command</span><span class="o">.</span><span class="n">isShutdown</span>
-      <span class="k">do</span> <span class="o">()</span>
+        <span class="kd">val</span> <span class="n">command</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">readCommand</span><span class="p">(</span><span class="n">connection</span><span class="p">))</span>
+        <span class="n">logCommand</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        <span class="kd">val</span> <span class="n">reply</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">handle</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">reply</span><span class="p">.</span><span class="n">isMuted</span><span class="p">)</span>
+           <span class="n">await</span><span class="p">(</span><span class="n">connection</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">reply</span><span class="p">.</span><span class="n">toBytes</span><span class="p">))</span>
+        <span class="o">!</span><span class="n">command</span><span class="p">.</span><span class="n">isShutdown</span>
+      <span class="k">do</span> <span class="p">()</span>
     <span class="k">finally</span>
-      <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="o">()</span>
+      <span class="n">connection</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>Async macro will transform code inside async to something like</p>
 <blockquote>
 <div><details>
- <summary><a>code</a></summary><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">openConnection</span><span class="o">())(</span><span class="n">a</span> <span class="k">=&gt;</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="n">connection</span><span class="k">:</span> <span class="kt">Connection</span><span class="o">[</span><span class="kt">F</span><span class="o">]</span> <span class="k">=</span> <span class="n">a</span>
-  <span class="n">m</span><span class="o">.</span><span class="n">withAction</span><span class="o">({</span>
-    <span class="k">def</span> <span class="nc">_whilefun</span><span class="o">()</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
-      <span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span>
-        <span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">readCommand</span><span class="o">(</span><span class="n">connection</span><span class="o">))((</span><span class="n">a</span><span class="k">:</span> <span class="kt">Command</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">{</span>
-          <span class="k">val</span> <span class="n">command</span><span class="k">:</span> <span class="kt">Command</span> <span class="o">=</span> <span class="n">a</span>
-          <span class="n">logCommand</span><span class="o">(</span><span class="n">command</span><span class="o">)</span>
-          <span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">handle</span><span class="o">(</span><span class="n">command</span><span class="o">))((</span><span class="n">a</span><span class="k">:</span> <span class="kt">Reply</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="o">{</span>
-             <span class="k">val</span> <span class="n">reply</span><span class="k">:</span> <span class="kt">Reply</span> <span class="o">=</span> <span class="n">a</span>
-             <span class="n">m</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span>
-               <span class="k">if</span> <span class="o">(!</span><span class="n">reply</span><span class="o">.</span><span class="n">isMuted</span><span class="o">)</span>
-                 <span class="n">connection</span><span class="o">.</span><span class="n">send</span><span class="o">(</span><span class="n">reply</span><span class="o">.</span><span class="n">toBytes</span><span class="o">)</span>
+ <summary><a>code</a></summary><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="p">.</span><span class="n">flatMap</span><span class="p">(</span><span class="n">openConnection</span><span class="p">())(</span><span class="n">a</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">val</span> <span class="n">connection</span><span class="p">:</span> <span class="nc">Connection</span><span class="p">[</span><span class="nc">F</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span>
+  <span class="n">m</span><span class="p">.</span><span class="n">withAction</span><span class="p">({</span>
+    <span class="k">def</span> <span class="nf">_whilefun</span><span class="p">():</span> <span class="nc">F</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span> <span class="o">=</span>
+      <span class="n">m</span><span class="p">.</span><span class="n">flatMap</span><span class="p">(</span>
+        <span class="n">m</span><span class="p">.</span><span class="n">flatMap</span><span class="p">(</span><span class="n">readCommand</span><span class="p">(</span><span class="n">connection</span><span class="p">))((</span><span class="n">a</span><span class="p">:</span> <span class="nc">Command</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+          <span class="kd">val</span> <span class="n">command</span><span class="p">:</span> <span class="nc">Command</span> <span class="o">=</span> <span class="n">a</span>
+          <span class="n">logCommand</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+          <span class="n">m</span><span class="p">.</span><span class="n">flatMap</span><span class="p">(</span><span class="n">handle</span><span class="p">(</span><span class="n">command</span><span class="p">))((</span><span class="n">a</span><span class="p">:</span> <span class="nc">Reply</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+             <span class="kd">val</span> <span class="n">reply</span><span class="p">:</span> <span class="nc">Reply</span> <span class="o">=</span> <span class="n">a</span>
+             <span class="n">m</span><span class="p">.</span><span class="n">flatMap</span><span class="p">(</span>
+               <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">reply</span><span class="p">.</span><span class="n">isMuted</span><span class="p">)</span>
+                 <span class="n">connection</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">reply</span><span class="p">.</span><span class="n">toBytes</span><span class="p">)</span>
                <span class="k">else</span>
-                  <span class="n">m</span><span class="o">.</span><span class="n">pure</span><span class="o">(())</span>
-             <span class="o">)(</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">m</span><span class="o">.</span><span class="n">pure</span><span class="o">(!</span><span class="n">command</span><span class="o">.</span><span class="n">isShutdown</span><span class="o">))</span>
-          <span class="o">})</span>
-        <span class="o">}))(</span><span class="n">c</span> <span class="k">=&gt;</span> <span class="k">if</span> <span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="nc">_whilefun</span><span class="o">()</span> <span class="k">else</span> <span class="n">m</span><span class="o">.</span><span class="n">pure</span><span class="o">(()))</span>
-    <span class="nc">_whilefun</span><span class="o">()</span>
-  <span class="o">})(</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="o">())</span>
-  <span class="o">)</span>
-<span class="o">})</span>
+                  <span class="n">m</span><span class="p">.</span><span class="n">pure</span><span class="p">(())</span>
+             <span class="p">)(</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">m</span><span class="p">.</span><span class="n">pure</span><span class="p">(</span><span class="o">!</span><span class="n">command</span><span class="p">.</span><span class="n">isShutdown</span><span class="p">))</span>
+          <span class="p">})</span>
+        <span class="p">}))(</span><span class="n">c</span> <span class="o">=&gt;</span> <span class="k">if</span> <span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="n">_whilefun</span><span class="p">()</span> <span class="k">else</span> <span class="n">m</span><span class="p">.</span><span class="n">pure</span><span class="p">(()))</span>
+    <span class="n">_whilefun</span><span class="p">()</span>
+  <span class="p">})(</span>
+    <span class="n">m</span><span class="p">.</span><span class="n">pure</span><span class="p">(</span><span class="n">connection</span><span class="p">.</span><span class="n">close</span><span class="p">())</span>
+  <span class="p">)</span>
+<span class="p">})</span>
 </pre></div>
 </div>
 </details></div></blockquote>
@@ -162,7 +161,7 @@ You can read the <a class="reference internal" href="random-notes/index.html#ran
 <dd><p>the definitions are simplified, in reality they are more complex, because we want infer the type of expression independently from the type of monad.</p>
 </dd>
 </dl>
-</div>
+</section>
 
 
             <div class="clearer"></div>
@@ -194,7 +193,7 @@ You can read the <a class="reference internal" href="random-notes/index.html#ran
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -216,13 +215,13 @@ You can read the <a class="reference internal" href="random-notes/index.html#ran
         <li class="right" >
           <a href="index.html" title="User Manual"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2021, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>
 </html>

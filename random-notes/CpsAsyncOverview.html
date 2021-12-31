@@ -4,16 +4,15 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CPS-Async transformations: &#8212; dotty-cps-async 0.9.5 documentation</title>
-    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>CPS-Async transformations: &#8212; dotty-cps-async 0.9.6-SNAPSHOT documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Categorical interpretation for substitutions in async call chains:" href="AsyncSubstCategoricalInterpretation.html" />
@@ -31,7 +30,7 @@
         <li class="right" >
           <a href="index.html" title="Random Notes"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Random Notes</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">CPS-Async transformations:</a></li> 
       </ul>
@@ -42,9 +41,9 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="cps-async-transformations">
+  <section id="cps-async-transformations">
 <h1>CPS-Async transformations:<a class="headerlink" href="#cps-async-transformations" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="overview">
+<section id="overview">
 <h2>Overview.<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>CPS - stand for continuation-passing style. (https://en.wikipedia.org/wiki/Continuation-passing_style ).</p>
 <p>It was described at <a class="reference external" href="https://dspace.mit.edu/handle/1721.1/5794">AI MEM 349: SCHEME: An Interpreter for Extended Lambda Calculus</a> as a style, where a function always “returns” its result by “sending” it to another function.</p>
@@ -93,21 +92,21 @@
 <li><p>async:  <code class="docutils literal notranslate"><span class="pre">X</span> <span class="pre">=&gt;</span> <span class="pre">M[X]</span></code></p></li>
 </ul>
 <p>Async apply monad CPS to it’s argument.  Note, that the transformation of <code class="docutils literal notranslate"><span class="pre">await(expr)</span></code> will be <code class="docutils literal notranslate"><span class="pre">expr</span></code>.  (i.e. all occurrences of await will be erased).  And we can use direct style instead monadic compositions, leaving work of aligning compositions to a computer.  This is exactly wat dotty-cps-async do.</p>
-</div>
-<div class="section" id="optimizations">
+</section>
+<section id="optimizations">
 <h2>Optimizations.<a class="headerlink" href="#optimizations" title="Permalink to this headline">¶</a></h2>
 <p>Traditional CPS async transforms all code (even sequential) to monadic compositions.
 We want to keep sequential parts to be left sequential, so the number of flatMap operations inside async block is equal to the number of the really concurrent operations.
 To achieve this, we maintain data structures (<code class="docutils literal notranslate"><span class="pre">CpsExpr</span></code> and <code class="docutils literal notranslate"><span class="pre">CpsTree</span></code>) which ‘remember’ that block of code is sequential and compose sequential parts without wrapping all in monad.</p>
-</div>
-<div class="section" id="implementation-notes">
+</section>
+<section id="implementation-notes">
 <h2>Implementation notes.<a class="headerlink" href="#implementation-notes" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>We don’t do ANF transform preprocessing, but transform code as is, by providing implementation along with some micoroptimization, as the same way, as human will transform those expressions ‘by hands’.</p></li>
 <li><p>For chunks of code, which can be deconstructed with help of dotty ‘quote’ expressions, we use representation of block as ‘CpsExpr’. Other expressions, deconstructed as tasty trees and represented as ‘CpsTree’.</p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -143,7 +142,7 @@ To achieve this, we maintain data structures (<code class="docutils literal notr
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -165,14 +164,14 @@ To achieve this, we maintain data structures (<code class="docutils literal notr
         <li class="right" >
           <a href="index.html" title="Random Notes"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" >Random Notes</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">CPS-Async transformations:</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2021, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>
 </html>

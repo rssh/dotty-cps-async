@@ -27,7 +27,7 @@ We have two 'pseudo-functions' ``async`` and ``await`` [#f1]_ :
 
  .. code-block:: scala
 
-    def async[F[_], T](using am:CpsMonad[F]):(expr: T)=>F[T]
+    def async[F[_], T](using am:CpsMonad[F])(expr: T)=>F[T]
 
     def  await[F[_], T](f: F[T])(using CpsMonad[F]): T
 

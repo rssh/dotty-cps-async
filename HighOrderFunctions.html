@@ -4,16 +4,15 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>High-order functions. &#8212; dotty-cps-async 0.9.5 documentation</title>
-    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>High-order functions. &#8212; dotty-cps-async 0.9.6-SNAPSHOT documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Monads interoperability." href="MonadsInteroperability.html" />
@@ -31,7 +30,7 @@
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>  
@@ -41,39 +40,39 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="high-order-functions">
+  <section id="high-order-functions">
 <h1>High-order functions.<a class="headerlink" href="#high-order-functions" title="Permalink to this headline">¶</a></h1>
 <p>Dotty-cps-async supports the automatic transformation of high-order functions,  where the lambda expression argument contains <code class="docutils literal notranslate"><span class="pre">await</span></code>.</p>
 <p>For example, let us have a list of remote servers and fetch some data from them.
 Assume  that our http client provides the next interface:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">HttpClient</span><span class="k">:</span>
-   <span class="kt">def</span> <span class="kt">fetchData</span><span class="o">(</span><span class="kt">url:</span> <span class="kt">String</span><span class="o">)</span><span class="kt">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">HttpClient</span><span class="p">:</span>
+   <span class="k">def</span> <span class="nf">fetchData</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nc">String</span><span class="p">):</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Then we can fetch data from all servers just by using <code class="docutils literal notranslate"><span class="pre">await</span></code> in the <code class="docutils literal notranslate"><span class="pre">map</span></code> argument:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">urls</span><span class="o">.</span><span class="n">map</span><span class="o">(</span> <span class="n">await</span><span class="o">(</span><span class="n">httpClient</span><span class="o">.</span><span class="n">fetchData</span><span class="o">(</span><span class="k">_</span><span class="o">))</span> <span class="o">)</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">urls</span><span class="p">.</span><span class="n">map</span><span class="p">(</span> <span class="n">await</span><span class="p">(</span><span class="n">httpClient</span><span class="p">.</span><span class="n">fetchData</span><span class="p">(</span><span class="n">_</span><span class="p">))</span> <span class="p">)</span>
 </pre></div>
 </div>
 <p>Note that the default <code class="docutils literal notranslate"><span class="pre">map</span></code> will run all operations sequentially. Sequential evaluation is needed to allow the code to work correctly for a case of updating the multidimensional array in for loop with asynchronous operations.</p>
 <p>If we want all requests to run in parallel, we can start them in one map and, when all started - wait for the end of requests:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">urls</span><span class="o">.</span><span class="n">map</span><span class="o">(</span> <span class="n">httpClient</span><span class="o">.</span><span class="n">fetchData</span><span class="o">(</span><span class="k">_</span><span class="o">)</span> <span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="n">await</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">urls</span><span class="p">.</span><span class="n">map</span><span class="p">(</span> <span class="n">httpClient</span><span class="p">.</span><span class="n">fetchData</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="n">await</span><span class="p">(</span><span class="n">_</span><span class="p">))</span>
 </pre></div>
 </div>
 <dl class="simple">
 <dt>During async transform, dotty-cps-async substitute method map of you List with signature</dt><dd><p><code class="docutils literal notranslate"><span class="pre">List[A].map[B](f:</span> <span class="pre">A=&gt;B)</span></code> to</p>
 </dd>
 </dl>
-<div class="highlight-scala notranslate" id="index-0"><div class="highlight"><pre><span></span><span class="n">summon</span><span class="o">[</span><span class="kt">AsyncShift</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">A</span><span class="o">]]].</span><span class="n">map</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span><span class="kt">B</span><span class="o">](</span><span class="n">c</span><span class="o">,</span><span class="n">summon</span><span class="o">[</span><span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">]])</span>
+<div class="highlight-scala notranslate" id="index-0"><div class="highlight"><pre><span></span><span class="n">summon</span><span class="p">[</span><span class="nc">AsyncShift</span><span class="p">[</span><span class="nc">List</span><span class="p">[</span><span class="nc">A</span><span class="p">]]].</span><span class="n">map</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="nc">B</span><span class="p">](</span><span class="n">c</span><span class="p">,</span><span class="n">summon</span><span class="p">[</span><span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">]])</span>
 </pre></div>
 </div>
 <p>which is implemented in cps runtime with signature</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">AsyncShift</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">A</span><span class="o">]].</span><span class="n">map</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span><span class="kt">B</span><span class="o">](</span><span class="n">obj</span><span class="k">:</span><span class="kt">List</span><span class="o">[</span><span class="kt">A</span><span class="o">],</span><span class="n">cpsMonad</span><span class="k">:</span><span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])(</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">B</span><span class="o">])</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">AsyncShift</span><span class="p">[</span><span class="nc">List</span><span class="p">[</span><span class="nc">A</span><span class="p">]].</span><span class="n">map</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="nc">B</span><span class="p">](</span><span class="n">obj</span><span class="p">:</span><span class="nc">List</span><span class="p">[</span><span class="nc">A</span><span class="p">],</span><span class="n">cpsMonad</span><span class="p">:</span><span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])(</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span><span class="o">=&gt;</span> <span class="nc">F</span><span class="p">[</span><span class="nc">B</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>Dotty-cps-async includes implementations of shifted methods for most of the standard library objects. So, it is possible to write something like <code class="docutils literal notranslate"><span class="pre">x=cache.getOrElse(</span> <span class="pre">await(fetchData()</span> <span class="pre">)</span></code> .</p>
-<div class="section" id="how-to-provide-shifted-functions">
+<section id="how-to-provide-shifted-functions">
 <h2>How to provide shifted functions.<a class="headerlink" href="#how-to-provide-shifted-functions" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="functional-interface">
+<section id="functional-interface">
 <h3>Functional interface.<a class="headerlink" href="#functional-interface" title="Permalink to this headline">¶</a></h3>
 <p>Suppose you want to make high-order methods of your class <code class="docutils literal notranslate"><span class="pre">C</span></code> be able to accept lambda functions with await.
 In that case, you should implement the <code class="docutils literal notranslate"><span class="pre">given</span> <span class="pre">AsynsShift[C]</span></code> typeclass with a shifted version of your high-order methods.
@@ -85,123 +84,123 @@ Such a ‘shifted’ version has an additional type parameter: <code class="docu
 <li><p>Otherwise, the changed parameter has the same type as the origin.</p></li>
 </ul>
 <p>Example:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">case</span> <span class="k">class</span> <span class="nc">TaggedValue</span><span class="o">[</span><span class="kt">T</span><span class="o">](</span><span class="n">tag</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">value</span><span class="k">:</span>  <span class="kt">T</span><span class="o">)</span>
-     <span class="k">def</span>   <span class="n">modified</span><span class="o">[</span><span class="kt">S</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">T</span> <span class="o">=&gt;</span> <span class="n">S</span><span class="o">)</span><span class="k">:</span> <span class="kt">TaggedValue</span><span class="o">[</span><span class="kt">S</span><span class="o">]</span> <span class="k">=</span>
-         <span class="nc">TaggedValue</span><span class="o">(</span><span class="n">tag</span><span class="o">,</span> <span class="n">f</span><span class="o">(</span><span class="n">x</span><span class="o">))</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">case</span> <span class="k">class</span> <span class="nc">TaggedValue</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="n">tag</span><span class="p">:</span> <span class="nc">String</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span>  <span class="nc">T</span><span class="p">)</span>
+     <span class="k">def</span>   <span class="nf">modified</span><span class="p">[</span><span class="nc">S</span><span class="p">](</span><span class="n">f</span><span class="p">:</span> <span class="nc">T</span> <span class="o">=&gt;</span> <span class="nc">S</span><span class="p">):</span> <span class="nc">TaggedValue</span><span class="p">[</span><span class="nc">S</span><span class="p">]</span> <span class="o">=</span>
+         <span class="nc">TaggedValue</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
 
-<span class="k">class</span> <span class="nc">TaggedValueAsyncShift</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">extends</span> <span class="nc">AsyncShift</span><span class="o">[</span><span class="kt">TaggedValue</span><span class="o">[</span><span class="kt">T</span><span class="o">]]</span><span class="k">:</span>
+<span class="k">class</span> <span class="nc">TaggedValueAsyncShift</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span> <span class="k">extends</span> <span class="nc">AsyncShift</span><span class="p">[</span><span class="nc">TaggedValue</span><span class="p">[</span><span class="nc">T</span><span class="p">]]:</span>
 
-     <span class="kt">def</span> <span class="kt">modified</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span><span class="kt">S</span><span class="o">](</span><span class="n">o</span><span class="k">:</span><span class="kt">TaggedValue</span><span class="o">[</span><span class="kt">T</span><span class="o">],</span> <span class="n">m</span><span class="k">:</span> <span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">])(</span><span class="n">f</span><span class="k">:</span> <span class="kt">T</span><span class="o">=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">S</span><span class="o">])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">TaggedValue</span><span class="o">[</span><span class="kt">S</span><span class="o">]]</span> <span class="k">=</span>
-         <span class="n">f</span><span class="o">(</span><span class="n">value</span><span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="nc">TaggedValue</span><span class="o">(</span><span class="n">tag</span><span class="o">,</span><span class="k">_</span><span class="o">))</span>
+     <span class="k">def</span> <span class="nf">modified</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="nc">S</span><span class="p">](</span><span class="n">o</span><span class="p">:</span><span class="nc">TaggedValue</span><span class="p">[</span><span class="nc">T</span><span class="p">],</span> <span class="n">m</span><span class="p">:</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])(</span><span class="n">f</span><span class="p">:</span> <span class="nc">T</span><span class="o">=&gt;</span><span class="nc">F</span><span class="p">[</span><span class="nc">S</span><span class="p">]):</span> <span class="nc">F</span><span class="p">[</span><span class="nc">TaggedValue</span><span class="p">[</span><span class="nc">S</span><span class="p">]]</span> <span class="o">=</span>
+         <span class="n">f</span><span class="p">(</span><span class="n">value</span><span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="nc">TaggedValue</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span><span class="n">_</span><span class="p">))</span>
 
-<span class="k">object</span> <span class="nc">TaggedValue</span><span class="k">:</span>
+<span class="k">object</span> <span class="nc">TaggedValue</span><span class="p">:</span>
 
-     <span class="kt">transparent</span> <span class="kt">inline</span> <span class="kt">given</span> <span class="kt">shiftedTaggedValue</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="n">as</span> <span class="nc">AsyncShift</span><span class="o">[</span><span class="kt">TaggedValue</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="kt">=</span>
-                                                                              <span class="kt">TaggedValueAsyncShift</span><span class="o">[</span><span class="kt">T</span><span class="o">]()</span>
+     <span class="k">transparent</span> <span class="k">inline</span> <span class="k">given</span> <span class="n">shiftedTaggedValue</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span> <span class="n">as</span> <span class="nc">AsyncShift</span><span class="p">[</span><span class="nc">TaggedValue</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span> <span class="o">=</span>
+                                                                              <span class="nc">TaggedValueAsyncShift</span><span class="p">[</span><span class="nc">T</span><span class="p">]()</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="object-oriented-interface">
+</section>
+<section id="object-oriented-interface">
 <h3>Object oriented interface.<a class="headerlink" href="#object-oriented-interface" title="Permalink to this headline">¶</a></h3>
 <p>Sometimes, we can use classes, defines in an object-oriented manner, where data is private inside class.  If the developer of such a class wants to provide API for dotty-cps-async, then he/she can do this without breaking encapsulation. What is needed - to implement an async-shifted version of the function inside your class:</p>
 <p>Example:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span>  <span class="nc">MyIntController</span><span class="k">:</span>
-   <span class="kt">private</span> <span class="kt">var</span> <span class="kt">x:</span>  <span class="kt">Int</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span>  <span class="nc">MyIntController</span><span class="p">:</span>
+   <span class="k">private</span> <span class="kd">var</span> <span class="n">x</span><span class="p">:</span>  <span class="nc">Int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 
-   <span class="k">def</span>  <span class="n">modify</span><span class="o">(</span><span class="n">f</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=&gt;</span> <span class="nc">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span>
-      <span class="k">val</span> <span class="n">old</span> <span class="k">=</span> <span class="n">x</span>
-      <span class="n">x</span> <span class="k">=</span> <span class="n">f</span><span class="o">(</span><span class="n">x</span><span class="o">)</span>
-      <span class="n">sendSignal</span><span class="o">(</span><span class="n">x</span><span class="o">)</span>
+   <span class="k">def</span>  <span class="nf">modify</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="nc">Int</span> <span class="o">=&gt;</span> <span class="nc">Int</span><span class="p">):</span> <span class="nc">Int</span> <span class="o">=</span>
+      <span class="kd">val</span> <span class="n">old</span> <span class="o">=</span> <span class="n">x</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+      <span class="n">sendSignal</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
       <span class="n">old</span>
 
-   <span class="k">def</span> <span class="n">modify_async</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]](</span><span class="n">m</span><span class="k">:</span> <span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">M</span><span class="o">])(</span><span class="n">f</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">Int</span><span class="o">])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span>
-      <span class="k">val</span> <span class="n">old</span> <span class="k">=</span> <span class="n">x</span>
-      <span class="n">m</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">f</span><span class="o">(</span><span class="n">x</span><span class="o">))(</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="o">{</span> <span class="n">sendSignal</span><span class="o">(</span><span class="n">x</span><span class="o">);</span> <span class="n">old</span> <span class="o">})</span>
+   <span class="k">def</span> <span class="nf">modify_async</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]](</span><span class="n">m</span><span class="p">:</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">M</span><span class="p">])(</span><span class="n">f</span><span class="p">:</span> <span class="nc">Int</span> <span class="o">=&gt;</span> <span class="nc">F</span><span class="p">[</span><span class="nc">Int</span><span class="p">]):</span> <span class="nc">F</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span> <span class="o">=</span>
+      <span class="kd">val</span> <span class="n">old</span> <span class="o">=</span> <span class="n">x</span>
+      <span class="n">m</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">))(</span><span class="n">_</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="n">sendSignal</span><span class="p">(</span><span class="n">x</span><span class="p">);</span> <span class="n">old</span> <span class="p">})</span>
 </pre></div>
 </div>
 <dl class="simple">
-<dt>As we have seen, shifted functions have an additional type parameter: F[_] and parameter CpsMonad[F]  (or more specific type, if needed).  Async transformer will substitute the call of <cite>modify</cite> into the call of <cite>modify_async</cite> during compilation.</dt><dd><p>Sometimes,  we already have F[_] as the type parameter of the enclosing class. In such a case, we can omit those additional parameters in the async variant.</p>
+<dt>As we have seen, shifted functions have an additional type parameter: F[_] and parameter CpsMonad[F]  (or more specific type, if needed).  Async transformer will substitute the call of <cite>modify</cite> into <cite>modify_async</cite> during compilation.</dt><dd><p>Sometimes,  we already have F[_] as the type parameter of the enclosing class. We can omit those additional parameters in the async variant in such a case.</p>
 </dd>
 <dt>Note that you should carefully decide whether you need async function support and how to deal with concurrent modifications.  For example, in the code snippet below, different changes will interleave with each other.</dt><dd><p>Usually, low-level constructs do not need async counterparts.</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="special-semantics-for-substitutions-in-call-chains">
+</section>
+<section id="special-semantics-for-substitutions-in-call-chains">
 <span id="substitutions-in-call-chains"></span><h3>Special semantics for substitutions in call chains<a class="headerlink" href="#special-semantics-for-substitutions-in-call-chains" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><p>Consider a chain of calls, which accepts async-shifted functions.  One example is  ‘withFilter’ from the standard collections library.  Let’s look ath the next code:</p>
 </div></blockquote>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="o">{</span> <span class="n">url</span> <span class="k">←</span> <span class="n">urls</span> <span class="k">if</span>  <span class="n">await</span><span class="o">(</span><span class="n">status</span><span class="o">(</span><span class="n">url</span><span class="o">))==</span><span class="nc">Active</span>
-      <span class="n">items</span> <span class="k">←</span> <span class="n">await</span><span class="o">(</span><span class="n">api</span><span class="o">.</span><span class="n">retrieveItems</span><span class="o">(</span><span class="n">url</span><span class="o">))</span>
-      <span class="nc">Item</span> <span class="k">&lt;-</span> <span class="n">items</span>
-   <span class="o">}</span> <span class="k">yield</span> <span class="n">item</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="p">{</span> <span class="n">url</span> <span class="o">←</span> <span class="n">urls</span> <span class="k">if</span>  <span class="n">await</span><span class="p">(</span><span class="n">status</span><span class="p">(</span><span class="n">url</span><span class="p">))</span><span class="o">==</span><span class="nc">Active</span>
+      <span class="n">items</span> <span class="o">←</span> <span class="n">await</span><span class="p">(</span><span class="n">api</span><span class="p">.</span><span class="n">retrieveItems</span><span class="p">(</span><span class="n">url</span><span class="p">))</span>
+      <span class="nc">Item</span> <span class="o">&lt;-</span> <span class="n">items</span>
+   <span class="p">}</span> <span class="k">yield</span> <span class="n">item</span>
 </pre></div>
 </div>
 <p>Here usual semantics of <cite>withFilter</cite> assume that we iterate <cite>urls</cite> only once.  But if we will translate this expression according to standard rules, we will receive two passes: one pass in async <cite>withFilter</cite> and the second in <cite>flatMap</cite>.</p>
 <p>To perform iteration once, we translate <cite>withFilter</cite> not to F[WithFilter] but to a substituted type DelayedWithFilter , which holds the received predicate and delays actual evaluation upon the call of the next operation in the chain.</p>
 <p>The implementation of this class looks like:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">DelayedWithFilter</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="p">,</span> <span class="kt">A</span><span class="p">,</span> <span class="kt">C</span><span class="o">[</span><span class="kt">X</span><span class="o">]</span> <span class="k">&lt;:</span> <span class="kt">Iterable</span><span class="o">[</span><span class="kt">X</span><span class="o">]</span><span class="p">,</span> <span class="kt">CA</span> <span class="k">&lt;:</span> <span class="kt">C</span><span class="o">[</span><span class="kt">A</span><span class="o">]](</span><span class="n">c</span><span class="k">:</span> <span class="kt">CA</span><span class="o">,</span>
-                                        <span class="n">m</span><span class="k">:</span> <span class="kt">CpsMonad</span><span class="o">[</span><span class="kt">F</span><span class="o">],</span>
-                                        <span class="n">p</span><span class="k">:</span><span class="kt">A</span><span class="o">=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">Boolean</span><span class="o">],</span>
-                                        <span class="o">)</span>
-                 <span class="k">extends</span> <span class="nc">CallChainAsyncSubst</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span> <span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]</span><span class="p">,</span> <span class="kt">F</span><span class="o">[</span><span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]]</span> <span class="o">]</span>
-<span class="o">{</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">DelayedWithFilter</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span> <span class="nc">A</span><span class="p">,</span> <span class="nc">C</span><span class="p">[</span><span class="nc">X</span><span class="p">]</span> <span class="o">&lt;:</span> <span class="nc">Iterable</span><span class="p">[</span><span class="nc">X</span><span class="p">],</span> <span class="nc">CA</span> <span class="o">&lt;:</span> <span class="nc">C</span><span class="p">[</span><span class="nc">A</span><span class="p">]](</span><span class="n">c</span><span class="p">:</span> <span class="nc">CA</span><span class="p">,</span>
+                                        <span class="n">m</span><span class="p">:</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">],</span>
+                                        <span class="n">p</span><span class="p">:</span><span class="nc">A</span><span class="o">=&gt;</span><span class="nc">F</span><span class="p">[</span><span class="nc">Boolean</span><span class="p">],</span>
+                                        <span class="p">)</span>
+                 <span class="k">extends</span> <span class="nc">CallChainAsyncSubst</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span> <span class="nc">WithFilter</span><span class="p">[</span><span class="nc">A</span><span class="p">,</span><span class="nc">C</span><span class="p">],</span> <span class="nc">F</span><span class="p">[</span><span class="nc">WithFilter</span><span class="p">[</span><span class="nc">A</span><span class="p">,</span><span class="nc">C</span><span class="p">]]</span> <span class="p">]</span>
+<span class="p">{</span>
  <span class="c1">// return eager copy</span>
- <span class="k">def</span> <span class="nc">_finishChain</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">WithFilter</span><span class="o">[</span><span class="kt">A</span><span class="p">,</span><span class="kt">C</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+ <span class="k">def</span> <span class="nf">_finishChain</span><span class="p">:</span> <span class="nc">F</span><span class="p">[</span><span class="nc">WithFilter</span><span class="p">[</span><span class="nc">A</span><span class="p">,</span><span class="nc">C</span><span class="p">]]</span> <span class="o">=</span> <span class="p">...</span>
 
- <span class="k">def</span> <span class="n">withFilter</span><span class="o">(</span><span class="n">q</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="nc">Boolean</span><span class="o">)</span><span class="k">:</span> <span class="kt">DelayedWithFilter</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span><span class="kt">A</span><span class="p">,</span><span class="kt">CX</span><span class="p">,</span><span class="kt">CA</span><span class="o">]</span> <span class="k">=</span>  <span class="o">...</span>
+ <span class="k">def</span> <span class="nf">withFilter</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="nc">A</span><span class="o">=&gt;</span><span class="nc">Boolean</span><span class="p">):</span> <span class="nc">DelayedWithFilter</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span><span class="nc">A</span><span class="p">,</span><span class="nc">CX</span><span class="p">,</span><span class="nc">CA</span><span class="p">]</span> <span class="o">=</span>  <span class="p">...</span>
 
- <span class="k">def</span> <span class="n">withFilter_async</span><span class="o">(</span><span class="n">q</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">Boolean</span><span class="o">])</span> <span class="k">=</span> <span class="o">...</span>
+ <span class="k">def</span> <span class="nf">withFilter_async</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="nc">A</span><span class="o">=&gt;</span> <span class="nc">F</span><span class="p">[</span><span class="nc">Boolean</span><span class="p">])</span> <span class="o">=</span> <span class="p">...</span>
 
- <span class="k">def</span> <span class="n">map</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="n">B</span><span class="o">)</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">C</span><span class="o">[</span><span class="kt">B</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+ <span class="k">def</span> <span class="nf">map</span><span class="p">[</span><span class="nc">B</span><span class="p">](</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span> <span class="o">=&gt;</span> <span class="nc">B</span><span class="p">):</span> <span class="nc">F</span><span class="p">[</span><span class="nc">C</span><span class="p">[</span><span class="nc">B</span><span class="p">]]</span> <span class="o">=</span> <span class="p">...</span>
 
- <span class="k">def</span> <span class="n">map_async</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">B</span><span class="o">])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">C</span><span class="o">[</span><span class="kt">B</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+ <span class="k">def</span> <span class="nf">map_async</span><span class="p">[</span><span class="nc">B</span><span class="p">](</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span> <span class="o">=&gt;</span> <span class="nc">F</span><span class="p">[</span><span class="nc">B</span><span class="p">]):</span> <span class="nc">F</span><span class="p">[</span><span class="nc">C</span><span class="p">[</span><span class="nc">B</span><span class="p">]]</span> <span class="o">=</span> <span class="p">...</span>
 
- <span class="k">def</span> <span class="n">flatMap</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="nc">IterableOnce</span><span class="o">[</span><span class="kt">B</span><span class="o">])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">C</span><span class="o">[</span><span class="kt">B</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+ <span class="k">def</span> <span class="nf">flatMap</span><span class="p">[</span><span class="nc">B</span><span class="p">](</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span> <span class="o">=&gt;</span> <span class="nc">IterableOnce</span><span class="p">[</span><span class="nc">B</span><span class="p">]):</span> <span class="nc">F</span><span class="p">[</span><span class="nc">C</span><span class="p">[</span><span class="nc">B</span><span class="p">]]</span> <span class="o">=</span> <span class="p">...</span>
 
- <span class="k">def</span> <span class="n">flatMap_async</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">IterableOnce</span><span class="o">[</span><span class="kt">B</span><span class="o">]])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">C</span><span class="o">[</span><span class="kt">B</span><span class="o">]]</span> <span class="k">=</span> <span class="o">...</span>
+ <span class="k">def</span> <span class="nf">flatMap_async</span><span class="p">[</span><span class="nc">B</span><span class="p">](</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span> <span class="o">=&gt;</span> <span class="nc">F</span><span class="p">[</span><span class="nc">IterableOnce</span><span class="p">[</span><span class="nc">B</span><span class="p">]]):</span> <span class="nc">F</span><span class="p">[</span><span class="nc">C</span><span class="p">[</span><span class="nc">B</span><span class="p">]]</span> <span class="o">=</span> <span class="p">...</span>
 
- <span class="k">def</span> <span class="n">foreach</span><span class="o">[</span><span class="kt">U</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="n">U</span><span class="o">)</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="o">...</span>
+ <span class="k">def</span> <span class="nf">foreach</span><span class="p">[</span><span class="nc">U</span><span class="p">](</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span><span class="o">=&gt;</span><span class="nc">U</span><span class="p">):</span> <span class="nc">F</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span> <span class="o">=</span> <span class="p">...</span>
 
- <span class="k">def</span> <span class="n">foreach_async</span><span class="o">[</span><span class="kt">U</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">U</span><span class="o">])</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="o">...</span>
+ <span class="k">def</span> <span class="nf">foreach_async</span><span class="p">[</span><span class="nc">U</span><span class="p">](</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span><span class="o">=&gt;</span><span class="nc">F</span><span class="p">[</span><span class="nc">U</span><span class="p">]):</span> <span class="nc">F</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span> <span class="o">=</span> <span class="p">...</span>
 
-<span class="o">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>I.e., in delayed variant, all original class methods should or collect operations into the next delayed object or perform an actual batched call.
 Also, we have the method <cite>_finishChain</cite>,  which is called when we have no next call in the chain: an example of such a case is   <cite>val x = c.withFilter(p)</cite>.</p>
 <p>By convention, the substituted type should be derived from CallChainAsyncSubst[F,T]</p>
 <p>This structure has a nice categorical interpretation. If you are curious about that, read details in <a class="reference internal" href="random-notes/AsyncSubstCategoricalInterpretation.html#categorical-interpretation-for-callchainasyncsubst"><span class="std std-ref">Categorical interpretation for substitutions in async call chains:</span></a>.</p>
-</div>
-<div class="section" id="builder-methods">
+</section>
+<section id="builder-methods">
 <h3>Builder methods.<a class="headerlink" href="#builder-methods" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><p>Yet one common pattern of usage of hight-order functions is builder methods, where we use hight-order functions to build some processing algorithm.</p>
 </div></blockquote>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span><span class="kt">A</span><span class="o">]</span><span class="k">:</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">ReadChannel</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span><span class="nc">A</span><span class="p">]:</span>
 
-   <span class="kt">def</span> <span class="kt">map</span><span class="o">(</span><span class="kt">f:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="kt">B</span><span class="o">)</span><span class="k">:</span>  <span class="kt">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span> <span class="kt">B</span><span class="o">]</span>
+   <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span><span class="o">=&gt;</span><span class="nc">B</span><span class="p">):</span>  <span class="nc">ReadChannel</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span> <span class="nc">B</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Here, <cite>map</cite> is using for building streaming interface. We can provide async variant of <cite>map</cite> wich will return the same type as original function:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span><span class="kt">A</span><span class="o">]</span><span class="k">:</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">ReadChannel</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span><span class="nc">A</span><span class="p">]:</span>
 
-   <span class="kt">def</span> <span class="kt">map</span><span class="o">(</span><span class="kt">f:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="kt">B</span><span class="o">)</span><span class="k">:</span>  <span class="kt">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span> <span class="kt">B</span><span class="o">]</span>
+   <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span><span class="o">=&gt;</span><span class="nc">B</span><span class="p">):</span>  <span class="nc">ReadChannel</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span> <span class="nc">B</span><span class="p">]</span>
 
-   <span class="k">def</span> <span class="n">mapAsync</span><span class="o">(</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span><span class="o">=&gt;</span><span class="n">F</span><span class="o">[</span><span class="kt">B</span><span class="o">])</span><span class="k">:</span> <span class="kt">ReadChannel</span><span class="o">[</span><span class="kt">F</span><span class="p">,</span> <span class="kt">B</span><span class="o">]</span>
+   <span class="k">def</span> <span class="nf">mapAsync</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="nc">A</span><span class="o">=&gt;</span><span class="nc">F</span><span class="p">[</span><span class="nc">B</span><span class="p">]):</span> <span class="nc">ReadChannel</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span> <span class="nc">B</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Also we can see, that our channel structure is already build on top of <cite>F[_]</cite>, so it is not necessory to pass F to method parameter.</p>
 <p>About name for <cite>mapAsync</cite> – dotty-cps-async supports both variant: camelCase <cite>mapAsync</cite> and snake_case <cite>map_async</cite>. We propose to use next convention when naming such methods:  use <cite>method_async</cite> when async method unlikely will be called by programmer directly and used only for substitution in highg-order function; use <cite>methodAsync</cite> when we expect that developer can use this method directly along with cps substitution.</p>
-</div>
-<div class="section" id="async-high-order-functional-interfaces">
+</section>
+<section id="async-high-order-functional-interfaces">
 <h3>Async high-order functional interfaces<a class="headerlink" href="#async-high-order-functional-interfaces" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><p>For a case with an acynchronous high-order function interfaces (i.e., methods wich accept functions like <cite>f:(A=&gt;F[B])</cite> ), the <cite>async</cite> macro can automatically transform the asynchronous result to have the same signature, so you can use awaits inside async lambdas without implementing additional methods or typeclasses.</p>
 </div></blockquote>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -242,7 +241,7 @@ Also, we have the method <cite>_finishChain</cite>,  which is called when we hav
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -264,13 +263,13 @@ Also, we have the method <cite>_finishChain</cite>,  which is called when we hav
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.6-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2021, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>
 </html>
