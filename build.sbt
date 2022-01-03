@@ -1,10 +1,13 @@
 //val dottyVersion = "3.0.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.1.2-RC1-bin-SNAPSHOT"
-val dottyVersion = "3.1.1-RC1"
-//val dottyVersion = "3.1.0"
+//val dottyVersion = "3.1.1-RC1"
+val dottyVersion = "3.1.0"
 
 ThisBuild/version := "0.9.6-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
+ThisBuild/resolvers += Opts.resolver.sonatypeSnapshots
+
+
 
 
 val sharedSettings = Seq(
@@ -31,7 +34,7 @@ lazy val root = project
   ).disablePlugins(MimaPlugin)
 
 
-lazy val cps = crossProject(JSPlatform, JVMPlatform)
+lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     .in(file("."))
     .settings(sharedSettings)
     .disablePlugins(SitePreviewPlugin)
@@ -58,4 +61,5 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform)
 
 lazy val CpsJVM = config("cps.jvm")
 lazy val CpsJS = config("cps.js")
+//lazy val CpsNative = config("cps.native")
 lazy val Root = config("root")
