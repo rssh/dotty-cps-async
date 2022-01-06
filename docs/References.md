@@ -22,6 +22,7 @@ Can we free concurrent programming from the monadic style:
 ## Related work in Scala3
  
  - Monadic-reflection <https://github.com/lampepfl/monadic-reflection>  (require Project Loom enabled JVM)
+-  Thoughtworks DSL.scala recently ported to Scala3:  <https://github.com/ThoughtWorksInc/Dsl.scala> 
 
 ## Related work in other languages
 
