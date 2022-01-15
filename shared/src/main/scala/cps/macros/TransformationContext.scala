@@ -6,7 +6,7 @@ import scala.quoted.*
 import cps.*
 import cps.macros.observatory.*
 
-case class TransformationContext[F[_],T,C](
+case class TransformationContext[F[_],T,C <: CpsMonadContext[F]](
    patternCode: Expr[T],  // code, for which we build pattern expression
    patternType: Type[T],
    monad: Expr[CpsMonad[F]],

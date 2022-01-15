@@ -16,7 +16,7 @@ import scala.compiletime._
  * Pseudofunction, which can be used inside async block, to 'await' (i.e. receive value of `t:T` from `ft:F[T]`).
  **/
 @compileTimeOnly("await should be inside async block")
-def await[F[_],T](f: F[T])(using am:CpsAwaitable[F]): T = ???
+def await[F[_],T, C<:CpsMonadContext[?]](f: F[T])(using am:CpsAwaitable[F], ctx: C): T = ???
 
 /**
  * async block, which can contains awaits.

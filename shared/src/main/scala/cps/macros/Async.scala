@@ -24,6 +24,9 @@ object Async {
        transparent inline def apply[T](inline expr: C ?=> T) =
             //transform[F,T](using am)(expr)
             am.apply(transformContextLambda(expr))
+            //am.apply(x =>
+            //   transform[F,T,C](expr,x)
+            //)
 
        
        transparent inline def in[T](using mc: CpsMonadContextProvider[F] )(inline expr: mc.Context ?=> T ): F[T]  = 
