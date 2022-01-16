@@ -18,8 +18,8 @@ trait IFWriter[F[_],A]:
     v = a.asInstanceOf[AnyRef]
     cpsMonad.pure(())
 
-  transparent inline def write(inline a:A): Unit =
-    await[F,Unit](awrite(a))(using wCpsMonad)
+  transparent inline def write(inline a:A)(using inline monadContext: CpsMonadContext[F]): Unit =
+    await[F,Unit,F](awrite(a))(using wCpsMonad, monadContext )
 
 
 class CIFWriter[F[_]:CpsMonad,A]  extends IFWriter[F,A]:
@@ -37,13 +37,13 @@ trait IFReader[F[_],A]:
    def aread(): F[A] =
         cpsMonad.pure(value.get)
 
-   transparent inline def read():A =
+   transparent inline def read()(using inline monadContext: CpsMonadContext[F]):A =
         await(aread())(using cpsMonad)
 
    def aOptRead(): F[Option[A]]=
         cpsMonad.pure(value)
 
-   transparent inline def optRead(): Option[A] =
+   transparent inline def optRead()(using inline monadContext: CpsMonadContext[F]): Option[A] =
         await(aOptRead())(using cpsMonad)
         
 

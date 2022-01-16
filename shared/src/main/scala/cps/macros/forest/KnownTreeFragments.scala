@@ -7,18 +7,18 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait KnownTreeFragments[F[_], CT, CC]:
+trait KnownTreeFragments[F[_], CT, CC <: CpsMonadContext[F]]:
 
   thisKnownTreeTransform: TreeTransformScope[F, CT, CC] =>
 
   import qctx.reflect._
 
-  lazy val awaitPure = '{ _root_.cps.await[F,Int](${cpsCtx.monad}.pure(3))(using ${cpsCtx.monad}) }.asTerm
+  lazy val awaitPure = '{ _root_.cps.await[F,Int,F](${cpsCtx.monad}.pure(3))(using ${cpsCtx.monad}, ${cpsCtx.monadContext}) }.asTerm
 
   lazy val awaitSymbol = Symbol.requiredMethod("cps.await")
 
   lazy val monadTypeTree = TransformUtil.find(awaitPure,
-                       { case TypeApply(Select(x,"await"),List(f1,f2)) => Some(f1)
+                       { case TypeApply(Select(x,"await"),List(f1,f2,f3)) => Some(f1)
                          case _ => None
                        }).get.asInstanceOf[TypeTree]
 

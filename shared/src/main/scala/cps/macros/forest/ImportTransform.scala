@@ -1,7 +1,7 @@
 package cps.macros.forest
 
 import scala.quoted._
-
+import cps._
 import cps.macros._
 import cps.macros.misc._
 
@@ -12,7 +12,7 @@ object ImportTransform:
 
 
 
-  def fromBlock[F[_]:Type,T:Type,C:Type](using Quotes)(cpsCtx: TransformationContext[F,T,C],
+  def fromBlock[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](using Quotes)(cpsCtx: TransformationContext[F,T,C],
                            importTree: quotes.reflect.Import): CpsExpr[F,Unit] = {
      import quotes.reflect._
      import cpsCtx._

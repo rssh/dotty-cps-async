@@ -8,7 +8,7 @@ import cps.macros.forest._
 import cps.macros.misc._
 
 
-trait MethodParamsDescriptorScope[F[_], CT, CC]:
+trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
   thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 

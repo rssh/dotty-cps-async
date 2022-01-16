@@ -5,7 +5,7 @@ import cps.macros._
 import cps.macros.forest.application._
 import scala.quoted._
 
-trait TreeTransformScope[F[_]:Type,CT:Type, CC:Type]
+trait TreeTransformScope[F[_]:Type,CT:Type, CC<:CpsMonadContext[F]:Type]
                extends CpsTreeScope[F, CT, CC]
                   with KnownTreeFragments[F,CT, CC]
                   with TypeApplyTreeTransform[F,CT, CC]
@@ -85,7 +85,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type, CC:Type]
 }
 
 
-trait TreeTransformScopeInstance[F[_]:Type,T:Type, C:Type](
+trait TreeTransformScopeInstance[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](
          override val cpsCtx: TransformationContext[F,T,C])
          (implicit override val qctx: Quotes)
                                  extends TreeTransformScope[F,T, C] {

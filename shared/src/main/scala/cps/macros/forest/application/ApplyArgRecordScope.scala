@@ -10,7 +10,7 @@ import cps.macros.forest._
 import cps.macros.misc._
 
 
-trait ApplyArgRecordScope[F[_], CT, CC]:
+trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
   thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 

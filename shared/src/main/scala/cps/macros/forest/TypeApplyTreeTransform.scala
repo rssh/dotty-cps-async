@@ -7,7 +7,7 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait TypeApplyTreeTransform[F[_], CT, CC]:
+trait TypeApplyTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
 
   thisScope: TreeTransformScope[F, CT, CC] =>
 
@@ -23,7 +23,7 @@ trait TypeApplyTreeTransform[F[_], CT, CC]:
 object TypeApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type,C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
+  def run[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          applyTerm: qctx1.reflect.Term, 
                          fun: qctx1.reflect.Term, 
                          targs: List[qctx1.reflect.TypeTree]): CpsExpr[F,T] = {

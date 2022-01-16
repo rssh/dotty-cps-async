@@ -5,7 +5,7 @@ import cps.macros._
 import cps.macros.forest._
 import cps.macros.misc._
 
-trait ApplyArgBuilderScope[F[_],CT, CC] {
+trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
 
   thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 

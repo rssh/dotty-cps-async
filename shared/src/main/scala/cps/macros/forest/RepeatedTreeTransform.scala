@@ -7,7 +7,7 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait RepeatedTreeTransform[F[_], CT, CC]:
+trait RepeatedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
 
   thisScope: TreeTransformScope[F, CT, CC] =>
 
@@ -44,7 +44,7 @@ trait RepeatedTreeTransform[F[_], CT, CC]:
 object RepeatedTreeTransform:
 
 
-  def run[F[_]:Type,T:Type,C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
+  def run[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          repeatedTerm: qctx1.reflect.Term, 
                          elements: List[qctx1.reflect.Term], 
                          tpt: qctx1.reflect.TypeTree): CpsExpr[F,T] = {

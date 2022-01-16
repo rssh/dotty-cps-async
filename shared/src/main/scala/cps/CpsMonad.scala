@@ -50,7 +50,7 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
 
 object CpsMonad {
 
-  type Aux[F[_],C] = CpsMonad[F] { type Context = C }
+  type Aux[F[_],C<:CpsMonadContext[F]] = CpsMonad[F] { type Context = C }
 
 }
 
@@ -204,7 +204,7 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
 
 object CpsTryMonad {
 
-  type Aux[F[_],C] = CpsTryMonad[F] { type Context = C }
+  type Aux[F[_],C<:CpsMonadContext[F]] = CpsTryMonad[F] { type Context = C }
 
 }
 
@@ -231,7 +231,7 @@ trait CpsAsyncMonad[F[_]] extends CpsTryMonad[F] {
 
 object CpsAsyncMonad {
 
-  type Aux[F[_],C] = CpsAsyncMonad[F] { type Context = C }
+  type Aux[F[_],C<:CpsMonadContext[F]] = CpsAsyncMonad[F] { type Context = C }
 
 }
 
@@ -337,7 +337,7 @@ trait CpsConcurrentMonad[F[_]] extends CpsAsyncMonad[F]  {
 
 object CpsConcurrentMonad {
 
-  type Aux[F[_],C] = CpsConcurrentMonad[F] { type Context = C }
+  type Aux[F[_],C<:CpsMonadContext[F]] = CpsConcurrentMonad[F] { type Context = C }
 
 }
 

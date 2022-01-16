@@ -7,7 +7,7 @@ import cps.macros._
 import cps.macros.misc._
 
 
-class AssignTransform[F[_]:Type,T:Type,C:Type](cpsCtx: TransformationContext[F,T,C]):
+class AssignTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: TransformationContext[F,T,C]):
 
   import cpsCtx._
 
