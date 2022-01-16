@@ -25,11 +25,24 @@ class TestAsyncListMerge:
     var last1: Int = -1
     var last2: Int = -1
 
+    var cummulativeSleep1 = 0L
+    var cummulativeRealSleep1 = 0L
+    var lastRealSleep1 = 0L
+    var cummulativeSleep2 = 0L
+    var cummulativeRealSleep2 = 0L
+    var lastRealSleep2 = 0L
+    
+
     val stream1 = asyncStream[AsyncList[Future,Int]] { out =>
       for(i <- 1 to 10) {
-         await(FutureSleep(100.milliseconds))
-         out.emit(i) 
-         last1 = i
+        val sleepStart = System.currentTimeMillis()
+        await(FutureSleep(100.milliseconds))
+        val sleepEnd = System.currentTimeMillis()
+        cummulativeSleep1 += 100
+        lastRealSleep1 = sleepEnd - sleepStart
+        cummulativeRealSleep1 += lastRealSleep1
+        out.emit(i) 
+        last1 = i
       }
       out.emit(100)
       last1 = 100
@@ -37,9 +50,14 @@ class TestAsyncListMerge:
 
     val stream2 = asyncStream[AsyncList[Future,Int]] { out =>
      for(i <- 200 to 220) {
-        await(FutureSleep(50.milliseconds))
-        out.emit(i)
-        last2 = i
+      val sleepStart = System.currentTimeMillis()
+      await(FutureSleep(50.milliseconds))
+      val sleepEnd = System.currentTimeMillis()
+      val lastRealSleep2 = sleepEnd - sleepStart
+      cummulativeRealSleep2 += lastRealSleep2
+      cummulativeSleep2 += 50
+      out.emit(i)
+      last2 = i
      }
      out.emit(300)
      last2 = 300
@@ -60,10 +78,12 @@ class TestAsyncListMerge:
     }
 
     try
-      val r = Await.result(f, 3.second)
+      val r = Await.result(f, 10.second)
     catch
       case NonFatal(ex) =>
         println(s"last1=$last1, last2=$last2")
+        println(s"cummulativeSleep1=$cummulativeSleep1, cummulativeRealSleep1=$cummulativeRealSleep1, lastRealSleep1=${lastRealSleep1}")
+        println(s"cummulativeSleep2=$cummulativeSleep2, cummulativeRealSleep2=$cummulativeRealSleep2, lastRealSleep2=${lastRealSleep2}")
         throw ex;
 
   }
