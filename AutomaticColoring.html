@@ -44,107 +44,103 @@
 <h1>Automatic Coloring<a class="headerlink" href="#automatic-coloring" title="Permalink to this headline">¶</a></h1>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>Sometimes, especially when we work with distributes systems, most API call are asynchronous and should be prefixed by <cite>await</cite>.  And we should remember what functions we should call async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e.,, F[T]) and one - sync. (T without F).</p>
-<p>If we want to put asynchronous expression into synchronous function, we should write <cite>await(expr)</cite>  instead <cite>expr</cite>,  for transforming synchronous code into asynchronous.
-(see <a class="reference external" href="http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/</a> for more detailed explanation )</p>
-<p>In scala, we have types, so why not ask the compiler to do async coloring automatically?
-So, next code:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]{</span>
-   <span class="kd">val</span> <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://www.example.com&quot;</span>
-   <span class="kd">val</span> <span class="n">data</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">api</span><span class="p">.</span><span class="n">fetchUrl</span><span class="p">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="p">))</span>
-   <span class="kd">val</span> <span class="n">theme</span> <span class="o">=</span> <span class="n">api</span><span class="p">.</span><span class="n">classifyText</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-   <span class="kd">val</span> <span class="n">dmpInfo</span><span class="p">:</span> <span class="nc">String</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">api</span><span class="p">.</span><span class="n">retrieveDMPInfo</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">await</span><span class="p">(</span><span class="n">theme</span><span class="p">),</span> <span class="s">&quot;1&quot;</span><span class="p">))</span>
-   <span class="n">dmpInfo</span>
+<p>Sometimes, especially when we work with distributed systems, most API calls are asynchronous and should be prefixed by <code class="docutils literal notranslate"><span class="pre">await</span></code>.  And we should remember what functions we should call async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e., <code class="docutils literal notranslate"><span class="pre">F[T]</span></code>) and one - sync. (<code class="docutils literal notranslate"><span class="pre">T</span></code> without <code class="docutils literal notranslate"><span class="pre">F</span></code>).</p>
+<p>If we want to put an asynchronous expression into a synchronous function, we should write <code class="docutils literal notranslate"><span class="pre">await(expr)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">expr</span></code>, for transforming synchronous code into asynchronous
+(see <a class="reference external" href="http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/</a> for more detailed explanation).</p>
+<p>In Scala, we have types, so why not ask the compiler to do async coloring automatically?
+So, the code below</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span> <span class="p">{</span>
+  <span class="kd">val</span> <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://www.example.com&quot;</span>
+  <span class="kd">val</span> <span class="n">data</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">api</span><span class="p">.</span><span class="n">fetchUrl</span><span class="p">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="p">))</span>
+  <span class="kd">val</span> <span class="n">theme</span> <span class="o">=</span> <span class="n">api</span><span class="p">.</span><span class="n">classifyText</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+  <span class="kd">val</span> <span class="n">dmpInfo</span><span class="p">:</span> <span class="nc">String</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">api</span><span class="p">.</span><span class="n">retrieveDMPInfo</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">await</span><span class="p">(</span><span class="n">theme</span><span class="p">),</span> <span class="s">&quot;1&quot;</span><span class="p">))</span>
+  <span class="n">dmpInfo</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Can be written without await as:</p>
+<p>can be written without <code class="docutils literal notranslate"><span class="pre">await</span></code> as:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">automaticColoring</span><span class="p">.</span><span class="k">given</span>
 
-<span class="kd">val</span> <span class="n">c</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]{</span>
-     <span class="kd">val</span> <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://www.example.com&quot;</span>
-     <span class="kd">val</span> <span class="n">data</span> <span class="o">=</span> <span class="n">api</span><span class="p">.</span><span class="n">fetchUrl</span><span class="p">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="p">)</span>
-     <span class="kd">val</span> <span class="n">theme</span> <span class="o">=</span> <span class="n">api</span><span class="p">.</span><span class="n">classifyText</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-     <span class="kd">val</span> <span class="n">dmpInfo</span><span class="p">:</span> <span class="nc">String</span> <span class="o">=</span> <span class="n">api</span><span class="p">.</span><span class="n">retrieveDMPInfo</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">theme</span><span class="p">,</span> <span class="s">&quot;1&quot;</span><span class="p">)</span>
-     <span class="n">dmpInfo</span>
-  <span class="p">}</span>
+<span class="kd">val</span> <span class="n">c</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span> <span class="p">{</span>
+  <span class="kd">val</span> <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://www.example.com&quot;</span>
+  <span class="kd">val</span> <span class="n">data</span> <span class="o">=</span> <span class="n">api</span><span class="p">.</span><span class="n">fetchUrl</span><span class="p">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="p">)</span>
+  <span class="kd">val</span> <span class="n">theme</span> <span class="o">=</span> <span class="n">api</span><span class="p">.</span><span class="n">classifyText</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+  <span class="kd">val</span> <span class="n">dmpInfo</span><span class="p">:</span> <span class="nc">String</span> <span class="o">=</span> <span class="n">api</span><span class="p">.</span><span class="n">retrieveDMPInfo</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">theme</span><span class="p">,</span> <span class="s">&quot;1&quot;</span><span class="p">)</span>
+  <span class="n">dmpInfo</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
 <section id="automatic-coloring-memoization">
 <h2>Automatic Coloring &amp; Memoization<a class="headerlink" href="#automatic-coloring-memoization" title="Permalink to this headline">¶</a></h2>
 <p>If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation), then implicit await is enough for automatic coloring.  But what to do with pure effect monads, which holds computations without starting them?</p>
-<p>Let’s look at the next code:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">updateCounter</span><span class="p">(</span><span class="n">counter</span><span class="p">:</span><span class="nc">Counter</span><span class="p">)</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">IO</span><span class="p">]{</span>
+<p>Let’s look at the following code:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">updateCounter</span><span class="p">(</span><span class="n">counter</span><span class="p">:</span> <span class="nc">Counter</span><span class="p">)</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">IO</span><span class="p">]</span> <span class="p">{</span>
   <span class="kd">val</span> <span class="n">value</span> <span class="o">=</span> <span class="n">counter</span><span class="p">.</span><span class="n">increment</span><span class="p">()</span>
   <span class="k">if</span> <span class="n">value</span> <span class="o">%</span> <span class="nc">LOG_MOD</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">then</span>
-     <span class="n">log</span><span class="p">(</span><span class="s">s&quot;counter value = </span><span class="si">${</span><span class="n">await</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="p">(</span><span class="s">s&quot;counter value = </span><span class="si">${</span><span class="n">await</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s">&quot;</span><span class="p">)</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">==</span> <span class="nc">LOG_TRESHOLD</span><span class="p">)</span> <span class="k">then</span>
-     <span class="c1">// Conversion will not be appliyed for == .</span>
-     <span class="c1">// For this example we want automatic conversion, so -1</span>
-     <span class="n">log</span><span class="p">(</span><span class="s">&quot;counter TRESHOLD&quot;</span><span class="p">)</span>
+    <span class="c1">// Conversion will not be appliyed for == .</span>
+    <span class="c1">// For this example we want automatic conversion, so -1</span>
+    <span class="n">log</span><span class="p">(</span><span class="s">&quot;counter TRESHOLD&quot;</span><span class="p">)</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Assume IO is some pure effect monad, which holds a computation function that will be evaluated each time we need to get value from the monad. Counter.increment() is an IO action:</p>
+<p>Assume IO is some pure effect monad, which holds a computation function that will be evaluated each time we need to get value from the monad. <code class="docutils literal notranslate"><span class="pre">Counter.increment()</span></code> is an IO action:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">Counter</span><span class="p">:</span>
 
   <span class="k">def</span> <span class="nf">increment</span><span class="p">():</span> <span class="nc">IO</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>The compiler will insert awaits when testing and printing value.
-For making two using of <cite>val value</cite> be the same value, we need to memoize value during the creation of <cite>val</cite>.
+For making two using of <cite>val value</cite> be the same value, we need to memoize value during the creation of <code class="docutils literal notranslate"><span class="pre">val</span></code>.
 Otherwise, the counter will be incremented three times instead of one.</p>
 <dl class="simple">
 <dt>Signature of memoization operation can be different for different monads; this can be:</dt><dd><ul class="simple">
-<li><p><cite>memoize: F[X] =&gt; F[X]</cite>  for imperative monads.</p></li>
-<li><p><cite>memoize: F[X] =&gt; F[F[X]]</cite>  for pure effect monads.  Internal <cite>F[_]</cite> holds cached computation. External <cite>F[_]</cite> - operation of getting a result from received cache. Flattening this expressin will return the original computation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">memoize:</span> <span class="pre">F[X]</span> <span class="pre">=&gt;</span> <span class="pre">F[X]</span></code>  for imperative monads.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">memoize:</span> <span class="pre">F[X]</span> <span class="pre">=&gt;</span> <span class="pre">F[F[X]]</span></code>  for pure effect monads.  Internal <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> holds cached computation. External <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> - operation of getting a result from received cache. Flattening this expressin will return the original computation.</p></li>
 </ul>
 </dd>
-<dt>If we want to provide support for automatic coloring for your monad, you should implement CpsMonadMemoization trait, which can be one of:</dt><dd><ul class="simple">
-<li><p>CpsMonadMemoization.Default - if computations are cached in your monad by default.</p></li>
-<li><p>CpsMonadMemoization.Inplace - for imperative monads</p></li>
-<li><p>CpsMonadMemoization.Pure - for pure effect monads.</p></li>
-<li><p>CpsMonadMemoization.Dynamic - for monads with custom memoization, which resolved with call-side types.</p></li>
+<dt>If we want to provide support for automatic coloring for your monad, you should implement the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadMemoization.scala"><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization[F]</span></code></a> trait, which can be one of:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Default</span></code> - if computations are cached in your monad by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Inplace</span></code> - for imperative monads</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Pure</span></code> - for pure effect monads.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Dynamic</span></code> - for monads with custom memoization, which resolved with call-side types.</p></li>
 </ul>
 </dd>
 </dl>
 </section>
 <section id="safety-rules-for-using-memoized-effect">
 <h2>Safety rules for using memoized effect.<a class="headerlink" href="#safety-rules-for-using-memoized-effect" title="Permalink to this headline">¶</a></h2>
-<blockquote>
-<div><p>Safety rules for variable memoization are enforced with the help of additional preliminary analysis. If some variable is used only in a synchronous context (i.e., via await), it should be colored as synchronous (i.e., cached). If some variable is passed to other functions as effect - it should be colored asynchronous (i.e., uncached). If the variable is used in both synchronous and asynchronous contexts, we can’t deduce the programmer’s intention and report an error.</p>
-</div></blockquote>
+<p>Safety rules for variable memoization are enforced with the help of additional preliminary analysis. If some variable is used only in a synchronous context (i.e., via <code class="docutils literal notranslate"><span class="pre">await</span></code>), it should be colored as synchronous (i.e., cached). If some variable is passed to other functions as effect - it should be colored asynchronous (i.e., uncached). If the variable is used in both synchronous and asynchronous contexts, we can’t deduce the programmer’s intention and report an error.</p>
 <p>Preliminary analysis using next algorithm:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>For each invocation of a variable inside async block - count the number of calls with and without awaits.</p></li>
+<ul class="simple">
+<li><p>For each invocation of a variable inside <code class="docutils literal notranslate"><span class="pre">async</span></code> block - count the number of calls with and without awaits.</p></li>
 <li><p>If we have a call with await, then using the same variable in ia call without await reported as an error (and vice-versa)</p></li>
 <li><p>If the variable, defined outside of the async block, is used in synchronous context more than once - the macro also will report an error.</p></li>
 </ul>
-</div></blockquote>
 </section>
 <section id="custom-value-discard">
 <h2>Custom value discard<a class="headerlink" href="#custom-value-discard" title="Permalink to this headline">¶</a></h2>
 <p id="index-0">During the writing of asynchronous code, typical developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.</p>
-<p><code class="docutils literal notranslate"><span class="pre">cps.customValueDiscard</span></code>  limit the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types T, for which exists an implementation of a special ValueDiscard[T]. If given ValueDiscard[T] is not found in the current scope, then dropping values of this type is prohibited.  If found - ValueDiscard.apply(t) is called. It’s defined as a no-op for primitive types and can be extended by the developer for its own types.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cps.customValueDiscard</span></code> limits the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types <code class="docutils literal notranslate"><span class="pre">T</span></code>, for which exists an implementation of a special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala"><code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code></a>. If given <code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code> is not found in the current scope, then dropping values of this type is prohibited.  If found - <code class="docutils literal notranslate"><span class="pre">ValueDiscard.apply(t)</span></code> is called. It’s defined as a no-op for primitive types and can be extended by the developer for its own types.</p>
 <p>Example:</p>
 <p>Assume we have next api:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">object</span> <span class="nc">api</span><span class="p">:</span>
-  <span class="k">def</span>  <span class="nf">fetch</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="n">string</span><span class="p">):</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
-  <span class="k">def</span>  <span class="nf">dryRun</span><span class="p">(</span><span class="n">data</span><span class="p">:</span><span class="n">string</span><span class="p">):</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span>
-  <span class="k">def</span>  <span class="nf">processData</span><span class="p">(</span><span class="n">data</span><span class="p">:</span><span class="n">string</span><span class="p">):</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
+  <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nc">String</span><span class="p">):</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
+  <span class="k">def</span> <span class="nf">dryRun</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nc">String</span><span class="p">):</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span>
+  <span class="k">def</span> <span class="nf">processData</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nc">String</span><span class="p">):</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>Where the semantics of <cite>dryRun</cite>  - raise an error if it is impossible to run processData().</p>
+<p>Where the semantics of <code class="docutils literal notranslate"><span class="pre">dryRun</span></code>  - raise an error if it is impossible to run <code class="docutils literal notranslate"><span class="pre">processData()</span></code>.</p>
 <p>Let’s look at the next code:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">//import cps.customValueDiscard.given  // &lt; 0.9.3</span>
 <span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">customValueDiscard</span>
 
 <span class="kd">val</span> <span class="n">c</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span> <span class="p">{</span>
-   <span class="kd">val</span> <span class="n">data</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">api</span><span class="p">.</span><span class="n">fetch</span><span class="p">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="p">))</span>
-   <span class="n">dryRun</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-   <span class="n">await</span><span class="p">(</span><span class="n">process</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+  <span class="kd">val</span> <span class="n">data</span> <span class="o">=</span> <span class="n">await</span><span class="p">(</span><span class="n">api</span><span class="p">.</span><span class="n">fetch</span><span class="p">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="p">))</span>
+  <span class="n">dryRun</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+  <span class="n">await</span><span class="p">(</span><span class="n">process</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -154,27 +150,23 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 <span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">warnValueDiscard</span>
 </pre></div>
 </div>
-<dl class="simple">
-<dt>Note that custom value discarding is automatically enabled for effect monads to prevent situations where discarding values</dt><dd><p>drop branches in the computation flow.</p>
-</dd>
-</dl>
-<p>Let’s look again at the code:</p>
+<p>Note that custom value discarding is automatically enabled for effect monads to prevent situations where discarding values drop branches in the computation flow. Let’s look again at the code:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">updateCounter</span><span class="p">(</span><span class="n">counter</span><span class="p">:</span><span class="nc">Counter</span><span class="p">)</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">IO</span><span class="p">]{</span>
   <span class="kd">val</span> <span class="n">value</span> <span class="o">=</span> <span class="n">counter</span><span class="p">.</span><span class="n">increment</span><span class="p">()</span>
   <span class="k">if</span> <span class="n">value</span> <span class="o">%</span> <span class="nc">LOG_MOD</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">then</span>
      <span class="n">log</span><span class="p">(</span><span class="s">s&quot;counter value = </span><span class="si">${</span><span class="n">await</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s">&quot;</span><span class="p">)</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">==</span> <span class="nc">LOG_TRESHOLD</span><span class="p">)</span> <span class="k">then</span>
+  <span class="k">if</span> <span class="n">value</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">==</span> <span class="nc">LOG_TRESHOLD</span> <span class="k">then</span>
      <span class="c1">// Conversion will not be appliyed for == . For this example we want automatic conversion, so -1</span>
      <span class="n">log</span><span class="p">(</span><span class="s">&quot;counter TRESHOLD&quot;</span><span class="p">)</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Assuming that logging is IO operation, i.e. log have signature</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">message</span><span class="p">:</span><span class="nc">String</span><span class="p">):</span> <span class="nc">IO</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span>
+<p>Assuming that logging is IO operation, i.e. function <code class="docutils literal notranslate"><span class="pre">log</span></code> has the signature</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nc">String</span><span class="p">):</span> <span class="nc">IO</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>Without custom value discarding, the log statement will be dropped.  (Type of <cite>if</cite> with one branch is ‘Unit’, so type of the first branch should be ‘Unit’, so log statement will be discarded).
-Dotty-cps-async provides special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L27">AwaitValueDiscard</a>  which forces monad to be evaluated before being discarded.  We recommend use this discard as default for IO[Unit].</p>
+<p>Without custom value discarding, the log statement will be dropped.  (Type of <code class="docutils literal notranslate"><span class="pre">if</span></code> with one branch is <a class="reference external" href="https://www.scala-lang.org/api/current/scala/Unit.html"><code class="docutils literal notranslate"><span class="pre">Unit</span></code></a>, so type of the first branch should be <a class="reference external" href="https://www.scala-lang.org/api/current/scala/Unit.html"><code class="docutils literal notranslate"><span class="pre">Unit</span></code></a>, so log statement will be discarded).
+<a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> provides special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/ff25b61f93e49a1ae39df248dbe4af980cd7f948/shared/src/main/scala/cps/ValueDiscard.scala#L44"><code class="docutils literal notranslate"><span class="pre">AwaitValueDiscard</span></code></a>  which forces monad to be evaluated before being discarded.  We recommend use this discard as default for <code class="docutils literal notranslate"><span class="pre">IO[Unit]</span></code>.</p>
 </section>
 </section>
 
