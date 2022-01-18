@@ -91,7 +91,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.5"
 
 
-**Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Akka Streams|_, |Monix|_ or |ZIO|_. 
+**Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Akka Streams|_, |Cats Effect|_, |Monix|_ or |ZIO|_. 
 
 
 Also monad can be abstracted out as in the following example:
@@ -167,6 +167,9 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 
 .. |Akka Streams| replace:: **Akka Streams**
 .. _Akka Streams: https://doc.akka.io/docs/akka/current/stream/
+
+.. |Cats Effect| replace:: **Cats Effect**
+.. _Cats Effect: https://typelevel.org/cats-effect/
 
 .. |CpsMonad| replace:: ``CpsMonad``
 .. _CpsMonad: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala
