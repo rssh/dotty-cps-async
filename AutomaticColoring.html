@@ -44,10 +44,10 @@
 <h1>Automatic Coloring<a class="headerlink" href="#automatic-coloring" title="Permalink to this headline">¶</a></h1>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>Sometimes, especially when we work with distributed systems, most API calls are asynchronous and should be prefixed by <code class="docutils literal notranslate"><span class="pre">await</span></code>.  And we should remember what functions we should call async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e., <code class="docutils literal notranslate"><span class="pre">F[T]</span></code>) and one - sync. (<code class="docutils literal notranslate"><span class="pre">T</span></code> without <code class="docutils literal notranslate"><span class="pre">F</span></code>).</p>
-<p>If we want to put an asynchronous expression into a synchronous function, we should write <code class="docutils literal notranslate"><span class="pre">await(expr)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">expr</span></code>, for transforming synchronous code into asynchronous
+<p>Sometimes, especially when we work with distributed systems, most API calls are asynchronous and should be prefixed by <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.  And we should remember what functions we should call async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e., <code class="docutils literal notranslate"><span class="pre">F[T]</span></code>) and one - sync. (<code class="docutils literal notranslate"><span class="pre">T</span></code> without <code class="docutils literal notranslate"><span class="pre">F</span></code>).</p>
+<p>If we want to put an asynchronous expression into a synchronous function, we should write <code class="docutils literal notranslate"><span class="pre">await(expr)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">expr</span></code>, for transforming the synchronous code into an asynchronous one
 (see <a class="reference external" href="http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/</a> for more detailed explanation).</p>
-<p>In Scala, we have types, so why not ask the compiler to do async coloring automatically?
+<p>In <a class="reference external" href="https://dotty.epfl.ch/"><strong>Scala 3</strong></a>, we have types, so why not ask the compiler to do async coloring automatically?
 So, the code below</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span> <span class="p">{</span>
   <span class="kd">val</span> <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://www.example.com&quot;</span>
@@ -58,7 +58,7 @@ So, the code below</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>can be written without <code class="docutils literal notranslate"><span class="pre">await</span></code> as:</p>
+<p>can be written without <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> as:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">automaticColoring</span><span class="p">.</span><span class="k">given</span>
 
 <span class="kd">val</span> <span class="n">c</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span> <span class="p">{</span>
@@ -93,29 +93,23 @@ So, the code below</p>
 </pre></div>
 </div>
 <p>The compiler will insert awaits when testing and printing value.
-For making two using of <cite>val value</cite> be the same value, we need to memoize value during the creation of <code class="docutils literal notranslate"><span class="pre">val</span></code>.
+For making two using of <code class="docutils literal notranslate"><span class="pre">val</span> <span class="pre">value</span></code> be the same value, we need to memoize value during the creation of <code class="docutils literal notranslate"><span class="pre">val</span></code>.
 Otherwise, the counter will be incremented three times instead of one.</p>
-<dl class="simple">
-<dt>Signature of memoization operation can be different for different monads; this can be:</dt><dd><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">memoize:</span> <span class="pre">F[X]</span> <span class="pre">=&gt;</span> <span class="pre">F[X]</span></code>  for imperative monads.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">memoize:</span> <span class="pre">F[X]</span> <span class="pre">=&gt;</span> <span class="pre">F[F[X]]</span></code>  for pure effect monads.  Internal <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> holds cached computation. External <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> - operation of getting a result from received cache. Flattening this expressin will return the original computation.</p></li>
-</ul>
-</dd>
-<dt>If we want to provide support for automatic coloring for your monad, you should implement the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadMemoization.scala"><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization[F]</span></code></a> trait, which can be one of:</dt><dd><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Default</span></code> - if computations are cached in your monad by default.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Inplace</span></code> - for imperative monads</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Pure</span></code> - for pure effect monads.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Dynamic</span></code> - for monads with custom memoization, which resolved with call-side types.</p></li>
-</ul>
-</dd>
-</dl>
+<p>Signature of memoization operation can be different for different monads; this can be:
+* <code class="docutils literal notranslate"><span class="pre">memoize:</span> <span class="pre">F[X]</span> <span class="pre">=&gt;</span> <span class="pre">F[X]</span></code> for imperative monads.
+* <code class="docutils literal notranslate"><span class="pre">memoize:</span> <span class="pre">F[X]</span> <span class="pre">=&gt;</span> <span class="pre">F[F[X]]</span></code> for pure effect monads.  Internal <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> holds cached computation. External <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> - operation of getting a result from received cache. Flattening this expressin will return the original computation.</p>
+<p>If we want to provide support for automatic coloring for your monad, you should implement the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadMemoization.scala"><code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization[F]</span></code></a> trait, which can be one of:
+* <code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Default</span></code> - if computations are cached in your monad by default.
+* <code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Inplace</span></code> - for imperative monads
+* <code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Pure</span></code> - for pure effect monads.
+* <code class="docutils literal notranslate"><span class="pre">CpsMonadMemoization.Dynamic</span></code> - for monads with custom memoization, which resolved with call-side types.</p>
 </section>
 <section id="safety-rules-for-using-memoized-effect">
 <h2>Safety rules for using memoized effect.<a class="headerlink" href="#safety-rules-for-using-memoized-effect" title="Permalink to this headline">¶</a></h2>
-<p>Safety rules for variable memoization are enforced with the help of additional preliminary analysis. If some variable is used only in a synchronous context (i.e., via <code class="docutils literal notranslate"><span class="pre">await</span></code>), it should be colored as synchronous (i.e., cached). If some variable is passed to other functions as effect - it should be colored asynchronous (i.e., uncached). If the variable is used in both synchronous and asynchronous contexts, we can’t deduce the programmer’s intention and report an error.</p>
+<p>Safety rules for variable memoization are enforced with the help of additional preliminary analysis. If some variable is used only in a synchronous context (i.e., via <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>), it should be colored as synchronous (i.e., cached). If some variable is passed to other functions as effect - it should be colored asynchronous (i.e., uncached). If the variable is used in both synchronous and asynchronous contexts, we can’t deduce the programmer’s intention and report an error.</p>
 <p>Preliminary analysis using next algorithm:</p>
 <ul class="simple">
-<li><p>For each invocation of a variable inside <code class="docutils literal notranslate"><span class="pre">async</span></code> block - count the number of calls with and without awaits.</p></li>
+<li><p>For each invocation of a variable inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> block - count the number of calls with and without awaits.</p></li>
 <li><p>If we have a call with await, then using the same variable in ia call without await reported as an error (and vice-versa)</p></li>
 <li><p>If the variable, defined outside of the async block, is used in synchronous context more than once - the macro also will report an error.</p></li>
 </ul>
@@ -123,7 +117,7 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 <section id="custom-value-discard">
 <h2>Custom value discard<a class="headerlink" href="#custom-value-discard" title="Permalink to this headline">¶</a></h2>
 <p id="index-0">During the writing of asynchronous code, typical developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.</p>
-<p><code class="docutils literal notranslate"><span class="pre">cps.customValueDiscard</span></code> limits the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types <code class="docutils literal notranslate"><span class="pre">T</span></code>, for which exists an implementation of a special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala"><code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code></a>. If given <code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code> is not found in the current scope, then dropping values of this type is prohibited.  If found - <code class="docutils literal notranslate"><span class="pre">ValueDiscard.apply(t)</span></code> is called. It’s defined as a no-op for primitive types and can be extended by the developer for its own types.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cps.customValueDiscard</span></code> limits the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types <code class="docutils literal notranslate"><span class="pre">T</span></code>, for which exists an implementation of a special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala"><code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code></a>. If given <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala"><code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code></a> is not found in the current scope, then dropping values of this type is prohibited.  If found - <code class="docutils literal notranslate"><span class="pre">ValueDiscard.apply(t)</span></code> is called. It’s defined as a no-op for primitive types and can be extended by the developer for its own types.</p>
 <p>Example:</p>
 <p>Assume we have next api:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">object</span> <span class="nc">api</span><span class="p">:</span>
@@ -144,24 +138,24 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Here developer forgott to wrap <code class="docutils literal notranslate"><span class="pre">dryRun</span></code> in <code class="docutils literal notranslate"><span class="pre">await.</span></code>  But <code class="docutils literal notranslate"><span class="pre">customValueDiscard</span></code> feature is enabled and value discard operation is not defined for <code class="docutils literal notranslate"><span class="pre">`Future</span></code>, so this code will not compile.</p>
+<p>Here the developer forgot to wrap <code class="docutils literal notranslate"><span class="pre">dryRun</span></code> into <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.  But <code class="docutils literal notranslate"><span class="pre">customValueDiscard</span></code> feature is enabled and value discard operation is not defined for <code class="docutils literal notranslate"><span class="pre">`Future</span></code>, so this code will not compile.</p>
 <p id="index-1">If you want to see warning instead error, you can import <cite>warnValueDiscard</cite> feature:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">//import cps.warnValueDiscard.given  //  &lt; 0.9.3</span>
 <span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">warnValueDiscard</span>
 </pre></div>
 </div>
 <p>Note that custom value discarding is automatically enabled for effect monads to prevent situations where discarding values drop branches in the computation flow. Let’s look again at the code:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">updateCounter</span><span class="p">(</span><span class="n">counter</span><span class="p">:</span><span class="nc">Counter</span><span class="p">)</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">IO</span><span class="p">]{</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">updateCounter</span><span class="p">(</span><span class="n">counter</span><span class="p">:</span> <span class="nc">Counter</span><span class="p">)</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">IO</span><span class="p">]</span> <span class="p">{</span>
   <span class="kd">val</span> <span class="n">value</span> <span class="o">=</span> <span class="n">counter</span><span class="p">.</span><span class="n">increment</span><span class="p">()</span>
   <span class="k">if</span> <span class="n">value</span> <span class="o">%</span> <span class="nc">LOG_MOD</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">then</span>
-     <span class="n">log</span><span class="p">(</span><span class="s">s&quot;counter value = </span><span class="si">${</span><span class="n">await</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="n">log</span><span class="p">(</span><span class="s">s&quot;counter value = </span><span class="si">${</span><span class="n">await</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s">&quot;</span><span class="p">)</span>
   <span class="k">if</span> <span class="n">value</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">==</span> <span class="nc">LOG_TRESHOLD</span> <span class="k">then</span>
-     <span class="c1">// Conversion will not be appliyed for == . For this example we want automatic conversion, so -1</span>
-     <span class="n">log</span><span class="p">(</span><span class="s">&quot;counter TRESHOLD&quot;</span><span class="p">)</span>
+    <span class="c1">// Conversion will not be appliyed for == . For this example we want automatic conversion, so -1</span>
+    <span class="n">log</span><span class="p">(</span><span class="s">&quot;counter TRESHOLD&quot;</span><span class="p">)</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Assuming that logging is IO operation, i.e. function <code class="docutils literal notranslate"><span class="pre">log</span></code> has the signature</p>
+<p>Assuming that logging is an IO operation, i.e. function <code class="docutils literal notranslate"><span class="pre">log</span></code> has the signature</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nc">String</span><span class="p">):</span> <span class="nc">IO</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -232,7 +226,7 @@ Otherwise, the counter will be incremented three times instead of one.</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2020-2021, Ruslan Shevchenko.
+        &#169; Copyright 2020-2022, Ruslan Shevchenko.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>

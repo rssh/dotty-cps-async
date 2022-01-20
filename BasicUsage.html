@@ -62,7 +62,7 @@
 <section id="basic-usage">
 <h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
 <p>The usage is quite similar to working with async/await frameworks in Scala 2 (e.g. <a class="reference external" href="https://github.com/scala/scala-async"><code class="docutils literal notranslate"><span class="pre">scala-async</span></code></a>) and in other languages.</p>
-<p>We define two ‘pseudo-functions’ <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> <a class="footnote-reference brackets" href="#f1" id="id1">1</a> :</p>
+<p>We define two ‘pseudo-functions’ <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> and <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> <a class="footnote-reference brackets" href="#f1" id="id1">1</a> :</p>
 <blockquote>
 <div><span class="target" id="index-0"></span><div class="highlight-scala notranslate" id="index-1"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">async</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span> <span class="nc">T</span><span class="p">](</span><span class="k">using</span> <span class="n">am</span><span class="p">:</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])(</span><span class="n">expr</span><span class="p">:</span> <span class="nc">T</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span>
 
@@ -70,7 +70,7 @@
 </pre></div>
 </div>
 </div></blockquote>
-<p>Inside the async block, we can use the <code class="docutils literal notranslate"><span class="pre">await</span></code> pseudo-function.</p>
+<p>Inside the async block, we can use the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> pseudo-function.</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">_</span>
 
@@ -82,13 +82,14 @@
 </pre></div>
 </div>
 <span class="target" id="index-2"></span></div></blockquote>
-<p id="index-3">In the above code type <code class="docutils literal notranslate"><span class="pre">MyMonad</span></code> must implement one of the two type classes <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a> or <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/ff25b61f93e49a1ae39df248dbe4af980cd7f948/shared/src/main/scala/cps/CpsMonad.scala#L70"><code class="docutils literal notranslate"><span class="pre">CpsTryMonad</span></code></a> (which supports try/catch).</p>
+<p id="index-3">In the above code type <code class="docutils literal notranslate"><span class="pre">MyMonad</span></code> must implement one of the two type classes <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a> or <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/ff25b61f93e49a1ae39df248dbe4af980cd7f948/shared/src/main/scala/cps/CpsMonad.scala#L70"><code class="docutils literal notranslate"><span class="pre">CpsTryMonad</span></code></a> (which supports try/catch).</p>
 <p>The minimal complete snippet looks as follows:</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">package</span> <span class="nn">com</span><span class="p">.</span><span class="nn">example</span><span class="p">.</span><span class="n">myModule</span>
 
 <span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.{</span><span class="nc">Await</span><span class="p">,</span> <span class="nc">Future</span><span class="p">}</span>
 <span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nc">ExecutionContext</span><span class="p">.</span><span class="nc">Implicits</span><span class="p">.</span><span class="n">global</span>
+<span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nn">duration</span><span class="p">.</span><span class="nc">Duration</span>
 <span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">util</span><span class="p">.{</span><span class="nc">Failure</span><span class="p">,</span> <span class="nc">Success</span><span class="p">}</span>
 <span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">*</span>                          <span class="c1">//  async, await</span>
 <span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">monads</span><span class="p">.{</span><span class="n">*</span><span class="p">,</span> <span class="k">given</span><span class="p">}</span>          <span class="c1">//  support for build-in monads (i.e. Future)</span>
@@ -109,7 +110,7 @@
 </pre></div>
 </div>
 </div></blockquote>
-<p>This minimal example is for <a class="reference external" href="https://www.scala-lang.org/api/current/scala/concurrent/Future.html"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a> monad and depends on library <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> which we need to add to our project file <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> :</p>
+<p>This minimal example is for <a class="reference external" href="https://www.scala-lang.org/api/current/scala/concurrent/Future.html"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a> monad and depends on library <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> to be added to our project file <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> :</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">// https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async</span>
 <span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.5&quot;</span>
@@ -137,7 +138,7 @@
 </pre></div>
 </div>
 </div></blockquote>
-<p>Async macro will transform code inside <code class="docutils literal notranslate"><span class="pre">async</span></code> to something like</p>
+<p>Async macro will transform code inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> to something like</p>
 <blockquote>
 <div><details>
  <summary><a>code</a></summary><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="p">.</span><span class="n">flatMap</span><span class="p">(</span><span class="n">openConnection</span><span class="p">())(</span><span class="n">a</span> <span class="o">=&gt;</span> <span class="p">{</span>
@@ -167,12 +168,12 @@
 </div>
 </details></div></blockquote>
 <p>As transformation technique we use optimized monadic transform, the number of monadic brackets is the
-same as the numer of <code class="docutils literal notranslate"><span class="pre">await</span></code> s in code.
+same as the number of <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> s in the source code.
 You can read the <a class="reference internal" href="random-notes/index.html#random-notes"><span class="std std-ref">notes about implementation details</span></a>.</p>
 <p class="rubric">Footnotes</p>
 <dl class="footnote brackets">
 <dt class="label" id="f1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd><p>The definitions are simplified, in reality they are more complex, because we want infer the type of expression independently from the type of monad.</p>
+<dd><p>The definitions are simplified, in reality they are more complex, because we want infer the type of the expression independently from the type of monad.</p>
 </dd>
 </dl>
 </section>
@@ -237,7 +238,7 @@ You can read the <a class="reference internal" href="random-notes/index.html#ran
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2020-2021, Ruslan Shevchenko.
+        &#169; Copyright 2020-2022, Ruslan Shevchenko.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>

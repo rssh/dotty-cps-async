@@ -56,6 +56,7 @@
 </pre></div>
 </div>
 </div></blockquote>
+<p><a class="reference external" href="https://typelevel.org/cats-effect/"><strong>Cats Effect</strong></a> GitHub : <a class="reference external" href="https://github.com/typelevel/cats-effect"><code class="docutils literal notranslate"><span class="pre">typelevel/cats-effect</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/org.typelevel/cats-effect"><code class="docutils literal notranslate"><span class="pre">org.typelevel»cats-effect</span></code></a>.</p>
 <p><strong>Note</strong>: Typelevel’s project <a class="reference external" href="https://github.com/typelevel/cats-effect-cps"><code class="docutils literal notranslate"><span class="pre">cats-effect-cps</span></code></a> also provides async/await syntax support for <a class="reference external" href="https://typelevel.org/cats-effect/"><strong>Cats Effect</strong></a>.</p>
 </section>
 <section id="monix">
@@ -67,15 +68,19 @@
 </pre></div>
 </div>
 </div></blockquote>
+<p><a class="reference external" href="https://monix.io/"><strong>Monix</strong></a> GitHub : <a class="reference external" href="https://github.com/monix/monix"><code class="docutils literal notranslate"><span class="pre">monix/monix</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/io.monix"><code class="docutils literal notranslate"><span class="pre">io.monix</span></code></a>.</p>
 </section>
 <section id="scalaz-io">
 <h3>Scalaz IO<a class="headerlink" href="#scalaz-io" title="Permalink to this headline">¶</a></h3>
-<p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#scalaz-io"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-scalaz</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate <a class="reference external" href="https://scalaz.github.io/"><strong>Scalaz IO</strong></a> :</p>
+<p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#scalaz-io"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-scalaz</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate <a class="reference external" href="https://scalaz.github.io/"><strong>Scalaz IO</strong></a>:</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-scalaz&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.5&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;org.scalaz&quot;</span> <span class="o">%%</span> <span class="s">&quot;scalaz-core&quot;</span> <span class="o">%</span> <span class="s">&quot;7.3.6&quot;</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;org.scalaz&quot;</span> <span class="o">%%</span> <span class="s">&quot;scalaz-effect&quot;</span> <span class="o">%</span> <span class="s">&quot;7.3.6&quot;</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-scalaz&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.5&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
+<p><a class="reference external" href="https://scalaz.github.io/"><strong>Scalaz IO</strong></a> GitHub : <a class="reference external" href="https://github.com/scalaz/scalaz"><code class="docutils literal notranslate"><span class="pre">scalaz/scalaz</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/org.scalaz"><code class="docutils literal notranslate"><span class="pre">org.scalaz</span></code></a>.</p>
 </section>
 <section id="zio-and-zio-streams">
 <h3>ZIO and ZIO Streams<a class="headerlink" href="#zio-and-zio-streams" title="Permalink to this headline">¶</a></h3>
@@ -86,16 +91,18 @@
 </pre></div>
 </div>
 </div></blockquote>
+<p><a class="reference external" href="https://zio.dev/"><strong>ZIO</strong></a> GitHub: <a class="reference external" href="https://github.com/zio/zio"><code class="docutils literal notranslate"><span class="pre">zio/zio</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/dev.zio"><code class="docutils literal notranslate"><span class="pre">dev.zio</span></code></a>.</p>
 </section>
-<section id="akka-streams">
-<h3>Akka Streams<a class="headerlink" href="#akka-streams" title="Permalink to this headline">¶</a></h3>
-<p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#akka-streams"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-akka-stream</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate Lightbend’s <a class="reference external" href="&lt;https://doc.akka.io/docs/akka/current/stream/"><strong>Akka Streams</strong></a> :</p>
+<section id="akka-stream">
+<h3>Akka Stream<a class="headerlink" href="#akka-stream" title="Permalink to this headline">¶</a></h3>
+<p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#akka-streams"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-akka-stream</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate Lightbend’s <a class="reference external" href="&lt;https://doc.akka.io/docs/akka/current/stream/"><strong>Akka Stream</strong></a> :</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.typesafe.akka&quot;</span> <span class="o">%%</span> <span class="s">&quot;akka-stream&quot;</span> <span class="o">%</span> <span class="s">&quot;2.6.18&quot;</span>
 <span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-akka-stream&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.5&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
+<p><a class="reference external" href="&lt;https://doc.akka.io/docs/akka/current/stream/"><strong>Akka Stream</strong></a> GitHub : <a class="reference external" href="https://github.com/akka/akka"><code class="docutils literal notranslate"><span class="pre">akka/akka</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/com.typesafe.akka/akka-stream"><code class="docutils literal notranslate"><span class="pre">com.typesafe.akka»akka-stream</span></code></a>.</p>
 </section>
 <section id="fs2-stream">
 <h3>FS2 Stream<a class="headerlink" href="#fs2-stream" title="Permalink to this headline">¶</a></h3>
@@ -107,16 +114,17 @@
 </pre></div>
 </div>
 </div></blockquote>
+<p><a class="reference external" href="https://fs2.io/"><strong>FS2</strong></a> GitHub : <a class="reference external" href="https://github.com/typelevel/fs2"><code class="docutils literal notranslate"><span class="pre">typelevel/fs2</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/co.fs2"><code class="docutils literal notranslate"><span class="pre">co.fs2</span></code></a>.</p>
 </section>
 </section>
 <section id="typelevel-cats-effect-cps">
 <h2>typelevel/cats-effect-cps<a class="headerlink" href="#typelevel-cats-effect-cps" title="Permalink to this headline">¶</a></h2>
 <p>GitHub project: <a class="reference external" href="https://github.com/typelevel/cats-effect-cps">https://github.com/typelevel/cats-effect-cps</a></p>
-<p><a class="reference external" href="https://github.com/typelevel/cats-effect-cps"><code class="docutils literal notranslate"><span class="pre">cats-effect-cps</span></code></a> is an experimental library to support uniform async/await syntax for <a class="reference external" href="https://typelevel.org/cats-effect/"><strong>Cats Effect</strong></a> in Scala 2 and Scala 3, integrated with <a class="reference external" href="https://typelevel.org/cats/typelevelEcosystem.html"><strong>Typelevel ecosystem</strong></a>.</p>
+<p><a class="reference external" href="https://github.com/typelevel/cats-effect-cps"><code class="docutils literal notranslate"><span class="pre">cats-effect-cps</span></code></a> is an experimental library to support uniform async/await syntax for <a class="reference external" href="https://typelevel.org/cats-effect/"><strong>Cats Effect</strong></a> in Scala 2 and Scala 3, integrated with the <a class="reference external" href="https://typelevel.org/cats/typelevelEcosystem.html"><strong>Typelevel ecosystem</strong></a>.</p>
 </section>
 <section id="call-for-additions">
 <h2>Call for additions:<a class="headerlink" href="#call-for-additions" title="Permalink to this headline">¶</a></h2>
-<p>If you have implemented <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a> support for some effect stack and want to mention it here - please, send a pull request about this.</p>
+<p>If you have implemented <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a> support for some effect stack and want to mention it here - please, send a pull request about this.</p>
 </section>
 </section>
 
@@ -135,7 +143,7 @@
 <li><a class="reference internal" href="#monix">Monix</a></li>
 <li><a class="reference internal" href="#scalaz-io">Scalaz IO</a></li>
 <li><a class="reference internal" href="#zio-and-zio-streams">ZIO and ZIO Streams</a></li>
-<li><a class="reference internal" href="#akka-streams">Akka Streams</a></li>
+<li><a class="reference internal" href="#akka-stream">Akka Stream</a></li>
 <li><a class="reference internal" href="#fs2-stream">FS2 Stream</a></li>
 </ul>
 </li>
@@ -189,7 +197,7 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2020-2021, Ruslan Shevchenko.
+        &#169; Copyright 2020-2022, Ruslan Shevchenko.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>

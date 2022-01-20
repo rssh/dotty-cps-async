@@ -50,9 +50,9 @@
 <p>Ie in direct (usual style)  we write a sequence of functions, in CPS (or better call this traditional CPS), we pass to the first function parameter and “the rest of the program”, which do own work and then call this ‘contunuation’.</p>
 <p>Let’s look an example:</p>
 <p>Direct-style:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">val</span>  <span class="n">connection</span> <span class="o">=</span> <span class="n">openConnection</span><span class="p">()</span>
-<span class="n">val</span>  <span class="n">command</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">readCommand</span><span class="p">()</span>
-<span class="n">val</span>  <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">evaluateCommand</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="kd">val</span>  <span class="n">connection</span> <span class="o">=</span> <span class="n">openConnection</span><span class="p">()</span>
+<span class="kd">val</span>  <span class="n">command</span> <span class="o">=</span> <span class="n">connection</span><span class="p">.</span><span class="n">readCommand</span><span class="p">()</span>
+<span class="kd">val</span>  <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="p">.</span><span class="n">evaluateCommand</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
 <span class="n">result</span>
 </pre></div>
 </div>
@@ -91,7 +91,7 @@
 <li><p>await:  <code class="docutils literal notranslate"><span class="pre">M[X]</span> <span class="pre">=&gt;</span> <span class="pre">X</span></code></p></li>
 <li><p>async:  <code class="docutils literal notranslate"><span class="pre">X</span> <span class="pre">=&gt;</span> <span class="pre">M[X]</span></code></p></li>
 </ul>
-<p>Async apply monad CPS to it’s argument.  Note, that the transformation of <code class="docutils literal notranslate"><span class="pre">await(expr)</span></code> will be <code class="docutils literal notranslate"><span class="pre">expr</span></code>.  (i.e. all occurrences of await will be erased).  And we can use direct style instead monadic compositions, leaving work of aligning compositions to a computer.  This is exactly wat dotty-cps-async do.</p>
+<p>Async apply monad CPS to it’s argument.  Note, that the transformation of <code class="docutils literal notranslate"><span class="pre">await(expr)</span></code> will be <code class="docutils literal notranslate"><span class="pre">expr</span></code>.  (i.e. all occurrences of await will be erased).  And we can use direct style instead monadic compositions, leaving work of aligning compositions to a computer.  This is exactly wat <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async">dotty-cps-async</a> do.</p>
 </section>
 <section id="optimizations">
 <h2>Optimizations.<a class="headerlink" href="#optimizations" title="Permalink to this headline">¶</a></h2>
@@ -102,8 +102,8 @@ To achieve this, we maintain data structures (<code class="docutils literal notr
 <section id="implementation-notes">
 <h2>Implementation notes.<a class="headerlink" href="#implementation-notes" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>We don’t do ANF transform preprocessing, but transform code as is, by providing implementation along with some micoroptimization, as the same way, as human will transform those expressions ‘by hands’.</p></li>
-<li><p>For chunks of code, which can be deconstructed with help of dotty ‘quote’ expressions, we use representation of block as ‘CpsExpr’. Other expressions, deconstructed as tasty trees and represented as ‘CpsTree’.</p></li>
+<li><p>We don’t do ANF transform preprocessing, but transform code as is, by providing implementation along with some micro-optimization, as the same way, as human will transform those expressions ‘by hands’.</p></li>
+<li><p>For chunks of code, which can be deconstructed with help of dotty ‘quote’ expressions, we use representation of block as ‘CpsExpr’. Other expressions, deconstructed as tasty trees and represented as <code class="docutils literal notranslate"><span class="pre">CpsTree</span></code>.</p></li>
 </ul>
 </section>
 </section>
@@ -170,7 +170,7 @@ To achieve this, we maintain data structures (<code class="docutils literal notr
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2020-2021, Ruslan Shevchenko.
+        &#169; Copyright 2020-2022, Ruslan Shevchenko.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>

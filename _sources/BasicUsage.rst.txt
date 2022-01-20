@@ -23,7 +23,7 @@ Basic Usage
 
 The usage is quite similar to working with async/await frameworks in Scala 2 (e.g. |scala-async|_) and in other languages.
 
-We define two 'pseudo-functions' ``async`` and ``await`` [#f1]_ : 
+We define two 'pseudo-functions' |async|_ and |await|_ [#f1]_ : 
 
  .. index:: async
  .. index:: await
@@ -36,7 +36,7 @@ We define two 'pseudo-functions' ``async`` and ``await`` [#f1]_ :
 
 
 
-Inside the async block, we can use the ``await`` pseudo-function.
+Inside the async block, we can use the |await|_ pseudo-function.
 
 
  .. code-block:: scala
@@ -64,6 +64,7 @@ The minimal complete snippet looks as follows:
 
     import scala.concurrent.{Await, Future}
     import scala.concurrent.ExecutionContext.Implicits.global
+    import scala.concurrent.duration.Duration
     import scala.util.{Failure, Success}
     import cps.*                          //  async, await
     import cps.monads.{*, given}          //  support for build-in monads (i.e. Future)
@@ -83,7 +84,7 @@ The minimal complete snippet looks as follows:
         f.failed.map { ex => println(ex.getMessage) }
   
 
-This minimal example is for |Future|_ monad and depends on library |dotty-cps-async|_ which we need to add to our project file ``build.sbt`` :
+This minimal example is for |Future|_ monad and depends on library |dotty-cps-async|_ to be added to our project file ``build.sbt`` :
 
  .. code-block:: scala
 
@@ -115,7 +116,7 @@ Also monad can be abstracted out as in the following example:
         finally
           connection.close()
 
-Async macro will transform code inside ``async`` to something like
+Async macro will transform code inside |async|_ to something like
 
  .. raw:: html
 
@@ -153,13 +154,13 @@ Async macro will transform code inside ``async`` to something like
   </details>
 
 As transformation technique we use optimized monadic transform, the number of monadic brackets is the 
-same as the numer of ``await`` s in code.  
+same as the number of |await|_ s in the source code.  
 You can read the :ref:`notes about implementation details <random-notes>`.
 
 
 .. rubric:: Footnotes
 
-.. [#f1] The definitions are simplified, in reality they are more complex, because we want infer the type of expression independently from the type of monad.
+.. [#f1] The definitions are simplified, in reality they are more complex, because we want infer the type of the expression independently from the type of monad.
 
 
 .. ###########################################################################
@@ -168,11 +169,17 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 .. |Akka Streams| replace:: **Akka Streams**
 .. _Akka Streams: https://doc.akka.io/docs/akka/current/stream/
 
+.. |async| replace:: ``async``
+.. _async: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30
+
+.. |await| replace:: ``await``
+.. _await: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19
+
 .. |Cats Effect| replace:: **Cats Effect**
 .. _Cats Effect: https://typelevel.org/cats-effect/
 
 .. |CpsMonad| replace:: ``CpsMonad``
-.. _CpsMonad: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala
+.. _CpsMonad: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20
 
 .. |CpsTryMonad| replace:: ``CpsTryMonad``
 .. _CpsTryMonad: https://github.com/rssh/dotty-cps-async/blob/ff25b61f93e49a1ae39df248dbe4af980cd7f948/shared/src/main/scala/cps/CpsMonad.scala#L70

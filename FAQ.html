@@ -45,12 +45,12 @@
 <ul class="simple">
 <li><p>What are the current limitations?</p>
 <ul>
-<li><p>all scala constructions are supported in async block.</p></li>
+<li><p>All Scala constructs are supported in an <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30">async</a> block.</p></li>
 </ul>
 </li>
-<li><p>Can we use await inside the argument of the high-order function? (like map or filter).</p>
+<li><p>Can we use await inside the argument of the high-order function? (like <code class="docutils literal notranslate"><span class="pre">map</span></code> or <code class="docutils literal notranslate"><span class="pre">filter</span></code>).</p>
 <ul>
-<li><p>Yes, application developer or library author can provide ‘shifted’  implementation of the high-order function, which accepts  X=&gt;M[Y] instead X=&gt;Y.  This was previously implemented in the limited form in scala-gopher (paper: <a class="reference external" href="https://arxiv.org/abs/1611.00602">https://arxiv.org/abs/1611.00602</a>)  for scala-2 and in practice, even in limited form, works quite well.</p></li>
+<li><p>Yes, an application developer or library author can provide ‘shifted’ implementation of the high-order function, which accepts <code class="docutils literal notranslate"><span class="pre">X</span> <span class="pre">=&gt;</span> <span class="pre">M[Y]</span></code> instead <code class="docutils literal notranslate"><span class="pre">X</span> <span class="pre">=&gt;</span> <span class="pre">Y</span></code>.  This was previously implemented in the limited form in <a class="reference external" href="https://github.com/rssh/scala-gopher">scala-gopher</a> (paper: <a class="reference external" href="https://arxiv.org/abs/1611.00602">https://arxiv.org/abs/1611.00602</a>)  for Scala 2 and in practice, even in limited form, works quite well.</p></li>
 </ul>
 </li>
 <li><p>I want to help with development. Where to start?</p>
@@ -58,13 +58,13 @@
 <li><p>Open an issue (or select existing unassigned)  on GitHub and provide a preliminary plan for your work.  If you want to consult before choosing a task - ping me directly via e-mail or twitter.</p></li>
 </ul>
 </li>
-<li><p>Is exists a version for scala-2?</p>
+<li><p>Is exists a version for Scala 2?</p>
 <ul>
-<li><p>No</p></li>
+<li><p>No.</p></li>
 </ul>
 </li>
 </ul>
-</section>
+<!-- link refs --></section>
 
 
             <div class="clearer"></div>
@@ -117,7 +117,7 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2020-2021, Ruslan Shevchenko.
+        &#169; Copyright 2020-2022, Ruslan Shevchenko.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>
