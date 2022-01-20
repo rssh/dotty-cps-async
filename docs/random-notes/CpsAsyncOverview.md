@@ -13,7 +13,7 @@ Let’s look an example:
 
 Direct-style:
 
-```
+```scala
 val  connection = openConnection()
 val  command = connection.readCommand()
 val  result = engine.evaluateCommand(command)
@@ -70,7 +70,7 @@ I.e. operations with concurrent API  often return ```M[F]```, and you can work w
  * await:  ```M[X] => X```
  * async:  ```X => M[X]```
 
-Async apply monad CPS to it’s argument.  Note, that the transformation of ```await(expr)``` will be ```expr```.  (i.e. all occurrences of await will be erased).  And we can use direct style instead monadic compositions, leaving work of aligning compositions to a computer.  This is exactly wat dotty-cps-async do.
+Async apply monad CPS to it’s argument.  Note, that the transformation of ```await(expr)``` will be ```expr```.  (i.e. all occurrences of await will be erased).  And we can use direct style instead monadic compositions, leaving work of aligning compositions to a computer.  This is exactly wat [dotty-cps-async](https://github.com/rssh/dotty-cps-async#dotty-cps-async) do.
 
 
 ### Optimizations.
@@ -82,8 +82,8 @@ We want to keep sequential parts to be left sequential, so the number of flatMap
 
 ### Implementation notes.
 
-   * We don't do ANF transform preprocessing, but transform code as is, by providing implementation along with some micoroptimization, as the same way, as human will transform those expressions 'by hands'.
-   * For chunks of code, which can be deconstructed with help of dotty 'quote' expressions, we use representation of block as 'CpsExpr'. Other expressions, deconstructed as tasty trees and represented as 'CpsTree'.
+   * We don't do ANF transform preprocessing, but transform code as is, by providing implementation along with some micro-optimization, as the same way, as human will transform those expressions 'by hands'.
+   * For chunks of code, which can be deconstructed with help of dotty 'quote' expressions, we use representation of block as 'CpsExpr'. Other expressions, deconstructed as tasty trees and represented as ```CpsTree```.
  
 
 

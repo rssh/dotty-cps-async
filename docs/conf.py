@@ -14,12 +14,14 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+from datetime import datetime
+currentYear = datetime.now().year
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'dotty-cps-async'
-copyright = '2020-2021, Ruslan Shevchenko'
+copyright = '2020-{}, Ruslan Shevchenko'.format(currentYear)
 author = 'Ruslan Shevchenko'
 
 # The full version, including alpha/beta/rc tags
