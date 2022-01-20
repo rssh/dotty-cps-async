@@ -1,5 +1,7 @@
-Monad Context
+Monad Context 
 =============
+
+.. note:: This functinality will be available in upcoming 0.9.6 version.
 
 Monad context is a way to provide an additional API, which is available only inside some monad 
 (i.e., inside appropriative ``await`` block).   
