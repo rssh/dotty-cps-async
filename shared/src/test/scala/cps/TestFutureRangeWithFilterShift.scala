@@ -15,7 +15,7 @@ import cps.util.FutureCompleter
 class TestFutureRangeWithFilterShift:
 
 
-  @Test def testForeachWrapper(): Unit = 
+  @Test def testForeachWrapper() = 
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[Future]{
@@ -32,7 +32,7 @@ class TestFutureRangeWithFilterShift:
   /**
    * we need special handling for withFilter.
    **/
-  @Test def testWithFilterForeachWrapper(): Unit = 
+  @Test def testWithFilterForeachWrapper() = 
      //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val c = async[Future]{
