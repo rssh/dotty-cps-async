@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 object FutureCompleter
 {
 
-  def apply[T](f: Future[T]): T =
+  def apply[T](f: Future[T]): Unit =
     Await.result(f, 30.seconds)
 
 }
