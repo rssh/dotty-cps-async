@@ -1,5 +1,6 @@
 package cps
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.quoted._
 import scala.language.postfixOps
@@ -8,6 +9,7 @@ import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
+
 
 
 trait ComputationBound[+T] {
@@ -46,6 +48,19 @@ trait ComputationBound[+T] {
    * you should not use one in async environment. 
    **/               
   def progress(timeout: Duration): ComputationBound[T]
+
+  /**
+   * needed for compability with javascript version.
+   */
+  def runTicks(timeout: Duration): Future[T] =
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Future{
+      progress(timeout) match {
+        case Done(t) => t
+        case Error(e) => throw e
+        case _ => throw new TimeoutException()
+      }
+    }
 
   def map[S](f:T=>S): ComputationBound[S] =
      flatMap( x => Done(f(x)) )
