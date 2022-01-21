@@ -72,8 +72,6 @@ given DeferredDestructorsContextProvider: CpsMonadContextProvider[ComputationBou
 
 class TestDeferredInContextMonad {
 
-  
-  
 
   @Test def testSimpleContext(): Unit = 
       var x = 0
