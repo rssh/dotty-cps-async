@@ -40,6 +40,7 @@ object ValueDiscard:
  * Marker interface for forcing monad evaluation before discard.
  * Useful for pure effect monads. 
  * `AwaitValueDiscard[F,T].apply(ft)` is transformed to `await(ft)` during evaluation of async macro.
+ * //TODO: add monadContext
  **/
 class AwaitValueDiscard[F[_]:CpsMonad,T] extends ValueDiscard[F[T]]:
 

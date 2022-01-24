@@ -8,9 +8,7 @@ import cps.macros._
 object WhileTransform:
 
   /**
-   *'''
-   * '{ _root_.cps.await[F,$ftType]($ft) } 
-   *'''
+   * while
    **/
   def run[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: TransformationContext[F,T,C], 
                                cond: Expr[Boolean], repeat: Expr[Unit]

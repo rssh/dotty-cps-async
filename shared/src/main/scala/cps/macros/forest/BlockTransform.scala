@@ -146,10 +146,10 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
                 Apply(    
                      Apply(
                        TypeApply(Ref(Symbol.requiredMethod("cps.await")), 
-                          List(Inferred(ftr),Inferred(ttr))),
+                          List(Inferred(ftr),Inferred(ttr),Inferred(ftr))),
                        List(p.asTerm)
                      ),
-                     List(ftm)
+                     List(ftm, cpsCtx.monadContext.asTerm)
                 ).asExpr
               case monadFailure: ImplicitSearchFailure =>
                 throw MacroError(s"Can't find appropriative monad for ${discardTerm.show}, ${monadFailure.explanation}  : ", p)
