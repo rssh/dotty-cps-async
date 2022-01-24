@@ -391,4 +391,9 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
          
 }
 
+object CpsSchedulingMonad {
+
+   type Aux[F[_], C <: CpsMonadContext[F]] = CpsSchedulingMonad[F] { type Context = C }
+
+}
 
