@@ -1,12 +1,11 @@
 //val dottyVersion = "3.0.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.1.2-RC1-bin-SNAPSHOT"
-//val dottyVersion = "3.1.1-RC1"
-val dottyVersion = "3.1.1-RC2"
+val dottyVersion = "3.1.1"
+//val dottyVersion = "3.1.0"
 
 ThisBuild/version := "0.9.6-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers += Opts.resolver.sonatypeSnapshots
-
 
 
 
@@ -55,8 +54,12 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         Compile / doc / scalacOptions := Seq("-groups",  
                 "-source-links:shared=github://rssh/dotty-cps-async/master#shared",
                 "-source-links:js=github://rssh/dotty-cps-async/master#js"),
-        libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.7.1" % Test).cross(CrossVersion.for3Use2_13),
+        libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
         mimaFailOnNoPrevious := false
+    ).nativeSettings(
+        libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
+        addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full) 
+
     )
 
 lazy val CpsJVM = config("cps.jvm")

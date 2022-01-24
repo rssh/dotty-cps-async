@@ -1,8 +1,9 @@
 package cps.macros.forest
 
+import cps._
 import cps.macros._
 
-trait AsyncTreeShifter[F[_], CT, CC]:
+trait AsyncTreeShifter[F[_], CT, CC<:CpsMonadContext[F]]:
 
    thisTreeTransform: TreeTransformScope[F, CT, CC] =>
 

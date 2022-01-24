@@ -28,7 +28,7 @@ trait CpsAsyncEmitAbsorber[R]:
 
    type Monad[_]
    type Element
-   type Context
+   type Context <:CpsMonadContext[Monad]
 
    def eval(f: Context => CpsAsyncEmitter[Monad,Element] => Monad[Unit]): R
 
@@ -37,7 +37,7 @@ trait CpsAsyncEmitAbsorber[R]:
 
 object CpsAsyncEmitAbsorber:
 
-   type Aux[R, F[_], C, T] = CpsAsyncEmitAbsorber[R]  {
+   type Aux[R, F[_], C<:CpsMonadContext[F], T] = CpsAsyncEmitAbsorber[R]  {
 
       type Monad[X] = F[X]
       type Context = C
@@ -46,14 +46,14 @@ object CpsAsyncEmitAbsorber:
    }
 
 
-trait CpsAsyncEmitAbsorber4[R, F[_], C, T](using val auxAsyncMonad: CpsAsyncMonad.Aux[F,C]) extends CpsAsyncEmitAbsorber[R]:
+trait CpsAsyncEmitAbsorber4[R, F[_], C<:CpsMonadContext[F], T](using val auxAsyncMonad: CpsAsyncMonad.Aux[F,C]) extends CpsAsyncEmitAbsorber[R]:
 
    override type Element = T
    override type Monad[X] = F[X]
    override type Context = C
 
 
-class AsyncStreamHelper[R,F[_],C,A](a: CpsAsyncEmitAbsorber.Aux[R,F,C,A]){
+class AsyncStreamHelper[R,F[_],C<:CpsMonadContext[F],A](a: CpsAsyncEmitAbsorber.Aux[R,F,C,A]){
 
     
     transparent inline def apply(inline f: C ?=> CpsAsyncEmitter[F,A] => Unit): R = ${
@@ -65,14 +65,14 @@ class AsyncStreamHelper[R,F[_],C,A](a: CpsAsyncEmitAbsorber.Aux[R,F,C,A]){
 
 object CpsAsyncStreamMacro:
 
-    def transform[R:Type, F[_]:Type, C:Type, T:Type](f: Expr[ C ?=> CpsAsyncEmitter[F,T] => Unit], 
+    def transform[R:Type, F[_]:Type, C<:CpsMonadContext[F]:Type, T:Type](f: Expr[ C ?=> CpsAsyncEmitter[F,T] => Unit], 
                                              absorber: Expr[CpsAsyncEmitAbsorber.Aux[R,F,C,T]])(using Quotes): Expr[R] = {
           import quotes.reflect._
           val r = transformTree[R,F,C,T](f.asTerm, absorber)
           r.asExprOf[R]
     }
           
-    def transformTree[R:Type, F[_]:Type, C:Type, T:Type](using qctx: Quotes)(
+    def transformTree[R:Type, F[_]:Type, C<:CpsMonadContext[F]:Type, T:Type](using qctx: Quotes)(
                            f:qctx.reflect.Term, 
                            absorber: Expr[CpsAsyncEmitAbsorber.Aux[R,F,C,T]] ) : qctx.reflect.Term = {
          import quotes.reflect.*

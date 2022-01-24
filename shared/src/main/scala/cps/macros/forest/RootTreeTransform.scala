@@ -9,7 +9,7 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait RootTreeTransform[F[_], CT, CC]:
+trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
 
   thisTransform: TreeTransformScope[F, CT, CC] =>
 

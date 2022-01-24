@@ -7,7 +7,7 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait LambdaTreeTransform[F[_], CT, CC]:
+trait LambdaTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
 
   thisScope: TreeTransformScope[F, CT, CC] =>
 
@@ -40,7 +40,7 @@ trait LambdaTreeTransform[F[_], CT, CC]:
 object LambdaTreeTransform:
 
 
-  def run[F[_]:Type,T:Type, C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
+  def run[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          lambdaTerm: qctx1.reflect.Term,
                          params: List[qctx1.reflect.ValDef],
                          expr: qctx1.reflect.Term): CpsExpr[F,T] = {

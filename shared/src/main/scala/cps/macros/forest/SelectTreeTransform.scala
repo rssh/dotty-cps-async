@@ -7,7 +7,7 @@ import cps.macros._
 import cps.macros.misc._
 
 
-trait SelectTreeTransform[F[_], CT, CC]:
+trait SelectTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
 
   thisScope: TreeTransformScope[F, CT, CC] =>
 
@@ -24,7 +24,7 @@ trait SelectTreeTransform[F[_], CT, CC]:
 object SelectTreeTransform:
 
 
-  def run[F[_]:Type,T:Type, C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
+  def run[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          selectTerm: qctx1.reflect.Select): CpsExpr[F,T] = {
                          
      val tmpFType = summon[Type[F]]

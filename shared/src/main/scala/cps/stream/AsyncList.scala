@@ -260,13 +260,13 @@ object AsyncList {
       
 
 
-  given absorber[F[_],C,T](using ExecutionContext, CpsConcurrentMonad.Aux[F,C]): CpsAsyncEmitAbsorber4[AsyncList[F,T],F,C,T] =
+  given absorber[F[_],C<:CpsMonadContext[F],T](using ExecutionContext, CpsConcurrentMonad.Aux[F,C]): CpsAsyncEmitAbsorber4[AsyncList[F,T],F,C,T] =
           AsyncListEmitAbsorber[F,C,T]()
 
 }
 
 
-class AsyncListEmitAbsorber[F[_],C,T](using ec: ExecutionContext, auxMonad: CpsConcurrentMonad.Aux[F,C]) extends BaseUnfoldCpsAsyncEmitAbsorber[AsyncList[F,T],F,C,T]:
+class AsyncListEmitAbsorber[F[_],C<:CpsMonadContext[F],T](using ec: ExecutionContext, auxMonad: CpsConcurrentMonad.Aux[F,C]) extends BaseUnfoldCpsAsyncEmitAbsorber[AsyncList[F,T],F,C,T]:
 
   override type Element = T
 

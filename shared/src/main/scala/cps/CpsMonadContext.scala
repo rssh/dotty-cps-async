@@ -3,17 +3,23 @@ package cps
 import scala.compiletime.*
 import scala.util.NotGiven
 
+
+
 /**
  * Base for context operations inside monad
  **/
 trait CpsMonadContext[F[_]] {
+
+  type Monad[X] = F[X]
 
   /**
    * adopt external monadic value to the current context.
    **/
   def adoptAwait[A](fa:F[A]):F[A]
  
+
 }
+
 
 /**
  * Trait for minimal monad context, which provides an instance of CpsMonad.

@@ -21,6 +21,9 @@ trait ComputationBound[+T] {
 
   def progress(timeout: Duration): ComputationBound[T]
 
+  def runTicks(timeout: Duration): Future[T] =
+    ???
+
   def checkProgress(timeout: Duration = Duration.Inf): Either[Try[T],ComputationBound[T]] =
         progress(timeout) match
            case Done(t) => Left(Success(t))
@@ -110,7 +113,7 @@ object ComputationBound {
          if !(r eq null) then
             deferredQueue.add(r)
       if (nFinished == 0) then
-        val timeToWait = math.min(waitQuant, endNanos - System.nanoTime)
+        val timeToWait = math.min(waitQuant.toNanos, endNanos - System.nanoTime)
         val timeToWaitMillis = (timeToWait nanos).toMillis
         if (timeToWaitMillis > 0) then 
             externalAsyncNotifier.synchronized {

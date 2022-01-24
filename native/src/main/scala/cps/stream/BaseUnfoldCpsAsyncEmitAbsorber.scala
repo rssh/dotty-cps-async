@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.*
 
 
 
-trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C, T](using ec: ExecutionContext, auxAsyncMonad: CpsConcurrentMonad.Aux[F,C] ) extends CpsAsyncEmitAbsorber4[R,F,C,T]:
+trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C <: CpsMonadContext[F], T](using ec: ExecutionContext, auxAsyncMonad: CpsConcurrentMonad.Aux[F,C] ) extends CpsAsyncEmitAbsorber4[R,F,C,T]:
 
   def unfold[S](s0:S)(f:S => F[Option[(T,S)]]): R
 

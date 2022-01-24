@@ -10,7 +10,7 @@ import cps.macros.misc._
 import scala.collection.immutable.HashMap
 
 
-trait InlinedTreeTransform[F[_], CT, CC]:
+trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
 
   thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 
@@ -103,13 +103,16 @@ trait InlinedTreeTransform[F[_], CT, CC]:
                                    changes = s.changes.updated(vx.symbol, bindingRecord)
                                   )
                          } else  {
+                            // here awaits usage are internal  (we just use)
+                            val monadContext = cpsCtx.monadContext.asTerm
+                     
                             val awaitValSym = Symbol.newVal(Symbol.spliceOwner, name+"$await", tpt.tpe,  
                                                             vx.symbol.flags, Symbol.noSymbol)
                             val awaitVal = ValDef(awaitValSym, Some(
                                    Apply(Apply(TypeApply(Ref(awaitSymbol),
-                                                         List(TypeTree.of[F], Inferred(cpsRhs.otpe))),
+                                                         List(TypeTree.of[F], Inferred(cpsRhs.otpe), TypeTree.of[F])),
                                                List(Ref(newSym))),
-                                         List(monad)).changeOwner(awaitValSym)
+                                         List(monad, monadContext)).changeOwner(awaitValSym)
 
                             ))
                             val bindingRecord =  InlinedValBindingRecord(awaitValSym, cpsRhs, vx) 
@@ -259,7 +262,7 @@ trait InlinedTreeTransform[F[_], CT, CC]:
 object InlinedTreeTransform:
 
 
-  def run[F[_]:Type,T:Type, C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
+  def run[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          inlinedTerm: qctx1.reflect.Inlined): CpsExpr[F,T] = {
 
      val tmpFType = summon[Type[F]]

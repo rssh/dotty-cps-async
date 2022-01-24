@@ -6,7 +6,7 @@ import cps._
 import cps.macros._
 import cps.macros.misc._
 
-trait ApplyTreeTransform[F[_],CT, CC]:
+trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
   thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 
@@ -36,7 +36,11 @@ trait ApplyTreeTransform[F[_],CT, CC]:
             handleFunIdent(applyTerm, fun, args, name, tails)
        case Apply(fun1@TypeApply(obj2,targs2), args1) if obj2.symbol == awaitSymbol =>
              // catch await early
-             runAwait(applyTerm, args1.head, targs2.head.tpe, args.head)
+             val (awaitable, monadContext) = args match
+               case List(frs, snd) => (frs, snd)
+               case other =>
+                  throw MacroError(s"expected that await have two implicit argument, our args:${args}", posExprs(fun, applyTerm))
+             runAwait(applyTerm, args1.head, targs2.head.tpe, awaitable, monadContext)
        case Apply(fun1, args1) =>
             handleFunApply(applyTerm, fun, args, fun1, args1, tails)
        case _ =>
@@ -143,7 +147,7 @@ trait ApplyTreeTransform[F[_],CT, CC]:
                   // here we catch await, inserted by implicit conversion.
                   // this code is likey depends from implementation details of a compiler
                   // mb create compiler-level API ?
-                  withInlineBindings(conv, runAwait(applyTerm, args.head, targs3.head.tpe, args1.head))
+                  withInlineBindings(conv, runAwait(applyTerm, args.head, targs3.head.tpe, args1.head, args1.tail.head))
        case conv@Inlined(_,_,
                  Lambda(List(xValDef),
                    Block(List(),Apply(Apply(TypeApply(obj3,targs3),List(x)),args1)))
@@ -151,7 +155,7 @@ trait ApplyTreeTransform[F[_],CT, CC]:
                    && xValDef.symbol == x.symbol) =>
                   // transient inlines have no 'Typed' entry
                   //  TODO: handle non-inlined conversion
-                  withInlineBindings(conv,runAwait(applyTerm, args.head, targs3.head.tpe, args1.head))
+                  withInlineBindings(conv,runAwait(applyTerm, args.head, targs3.head.tpe, args1.head, args1.tail.head))
        case _ =>
          val cpsObj = runRoot(obj)
          if (cpsCtx.flags.debugLevel >= 15)
@@ -653,7 +657,7 @@ trait ApplyTreeTransform[F[_],CT, CC]:
 object ApplyTreeTransform:
 
 
-  def run[F[_]:Type,T:Type,C:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
+  def run[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](using qctx1: Quotes)(cpsCtx1: TransformationContext[F,T,C],
                          applyTerm: qctx1.reflect.Term,
                          fun: qctx1.reflect.Term,
                          args: List[qctx1.reflect.Term]): CpsExpr[F,T] = {

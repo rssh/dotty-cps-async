@@ -12,7 +12,7 @@ object WhileTransform:
    * '{ _root_.cps.await[F,$ftType]($ft) } 
    *'''
    **/
-  def run[F[_]:Type,T:Type,C:Type](cpsCtx: TransformationContext[F,T,C], 
+  def run[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: TransformationContext[F,T,C], 
                                cond: Expr[Boolean], repeat: Expr[Unit]
                                )(using Quotes): CpsExpr[F,T] =
      import quotes.reflect._

@@ -5,23 +5,24 @@
 
 Can we free concurrent programming from the monadic style:
 
-* ScalaR:  <https://www.youtube.com/watch?v=ImlUuTQUeaQ>  (Jun 2020)
-* ScalaUA: <https://www.youtube.com/watch?v=w-noRPLxYoA>  (Apr. 2020)
+* ScalaR:  <https://www.youtube.com/watch?v=ImlUuTQUeaQ>  (June 2020)
+* ScalaUA: <https://www.youtube.com/watch?v=w-noRPLxYoA>  (April 2020)
     * slides: <https://www.slideshare.net/rssh1/can-concurrent-functional-programming-be-liberated-from-monadic-style>
 
-## Related work in Scala2
+## Related work in Scala 2
 
 - Scala-continuations.  paper:  <https://infoscience.epfl.ch/record/149136/files/icfp113-rompf.pdf>
 - Scala-async:   <https://github.com/scala/scala-async>
 - Storm-enroute coroutines:  <https://drops.dagstuhl.de/opus/volltexte/2018/9208/pdf/LIPIcs-ECOOP-2018-3.pdf>
 - Thoughtworks DSL.scala:  <https://github.com/ThoughtWorksInc/Dsl.scala>
 - Monadless.io: <http://monadless.io/>
-- Effectfull: <https://github.com/pelotom/effectful>
+- Effectful: <https://github.com/pelotom/effectful>
 - Scala-gopher tech report: <https://arxiv.org/abs/1611.00602>
    
-## Related work in Scala3
+## Related work in Scala 3
  
  - Monadic-reflection <https://github.com/lampepfl/monadic-reflection>  (require Project Loom enabled JVM)
+-  Thoughtworks DSL.scala recently ported to Scala 3:  <https://github.com/ThoughtWorksInc/Dsl.scala> 
 
 ## Related work in other languages
 
@@ -37,7 +38,7 @@ Can we free concurrent programming from the monadic style:
 - Python: PEP-0492  <https://www.python.org/dev/peps/pep-0492/>
 - JavaScript:  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function>
 - Nim: macro module <https://nim-lang.org/docs/asyncdispatch.html>
-- Dart:
+- [Dart](https://dart.dev/codelabs/async-await):
 	- Guide: <https://dart.dev/guides/language/language-tour#asynchrony-support>
 	- Formal specs: <https://spec.dart.dev/DartLangSpecDraft.pdf>  (async intro on page 18)
         - Spicing Up Dart with Side Effects (streams extension) <https://dl.acm.org/doi/pdf/10.1145/2742694.2747873>
@@ -60,13 +61,12 @@ Can we free concurrent programming from the monadic style:
 - Koka:
 	- Paper: "Structured Asynchrony with Algebraic Effects" <https://www.microsoft.com/en-us/research/wp-content/uploads/2017/05/asynceffects-msr-tr-2017-21.pdf>
 - OCaml:
-        - Paper: "Concurrent System Programming with Effect Handlers": <https://kcsrk.info/papers/system_effects_feb_18.pdf>
-        - efects tutorial <https://github.com/ocamllabs/ocaml-effects-tutorial>
-        - Paper: Retrofitting Effect Handlers onto OCaml. <https://arxiv.org/abs/2104.00250>
+    - Paper: "Concurrent System Programming with Effect Handlers": <https://kcsrk.info/papers/system_effects_feb_18.pdf>
+    - Effects tutorial <https://github.com/ocamllabs/ocaml-effects-tutorial> (CUFP'17)
+    - Paper: Retrofitting Effect Handlers onto OCaml. <https://arxiv.org/abs/2104.00250>
 
 
 ## Monadic Computations in Functional Programming (unrelated to PO Syntax, most examples are Haskell).
 
 
-   - Extenging monads via pattern matching (joinads for haskell):  http://tomasp.net/academic/papers/docase/docase.pdf
-
+   - Extending monads via pattern matching (joinads for haskell): <http://tomasp.net/academic/papers/docase/docase.pdf>

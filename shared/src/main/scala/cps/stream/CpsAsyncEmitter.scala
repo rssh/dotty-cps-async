@@ -16,7 +16,7 @@ import cps.{*,given}
  **/
 trait CpsAsyncEmitter[F[_]: CpsAsyncMonad, E]:
 
-   transparent inline def emit(v:E): Unit =
+   transparent inline def emit(v:E)(using CpsMonadContext[F]): Unit =
       await(emitAsync(v))
 
    def emitAsync(v:E): F[Unit]

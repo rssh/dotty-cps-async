@@ -10,7 +10,7 @@ import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
 
-class DeferredDestructorsContext  {
+class DeferredDestructorsContext extends CpsMonadContext[ComputationBound] {
 
   // non-reentrable for this example.
   //val  deferred: ConcurrentLinkedDeque[()=>Unit] = new ConcurrentLinkedDeque()
@@ -54,6 +54,9 @@ class DeferredDestructorsContext  {
                 m.error(ex)                      
     } 
 
+  // not intercept awaits.  
+  override def adoptAwait[A](fa: ComputationBound[A]):ComputationBound[A] = fa
+
 }
 
 given DeferredDestructorsContextProvider: CpsMonadContextProvider[ComputationBound] with {
@@ -67,12 +70,9 @@ given DeferredDestructorsContextProvider: CpsMonadContextProvider[ComputationBou
 }
 
 
-class TestDeferredInContextMonad:
+class TestDeferredInContextMonad {
 
-  
-  
-  ///*
-    //Compiler crash in dotty-3.1.0-RC1
+
   @Test def testSimpleContext(): Unit = 
       var x = 0
       val c = async.in{ scope ?=>
@@ -81,5 +81,7 @@ class TestDeferredInContextMonad:
       }
       val r = c.run()
       assert (x == 1)
-      assert(r == Success(1))
-  //*/
+      assert(r == Success(1)) 
+  
+
+}

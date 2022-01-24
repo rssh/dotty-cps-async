@@ -1,5 +1,6 @@
 package cps
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.quoted._
 import scala.language.postfixOps
@@ -10,20 +11,56 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
 
 
+
 trait ComputationBound[+T] {
  
+ /**
+  * run computation and return a failure with TimeoutException
+  * if this computation was not fully computed during timeout.
+  *
+  * Note, that this function is blocks current thread, so
+  * you should not use one in async environment. 
+  **/    
   def run(timeout: Duration = Duration.Inf): Try[T] =
     fulfill(timeout) match 
       case Some(v) => v
       case None => Failure(new TimeoutException())
 
+  /**
+   * run computation and return Some(result) if it was 
+   * fully finished during timeout or None if not
+   *
+   * Note, that this function is blocks current thread, so
+   * you should not use one in async environment. 
+   **/    
   def fulfill(timeout: Duration): Option[Try[T]] = 
         progress(timeout) match 
            case Done(t) => Some(Success(t))
            case Error(e) => Some(Failure(e))
            case _ => None
 
+  /**
+   * run computation during some time and return
+   * a current progress, which can be other computation then original
+   * or Done/Error when computation is completed.
+   *
+   * Note, that this function is blocks current thread, so
+   * you should not use one in async environment. 
+   **/               
   def progress(timeout: Duration): ComputationBound[T]
+
+  /**
+   * needed for compability with javascript version.
+   */
+  def runTicks(timeout: Duration): Future[T] =
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Future{
+      progress(timeout) match {
+        case Done(t) => t
+        case Error(e) => throw e
+        case _ => throw new TimeoutException()
+      }
+    }
 
   def map[S](f:T=>S): ComputationBound[S] =
      flatMap( x => Done(f(x)) )

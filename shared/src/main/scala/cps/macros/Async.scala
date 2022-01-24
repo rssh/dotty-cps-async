@@ -19,11 +19,14 @@ import cps.macros.observatory.*
 
 object Async {
 
-  class InferAsyncArg[F[_],C](using val am:CpsMonad.Aux[F,C]) {
+  class InferAsyncArg[F[_],C<:CpsMonadContext[F]](using val am:CpsMonad.Aux[F,C]) {
 
        transparent inline def apply[T](inline expr: C ?=> T) =
             //transform[F,T](using am)(expr)
             am.apply(transformContextLambda(expr))
+            //am.apply(x =>
+            //   transform[F,T,C](expr,x)
+            //)
 
        
        transparent inline def in[T](using mc: CpsMonadContextProvider[F] )(inline expr: mc.Context ?=> T ): F[T]  = 
@@ -35,12 +38,12 @@ object Async {
           new InferAsyncArg(using am)
      
 
-  transparent inline def transformContextLambda[F[_],T,C](inline expr: C ?=> T)(using m: CpsMonad[F]): C => F[T] =
+  transparent inline def transformContextLambda[F[_],T,C<:CpsMonadContext[F]](inline expr: C ?=> T)(using m: CpsMonad[F]): C => F[T] =
      ${
         Async.transformContextLambdaImpl[F,T,C]('expr)
      } 
 
-  transparent inline def transform[F[_],T,C](inline expr: T, inline ctx: C)(using m: CpsMonad[F]): F[T] =
+  transparent inline def transform[F[_],T,C<:CpsMonadContext[F]](inline expr: T, inline ctx: C)(using m: CpsMonad[F]): F[T] =
      ${
         Async.transformImpl[F,T,C]('expr, 'ctx)
      } 
@@ -50,7 +53,7 @@ object Async {
    *@param f - expression to transform
    *@param c - monad context parameter
    **/
-  def transformImpl[F[_]:Type,T:Type,C:Type](f: Expr[T], c:Expr[C])(using Quotes): Expr[F[T]] =
+  def transformImpl[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], c:Expr[C])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     Expr.summon[CpsMonad[F]] match
        case Some(dm) =>
@@ -64,7 +67,7 @@ object Async {
    * transform expression within given monad.  Use this function is you need to force async-transform
    * from other macros.
    **/
-  def transformMonad[F[_]:Type,T:Type, C:Type](f: Expr[T], dm: Expr[CpsMonad[F]], mc:Expr[C])(using Quotes): Expr[F[T]] =
+  def transformMonad[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], dm: Expr[CpsMonad[F]], mc:Expr[C])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     val flags = adoptFlags(f, dm)
     val DEBUG = true
@@ -189,7 +192,7 @@ object Async {
                 
 
 
-  def rootTransform[F[_]:Type,T:Type,C:Type](f: Expr[T], dm:Expr[CpsMonad[F]], mc:Expr[C], 
+  def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], dm:Expr[CpsMonad[F]], mc:Expr[C], 
                                       optMemoization: Option[TransformationContext.Memoization[F]],
                                       flags: AsyncMacroFlags,
                                       observatory: Observatory.Scope#Observatory,
@@ -265,14 +268,14 @@ object Async {
      retval
 
 
-  def nestTransform[F[_]:Type,T:Type,C:Type,S:Type](f:Expr[S],
+  def nestTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type,S:Type](f:Expr[S],
                               cpsCtx: TransformationContext[F,T,C]
                               )(using Quotes):CpsExpr[F,S]=
         rootTransform(f,cpsCtx.monad, cpsCtx.monadContext, cpsCtx.memoization,
                       cpsCtx.flags,cpsCtx.observatory,cpsCtx.nesting+1, Some(cpsCtx))
 
 
-  def transformContextLambdaImpl[F[_]:Type, T:Type, C:Type](cexpr: Expr[C ?=> T])(using Quotes): Expr[C => F[T]] =
+  def transformContextLambdaImpl[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cexpr: Expr[C ?=> T])(using Quotes): Expr[C => F[T]] =
       import quotes.reflect._
 
       def inInlined(t: Term, f: Term => Term): Term =
