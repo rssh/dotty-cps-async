@@ -8,14 +8,36 @@ The current prerelease is |dotty-cps-async-version|_ for using with |scala3-vers
 
  .. code-block:: scala
 
-   scalaVersion := "3.1.0"
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.5"
+   scalaVersion := "3.1.1"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.6"
 
 JavaScript is also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.5"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.6"
+
+
+Compatibility table
+-------------------
+
+For compatibility between versions of scala and dotty-cps-async pleasy use the following table:
+
+ .. list-table::
+    :widths: 5 5
+    :header-rows: 1
+
+    * - scala
+      - dotty-cps-async
+
+    * - 3.1.1
+      - 0.9.6+
+
+    * - 3.1.0
+      - 0.9.5
+
+    * - 3.0.2
+      - 0.9.4
 
 
 Basic Usage
