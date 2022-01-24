@@ -206,8 +206,8 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 .. |CpsTryMonad| replace:: ``CpsTryMonad``
 .. _CpsTryMonad: https://github.com/rssh/dotty-cps-async/blob/ff25b61f93e49a1ae39df248dbe4af980cd7f948/shared/src/main/scala/cps/CpsMonad.scala#L70
 
-.. |dotty-cps-async-version| replace:: ``0.9.5``
-.. _dotty-cps-async-version: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.5
+.. |dotty-cps-async-version| replace:: ``0.9.6``
+.. _dotty-cps-async-version: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.6
 
 .. |dotty-cps-async| replace:: **dotty-cps-async**
 .. _dotty-cps-async: https://github.com/rssh/dotty-cps-async#dotty-cps-async
@@ -218,8 +218,8 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 .. |Monix| replace:: **Monix**
 .. _Monix: https://monix.io/
 
-.. |scala3-version| replace:: **Scala 3.1.0**
-.. _scala3-version: https://github.com/lampepfl/dotty/releases/tag/3.1.0
+.. |scala3-version| replace:: **Scala 3.1.1**
+.. _scala3-version: https://github.com/lampepfl/dotty/releases/tag/3.1.1
 
 .. |scala-async| replace:: ``scala-async``
 .. _scala-async: https://github.com/scala/scala-async
