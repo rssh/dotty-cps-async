@@ -49,7 +49,7 @@ It is also possible to compile |SIP-22|_ code without changing the source code w
 
 .. code-block:: scala
 
- libraryDependencies += "com.github.rssh" %% "shim-scala-async-dotty-cps-async" % "0.9.5",
+ libraryDependencies += "com.github.rssh" %% "shim-scala-async-dotty-cps-async" % "0.9.7",
 
 
 Note that compatibility was not a primary goal during the development of |dotty-cps-async|_. The generated code is quite different, so if you need a bug-to-bug compatible version of Scala 2 |scala-async|_, you should use the port of the original ``-XAsync`` compiler plugin.
