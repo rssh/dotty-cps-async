@@ -21,7 +21,7 @@ currentYear = datetime.now().year
 # -- Project information -----------------------------------------------------
 
 project = 'dotty-cps-async'
-copyright = '2022-{}, Ruslan Shevchenko'.format(currentYear)
+copyright = '2020-{}, Ruslan Shevchenko'.format(currentYear)
 author = 'Ruslan Shevchenko'
 
 # The full version, including alpha/beta/rc tags
