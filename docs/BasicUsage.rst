@@ -1,10 +1,29 @@
 Dependency
 ==========
 
+The following table presents the compatibility between versions of |Scala 3|_ and |dotty-cps-async|_ :
+
+ .. list-table::
+    :widths: 5 5
+    :header-rows: 1
+
+    * - |header_scala3|_
+      - |header_dotty-cps-async|_
+
+    * - |3.1.1|_
+      - |0.9.6|_\+
+
+    * - |3.1.0|_
+      - |0.9.5|_
+
+    * - |3.0.2|_
+      - |0.9.4|_
+
+
 Sbt Example
 -----------
 
-The current prerelease is |dotty-cps-async-version|_ for using with |scala3-version|_.
+The current prerelease is |0.9.7|_ for using with Scala |3.1.1|_.
 
  .. code-block:: scala
 
@@ -17,27 +36,7 @@ JavaScript is also supported.
 
    libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.7"
 
-
-Compatibility table
--------------------
-
-For compatibility between versions of scala and dotty-cps-async pleasy use the following table:
-
- .. list-table::
-    :widths: 5 5
-    :header-rows: 1
-
-    * - scala
-      - dotty-cps-async
-
-    * - 3.1.1
-      - 0.9.7+
-
-    * - 3.1.0
-      - 0.9.5
-
-    * - 3.0.2
-      - 0.9.4
+**Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js project (see |Scala.js Cross-Building|_).
 
 
 Basic Usage
@@ -88,12 +87,12 @@ The minimal complete snippet looks as follows:
     import scala.concurrent.ExecutionContext.Implicits.global
     import scala.concurrent.duration.Duration
     import scala.util.{Failure, Success}
-    import cps.*                          //  async, await
-    import cps.monads.{*, given}          //  support for build-in monads (i.e. Future)
+    import cps.*                  // async, await
+    import cps.monads.{*, given}  // support for built-in monads (i.e. Future)
 
     object Example:
 
-      def fetchGreeting(): Future[String] =    // dummy async function
+      def fetchGreeting(): Future[String] =  // dummy async function
         Future successful "Hi"
 
       def greet() = async[Future] {
@@ -114,10 +113,10 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.5"
 
 
-**Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Akka Streams|_, |Cats Effect|_, |Monix|_ or |ZIO|_. 
+**Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Akka Streams|_, |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_. 
 
 
-Also monad can be abstracted out as in the following example:
+Also a monad can be abstracted out as in the following example:
 
 
  .. code-block:: scala
@@ -138,12 +137,12 @@ Also monad can be abstracted out as in the following example:
         finally
           connection.close()
 
-Async macro will transform code inside |async|_ to something like
+The |async|_ macro will transform the code block into something like
 
  .. raw:: html
 
   <details>
-   <summary><a>code</a></summary>
+   <summary><a>transformed code</a></summary>
 
  .. code-block:: scala
 
@@ -182,11 +181,33 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 
 .. rubric:: Footnotes
 
-.. [#f1] The definitions are simplified, in reality they are more complex, because we want infer the type of the expression independently from the type of monad.
+.. [#f1] The definitions of |async|_ and |await|_ are simplified, in reality they are more complex, because we want to infer the type of the expression independently from the type of monad.
 
 
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
+
+.. |0.9.4| replace:: ``0.9.4``
+.. _0.9.4: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.4
+
+.. |0.9.5| replace:: ``0.9.5``
+.. _0.9.5: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.5
+
+.. |0.9.6| replace:: ``0.9.6``
+.. _0.9.6: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.6
+
+.. |0.9.7| replace:: ``0.9.7``
+.. _0.9.7: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.7/
+.. /*to update*/ https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.7
+
+.. |3.0.2| replace:: ``3.0.2``
+.. _3.0.2: https://github.com/lampepfl/dotty/releases/tag/3.0.2
+
+.. |3.1.0| replace:: ``3.1.0``
+.. _3.1.0: https://github.com/lampepfl/dotty/releases/tag/3.1.0
+
+.. |3.1.1| replace:: ``3.1.1``
+.. _3.1.1: https://github.com/lampepfl/dotty/releases/tag/3.1.1
 
 .. |Akka Streams| replace:: **Akka Streams**
 .. _Akka Streams: https://doc.akka.io/docs/akka/current/stream/
@@ -206,23 +227,32 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 .. |CpsTryMonad| replace:: ``CpsTryMonad``
 .. _CpsTryMonad: https://github.com/rssh/dotty-cps-async/blob/ff25b61f93e49a1ae39df248dbe4af980cd7f948/shared/src/main/scala/cps/CpsMonad.scala#L70
 
-.. |dotty-cps-async-version| replace:: ``0.9.6``
-.. _dotty-cps-async-version: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.6
-
 .. |dotty-cps-async| replace:: **dotty-cps-async**
 .. _dotty-cps-async: https://github.com/rssh/dotty-cps-async#dotty-cps-async
 
 .. |Future| replace:: ``Future``
 .. _Future: https://www.scala-lang.org/api/current/scala/concurrent/Future.html
 
+.. |header_dotty-cps-async| replace:: dotty-cps-async
+.. _header_dotty-cps-async: https://github.com/rssh/dotty-cps-async#dotty-cps-async
+
+.. |header_scala3| replace:: Scala 3
+.. _header_scala3: https://dotty.epfl.ch/
+
 .. |Monix| replace:: **Monix**
 .. _Monix: https://monix.io/
 
-.. |scala3-version| replace:: **Scala 3.1.1**
-.. _scala3-version: https://github.com/lampepfl/dotty/releases/tag/3.1.1
+.. |Scala 3| replace:: **Scala 3**
+.. _Scala 3: https://dotty.epfl.ch/
 
 .. |scala-async| replace:: ``scala-async``
 .. _scala-async: https://github.com/scala/scala-async
+
+.. |Scala.js Cross-Building| replace:: **Scala.js Cross-Building**
+.. _Scala.js Cross-Building: https://www.scala-js.org/doc/project/cross-build.html
+
+.. |ScalaZ IO| replace:: **ScalaZ IO**
+.. _ScalaZ IO: https://scalaz.github.io
 
 .. |ZIO| replace:: **ZIO**
 .. _ZIO: https://zio.dev/

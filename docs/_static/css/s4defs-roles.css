@@ -1,0 +1,8 @@
+/* used in file docs/conf.py */
+
+.red {
+    color:#c54f36;
+    font-family:courier;
+    font-weight:bold;
+    letter-spacing:0px;
+}

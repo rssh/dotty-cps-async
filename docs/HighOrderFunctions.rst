@@ -75,7 +75,7 @@ Example:
 .. code-block:: scala
 
  case class TaggedValue[T](tag: String, value: T)
-   def modified[S](f: T => S): TaggedValue[S] =
+   def update[S](f: T => S): TaggedValue[S] =
      TaggedValue(tag, f(x))
 
  // Below the changed code:
@@ -83,7 +83,7 @@ Example:
  // - `(o, m)` is prepended as the first argument list
 
  class TaggedValueAsyncShift[T] extends AsyncShift[TaggedValue[T]]:
-   def modified[F[_], S](o: TaggedValue[T], m: CpsMonad[F])(f: T => F[S]): F[TaggedValue[S]] =
+   def update[F[_], S](o: TaggedValue[T], m: CpsMonad[F])(f: T => F[S]): F[TaggedValue[S]] =
      f(value).map(TaggedValue(tag,_))
              
  object TaggedValue:
@@ -126,14 +126,14 @@ Note that you should carefully decide whether you need async function support an
 Special semantics for substitutions in call chains
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Consider a chain of calls, which accepts async-shifted functions.  One example is ``withFilter`` from the standard collections library.  Let's look at the following code:  
+Consider a chain of calls, which accepts async-shifted functions.  One example is |withFilter|_ from the |Scala collections library|_.  Let's look at the following code:  
 
 .. code-block:: scala
 
   for {
     url <- urls if await(status(url)) == Active
     items <- await(api.retrieveItems(url))
-    Item <- items
+    item <- items
   } yield item  
 
 
@@ -245,6 +245,9 @@ For a case with an asynchronous high-order function interface (i.e. methods whic
 
 .. |map| replace:: ``map``
 .. _map: https://www.scala-lang.org/api/current/scala/collection/immutable/List.html#map[B](f:A=%3EB):List[B]
+
+.. |Scala collections library| replace:: **Scala collections library**
+.. _Scala collections library: https://www.scala-lang.org/api/current/scala/collection/index.html
 
 .. |Scala standard library| replace:: **Scala standard library**
 .. _Scala standard library: https://www.scala-lang.org/api/current/

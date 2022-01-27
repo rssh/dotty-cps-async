@@ -5,8 +5,7 @@ Generators
 Async Streaming
 ---------------
 
-The generator syntax is a way to deliver values into some form of a stream asynchronously.
-
+The generator syntax is a way to deliver values into some form of stream asynchronously.
 
 Example:
 
@@ -16,7 +15,7 @@ Example:
   import scala.concurrent.ExecutionContext.Implicits.global
   import scala.concurrent.duration.Duration
   import cps.*                  // asyncStream, await
-  import cps.monads.{*, given}  // support for build-in monads (i.e. Future)
+  import cps.monads.{*, given}  // support for built-in monads (i.e. Future)
   import cps.stream.*           // AsyncList
 
   object Example:
@@ -36,7 +35,7 @@ I recommend you try |AsyncList|_.
 Here |AsyncList|_ is a minimal implementation of async stream supplied with |dotty-cps-async|_.
 There exist integration modules for well-known async streaming libraries (see section :ref:`Integrations`).
 
-The input to |asyncStream|_ is a block of code, which should be a lambda-expression that accepts an emitter argument; i.e., the simplified definition looks as follows :
+The input of |asyncStream|_ is a code block which should be a lambda expression that accepts an emitter argument; i.e., the simplified definition looks as follows :
 
 .. code-block:: scala
 
@@ -47,16 +46,16 @@ For a full definition, look at the source:
 
 - |asyncStream|_ is the entry point for macro
 - |CpsAsyncEmitAbsorber[R]|_ is an adapter from a generator to a stream of the given type.
-- |CpsAsyncEmitter|_ is a trait with operations ``emit``, which should be called inside |asyncStream|_ or |async|_ block. 
+- |CpsAsyncEmitter|_ is a trait with operations |emit|_, which should be called inside |asyncStream|_ or |async|_ block. 
 
 
 Writing generator adapters for custom streams
 ---------------------------------------------
  
-To allow generator syntax for your stream, you need to implement 
- |CpsAsyncEmitAbsorber[R]|_ where ``evalAsync`` accepts a cps-transformed function and outputs the result stream.
+To allow generator syntax for your stream, you need to implement trait
+ |CpsAsyncEmitAbsorber[R]|_ where |eval|_ accepts a cps-transformed function and outputs the result stream.
  
-|dotty-cps-async|_ provides a platform-specific trait |BaseUnfoldCpsAsyncEmitAbsorber|_ which can simplicify generator implementations for streams which has something like ``unfoldAsync[S, E](s: S)(f:S => F[Option[(S, E)]]): R``.
+|dotty-cps-async|_ provides a platform-specific trait |BaseUnfoldCpsAsyncEmitAbsorber|_ which can simplicify generator implementations for streams which has something like ``unfoldAsync[S, E](s: S)(f: S => F[Option[(S, E)]]): R``.
 
 For example, look at the implementation of |CpsAsyncEmitAbsorber[R]|_ for |Akka Streams|_ source:
 
@@ -90,10 +89,16 @@ For example, look at the implementation of |CpsAsyncEmitAbsorber[R]|_ for |Akka 
 .. _BaseUnfoldCpsAsyncEmitAbsorber: https://github.com/rssh/dotty-cps-async/blob/master/jvm/src/main/scala/cps/stream/BaseUnfoldCpsAsyncEmitAbsorber.scala#L10
 
 .. |CpsAsyncEmitAbsorber[R]| replace:: ``CpsAsyncEmitAbsorber[R]``
-.. _CpsAsyncEmitAbsorber[R]: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitAbsorber.scala
+.. _CpsAsyncEmitAbsorber[R]: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitAbsorber.scala#L27
 
 .. |CpsAsyncEmitter| replace:: ``CpsAsyncEmitter``
 .. _CpsAsyncEmitter: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitter.scala
 
 .. |dotty-cps-async| replace:: **dotty-cps-async**
 .. _dotty-cps-async: https://github.com/rssh/dotty-cps-async#dotty-cps-async
+
+.. |emit| replace:: ``emit``
+.. _emit: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitter.scala#L19
+
+.. |eval| replace:: ``eval``
+.. _eval: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitAbsorber.scala#L33

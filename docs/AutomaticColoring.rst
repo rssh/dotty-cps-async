@@ -7,7 +7,7 @@ Overview
 Sometimes, especially when we work with distributed systems, most API calls are asynchronous and should be prefixed by |await|_.  And we should remember what functions we should call async and what - not.  It is known as 'async coloring problem': i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e., ``F[T]``) and one - sync. (``T`` without ``F``).
 
 If we want to put an asynchronous expression into a synchronous function, we should write ``await(expr)`` instead of ``expr``, for transforming the synchronous code into an asynchronous one
-(see http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/ for more detailed explanation).
+(see |What Color is Your Function?|_ for more detailed explanation).
 
 In |Scala 3|_, we have types, so why not ask the compiler to do async coloring automatically?
 So, the code below
@@ -41,7 +41,7 @@ can be written without |await|_ as:
 Automatic Coloring & Memoization
 --------------------------------
 
-If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation), then implicit await is enough for automatic coloring.  But what to do with pure effect monads, which holds computations without starting them?
+If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation), then implicit await is enough for automatic coloring.  But should we handle pure effect monads, which hold computations without starting them?
 
 
 Let's look at the following code:
@@ -59,7 +59,7 @@ Let's look at the following code:
   }
 
 
-Assume IO is some pure effect monad, which holds a computation function that will be evaluated each time we need to get value from the monad. ``Counter.increment()`` is an IO action:  
+Assume IO is some pure effect monad, which holds a computation function that will be evaluated each time we need to get a value from the monad. ``Counter.increment()`` is an IO action:  
 
 
 .. code-block:: scala
@@ -104,7 +104,10 @@ Custom value discard
 
 During the writing of asynchronous code, typical developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.  
 
-``cps.customValueDiscard`` limits the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types ``T``, for which exists an implementation of a special |ValueDiscard[T]|_. If given |ValueDiscard[T]|_ is not found in the current scope, then dropping values of this type is prohibited.  If found - ``ValueDiscard.apply(t)`` is called. It's defined as a no-op for primitive types and can be extended by the developer for its own types.
+``cps.customValueDiscard`` limits the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types ``T``, for which it exists an implementation of a special |ValueDiscard[T]|_.
+
+- If given |ValueDiscard[T]|_ is not found in the current scope, then dropping values of this type is prohibited.
+- If found ``ValueDiscard.apply(t)`` is called. The method is defined as a no-op for primitive types and can be extended by the developer for its own types.
 
 Example:
 
@@ -133,7 +136,7 @@ Let's look at the next code:
  } 
 
 
-Here the developer forgot to wrap ``dryRun`` into |await|_.  But ``customValueDiscard`` feature is enabled and value discard operation is not defined for ```Future``, so this code will not compile.
+Here the developer forgot to wrap ``dryRun`` into |await|_.  But ``customValueDiscard`` feature is enabled and value discard operation is not defined for |Future|_, so this code will not compile.
 
 .. index:: warnValueDiscard
 
@@ -165,8 +168,13 @@ Assuming that logging is an IO operation, i.e. function ``log`` has the signatur
    def log(message: String): IO[Unit]
 
 
-Without custom value discarding, the log statement will be dropped.  (Type of ``if`` with one branch is |Unit|_, so type of the first branch should be |Unit|_, so log statement will be discarded).
-|dotty-cps-async|_ provides special |AwaitValueDiscard|_  which forces monad to be evaluated before being discarded.  We recommend use this discard as default for ``IO[Unit]``.
+Without custom value discarding, the log statement will be dropped.  (Type of ``if`` with one branch is |Unit|_, so type of the first branch should be |Unit|_ and the ``log`` statement will be discarded).
+|dotty-cps-async|_ provides special |AwaitValueDiscard|_  which forces the monad to be evaluated before being discarded.  We recommend to use this discard as default for ``IO[Unit]``.
+
+
+.. rubric:: Footnotes
+
+.. [#f1] The definitions of |async|_ and |await|_ are simplified, in reality they are more complex, because we want to infer the type of the expression independently from the type of monad.
 
 
 .. ###########################################################################
@@ -187,6 +195,9 @@ Without custom value discarding, the log statement will be dropped.  (Type of ``
 .. |dotty-cps-async| replace:: **dotty-cps-async**
 .. _dotty-cps-async: https://github.com/rssh/dotty-cps-async#dotty-cps-async
 
+.. |Future| replace:: ``Future``
+.. _Future: https://www.scala-lang.org/api/current/scala/concurrent/Future.html
+
 .. |Scala 3| replace:: **Scala 3**
 .. _Scala 3: https://dotty.epfl.ch/
 
@@ -194,4 +205,7 @@ Without custom value discarding, the log statement will be dropped.  (Type of ``
 .. _Unit: https://www.scala-lang.org/api/current/scala/Unit.html
 
 .. |ValueDiscard[T]| replace:: ``ValueDiscard[T]``
-.. _ValueDiscard[T]: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala
+.. _ValueDiscard[T]: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L11
+
+.. |What Color is Your Function?| replace:: **What Color is Your Function?**
+.. _What Color is Your Function?: https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/
