@@ -59,3 +59,17 @@ html_theme = 'nature'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+
+# -- Options for HTML text coloring ---------------------------------
+
+# https://stackoverflow.com/questions/4669689/how-to-use-color-in-text-with-restructured-text-rst2html-py-or-how-to-insert-h
+rst_prolog = """
+.. include:: <s5defs.txt>
+.. default-role::
+
+"""
+
+html_css_files = [
+ 'css/s4defs-roles.css',
+]

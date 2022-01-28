@@ -103,7 +103,7 @@ GitHub project: https://github.com/typelevel/cats-effect-cps
 Call for additions:
 -------------------
 
-If you have implemented |CpsMonad|_ support for some effect stack and want to mention it here - please, send a pull request about this.
+If you have implemented |CpsMonad|_ support for some effect stack and want to mention it here - please, send a |pull request|_ about this.
 
 
 .. ###########################################################################
@@ -183,6 +183,9 @@ If you have implemented |CpsMonad|_ support for some effect stack and want to me
 
 .. |org.typelevel»cats-effect| replace:: ``org.typelevel»cats-effect`` 
 .. _org.typelevel»cats-effect : https://mvnrepository.com/artifact/org.typelevel/cats-effect
+
+.. |pull request| replace:: pull request
+.. _pull request: https://github.com/rssh/dotty-cps-async/pulls
 
 .. |Scalaz IO| replace:: **Scalaz IO**
 .. _Scalaz IO: https://scalaz.github.io/
