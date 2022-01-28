@@ -9,6 +9,7 @@
     <title>Dependency &#8212; dotty-cps-async 0.9.7 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -42,9 +43,34 @@
             
   <section id="dependency">
 <h1>Dependency<a class="headerlink" href="#dependency" title="Permalink to this headline">¶</a></h1>
+<p>The following table presents the compatibility between versions of <a class="reference external" href="https://dotty.epfl.ch/"><strong>Scala 3</strong></a> and <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> :</p>
+<blockquote>
+<div><table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><a class="reference external" href="https://dotty.epfl.ch/">Scala 3</a></p></th>
+<th class="head"><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async">dotty-cps-async</a></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/lampepfl/dotty/releases/tag/3.1.1"><code class="docutils literal notranslate"><span class="pre">3.1.1</span></code></a></p></td>
+<td><p><a class="reference external" href="https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.6"><code class="docutils literal notranslate"><span class="pre">0.9.6</span></code></a>+</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/lampepfl/dotty/releases/tag/3.1.0"><code class="docutils literal notranslate"><span class="pre">3.1.0</span></code></a></p></td>
+<td><p><a class="reference external" href="https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.5"><code class="docutils literal notranslate"><span class="pre">0.9.5</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/lampepfl/dotty/releases/tag/3.0.2"><code class="docutils literal notranslate"><span class="pre">3.0.2</span></code></a></p></td>
+<td><p><a class="reference external" href="https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.4"><code class="docutils literal notranslate"><span class="pre">0.9.4</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
 <section id="sbt-example">
 <h2>Sbt Example<a class="headerlink" href="#sbt-example" title="Permalink to this headline">¶</a></h2>
-<p>The current prerelease is <a class="reference external" href="https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.6"><code class="docutils literal notranslate"><span class="pre">0.9.6</span></code></a> for using with <a class="reference external" href="https://github.com/lampepfl/dotty/releases/tag/3.1.1"><strong>Scala 3.1.1</strong></a>.</p>
+<p>The current prerelease is <a class="reference external" href="https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.7/"><code class="docutils literal notranslate"><span class="pre">0.9.7</span></code></a> for using with Scala <a class="reference external" href="https://github.com/lampepfl/dotty/releases/tag/3.1.1"><code class="docutils literal notranslate"><span class="pre">3.1.1</span></code></a>.</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">&quot;3.1.1&quot;</span>
 <span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.7&quot;</span>
@@ -57,34 +83,7 @@
 </pre></div>
 </div>
 </div></blockquote>
-</section>
-<section id="compatibility-table">
-<h2>Compatibility table<a class="headerlink" href="#compatibility-table" title="Permalink to this headline">¶</a></h2>
-<p>For compatibility between versions of scala and dotty-cps-async pleasy use the following table:</p>
-<blockquote>
-<div><table class="colwidths-given docutils align-default">
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>scala</p></th>
-<th class="head"><p>dotty-cps-async</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>3.1.1</p></td>
-<td><p>0.9.7+</p></td>
-</tr>
-<tr class="row-odd"><td><p>3.1.0</p></td>
-<td><p>0.9.5</p></td>
-</tr>
-<tr class="row-even"><td><p>3.0.2</p></td>
-<td><p>0.9.4</p></td>
-</tr>
-</tbody>
-</table>
-</div></blockquote>
+<p><strong>Note</strong>: <span class="red">%%%</span> automatically determines whether we are in a Scala/JVM or a Scala.js project (see <a class="reference external" href="https://www.scala-js.org/doc/project/cross-build.html"><strong>Scala.js Cross-Building</strong></a>).</p>
 </section>
 </section>
 <section id="basic-usage">
@@ -119,12 +118,12 @@
 <span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nc">ExecutionContext</span><span class="p">.</span><span class="nc">Implicits</span><span class="p">.</span><span class="n">global</span>
 <span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nn">duration</span><span class="p">.</span><span class="nc">Duration</span>
 <span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">util</span><span class="p">.{</span><span class="nc">Failure</span><span class="p">,</span> <span class="nc">Success</span><span class="p">}</span>
-<span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">*</span>                          <span class="c1">//  async, await</span>
-<span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">monads</span><span class="p">.{</span><span class="n">*</span><span class="p">,</span> <span class="k">given</span><span class="p">}</span>          <span class="c1">//  support for build-in monads (i.e. Future)</span>
+<span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">*</span>                  <span class="c1">// async, await</span>
+<span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">monads</span><span class="p">.{</span><span class="n">*</span><span class="p">,</span> <span class="k">given</span><span class="p">}</span>  <span class="c1">// support for built-in monads (i.e. Future)</span>
 
 <span class="k">object</span> <span class="nc">Example</span><span class="p">:</span>
 
-  <span class="k">def</span> <span class="nf">fetchGreeting</span><span class="p">():</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span> <span class="o">=</span>    <span class="c1">// dummy async function</span>
+  <span class="k">def</span> <span class="nf">fetchGreeting</span><span class="p">():</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span> <span class="o">=</span>  <span class="c1">// dummy async function</span>
     <span class="nc">Future</span> <span class="n">successful</span> <span class="s">&quot;Hi&quot;</span>
 
   <span class="k">def</span> <span class="nf">greet</span><span class="p">()</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span> <span class="p">{</span>
@@ -141,12 +140,12 @@
 <p>This minimal example is for <a class="reference external" href="https://www.scala-lang.org/api/current/scala/concurrent/Future.html"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a> monad and depends on library <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> to be added to our project file <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> :</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">// https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.5&quot;</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%</span> <span class="s">&quot;dotty-cps-async&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.7&quot;</span>
 </pre></div>
 </div>
 </div></blockquote>
-<p><strong>Note</strong>: The <a class="reference internal" href="Integrations.html#integrations"><span class="std std-ref">Integrations</span></a> section lists further library dependencies needed for integration with well-known monadic frameworks such as <a class="reference external" href="https://doc.akka.io/docs/akka/current/stream/"><strong>Akka Streams</strong></a>, <a class="reference external" href="https://typelevel.org/cats-effect/"><strong>Cats Effect</strong></a>, <a class="reference external" href="https://monix.io/"><strong>Monix</strong></a> or <a class="reference external" href="https://zio.dev/"><strong>ZIO</strong></a>.</p>
-<p>Also monad can be abstracted out as in the following example:</p>
+<p><strong>Note</strong>: The <a class="reference internal" href="Integrations.html#integrations"><span class="std std-ref">Integrations</span></a> section lists further library dependencies needed for integration with well-known monadic frameworks such as <a class="reference external" href="https://doc.akka.io/docs/akka/current/stream/"><strong>Akka Streams</strong></a>, <a class="reference external" href="https://typelevel.org/cats-effect/"><strong>Cats Effect</strong></a>, <a class="reference external" href="https://monix.io/"><strong>Monix</strong></a>, <a class="reference external" href="https://scalaz.github.io"><strong>ScalaZ IO</strong></a> or <a class="reference external" href="https://zio.dev/"><strong>ZIO</strong></a>.</p>
+<p>Also a monad can be abstracted out as in the following example:</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">Handler</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]:</span> <span class="nc">CpsTryMonad</span><span class="p">]:</span>
 
@@ -166,10 +165,10 @@
 </pre></div>
 </div>
 </div></blockquote>
-<p>Async macro will transform code inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> to something like</p>
+<p>The <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> macro will transform the code block into something like</p>
 <blockquote>
 <div><details>
- <summary><a>code</a></summary><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="p">.</span><span class="n">flatMap</span><span class="p">(</span><span class="n">openConnection</span><span class="p">())(</span><span class="n">a</span> <span class="o">=&gt;</span> <span class="p">{</span>
+ <summary><a>transformed code</a></summary><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="p">.</span><span class="n">flatMap</span><span class="p">(</span><span class="n">openConnection</span><span class="p">())(</span><span class="n">a</span> <span class="o">=&gt;</span> <span class="p">{</span>
   <span class="kd">val</span> <span class="n">connection</span><span class="p">:</span> <span class="nc">Connection</span><span class="p">[</span><span class="nc">F</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span>
   <span class="n">m</span><span class="p">.</span><span class="n">withAction</span><span class="p">({</span>
     <span class="k">def</span> <span class="nf">_whilefun</span><span class="p">():</span> <span class="nc">F</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span> <span class="o">=</span>
@@ -201,7 +200,7 @@ You can read the <a class="reference internal" href="random-notes/index.html#ran
 <p class="rubric">Footnotes</p>
 <dl class="footnote brackets">
 <dt class="label" id="f1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd><p>The definitions are simplified, in reality they are more complex, because we want infer the type of the expression independently from the type of monad.</p>
+<dd><p>The definitions of <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> and <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> are simplified, in reality they are more complex, because we want to infer the type of the expression independently from the type of monad.</p>
 </dd>
 </dl>
 </section>
@@ -217,7 +216,6 @@ You can read the <a class="reference internal" href="random-notes/index.html#ran
   <ul>
 <li><a class="reference internal" href="#">Dependency</a><ul>
 <li><a class="reference internal" href="#sbt-example">Sbt Example</a></li>
-<li><a class="reference internal" href="#compatibility-table">Compatibility table</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#basic-usage">Basic Usage</a></li>

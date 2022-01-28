@@ -41,8 +41,8 @@ The complete await signature lools like:
 where `F` is a type of awaited wrapper and `G` monad in enclosing |async|_ block.
 
 
-Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like structured concurrency.   
-Jokingly, we can say that our monad is close to the original Leibnic definition of Monadology, where each monad has unique qualities, not accessible from outside.
+Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like |structured concurrency|_.   
+Jokingly, we can say that our monad is close to the original Leibnic definition of monad in his work |Monadology|_, where each monad has unique qualities, not accessible from outside.
 
 The monad context is defined as a type inside |CpsMonad|_ :
 
@@ -117,11 +117,17 @@ Also, you can notice the compatibility of this context with |monadic-reflection|
 .. |monadic-reflection| replace:: **monadic-reflection**
 .. _monadic-reflection: https://github.com/lampepfl/monadic-reflection
 
+.. |Monadology| replace:: **Monadology**
+.. _Monadology: https://en.wikipedia.org/wiki/Monadology
+
 .. |reflect| replace:: ``reflect``
 .. _reflect: https://github.com/lampepfl/monadic-reflection/blob/main/core/src/main/scala/monadic/Monadic.scala#L26
 
 .. |reify| replace:: ``reify``
 .. _reify: https://github.com/lampepfl/monadic-reflection/blob/main/core/src/main/scala/monadic/Monadic.scala#L31
+
+.. |structured concurrency| replace:: **structured concurrency**
+.. _structured concurrency: https://en.wikipedia.org/wiki/Structured_concurrency
 
 .. |TimeoutException| replace:: ``TimeoutException``
 .. _TimeoutException: https://www.scala-lang.org/api/current/scala/concurrent/index.html#TimeoutException=java.util.concurrent.TimeoutException

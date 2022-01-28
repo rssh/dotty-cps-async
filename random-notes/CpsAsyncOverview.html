@@ -6,9 +6,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>CPS-Async transformations: &#8212; dotty-cps-async 0.9.7 documentation</title>
+    <title>CPS-Async transformations &#8212; dotty-cps-async 0.9.7 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/s4defs-roles.css" />
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -32,7 +33,7 @@
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.7 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Random Notes</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">CPS-Async transformations:</a></li> 
+        <li class="nav-item nav-item-this"><a href="">CPS-Async transformations</a></li> 
       </ul>
     </div>  
 
@@ -42,17 +43,17 @@
           <div class="body" role="main">
             
   <section id="cps-async-transformations">
-<h1>CPS-Async transformations:<a class="headerlink" href="#cps-async-transformations" title="Permalink to this headline">¶</a></h1>
+<h1>CPS-Async transformations<a class="headerlink" href="#cps-async-transformations" title="Permalink to this headline">¶</a></h1>
 <section id="overview">
-<h2>Overview.<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>CPS - stand for continuation-passing style. (https://en.wikipedia.org/wiki/Continuation-passing_style ).</p>
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>CPS stands for <a class="reference external" href="https://en.wikipedia.org/wiki/Continuation-passing_style">continuation-passing style</a>.</p>
 <p>It was described at <a class="reference external" href="https://dspace.mit.edu/handle/1721.1/5794">AI MEM 349: SCHEME: An Interpreter for Extended Lambda Calculus</a> as a style, where a function always “returns” its result by “sending” it to another function.</p>
-<p>Ie in direct (usual style)  we write a sequence of functions, in CPS (or better call this traditional CPS), we pass to the first function parameter and “the rest of the program”, which do own work and then call this ‘contunuation’.</p>
+<p>Ie in direct (usual) style we write a sequence of functions, in CPS (or better called «traditional CPS»), we pass to the first function parameter and “the rest of the program”, which do own work and then call this ‘contunuation’.</p>
 <p>Let’s look an example:</p>
 <p>Direct-style:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="kd">val</span>  <span class="n">connection</span> <span class="o">=</span> <span class="n">openConnection</span><span class="p">()</span>
-<span class="kd">val</span>  <span class="n">command</span> <span class="o">=</span> <span class="n">connection</span><span class="p">.</span><span class="n">readCommand</span><span class="p">()</span>
-<span class="kd">val</span>  <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="p">.</span><span class="n">evaluateCommand</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="kd">val</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">openConnection</span><span class="p">()</span>
+<span class="kd">val</span> <span class="n">command</span> <span class="o">=</span> <span class="n">connection</span><span class="p">.</span><span class="n">readCommand</span><span class="p">()</span>
+<span class="kd">val</span> <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="p">.</span><span class="n">evaluateCommand</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
 <span class="n">result</span>
 </pre></div>
 </div>
@@ -63,49 +64,50 @@
 <span class="p">)</span> <span class="p">)</span>
 </pre></div>
 </div>
-<p>More formally: let we have function  <code class="docutils literal notranslate"><span class="pre">f:</span> <span class="pre">X</span> <span class="pre">=&gt;Y</span></code>,  which transform <code class="docutils literal notranslate"><span class="pre">X</span></code> to <code class="docutils literal notranslate"><span class="pre">Y</span></code>.<br />Let’s build function<br /><code class="docutils literal notranslate"><span class="pre">f':</span> <span class="pre">X</span> <span class="pre">*</span> <span class="pre">(Y=&gt;S)</span> <span class="pre">=&gt;</span> <span class="pre">S</span></code>, which accept <code class="docutils literal notranslate"><span class="pre">X</span></code> and function <code class="docutils literal notranslate"><span class="pre">Y=&gt;S</span></code>.  This second parameter:  <code class="docutils literal notranslate"><span class="pre">Y</span> <span class="pre">=&gt;</span> <span class="pre">S</span></code> is continuation.</p>
-<p>Dotty-cps-async provides similar (but not exactly the same) approach, which can be named local cps transformation over monads.</p>
+<p>More formally: Given the function  <code class="docutils literal notranslate"><span class="pre">f:</span> <span class="pre">X</span> <span class="pre">=&gt;Y</span></code>,  which transforms <code class="docutils literal notranslate"><span class="pre">X</span></code> to <code class="docutils literal notranslate"><span class="pre">Y</span></code>.
+Let’s build function  <code class="docutils literal notranslate"><span class="pre">f':</span> <span class="pre">X</span> <span class="pre">*</span> <span class="pre">(Y=&gt;S)</span> <span class="pre">=&gt;</span> <span class="pre">S</span></code>, which accepts <code class="docutils literal notranslate"><span class="pre">X</span></code> and a function <code class="docutils literal notranslate"><span class="pre">Y=&gt;S</span></code>.  The second parameter <code class="docutils literal notranslate"><span class="pre">Y</span> <span class="pre">=&gt;</span> <span class="pre">S</span></code> is the continuation.</p>
+<p><a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async">dotty-cps-async</a> provides similar (but not exactly the same) approach, which can be named local CPS transformation over monads.</p>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">openConnection</span><span class="p">()</span><span class="o">.</span><span class="n">flatMap</span><span class="p">(</span><span class="n">connection</span> <span class="o">=&gt;</span>
     <span class="n">connection</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">flatMap</span><span class="p">(</span><span class="n">command</span> <span class="o">=&gt;</span>
       <span class="n">engine</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">command</span><span class="p">)))</span>
 </pre></div>
 </div>
-<p>More formally, let we have function <code class="docutils literal notranslate"><span class="pre">f:</span> <span class="pre">X</span> <span class="pre">=&gt;</span> <span class="pre">Y</span></code>, which transform <code class="docutils literal notranslate"><span class="pre">X</span></code> to <code class="docutils literal notranslate"><span class="pre">Y</span></code>.<br />Let’s build function <code class="docutils literal notranslate"><span class="pre">f’:</span> <span class="pre">X</span> <span class="pre">=&gt;</span> <span class="pre">M[Y]</span></code>,  where <code class="docutils literal notranslate"><span class="pre">M</span></code> is some monad.<br />Note, that if we have continuation function  <code class="docutils literal notranslate"><span class="pre">g:</span>&#160; <span class="pre">Y</span> <span class="pre">=&gt;</span> <span class="pre">S</span></code>, than it can be applied after <code class="docutils literal notranslate"><span class="pre">f</span></code> in monadic <code class="docutils literal notranslate"><span class="pre">flatMap</span></code> operation:</p>
+<p>More formally: Given the function <code class="docutils literal notranslate"><span class="pre">f:</span> <span class="pre">X</span> <span class="pre">=&gt;</span> <span class="pre">Y</span></code>, which transforms <code class="docutils literal notranslate"><span class="pre">X</span></code> to <code class="docutils literal notranslate"><span class="pre">Y</span></code>.<br />Let’s build function <code class="docutils literal notranslate"><span class="pre">f’:</span> <span class="pre">X</span> <span class="pre">=&gt;</span> <span class="pre">M[Y]</span></code>,  where <code class="docutils literal notranslate"><span class="pre">M</span></code> is some monad.<br />Note, that if we have the continuation function  <code class="docutils literal notranslate"><span class="pre">g:</span>&#160; <span class="pre">Y</span> <span class="pre">=&gt;</span> <span class="pre">S</span></code>, than it can be applied after <code class="docutils literal notranslate"><span class="pre">f</span></code> in a monadic <code class="docutils literal notranslate"><span class="pre">flatMap</span></code> operation:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Y</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 <span class="n">S</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Will be transformed to</p>
+<p>is transformed to</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>f’(x).flatMap(y =&gt; g’(y,c))
 </pre></div>
 </div>
 <ul class="simple">
 <li><p>Next question: how this related to await/async ?</p></li>
 </ul>
-<p>In scala, concurrent execution usually is presented by some monad.  (Future, IO, Task,…  etc).
+<p>In Scala, concurrent execution usually is presented by some monad.  (Future, IO, Task,…  etc).
 (You can look at  <a class="reference external" href="https://pdfs.semanticscholar.org/d4e0/a8554588b91f7404a75bd79807c08771da22.pdf">A Poors man’s concurrency monad</a> for background).</p>
-<p>I.e. operations with concurrent API  often return <code class="docutils literal notranslate"><span class="pre">M[F]</span></code>, and you can work with received value by flatMapping ‘next’  operations inside received monad.  Manually operating of  ‘in-monad’ values is low-lever and error-prone.   Can we avoid this?</p>
-<p>Let’s introduce pseudo-operation</p>
+<p>I.e. operations with concurrent API  often return <code class="docutils literal notranslate"><span class="pre">M[F]</span></code>, and you can work with received value by flatMapping ‘next’  operations inside received monad.  Manually operating of  ‘in-monad’ values is low-level and error-prone.   Can we avoid this?</p>
+<p>Let’s introduce the two pseudo-operations</p>
 <ul class="simple">
 <li><p>await:  <code class="docutils literal notranslate"><span class="pre">M[X]</span> <span class="pre">=&gt;</span> <span class="pre">X</span></code></p></li>
 <li><p>async:  <code class="docutils literal notranslate"><span class="pre">X</span> <span class="pre">=&gt;</span> <span class="pre">M[X]</span></code></p></li>
 </ul>
-<p>Async apply monad CPS to it’s argument.  Note, that the transformation of <code class="docutils literal notranslate"><span class="pre">await(expr)</span></code> will be <code class="docutils literal notranslate"><span class="pre">expr</span></code>.  (i.e. all occurrences of await will be erased).  And we can use direct style instead monadic compositions, leaving work of aligning compositions to a computer.  This is exactly wat <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async">dotty-cps-async</a> do.</p>
+<p>Async apply monad CPS to its argument.  Note, that the transformation of <code class="docutils literal notranslate"><span class="pre">await(expr)</span></code> will be <code class="docutils literal notranslate"><span class="pre">expr</span></code>.  (i.e. all occurrences of <code class="docutils literal notranslate"><span class="pre">await</span></code> will be erased).  And we can use direct style instead monadic compositions, leaving work of aligning compositions to a computer.  This is exactly what <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async">dotty-cps-async</a> do.</p>
 </section>
 <section id="optimizations">
-<h2>Optimizations.<a class="headerlink" href="#optimizations" title="Permalink to this headline">¶</a></h2>
+<h2>Optimizations<a class="headerlink" href="#optimizations" title="Permalink to this headline">¶</a></h2>
 <p>Traditional CPS async transforms all code (even sequential) to monadic compositions.
 We want to keep sequential parts to be left sequential, so the number of flatMap operations inside async block is equal to the number of the really concurrent operations.
-To achieve this, we maintain data structures (<code class="docutils literal notranslate"><span class="pre">CpsExpr</span></code> and <code class="docutils literal notranslate"><span class="pre">CpsTree</span></code>) which ‘remember’ that block of code is sequential and compose sequential parts without wrapping all in monad.</p>
+To achieve this, we maintain data structures (<a class="reference external" href="https://rssh.github.io/dotty-cps-async/api/jvm/cps/macros/CpsExpr.html"><code class="docutils literal notranslate"><span class="pre">CpsExpr</span></code></a> and <a class="reference external" href="https://rssh.github.io/dotty-cps-async/api/jvm/cps/macros/forest/CpsTreeScope%24CpsTree.html"><code class="docutils literal notranslate"><span class="pre">CpsTree</span></code></a>) which ‘remember’ that block of code is sequential and compose sequential parts without wrapping all in monad.</p>
 </section>
 <section id="implementation-notes">
-<h2>Implementation notes.<a class="headerlink" href="#implementation-notes" title="Permalink to this headline">¶</a></h2>
+<h2>Implementation notes<a class="headerlink" href="#implementation-notes" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>We don’t do ANF transform preprocessing, but transform code as is, by providing implementation along with some micro-optimization, as the same way, as human will transform those expressions ‘by hands’.</p></li>
-<li><p>For chunks of code, which can be deconstructed with help of dotty ‘quote’ expressions, we use representation of block as ‘CpsExpr’. Other expressions, deconstructed as tasty trees and represented as <code class="docutils literal notranslate"><span class="pre">CpsTree</span></code>.</p></li>
+<li><p>For chunks of code, which can be deconstructed with the help of Scala 3 ‘quote’ expressions, we use representation of block as <a class="reference external" href="https://rssh.github.io/dotty-cps-async/api/jvm/cps/macros/CpsExpr.html"><code class="docutils literal notranslate"><span class="pre">CpsExpr</span></code></a>. Other expressions, deconstructed as <a class="reference external" href="https://docs.scala-lang.org/scala3/guides/tasty-overview.html">TASTy</a> trees, are represented as <a class="reference external" href="https://rssh.github.io/dotty-cps-async/api/jvm/cps/macros/forest/CpsTreeScope%24CpsTree.html"><code class="docutils literal notranslate"><span class="pre">CpsTree</span></code></a>.</p></li>
 </ul>
-</section>
+<!-- hyperlinks --></section>
 </section>
 
 
@@ -117,10 +119,10 @@ To achieve this, we maintain data structures (<code class="docutils literal notr
         <div class="sphinxsidebarwrapper">
   <h3><a href="../index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">CPS-Async transformations:</a><ul>
-<li><a class="reference internal" href="#overview">Overview.</a></li>
-<li><a class="reference internal" href="#optimizations">Optimizations.</a></li>
-<li><a class="reference internal" href="#implementation-notes">Implementation notes.</a></li>
+<li><a class="reference internal" href="#">CPS-Async transformations</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#optimizations">Optimizations</a></li>
+<li><a class="reference internal" href="#implementation-notes">Implementation notes</a></li>
 </ul>
 </li>
 </ul>
@@ -166,7 +168,7 @@ To achieve this, we maintain data structures (<code class="docutils literal notr
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.7 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" >Random Notes</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">CPS-Async transformations:</a></li> 
+        <li class="nav-item nav-item-this"><a href="">CPS-Async transformations</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

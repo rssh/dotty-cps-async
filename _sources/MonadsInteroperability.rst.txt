@@ -1,8 +1,9 @@
 Monads interoperability.
 ========================
 
-Monads in |async|_ and |await|_ can be different: ``await[F]`` can be applied inside ``async[G]``  when exists 
-|CpsMonadConversion[F, G]|_.
+Monads in |async|_ and |await|_ can have different types, i.e. ``await[F]`` can be applied inside ``async[G]``.
+
+So we define the trait |CpsMonadConversion[F, G]|_ to support the conversion from ``F[_]`` to ``G[_]``.
 
 ``Future`` Examples
 -------------------
@@ -45,6 +46,8 @@ After making this definition available, we can await |Future|_ inside any async 
 
 .. code-block:: scala
 
+ import scala.concurrent.Future
+
  def fun(x: Int): Future[Int] =
    Future successful (x+1)
 
@@ -84,9 +87,9 @@ Of course, it is possible to create other conversions between your monads, based
 js.Promise
 -----------
 
-Not only monads can be subject to await. For example, it is impossible to attach monad structure to ``js.Promise`` in |Scala.js|_, because the map operation is unimplementable: all |Promise|_ operations flatten their arguments.  But we can await |Promise|_ from Scala ``async[Future]`` blocks, because |CpsMonadConversion[Future, Promise]|_ is defined.
+Not only monads can be subject to await. For example, it is impossible to attach monad structure to |Promise|_ in |Scala.js|_, because the map operation is unimplementable: all |Promise|_ operations flatten their arguments.  But we can await |Promise|_ from Scala ``async[Future]`` blocks, because |CpsMonadConversion[Future, Promise]|_ is defined.
 
-Also, for fluent implementation of JS facades, |dotty-cps-async|_ provides the |JSFuture|_ trait, which has monadic operations in Scala and visible from JavaScript as |Promise|_.  
+Also, for a fluent implementation of JS facades, |dotty-cps-async|_ provides the |JSFuture|_ trait, which has monadic operations in Scala and visible from JavaScript as |Promise|_.  
 i.e. with the following definitions:
 
 .. code-block:: scala

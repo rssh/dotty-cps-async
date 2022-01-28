@@ -9,6 +9,7 @@
     <title>Automatic Coloring &#8212; dotty-cps-async 0.9.7 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -46,7 +47,7 @@
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>Sometimes, especially when we work with distributed systems, most API calls are asynchronous and should be prefixed by <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.  And we should remember what functions we should call async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e., <code class="docutils literal notranslate"><span class="pre">F[T]</span></code>) and one - sync. (<code class="docutils literal notranslate"><span class="pre">T</span></code> without <code class="docutils literal notranslate"><span class="pre">F</span></code>).</p>
 <p>If we want to put an asynchronous expression into a synchronous function, we should write <code class="docutils literal notranslate"><span class="pre">await(expr)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">expr</span></code>, for transforming the synchronous code into an asynchronous one
-(see <a class="reference external" href="http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/">http://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/</a> for more detailed explanation).</p>
+(see <a class="reference external" href="https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/"><strong>What Color is Your Function?</strong></a> for more detailed explanation).</p>
 <p>In <a class="reference external" href="https://dotty.epfl.ch/"><strong>Scala 3</strong></a>, we have types, so why not ask the compiler to do async coloring automatically?
 So, the code below</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span> <span class="p">{</span>
@@ -73,7 +74,7 @@ So, the code below</p>
 </section>
 <section id="automatic-coloring-memoization">
 <h2>Automatic Coloring &amp; Memoization<a class="headerlink" href="#automatic-coloring-memoization" title="Permalink to this headline">¶</a></h2>
-<p>If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation), then implicit await is enough for automatic coloring.  But what to do with pure effect monads, which holds computations without starting them?</p>
+<p>If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation), then implicit await is enough for automatic coloring.  But should we handle pure effect monads, which hold computations without starting them?</p>
 <p>Let’s look at the following code:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">updateCounter</span><span class="p">(</span><span class="n">counter</span><span class="p">:</span> <span class="nc">Counter</span><span class="p">)</span> <span class="o">=</span> <span class="n">async</span><span class="p">[</span><span class="nc">IO</span><span class="p">]</span> <span class="p">{</span>
   <span class="kd">val</span> <span class="n">value</span> <span class="o">=</span> <span class="n">counter</span><span class="p">.</span><span class="n">increment</span><span class="p">()</span>
@@ -86,7 +87,7 @@ So, the code below</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Assume IO is some pure effect monad, which holds a computation function that will be evaluated each time we need to get value from the monad. <code class="docutils literal notranslate"><span class="pre">Counter.increment()</span></code> is an IO action:</p>
+<p>Assume IO is some pure effect monad, which holds a computation function that will be evaluated each time we need to get a value from the monad. <code class="docutils literal notranslate"><span class="pre">Counter.increment()</span></code> is an IO action:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">Counter</span><span class="p">:</span>
 
   <span class="k">def</span> <span class="nf">increment</span><span class="p">():</span> <span class="nc">IO</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span>
@@ -117,7 +118,11 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 <section id="custom-value-discard">
 <h2>Custom value discard<a class="headerlink" href="#custom-value-discard" title="Permalink to this headline">¶</a></h2>
 <p id="index-0">During the writing of asynchronous code, typical developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.</p>
-<p><code class="docutils literal notranslate"><span class="pre">cps.customValueDiscard</span></code> limits the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types <code class="docutils literal notranslate"><span class="pre">T</span></code>, for which exists an implementation of a special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala"><code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code></a>. If given <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala"><code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code></a> is not found in the current scope, then dropping values of this type is prohibited.  If found - <code class="docutils literal notranslate"><span class="pre">ValueDiscard.apply(t)</span></code> is called. It’s defined as a no-op for primitive types and can be extended by the developer for its own types.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cps.customValueDiscard</span></code> limits the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types <code class="docutils literal notranslate"><span class="pre">T</span></code>, for which it exists an implementation of a special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L11"><code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code></a>.</p>
+<ul class="simple">
+<li><p>If given <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L11"><code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code></a> is not found in the current scope, then dropping values of this type is prohibited.</p></li>
+<li><p>If found <code class="docutils literal notranslate"><span class="pre">ValueDiscard.apply(t)</span></code> is called. The method is defined as a no-op for primitive types and can be extended by the developer for its own types.</p></li>
+</ul>
 <p>Example:</p>
 <p>Assume we have next api:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">object</span> <span class="nc">api</span><span class="p">:</span>
@@ -138,7 +143,7 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Here the developer forgot to wrap <code class="docutils literal notranslate"><span class="pre">dryRun</span></code> into <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.  But <code class="docutils literal notranslate"><span class="pre">customValueDiscard</span></code> feature is enabled and value discard operation is not defined for <code class="docutils literal notranslate"><span class="pre">`Future</span></code>, so this code will not compile.</p>
+<p>Here the developer forgot to wrap <code class="docutils literal notranslate"><span class="pre">dryRun</span></code> into <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.  But <code class="docutils literal notranslate"><span class="pre">customValueDiscard</span></code> feature is enabled and value discard operation is not defined for <a class="reference external" href="https://www.scala-lang.org/api/current/scala/concurrent/Future.html"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a>, so this code will not compile.</p>
 <p id="index-1">If you want to see warning instead error, you can import <cite>warnValueDiscard</cite> feature:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">//import cps.warnValueDiscard.given  //  &lt; 0.9.3</span>
 <span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">warnValueDiscard</span>
@@ -159,8 +164,14 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nc">String</span><span class="p">):</span> <span class="nc">IO</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>Without custom value discarding, the log statement will be dropped.  (Type of <code class="docutils literal notranslate"><span class="pre">if</span></code> with one branch is <a class="reference external" href="https://www.scala-lang.org/api/current/scala/Unit.html"><code class="docutils literal notranslate"><span class="pre">Unit</span></code></a>, so type of the first branch should be <a class="reference external" href="https://www.scala-lang.org/api/current/scala/Unit.html"><code class="docutils literal notranslate"><span class="pre">Unit</span></code></a>, so log statement will be discarded).
-<a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> provides special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/ff25b61f93e49a1ae39df248dbe4af980cd7f948/shared/src/main/scala/cps/ValueDiscard.scala#L44"><code class="docutils literal notranslate"><span class="pre">AwaitValueDiscard</span></code></a>  which forces monad to be evaluated before being discarded.  We recommend use this discard as default for <code class="docutils literal notranslate"><span class="pre">IO[Unit]</span></code>.</p>
+<p>Without custom value discarding, the log statement will be dropped.  (Type of <code class="docutils literal notranslate"><span class="pre">if</span></code> with one branch is <a class="reference external" href="https://www.scala-lang.org/api/current/scala/Unit.html"><code class="docutils literal notranslate"><span class="pre">Unit</span></code></a>, so type of the first branch should be <a class="reference external" href="https://www.scala-lang.org/api/current/scala/Unit.html"><code class="docutils literal notranslate"><span class="pre">Unit</span></code></a> and the <code class="docutils literal notranslate"><span class="pre">log</span></code> statement will be discarded).
+<a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> provides special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/ff25b61f93e49a1ae39df248dbe4af980cd7f948/shared/src/main/scala/cps/ValueDiscard.scala#L44"><code class="docutils literal notranslate"><span class="pre">AwaitValueDiscard</span></code></a>  which forces the monad to be evaluated before being discarded.  We recommend to use this discard as default for <code class="docutils literal notranslate"><span class="pre">IO[Unit]</span></code>.</p>
+<p class="rubric">Footnotes</p>
+<dl class="footnote brackets">
+<dt class="label" id="f1"><span class="brackets">1</span></dt>
+<dd><p>The definitions of <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> and <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> are simplified, in reality they are more complex, because we want to infer the type of the expression independently from the type of monad.</p>
+</dd>
+</dl>
 </section>
 </section>
 

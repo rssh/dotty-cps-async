@@ -9,6 +9,7 @@
     <title>Monad Context &#8212; dotty-cps-async 0.9.7 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -71,8 +72,8 @@ Inside <code class="docutils literal notranslate"><span class="pre">expr</span><
 </pre></div>
 </div>
 <p>where <cite>F</cite> is a type of awaited wrapper and <cite>G</cite> monad in enclosing <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> block.</p>
-<p>Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like structured concurrency.
-Jokingly, we can say that our monad is close to the original Leibnic definition of Monadology, where each monad has unique qualities, not accessible from outside.</p>
+<p>Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like <a class="reference external" href="https://en.wikipedia.org/wiki/Structured_concurrency"><strong>structured concurrency</strong></a>.
+Jokingly, we can say that our monad is close to the original Leibnic definition of monad in his work <a class="reference external" href="https://en.wikipedia.org/wiki/Monadology"><strong>Monadology</strong></a>, where each monad has unique qualities, not accessible from outside.</p>
 <p>The monad context is defined as a type inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a> :</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span> <span class="p">....</span>
 
