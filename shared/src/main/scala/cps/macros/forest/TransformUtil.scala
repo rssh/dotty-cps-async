@@ -199,6 +199,9 @@ object TransformUtil:
                   case None => x.updated(maybeOwner.hashCode, t)
               } else 
                 x
+            case TypedOrTest(expr, tpt) =>
+              // workarround against https://github.com/lampepfl/dotty/issues/14393
+              foldTree(foldOverTree(x, expr)(owner), tpt)(owner)
             case _ =>
               super.foldOverTree(x,tree)(owner)
         }
