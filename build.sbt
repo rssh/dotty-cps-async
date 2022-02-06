@@ -58,6 +58,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         mimaFailOnNoPrevious := false
     ).nativeSettings(
         libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
+        libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
         addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full) 
 
     )

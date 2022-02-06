@@ -7,12 +7,14 @@ import java.util.Timer
 import java.util.TimerTask
 
 
-object FutureSleep:
+object TestTimer:
 
    lazy val timer = new java.util.Timer()
 
-   def apply(duration: Duration):Future[Duration] = {
-      val p = Promise[Duration]
+   type CancelToken = java.util.TimerTask
+
+   def delay(duration: FiniteDuration):Future[FiniteDuration] = {
+      val p = Promise[FiniteDuration]
       val timerTask = new TimerTask {
           
           override def run(): Unit = {
@@ -30,3 +32,24 @@ object FutureSleep:
       timer.schedule(timerTask, duration.toMillis)
       p.future
    }
+
+   def schedule(duration: FiniteDuration)(f: =>Unit): CancelToken = {
+     val timerTask = new TimerTask {
+       override def run(): Unit = {
+         try{
+           f
+         }catch{
+           case ex: Throwable =>
+            ex.printStackTrace()
+            throw ex
+         }
+       }
+     }
+     timer.schedule(timerTask, duration.toMillis)
+     timerTask
+   }
+
+   def cancel(ct: CancelToken): Unit = {
+    ct.cancel()
+  }
+

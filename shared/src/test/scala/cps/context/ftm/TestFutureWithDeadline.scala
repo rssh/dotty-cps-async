@@ -50,7 +50,7 @@ class DeadlineContext(initDeadline: Long) extends CpsMonadContext[FutureWithDead
 
     private[this] var deadline: Long = initDeadline;
     private[this] val timeoutPromise: Promise[Nothing] = Promise()
-    private[this] var lastTimerTask: TimerTask | Null = null
+    private[this] var lastTimerTask: TestTimer.CancelToken | Null = null
 
     def timeoutFuture: Future[Nothing] = timeoutPromise.future
 
@@ -60,7 +60,7 @@ class DeadlineContext(initDeadline: Long) extends CpsMonadContext[FutureWithDead
     def setDeadline(newDeadline: Long) =
         this.synchronized{
           if lastTimerTask != null then 
-               lastTimerTask.nn.cancel()
+               TestTimer.cancel(lastTimerTask.nn)
           deadline = newDeadline;
           if (deadline > 0L) then
              val delay = deadline - now()
@@ -68,12 +68,9 @@ class DeadlineContext(initDeadline: Long) extends CpsMonadContext[FutureWithDead
                 timeoutPromise.tryFailure(new TimeoutException())
                 //throw new IllegalStateException("attempt to set deadlin in past")
              else
-                lastTimerTask = new TimerTask() {
-                    override def run(): Unit = {
-                        timeoutPromise.tryFailure(new TimeoutException())
-                    }
+                lastTimerTask = TestTimer.schedule(delay.millis){
+                    timeoutPromise.tryFailure(new TimeoutException())
                 }
-                DeadlineContext.timer.schedule(lastTimerTask, delay)  
            else  
              lastTimerTask = null
         }
@@ -97,12 +94,6 @@ class DeadlineContext(initDeadline: Long) extends CpsMonadContext[FutureWithDead
 
 }
 
-object DeadlineContext {
-
-    // timer to be compatible with scala-js
-    val timer = new Timer()
-
-}
 
 
 class FutureWithDeadlineCpsMonad(using ExecutionContext) extends CpsAsyncMonad[FutureWithDeadline] with CpsContextMonad[FutureWithDeadline, DeadlineContext] {
