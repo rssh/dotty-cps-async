@@ -1,10 +1,8 @@
 Monad Context 
 =============
 
-.. note:: This functinality will be available in upcoming 0.9.6 version.
-
 Monad context is a way to provide an additional API, which is available only inside some monad 
-(i.e., inside appropriative |await|_ block).   
+(i.e., inside appropriative |async|_ block).   
 In the introduction chapter, we have shown a simplified representation of the |async|_ signature:
 
 .. code-block:: scala
@@ -29,13 +27,22 @@ The complete definition looks like:
   }
 
 
-Here we split an application into two parts, to have one type parameter in |await|_; this becomes possible with the ``async[F]`` syntax.
+Here we split an application into two parts, to have one type parameter in |async|_; this becomes possible with the ``async[F]`` syntax.
 Take a look at the argument of the ``InferAsyncArg.apply`` method: ``expr: C ?=> T``.   
 This is a context function. The context parameter ``C`` is extracted from the monad definition. 
 Inside ``expr`` the Scala 3 compiler makes an implicit instance of ``C`` available, which we can use to provide an internal monad API. 
 
-Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like structured concurrency.   
-Jokingly, we can say that our monad is close to the original Leibnic definition of Monadology, where each monad has unique qualities, not accessible from outside.
+The complete await signature lools like:
+
+.. code-block:: scala
+
+  def await[F[_], T, G[_]](using CpsAwaitabe[F], CpsMonadContext[G])(expr: T) => F[T]
+
+where `F` is a type of awaited wrapper and `G` monad in enclosing |async|_ block.
+
+
+Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like |structured concurrency|_.   
+Jokingly, we can say that our monad is close to the original Leibnic definition of monad in his work |Monadology|_, where each monad has unique qualities, not accessible from outside.
 
 The monad context is defined as a type inside |CpsMonad|_ :
 
@@ -61,6 +68,7 @@ The monad context is defined as a type inside |CpsMonad|_ :
       def adoptAwait[A](fa: F[A]): F[A]
  
     }
+
 
 
 As a practical example, let's consider adding a timeout to the plain Scala future.  
@@ -109,11 +117,17 @@ Also, you can notice the compatibility of this context with |monadic-reflection|
 .. |monadic-reflection| replace:: **monadic-reflection**
 .. _monadic-reflection: https://github.com/lampepfl/monadic-reflection
 
+.. |Monadology| replace:: **Monadology**
+.. _Monadology: https://en.wikipedia.org/wiki/Monadology
+
 .. |reflect| replace:: ``reflect``
 .. _reflect: https://github.com/lampepfl/monadic-reflection/blob/main/core/src/main/scala/monadic/Monadic.scala#L26
 
 .. |reify| replace:: ``reify``
 .. _reify: https://github.com/lampepfl/monadic-reflection/blob/main/core/src/main/scala/monadic/Monadic.scala#L31
+
+.. |structured concurrency| replace:: **structured concurrency**
+.. _structured concurrency: https://en.wikipedia.org/wiki/Structured_concurrency
 
 .. |TimeoutException| replace:: ``TimeoutException``
 .. _TimeoutException: https://www.scala-lang.org/api/current/scala/concurrent/index.html#TimeoutException=java.util.concurrent.TimeoutException

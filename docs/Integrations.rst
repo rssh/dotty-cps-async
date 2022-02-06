@@ -23,7 +23,7 @@ Add dependency |cps-async-connect-cats-effect|_ to your ``build.sbt`` to integra
  .. code-block:: scala
 
   libraryDependencies += "org.typelevel" %% "cats-effect" % "3.3.4"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.9.5"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.9.2"
 
 |Cats Effect|_ GitHub : |typelevel/cats-effect|_, Maven : |org.typelevel»cats-effect|_.
 
@@ -38,7 +38,7 @@ Add dependency |cps-async-connect-monix|_ to your ``build.sbt`` to integrate |Mo
  .. code-block:: scala
 
   libraryDependencies += "io.monix" %% "monix" % "3.4.0"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % "0.9.5"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % "0.9.2"
 
 |Monix|_ GitHub : |monix/monix|_, Maven : |io.monix|_.
 
@@ -49,9 +49,9 @@ Add dependency |cps-async-connect-scalaz|_ to your ``build.sbt`` to integrate |S
 
  .. code-block:: scala
 
-  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.6"
-  libraryDependencies += "org.scalaz" %% "scalaz-effect" % "7.3.6"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-scalaz" % "0.9.5"
+  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.4.0-M10"
+  libraryDependencies += "org.scalaz" %% "scalaz-effect" % "7.4.0-M10"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-scalaz" % "0.9.2"
 
 |Scalaz IO|_ GitHub : |scalaz/scalaz|_, Maven : |org.scalaz|_.
 
@@ -62,8 +62,8 @@ Add dependency |cps-async-connect-zio|_ to your ``build.sbt`` to integrate |ZIO|
 
  .. code-block:: scala
 
-  libraryDependencies += "dev.zio" %% "zio" % "2.0.0-RC1"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.9.5"
+  libraryDependencies += "dev.zio" %% "zio" % "1.0.13"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.9.2"
 
 |ZIO|_ GitHub: |zio/zio|_, Maven : |dev.zio|_.
 
@@ -75,7 +75,7 @@ Add dependency |cps-async-connect-akka-stream|_ to your ``build.sbt`` to integra
  .. code-block:: scala
 
   libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.6.18"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-akka-stream" % "0.9.5"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-akka-stream" % "0.9.2"
 
 |Akka Stream|_ GitHub : |akka/akka|_, Maven : |com.typesafe.akka»akka-stream|_.
 
@@ -88,7 +88,7 @@ Add dependency |cps-async-connect-fs2|_ to your ``build.sbt`` to integrate Typel
 
   libraryDependencies += "co.fs2" %% "fs2-core" % "3.2.0"
   libraryDependencies += "co.fs2" %% "fs2-io" % "3.2.0"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-fs2" % "0.9.5"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-fs2" % "0.9.2"
 
 |FS2|_ GitHub : |typelevel/fs2|_, Maven : |co.fs2|_.
 
@@ -103,7 +103,7 @@ GitHub project: https://github.com/typelevel/cats-effect-cps
 Call for additions:
 -------------------
 
-If you have implemented |CpsMonad|_ support for some effect stack and want to mention it here - please, send a pull request about this.
+If you have implemented |CpsMonad|_ support for some effect stack and want to mention it here - please, send a |pull request|_ about this.
 
 
 .. ###########################################################################
@@ -183,6 +183,9 @@ If you have implemented |CpsMonad|_ support for some effect stack and want to me
 
 .. |org.typelevel»cats-effect| replace:: ``org.typelevel»cats-effect`` 
 .. _org.typelevel»cats-effect : https://mvnrepository.com/artifact/org.typelevel/cats-effect
+
+.. |pull request| replace:: pull request
+.. _pull request: https://github.com/rssh/dotty-cps-async/pulls
 
 .. |Scalaz IO| replace:: **Scalaz IO**
 .. _Scalaz IO: https://scalaz.github.io/

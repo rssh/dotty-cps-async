@@ -1,0 +1,52 @@
+package cps.monads
+
+import cps.*
+import scala.annotation.implicitAmbiguous
+import scala.util.Try
+
+
+/**
+ * FreeCpsMonad 
+ * Typical pattern - use FreeCpsMonad and custom interpreter in test.
+ **/
+sealed trait FreeMonad[+T] 
+
+object FreeMonad {
+  case class Pure[A](a:A) extends FreeMonad[A]
+  case class Map[A,B](fa:FreeMonad[A],f: A=>B) extends FreeMonad[B]
+  case class FlatMap[A,B](fa: FreeMonad[A], f: A=>FreeMonad[B]) extends FreeMonad[B]
+  case class Error(e: Throwable) extends FreeMonad[Nothing]
+  case class FlatMapTry[A,B](fa: FreeMonad[A], f: Try[A]=>FreeMonad[B]) extends FreeMonad[B]
+  case class AdoptCallbackStyle[A](source:(Try[A]=>Unit)=>Unit) extends FreeMonad[A]
+}
+
+
+/**
+ * Implementation for FreeCpsMonad.
+ * It is intentionally defiend at top-level, to fire 'implicitAmbigious' error when 
+ * async is called without parameters and without select instance of CpsMonad in scope.
+ **/
+@implicitAmbiguous(
+"""
+ You use async without type parameter (i.e. async{ ... } instead async[F])
+ Therefore exists multiple possible variants, definied in cps.monads.*
+ If you really want use async wthout type parameter, define given instance of selected CpsMonad in the neareast scope
+"""
+)
+given FreeCpsMonad: CpsTryMonad[FreeMonad] with CpsMonadInstanceContext[FreeMonad] with {
+
+  type F[A] = FreeMonad[A]
+
+  def pure[A](a:A): F[A] = FreeMonad.Pure(a)
+
+  def map[A,B](fa:F[A])(f: A=>B): F[B] = FreeMonad.Map(fa,f)
+
+  def flatMap[A,B](fa: F[A])(f: A => F[B]): F[B] = FreeMonad.FlatMap(fa,f)
+
+  def error[A](e: Throwable): F[A] = FreeMonad.Error(e)
+
+  def flatMapTry[A,B](fa:F[A])(f: Try[A]=>F[B]): F[B] = FreeMonad.FlatMapTry(fa,f)
+
+  def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): F[A] = FreeMonad.AdoptCallbackStyle(source)
+
+}

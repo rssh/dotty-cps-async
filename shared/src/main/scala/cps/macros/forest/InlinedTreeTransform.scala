@@ -109,11 +109,7 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                             val awaitValSym = Symbol.newVal(Symbol.spliceOwner, name+"$await", tpt.tpe,  
                                                             vx.symbol.flags, Symbol.noSymbol)
                             val awaitVal = ValDef(awaitValSym, Some(
-                                   Apply(Apply(TypeApply(Ref(awaitSymbol),
-                                                         List(TypeTree.of[F], Inferred(cpsRhs.otpe), TypeTree.of[F])),
-                                               List(Ref(newSym))),
-                                         List(monad, monadContext)).changeOwner(awaitValSym)
-
+                                   generateAwaitFor(Ref(newSym), cpsRhs.otpe).changeOwner(awaitValSym)
                             ))
                             val bindingRecord =  InlinedValBindingRecord(awaitValSym, cpsRhs, vx) 
                             s.copy(newBindings = newValDef::s.newBindings,
@@ -161,12 +157,7 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                                   val newApply = Select.unique(Ref(funBinding.newSym),"apply")
                                   val changed = Apply(TypeApply(newApply,targs),newArgs)
                                   if (funBinding.cpsTree.isAsync) then
-                                     Apply(Apply(TypeApply(
-                                               Ref(awaitSymbol),
-                                               List(TypeTree.of[F], Inferred(changed.tpe))),
-                                             List(changed)),
-                                       List(monad)
-                                     )
+                                     generateAwaitFor(changed, changed.tpe)
                                   else
                                      changed
                                 case _ =>
@@ -180,11 +171,7 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                               val newApply = Select.unique(Ref(binding.newSym),"apply")
                               val changed = Apply(newApply,newArgs)
                               if (binding.cpsTree.isAsync) then
-                                 Apply(Apply(TypeApply(
-                                               Ref(awaitSymbol),
-                                               List(TypeTree.of[F], Inferred(changed.tpe))),
-                                             List(changed)),
-                                       List(monad))
+                                 generateAwaitFor(changed, changed.tpe)
                               else
                                  changed
                            case _ =>
@@ -257,6 +244,21 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
         case lt@Lambda(params,body) => Some(lt)
         case Inlined(call,binding,body) => checkLambdaDef(body)
         case _ => None
+
+
+  def generateAwaitFor(term: Term, tpe:TypeRepr): Term =
+   val monad = cpsCtx.monad.asTerm
+   val monadContext = cpsCtx.monadContext.asTerm
+   Apply(
+      Apply(
+         TypeApply(
+            Ref(awaitSymbol),
+            List(Inferred(TypeRepr.of[F]), Inferred(tpe), Inferred(TypeRepr.of[F]) )
+         ),
+         List(term)
+      ),
+      List(monad, monadContext)
+   )
 
 
 object InlinedTreeTransform:
