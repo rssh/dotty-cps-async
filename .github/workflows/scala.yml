@@ -18,5 +18,7 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
+    - name: Install libuv
+      run: sudo apt-get update && sudo apt-get install -y libuv1-dev
     - name: Run tests
       run: sbt test
