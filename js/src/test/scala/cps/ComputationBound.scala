@@ -14,13 +14,20 @@ import scalajs.concurrent.JSExecutionContext.Implicits.queue
 
 trait ComputationBound[+T] {
  
+  // TODO: remove
   def run(timeout: Duration = Duration.Inf): Try[T] =
-    progress(timeout) match 
+    progressImmediate(timeout) match 
       case Done(t) => Success(t)
       case Error(e) => Failure(e)
       case _ => Failure(new TimeoutException())
+    
 
   def progress(timeout: Duration): ComputationBound[T]
+
+  def progressImmediate(timeout: Duration): ComputationBound[T] =
+    // TODO: change
+    progress(timeout)
+
 
   def checkProgress(timeout: Duration = Duration.Inf): Either[Try[T],ComputationBound[T]] =
         progress(timeout) match
@@ -28,16 +35,19 @@ trait ComputationBound[+T] {
            case Error(e) => Left(Failure(e))
            case other => Right(other)
 
-  def runTicks(timeout: Duration): Future[T] =
+  def runTicks(timeout: Duration = Duration.Inf): Future[T] =
      ComputationBound.progressWithNextTicks(this, timeout)
                             
-                
-  
-
+            
   def map[S](f:T=>S): ComputationBound[S] =
      flatMap( x => Done(f(x)) )
 
   def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S]
+
+  def mapTry[S](f:Try[T]=>S): ComputationBound[S] =
+     flatMapTry(x => Done(f(x)))
+
+  def flatMapTry[S](f: Try[T] => ComputationBound[S]): ComputationBound[S]
 
 }
 
@@ -161,8 +171,6 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
 
    def pure[T](value:T): ComputationBound[T] = ComputationBound.pure(value)
 
-   def finalAwait[T](t:ComputationBound[T]):Try[T] = t.run()
-
    def map[A,B](fa:ComputationBound[A])(f: A=>B): ComputationBound[B] = fa.map(f)
 
    def flatMap[A,B](fa:ComputationBound[A])(f: A=>ComputationBound[B]):ComputationBound[B] = 
@@ -171,26 +179,11 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
    def error[T](e: Throwable):ComputationBound[T] = Error[T](e)
 
    override def mapTry[A,B](fa: ComputationBound[A])(f:Try[A]=>B): ComputationBound[B] =
-     Thunk(() => Done(f(fa.run())))
+     fa.mapTry(f)
 
    override def flatMapTry[A,B](fa: ComputationBound[A])(f:Try[A]=>ComputationBound[B]): ComputationBound[B] =
-     Thunk(() => f(fa.run()))
+     fa.flatMapTry(f)
 
-
-   override def restore[A](fa: ComputationBound[A])(fx:Throwable => ComputationBound[A]): ComputationBound[A] = Thunk(() => {
-         fa.run() match 
-            case Success(a) => Done(a)
-            case Failure(ex) => fx(ex)
-       })
-
-   override def withAction[A](fa:ComputationBound[A])(action: =>Unit):ComputationBound[A] = Thunk(() => {
-         val r = fa.run()  
-         action
-         r match {
-           case Success(a) => Done(a)
-           case Failure(ex) => Error(ex)
-         }
-       })
 
    def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit):ComputationBound[A] = 
          ComputationBound.asyncCallback(source)
@@ -230,6 +223,15 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
                  case Thunk(f1) => f1().flatMap(f)
                  case Wait(ref,f1) => Wait(ref, x => f1(x).flatMap(f))
              }
+
+  def flatMapTry[S](f: Try[T]=>ComputationBound[S]): ComputationBound[S] =
+    Thunk[S]{ () =>
+       thunk() match
+        case Done(t) => f(Success(t))
+        case Error(e) => f(Failure(e))
+        case Thunk(f1) => f1().flatMapTry(f)
+        case Wait(ref, f1) => Wait(ref, x => f1(x).flatMapTry(f))
+    }
      
 }
 
@@ -240,6 +242,10 @@ case class Done[T](value:T) extends ComputationBound[T]:
   override def flatMap[S](f: T=>ComputationBound[S] ): ComputationBound[S] =
      Thunk( () => f(value) )
 
+  override def flatMapTry[S](f: Try[T]=>ComputationBound[S] ): ComputationBound[S] =
+      Thunk( () => f(Success(value)) )
+ 
+
 
 case class Error[T](e: Throwable) extends ComputationBound[T]:
 
@@ -247,6 +253,14 @@ case class Error[T](e: Throwable) extends ComputationBound[T]:
 
   override def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] =
      this.asInstanceOf[ComputationBound[S]]
+
+  override def flatMapTry[S](f: Try[T] => ComputationBound[S] ): ComputationBound[S] =
+     try {
+       f(Failure(e))
+     }catch{
+       case ex: Throwable =>
+        Error(ex)
+     }
 
 
 case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => ComputationBound[T]) extends ComputationBound[T] {
@@ -273,6 +287,9 @@ case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => Computa
       
   override def flatMap[S](f: T => ComputationBound[S]): ComputationBound[S] =
         Wait(ref, x => op(x) flatMap f)
+
+  override def flatMapTry[S](f: Try[T]=>ComputationBound[S]): ComputationBound[S] =
+        Wait(ref, x => op(x).flatMapTry(f))       
 
   override def map[S](f: T=>S): ComputationBound[S] =
         Wait(ref, x => op(x).map(f) )
