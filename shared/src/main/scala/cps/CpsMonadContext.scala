@@ -21,27 +21,47 @@ trait CpsMonadContext[F[_]] {
 }
 
 
+class CpsMonadInstanceContextBody[F[_]](m: CpsMonadInstanceContext[F]) extends CpsMonadContext[F] {
+  
+  /**
+   * If is it statically known, that monad is evaluated in this context, then
+   * this call is completely eliminated by dotty-cps-async macro
+   *@return fa
+   **/
+   def adoptAwait[A](fa:F[A]):F[A] = fa
+
+   def monad: CpsMonad[F] = m
+
+}
+
+object CpsMonadInstanceContextBody
+
+
 /**
  * Trait for minimal monad context, which provides an instance of CpsMonad.
  * Mixin this trait into your monad in cases, when you monad have no internal API.
  **/
-trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] with CpsMonadContext[F] {
+trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] /* with CpsMonadContext[F]*/  {
 
 
-  override type Context = CpsMonadInstanceContext[F]
+
+  override type Context = CpsMonadInstanceContextBody[F]
+  //override type Context = CpsMonadInstanceContext[F]
 
   /**
   * run with this instance
   **/
   def apply[T](op: Context => F[T]): F[T] =
-    op(this.asInstanceOf[Context])
+    op(CpsMonadInstanceContextBody(this))
+  
 
-  /**
-  * If is it statically known, that monad is evaluated in this context, then
-  * this call is completely eliminated by dotty-cps-async macro
-  *@return fa
-  **/
-  def adoptAwait[A](fa:F[A]):F[A] = fa
+   /**
+   * If is it statically known, that monad is evaluated in this context, then
+   * this call is completely eliminated by dotty-cps-async macro
+   *@return fa
+   **/
+   def adoptAwait[A](fa:F[A]):F[A] = fa
+    
 
 }
 

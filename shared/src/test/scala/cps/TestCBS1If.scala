@@ -31,9 +31,9 @@ class TestBS1If:
      assert(c.run() == Success(1))
 
   @Test def tIfC1_011(): Unit = 
-     val c = Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.type]({
+     val c = Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.Context]({
         if (true) await(T1.cbi(1)) else await(T1.cbi(2))
-     }, ComputationBoundAsyncMonad)
+     }, CpsMonadInstanceContextBody(ComputationBoundAsyncMonad))
      assert(c.run() == Success(1))
 
 
