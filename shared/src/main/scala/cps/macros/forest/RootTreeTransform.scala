@@ -1,8 +1,9 @@
 // root transform for low-level tasty trees.
-//  (C) Ruslan Shevchenko, 2019-2021, Kiev, Ukraine
+//  (C) Ruslan Shevchenko, 2019-2022, Kiev, Ukraine
 package cps.macros.forest
 
 import scala.quoted._
+import scala.util.control.NonFatal
 
 import cps._
 import cps.macros._
@@ -64,7 +65,12 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                         } catch {
                              case e: MacroError  =>
                                 if (!e.printed) then
-                                  println(s"can't translate tree: ${term.show}" )
+                                  val termShowed = try {
+                                     term.show
+                                  } catch {
+                                     case NonFatal(ex) => term.toString
+                                  }
+                                  println(s"can't translate tree: ${termShowed}" )
                                   e.printStackTrace()
                                   throw e.copy(printed=true);
                                 else

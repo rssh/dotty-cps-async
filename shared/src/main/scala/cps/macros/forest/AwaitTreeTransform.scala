@@ -1,10 +1,12 @@
 package cps.macros.forest
 
 import scala.quoted._
+import scala.util.control.NonFatal
 
 import cps._
 import cps.macros._
 import cps.macros.misc._
+
 
 
 trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
@@ -50,7 +52,13 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
              val convertedArg = Apply(TypeApply(Select.unique(implSuccess.tree, "apply"),List(Inferred(tTpe))),List(arg))
              runMyAwait(awaitTerm, convertedArg, myMonadContext)
            case implFailure: ImplicitSearchFailure =>
-             throw MacroError(s"Can't find ${taConversion.show}: ${implFailure.explanation}",posExprs(awaitTerm))
+             val taConversionPrinted = try {
+               taConversion.show
+             } catch {
+               case NonFatal(ex) =>
+                taConversion.toString
+             }
+             throw MacroError(s"Can't find ${taConversionPrinted}: ${implFailure.explanation}",posExprs(awaitTerm))
 
 
   def adoptContextInMyAwait(awaitTerm: Term, arg: Term, monadContext: Term): Term =
