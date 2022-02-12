@@ -20,6 +20,8 @@ trait TreeTransformScope[F[_]:Type,CT:Type, CC<:CpsMonadContext[F]:Type]
                   with RepeatedTreeTransform[F,CT, CC]
                   with InlinedTreeTransform[F,CT, CC]
                   with SelectOuterTreeTransform[F,CT, CC]
+                  with BlockTreeTransform[F,CT,CC]
+                  with ValDefTreeTransform[F,CT,CC]
 {
 
    val cpsCtx: TransformationContext[F,CT, CC]
@@ -31,6 +33,11 @@ trait TreeTransformScope[F[_]:Type,CT:Type, CC<:CpsMonadContext[F]:Type]
    implicit val ctType: quoted.Type[CT]
 
    implicit val ccType: quoted.Type[CC]
+
+   def unitTerm = {
+      import qctx.reflect.*
+      Literal(UnitConstant())
+   }
 
    def posExpr(t: qctx.reflect.Term): Expr[Any] =
        import qctx.reflect._
@@ -65,13 +72,22 @@ trait TreeTransformScope[F[_]:Type,CT:Type, CC<:CpsMonadContext[F]:Type]
            case _ => retval = Some(t.asExpr)
        retval.getOrElse(cpsCtx.patternCode)
 
-   def safeShow(t: qctx.reflect.Term): String =
+   def safeShow(t: qctx.reflect.Tree): String =
        import qctx.reflect._
        try 
-         t.asExpr.show
+         t.show
        catch 
          case ex: Exception =>
             t.toString
+
+   def safeTypeShow(tp: qctx.reflect.TypeRepr): String =
+        import qctx.reflect._
+        try {
+          tp.show
+        }catch
+          case ex: Exception =>
+            tp.toString 
+
 
    case class MessageWithPos(message:String, pos: qctx.reflect.Position)
 

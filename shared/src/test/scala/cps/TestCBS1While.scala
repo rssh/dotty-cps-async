@@ -50,16 +50,9 @@ class TestBS1While:
      }
      assert(c.run() == Success(45))
 
- // Dotty crash.
- // TODO: minimize and submit bug.
- //  onlu this test : branch  dotty-break-while-00,
- //  submitted to dotty 
- //    https://github.com/lampepfl/dotty/issues/8029
- //   pull request with fix also submitted:
- //    https://github.com/lampepfl/dotty/pull/8057
- //
   @Test def tWhileC1_11(): Unit = 
-     val c = macros.Async.transform[ComputationBound,Int, ComputationBoundAsyncMonad.type]({
+     given ctx: CpsMonadInstanceContextBody[ComputationBound] = CpsMonadInstanceContextBody(ComputationBoundAsyncMonad)
+     val c = macros.Async.transform[ComputationBound,Int, ComputationBoundAsyncMonad.Context]({
         val n = 10
         var s = 0
         var i = 0
@@ -69,7 +62,7 @@ class TestBS1While:
           i += 1
         }
         s
-     }, ComputationBoundAsyncMonad)
+     }, ctx)
      assert(c.run() == Success(45))
 
 

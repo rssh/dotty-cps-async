@@ -34,7 +34,7 @@ class TestAccidentContextResolving {
       FutureCompleter(r)
 
   @Test def testFtAwaitInScopwWithTwoInstanceContext() = 
-      implicit val printCode = cps.macros.flags.PrintCode
+      //implicit val printCode = cps.macros.flags.PrintCode
       val c = async[Future] {
           val x = await(fun())
           x+1

@@ -11,9 +11,9 @@ import cps._
 class TestIF:
 
   @Test def reproduce(): Unit =
-     //implicit val printCode = cps.macroFlags.PrintCode
+     //implicit val printCode = cps.macros.flags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
-     //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
+     //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
      val writer = CIFWriter[ComputationBound,Int]()
      val reader = CIFReader[ComputationBound,Int](10)
      val c = async{

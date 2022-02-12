@@ -61,8 +61,8 @@ trait IFReader[F[_],A]:
          f(value.get)
      }
 
-   inline def foreach(inline f: A=>Unit): Unit =
-        await(aforeach(f))(using cpsMonad)
+   inline def foreach(inline f: A=>Unit)(using monadContext: CpsMonadContext[F]): Unit =
+        await(aforeach(f))(using cpsMonad, monadContext)
 
 class CIFReader[F[_]:CpsMonad,A](a:A) extends IFReader[F,A]:
 

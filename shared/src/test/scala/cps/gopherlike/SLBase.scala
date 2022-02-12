@@ -90,7 +90,7 @@ class SLSelectLoop[F[_]](using val am:CpsMonad[F]):
        am.pure(s0)
   }
 
-  transparent inline def afold[S](inline s0:S)(inline step: (S,SLSelectLoop[F]) => S|SLSelectLoop.Done[S]): F[S] =
+  transparent inline def afold[S](inline s0:S)(inline step: CpsMonadContext[F] ?=> (S,SLSelectLoop[F]) => S|SLSelectLoop.Done[S]): F[S] =
      async[F] { 
        fold(s0)(step)
      }

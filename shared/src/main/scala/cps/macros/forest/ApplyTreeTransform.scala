@@ -357,9 +357,10 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         shiftedResultCpsTree(applyTerm, head.appliedToArgss(shiftedTails))
       case None =>
         cpsTree match
-           case PureCpsTree(origin, _) => 
+           case _ : PureCpsTree  |  EmptyCpsTree => 
               // impossible
-              val head = shiftedApplyTerm(origin, originArgs, shiftedArgs, shiftedIndexes)
+              val originTerm = cpsTree.syncOrigin.get
+              val head = shiftedApplyTerm(originTerm, originArgs, shiftedArgs, shiftedIndexes)
               shiftedResultCpsTree(applyTerm, head.appliedToArgss(shiftedTails))
            case SelectTypeApplyCpsTree(optOrigin,nested,targs,selects,otpe, changed) =>
               if (selects.isEmpty) then

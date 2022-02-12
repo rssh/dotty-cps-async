@@ -87,6 +87,7 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
             printf(other.show)
             throw MacroError(s"unknown tree type in block: $other",patternCode)
      }
+     // last can be async lambda, which is not mapped to cpsExpr
      val rLast = Async.nestTransform(last.asExprOf[T],cpsCtx)
      val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
      // wrap yet in one Expr, to avoid unrolling during append in enclosing block).

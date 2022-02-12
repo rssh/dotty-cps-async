@@ -51,7 +51,11 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                                scope.runInlined(inlined.asInstanceOf[scope.qctx.reflect.Inlined])
                                     .inCake(thisTransform)
                             )
-                            tree
+                            tree          
+                  // special case, until we not enabled total blcok          
+                  case block@Block(Nil, last) =>
+                             val cpsLast = runRoot(last, muted = muted)
+                             cpsLast
                   case _ =>  // TODO: elimi
                     val expr = term.asExpr
                     val monad = cpsCtx.monad
