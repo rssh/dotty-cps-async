@@ -30,7 +30,7 @@ The current prerelease is |0.9.7|_ for using with Scala |3.1.1|_.
    scalaVersion := "3.1.1"
    libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.7"
 
-JavaScript is also supported.
+JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
