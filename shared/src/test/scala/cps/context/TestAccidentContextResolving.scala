@@ -74,4 +74,66 @@ class TestAccidentContextResolving {
       }
   }    
 
+  @Test def twoSmallMonads2() = {
+      val x = async[M2]{
+        val y = await(m1)
+        val z = await(m2)
+      }
+  }
+
+  class ZM1[-R,+X]
+      
+
+  object ZM1:
+    def access[R]: ZM1AccessPartialApply[R] =
+      new ZM1AccessPartialApply[R]
+    
+  class ZM1AccessPartialApply[R]:
+    def apply[A](f: R=>A):ZM1[R,A] = 
+      ZM1[R,A]()
+    
+    
+
+  class ZM2[-R,+X]
+
+  class ZM1CpsMonad[R] extends CpsMonad[[X] =>> ZM1[R,X]] with CpsMonadInstanceContext[[X] =>> ZM1[R,X]] {
+    def pure[A](x:A):ZM1[R,A] = ZM1[R,A]()
+    def map[A,B](fa:ZM1[R,A])(f: A=>B):ZM1[R,B] = ZM1[R,B]()
+    def flatMap[A,B](fa:ZM1[R,A])(f:A=>ZM1[R,B]):ZM1[R,B] = ZM1[R,B]()
+  }
+
+  class ZM2CpsMonad[R] extends CpsMonad[[X] =>> ZM2[R,X]] with CpsMonadInstanceContext[[X] =>> ZM2[R,X]] {
+    def pure[A](x:A):ZM2[R,A] = ZM2[R,A]()
+    def map[A,B](fa:ZM2[R,A])(f: A=>B):ZM2[R,B] = ZM2[R,B]()
+    def flatMap[A,B](fa:ZM2[R,A])(f:A=>ZM2[R,B]):ZM2[R,B] = ZM2[R,B]()
+  }
+
+  given zm1Monad[R]: ZM1CpsMonad[R] = ZM1CpsMonad[R]()
+  given zm2Monad[R]: ZM2CpsMonad[R] = ZM2CpsMonad[R]()
+  
+  given zm1Tpzm2[R1,R2]: CpsMonadConversion[[X]=>>ZM1[R1,X],[X]=>>ZM2[R2,X]] with {
+    def apply[A](fa:ZM1[R1,A]):ZM2[R2,A] = ZM2[R2,A]()
+  }
+
+  given zm2Tpzm2[R1,R2]: CpsMonadConversion[[X]=>>ZM2[R1,X],[X]=>>ZM2[R2,X]] with {
+    def apply[A](fa:ZM2[R1,A]):ZM2[R2,A] = ZM2[R2,A]()
+  }
+
+
+  def zm1:ZM1[Unit,Int] = ZM1[Unit,Int]()
+  def zm2:ZM2[Any,Int] = ZM2[Any,Int]()
+
+
+  @Test def twoSmallZMonads() = {
+      class Apis {
+        def futureApi: Future[Int] = Future successful 2
+        def zm1Api[R]: ZM1[R,Int] = new ZM1[R,Int]()
+      }
+      val x = async[[X]=>>ZM2[Apis,X]]{
+        val y = await(ZM1.access[Apis](_.futureApi))
+        val z = await(zm2)
+      }
+  }
+ 
+  
 }
