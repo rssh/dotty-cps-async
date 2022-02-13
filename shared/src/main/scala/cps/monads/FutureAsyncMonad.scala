@@ -11,7 +11,7 @@ import scala.util.control._
 /**
  * Default CpsMonad implementation for `Future`
  **/
-given FutureAsyncMonad(using ExecutionContext):  CpsSchedulingMonad[Future] with CpsMonadInstanceContext[Future]  with {
+class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Future] with CpsMonadInstanceContext[Future] {
 
    type F[+T] = Future[T]
 
@@ -80,7 +80,7 @@ given FutureAsyncMonad(using ExecutionContext):  CpsSchedulingMonad[Future] with
 
 }
 
-//given FutureAsyncMonad(using ec: ExecutionContext): FutureAsyncMonadAPI = new FutureAsyncMonadAPI
+given FutureAsyncMonad(using ec: ExecutionContext): FutureAsyncMonadAPI = new FutureAsyncMonadAPI
 
 given futureDiscard: cps.automaticColoring.WarnValueDiscard[Future] with {}
 
