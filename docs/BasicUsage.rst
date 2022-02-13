@@ -23,20 +23,21 @@ The following table presents the compatibility between versions of |Scala 3|_ an
 Sbt Example
 -----------
 
-The current prerelease is |0.9.7|_ for using with Scala |3.1.1|_.
+The current prerelease is |0.9.8|_ for using with Scala |3.1.1|_.
 
  .. code-block:: scala
 
    scalaVersion := "3.1.1"
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.7"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.8"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.7"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.8"
 
-**Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js project (see |Scala.js Cross-Building|_).
+**Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
+
 
 
 Basic Usage
@@ -110,7 +111,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.7"
+  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.8"
 
 
 **Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Akka Streams|_, |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_. 
@@ -196,9 +197,9 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 .. |0.9.6| replace:: ``0.9.6``
 .. _0.9.6: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.6
 
-.. |0.9.7| replace:: ``0.9.7``
-.. _0.9.7: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.7/
-.. /*to update*/ https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.7
+.. |0.9.7| replace:: ``0.9.8``
+.. _0.9.7: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.8/
+.. /*to update*/ https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.8
 
 .. |3.0.2| replace:: ``3.0.2``
 .. _3.0.2: https://github.com/lampepfl/dotty/releases/tag/3.0.2
