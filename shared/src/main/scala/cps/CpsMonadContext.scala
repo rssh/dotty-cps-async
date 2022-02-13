@@ -34,19 +34,15 @@ class CpsMonadInstanceContextBody[F[_]](m: CpsMonadInstanceContext[F]) extends C
 
 }
 
-object CpsMonadInstanceContextBody
-
 
 /**
  * Trait for minimal monad context, which provides an instance of CpsMonad.
  * Mixin this trait into your monad in cases, when you monad have no internal API.
  **/
-trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] /* with CpsMonadContext[F]*/  {
+trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] {
 
 
-
-  override type Context = CpsMonadInstanceContextBody[F]
-  //override type Context = CpsMonadInstanceContext[F]
+  type Context = CpsMonadInstanceContextBody[F]
 
   /**
   * run with this instance
