@@ -43,7 +43,7 @@ Can we free concurrent programming from the monadic style:
 	- Formal specs: <https://spec.dart.dev/DartLangSpecDraft.pdf>  (async intro on page 18)
     - Spicing Up Dart with Side Effects (streams extension) <https://dl.acm.org/doi/pdf/10.1145/2742694.2747873>
 - Firefly:
-        - Blog post about analog of automatic coloring: https://www.ahnfelt.net/async-await-inference-in-firefly/
+	- Blog post about analog of automatic coloring: https://www.ahnfelt.net/async-await-inference-in-firefly/
 - [F#][fsharp]:
     - F# Computation Expression: <https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/computation-expressions>
 	- Paper: <http://tomasp.net/academic/papers/computation-zoo/>
