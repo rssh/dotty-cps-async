@@ -97,6 +97,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                          case ex: Exception =>
                             println(s"Exception during sealing to F[T], T=${TypeRepr.of[T].show}, otpe=${candidate.tpe}")
                             println(s"CpsTree.getClass ${candidate.getClass}")
+                            ex.printStackTrace()
                             throw ex;
                        }
                     else
