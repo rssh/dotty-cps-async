@@ -23,7 +23,7 @@ Add dependency |cps-async-connect-cats-effect|_ to your ``build.sbt`` to integra
  .. code-block:: scala
 
   libraryDependencies += "org.typelevel" %% "cats-effect" % "3.3.4"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.9.3"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.9.8"
 
 |Cats Effect|_ GitHub : |typelevel/cats-effect|_, Maven : |org.typelevel»cats-effect|_.
 
@@ -38,7 +38,7 @@ Add dependency |cps-async-connect-monix|_ to your ``build.sbt`` to integrate |Mo
  .. code-block:: scala
 
   libraryDependencies += "io.monix" %% "monix" % "3.4.0"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % "0.9.3"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % "0.9.8"
 
 |Monix|_ GitHub : |monix/monix|_, Maven : |io.monix|_.
 
@@ -51,7 +51,7 @@ Add dependency |cps-async-connect-scalaz|_ to your ``build.sbt`` to integrate |S
 
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.4.0-M10"
   libraryDependencies += "org.scalaz" %% "scalaz-effect" % "7.4.0-M10"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-scalaz" % "0.9.3"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-scalaz" % "0.9.8"
 
 |Scalaz IO|_ GitHub : |scalaz/scalaz|_, Maven : |org.scalaz|_.
 
@@ -65,14 +65,14 @@ For 1.0.x series:
  .. code-block:: scala
 
   libraryDependencies += "dev.zio" %% "zio" % "1.0.13"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.9.3"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % "0.9.8"
 
 For 2.0.x series:
 
  .. code-block:: scala
 
   libraryDependencies += "dev.zio" %% "zio" % "2.0.0-RC1"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio2" % "0.9.3"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio2" % "0.9.8"
 
 
 |ZIO|_ GitHub: |zio/zio|_, Maven : |dev.zio|_.
@@ -86,7 +86,7 @@ Add dependency |cps-async-connect-akka-stream|_ to your ``build.sbt`` to integra
  .. code-block:: scala
 
   libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.6.18"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-akka-stream" % "0.9.3"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-akka-stream" % "0.9.8"
 
 |Akka Stream|_ GitHub : |akka/akka|_, Maven : |com.typesafe.akka»akka-stream|_.
 
@@ -99,7 +99,7 @@ Add dependency |cps-async-connect-fs2|_ to your ``build.sbt`` to integrate Typel
 
   libraryDependencies += "co.fs2" %% "fs2-core" % "3.2.0"
   libraryDependencies += "co.fs2" %% "fs2-io" % "3.2.0"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-fs2" % "0.9.3"
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-fs2" % "0.9.8"
 
 |FS2|_ GitHub : |typelevel/fs2|_, Maven : |co.fs2|_.
 
