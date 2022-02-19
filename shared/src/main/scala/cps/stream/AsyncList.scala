@@ -258,6 +258,13 @@ object AsyncList {
         }
       )
       
+  def iterate[F[_]:CpsConcurrentMonad,T](collection: Iterable[T]): AsyncList[F,T] =
+      def itList(it:Iterator[T]):AsyncList[F,T] =
+          if it.hasNext then
+               Cons(it.next, ()=>itList(it))
+          else 
+               empty[F]
+      itList(collection.iterator)
 
 
   given absorber[F[_],C<:CpsMonadContext[F],T](using ExecutionContext, CpsConcurrentMonad.Aux[F,C]): CpsAsyncEmitAbsorber4[AsyncList[F,T],F,C,T] =

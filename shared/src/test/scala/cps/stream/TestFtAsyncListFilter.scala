@@ -1,4 +1,4 @@
-package cps
+package cps.stream
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert._

@@ -11,11 +11,64 @@ import scala.util.*
  **/
 trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
 
+  thisAsyncIterator =>
+
   /**
   * return the next element of stream in option or None if stream is finished.
   **/
   def  next: F[Option[T]]
 
+
+  def  map[S](f: T=>S): AsyncIterator[F,S] = new AsyncIterator[F,S] {
+    def next: F[Option[S]] = 
+      summon[CpsConcurrentMonad[F]].map(thisAsyncIterator.next)(_.map(f))
+  }
+
+  def  mapAsync[S](f: T=> F[S]): AsyncIterator[F,S] = new AsyncIterator[F,S] {
+    def next: F[Option[S]] = 
+      summon[CpsConcurrentMonad[F]].flatMap(thisAsyncIterator.next){ ov =>
+        ov match
+          case Some(v) => summon[CpsConcurrentMonad[F]].map(f(v))(Some(_))
+          case None => summon[CpsConcurrentMonad[F]].pure(None)
+      }
+  }
+
+  def filter(p: T=>Boolean): AsyncIterator[F,T] = new AsyncIterator[F, T] {
+    def next: F[Option[T]] =
+      summon[CpsConcurrentMonad[F]].flatMap(thisAsyncIterator.next){ ov =>
+        ov match
+          case Some(v) => if (p(v)) summon[CpsConcurrentMonad[F]].pure(Some(v)) else next
+          case None => summon[CpsConcurrentMonad[F]].pure(None)
+      }
+  }
+
+  def filterAsync(p: T=>F[Boolean]): AsyncIterator[F,T] = new AsyncIterator[F, T] {
+    def next: F[Option[T]] =
+      summon[CpsConcurrentMonad[F]].flatMap(thisAsyncIterator.next){ ov =>
+        ov match
+          case Some(v) => summon[CpsConcurrentMonad[F]].flatMap(p(v)){ c =>
+                if (c) then 
+                  summon[CpsConcurrentMonad[F]].pure(Some(v))
+                else
+                  next
+            }
+          case None => summon[CpsConcurrentMonad[F]].pure(None)
+      }
+  }
+
+  def fold[S](s0:S)(f:(S,T)=>S): F[S] = 
+    summon[CpsConcurrentMonad[F]].flatMap(next){ 
+      case Some(v) => fold(f(s0,v))(f)
+      case None => summon[CpsConcurrentMonad[F]].pure(s0)
+    }
+  
+
+  def foldAsync[S](s0:S)(f:(S,T)=>F[S]): F[S] =
+    summon[CpsConcurrentMonad[F]].flatMap(next){
+      case Some(v) =>
+        summon[CpsConcurrentMonad[F]].flatMap(f(s0,v)){ s => foldAsync(s)(f) }
+      case None => summon[CpsConcurrentMonad[F]].pure(s0)  
+    }
 
 
 object AsyncIterator:
