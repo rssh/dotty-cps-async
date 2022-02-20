@@ -110,12 +110,25 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
    **/  
   def scan[S](s0:S)(f:(S,T)=>S): AsyncIterator[F,S] = new AsyncIterator[F,S]{
       val sRef: AtomicReference[S|Null] = new AtomicReference(null)
+
+      def advance(t:T): S =
+        var sNext: S|Null = null
+        while {
+           val s = sRef.get.nn
+           sNext = f(s,t)
+           !sRef.compareAndSet(s,sNext)
+        } do()
+        sNext.nn
+
       def next: F[Option[S]] = {
         if (sRef.compareAndSet(null,s0)) {
            summon[CpsConcurrentMonad[F]].pure(Some(s0))
         } else {
           summon[CpsConcurrentMonad[F]].map(thisAsyncIterator.next)( ot =>
-            ot.map(t=> sRef.updateAndGet( s => f(s.nn,t) ).nn )
+            ot.map(t => advance(t))
+            //scaaljs have no updateAndGet
+            // TODO: update scalajs
+            //ot.map(t=> sRef.updateAndGet( s => f(s.nn,t) ).nn )
           )
         }
       }
