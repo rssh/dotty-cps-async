@@ -19,6 +19,9 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
   def  next: F[Option[T]]
 
 
+  /**
+   * return iterator with values mapped by `f`
+   **/
   def  map[S](f: T=>S): AsyncIterator[F,S] = new AsyncIterator[F,S] {
     def next: F[Option[S]] = 
       summon[CpsConcurrentMonad[F]].map(thisAsyncIterator.next)(_.map(f))
@@ -33,6 +36,9 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       }
   }
 
+  /**
+   * filter accumulator by p, returning only those values, which as satisficy `p`.
+   **/
   def filter(p: T=>Boolean): AsyncIterator[F,T] = new AsyncIterator[F, T] {
     def next: F[Option[T]] =
       summon[CpsConcurrentMonad[F]].flatMap(thisAsyncIterator.next){ ov =>
@@ -42,6 +48,10 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       }
   }
 
+  /**
+   * filter accumulator by p, returning only those values, which as satisficy `p`.
+   * Note, that `p` is applied sequentially
+   **/
   def filterAsync(p: T=>F[Boolean]): AsyncIterator[F,T] = new AsyncIterator[F, T] {
     def next: F[Option[T]] =
       summon[CpsConcurrentMonad[F]].flatMap(thisAsyncIterator.next){ ov =>
@@ -55,6 +65,27 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
           case None => summon[CpsConcurrentMonad[F]].pure(None)
       }
   }
+
+  /**
+   * Find first value wich satisficy `p`
+   **/
+  def find(p: T=>Boolean): F[Option[T]] = {
+    summon[CpsConcurrentMonad[F]].flatMap(next){
+       case Some(v) => 
+          if p(v) then  summon[CpsConcurrentMonad[F]].pure(Some(v)) else find(p)
+       case None => summon[CpsConcurrentMonad[F]].pure(None)
+    }
+  }
+
+  def findAsync(p: T=>F[Boolean]): F[Option[T]] =
+    summon[CpsConcurrentMonad[F]].flatMap(next) {
+      case Some(v) =>
+        summon[CpsConcurrentMonad[F]].flatMap(p(v)){ c =>
+          if (c) summon[CpsConcurrentMonad[F]].pure(Some(v)) else findAsync(p)
+        }
+      case None => summon[CpsConcurrentMonad[F]].pure(None)
+    }
+
 
   def fold[S](s0:S)(f:(S,T)=>S): F[S] = 
     summon[CpsConcurrentMonad[F]].flatMap(next){ 
@@ -70,6 +101,64 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       case None => summon[CpsConcurrentMonad[F]].pure(s0)  
     }
 
+  /**
+   * Scan the value and output in the resulting iterator cummulative accumulated values.  
+   * Note, that
+   * - `f` should be side effects free, since it can be reapplied in
+   *  situation, when  parallel threads tryng to read the next value
+   * - s0 and f(s,t) should not be nulls.
+   **/  
+  def scan[S](s0:S)(f:(S,T)=>S): AsyncIterator[F,S] = new AsyncIterator[F,S]{
+      val sRef: AtomicReference[S|Null] = new AtomicReference(null)
+      def next: F[Option[S]] = {
+        if (sRef.compareAndSet(null,s0)) {
+           summon[CpsConcurrentMonad[F]].pure(Some(s0))
+        } else {
+          summon[CpsConcurrentMonad[F]].map(thisAsyncIterator.next)( ot =>
+            ot.map(t=> sRef.updateAndGet( s => f(s.nn,t) ).nn )
+          )
+        }
+      }
+  }
+
+  /**
+   * Scan the value and output in the resulting iterator cummulative accumulated values.  
+   * Note, that
+   * - `f` should be side effects free, since it can be reapplied in
+   *  situation, when  parallel threads tryng to read the next value
+   * - s0 and f(s,t) should not be nulls.
+   **/  
+  def scanAsync[S](s0:S)(f:(S,T)=>F[S]): AsyncIterator[F,S] = new AsyncIterator[F,S]{
+      val sRef: AtomicReference[S|Null] = new AtomicReference(null)
+
+      def advance(sPrev:S, t:T):F[Option[S]] =
+        summon[CpsConcurrentMonad[F]].flatMap(f(sPrev,t)){ r =>
+          if (sRef.compareAndSet(sPrev,r)) {
+            summon[CpsConcurrentMonad[F]].pure(Some(r))
+          } else {
+            val sNow = sRef.get.nn
+            advance(sNow,t)
+          }
+        }
+
+      def next: F[Option[S]] = {
+        if (sRef.compareAndSet(null,s0)) {
+          summon[CpsMonad[F]].pure(Some(s0))
+        } else {
+          summon[CpsMonad[F]].flatMap(thisAsyncIterator.next){ 
+             case Some(t) =>
+               val sPrev = sRef.get.nn
+               advance(sPrev,t)
+             case None =>
+               summon[CpsMonad[F]].pure(None)
+          }
+        }
+      }
+  }
+
+end AsyncIterator
+
+    
 
 object AsyncIterator:
 

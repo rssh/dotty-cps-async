@@ -49,6 +49,11 @@ sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
 
   def filterAsync(p: T=>F[Boolean]): AsyncList[F,T]
 
+
+  def find(p: T => Boolean): F[Option[T]]@uncheckedVariance
+
+  def findAsync(p: T@uncheckedVariance =>F[Boolean]): F[Option[T]]@uncheckedVariance
+
   def takeList(n:Int): F[List[T]@uncheckedVariance] =
        summon[CpsMonad[F]].map(takeTo( new ListBuffer(), n))(_.toList)
 
@@ -100,6 +105,12 @@ object AsyncList {
      def filterAsync(p: T=>F[Boolean]): AsyncList[F,T] =
           Wait(summon[CpsMonad[F]].map(fs)(_.filterAsync(p)))
 
+     def find(p: T=>Boolean): F[Option[T]] =
+          summon[CpsMonad[F]].flatMap(fs)( _.find(p) )
+
+     def findAsync(p: T=> F[Boolean]): F[Option[T]] =
+          summon[CpsMonad[F]].flatMap(fs)( _.findAsync(p) )
+     
      def takeTo[B <: AbstractBuffer[T]](buffer: B, n: Int):F[B] =
           if n == 0 then
                summon[CpsMonad[F]].pure(buffer)
@@ -188,6 +199,20 @@ object AsyncList {
                     tailFun().filterAsync(p)
           })
 
+     def find(p: T=>Boolean): F[Option[T]] =
+          if p(head) then
+               summon[CpsMonad[F]].pure(Some(head))
+          else
+               tailFun().find(p)
+
+     def findAsync(p: T=>F[Boolean]): F[Option[T]] =
+          summon[CpsMonad[F]].flatMap(p(head)){ c =>
+               if c then
+                    summon[CpsMonad[F]].pure(Some(head))
+               else
+                    tailFun().findAsync(p)
+          }
+
      def takeTo[B <: AbstractBuffer[T]](buffer: B, n: Int):F[B] =
           if (n == 0) then
                summon[CpsMonad[F]].pure(buffer)
@@ -239,6 +264,12 @@ object AsyncList {
      
      def filterAsync(p: Nothing => F[Boolean]): Empty[F] = this
 
+     def find(p: Nothing=>Boolean): F[Option[Nothing]] = 
+          summon[CpsMonad[F]].pure(None)
+
+     def findAsync(p: Nothing=>F[Boolean]): F[Option[Nothing]] = 
+          summon[CpsMonad[F]].pure(None)
+ 
      def takeTo[B <: AbstractBuffer[Nothing]](buffer: B, n: Int):F[B] =
           summon[CpsMonad[F]].pure(buffer)
        
