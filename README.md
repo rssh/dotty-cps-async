@@ -18,9 +18,9 @@ Ukrainian National Bank opened [an account to Raise Funds for Ukraine’s Armed 
 
  You can also donate to [charity supporting Ukrainian army](https://savelife.in.ua/en/donate/).
 
-** Ask you politicians:
-**  to stop Russia access to SWIFT
-*** impose no-fly zone over Ukraine
+Ask you politicians:
+- stop Russia access to SWIFT
+- impose no-fly zone over Ukraine
 
 # dotty-cps-async
 
