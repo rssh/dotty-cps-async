@@ -97,9 +97,12 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
   def flatMapIgnore[A:Type](t: Expr[F[A]])(using Quotes): CpsExpr[F,A] =
          flatMap( '{ _ => $t } )
 
+  def show(using Quotes): String =
+    this.toString
+
 
 abstract class SyncCpsExpr[F[_]:Type, T: Type](dm: Expr[CpsMonad[F]],
-                                      prev: Seq[ExprTreeGen]) extends CpsExpr[F,T](dm, prev):
+                                               prev: Seq[ExprTreeGen]) extends CpsExpr[F,T](dm, prev):
 
      override def isAsync = false
 
@@ -153,6 +156,10 @@ case class GenericSyncCpsExpr[F[_]:Type,T:Type](
        override def flatMapIgnore[A:Type](t: Expr[F[A]])(using Quotes): CpsExpr[F,A] =
             GenericAsyncCpsExpr(dm, prev, '{ ${dm}.flatMap($dm.pure($last))(_ => $t) } )
 
+       override def show(using Quotes) = {
+         import quotes.reflect.*
+         s"GenericSyncCpsExpr(dm=${dm.show},prev=$prev, lastExpr=${lastExpr.show}, changed=$changed)"
+       }
 
 
 
@@ -192,6 +199,12 @@ case class GenericAsyncCpsExpr[F[_]:Type,T:Type](
 
     override def flatMapIgnore[A:Type](t: Expr[F[A]])(using Quotes): CpsExpr[F,A] =
            FlatMappedCpsExpr(dm,Seq(),this, '{ (_:T) => $t })
+
+
+    override def show(using Quotes) = {
+      import quotes.reflect.*
+      s"GenericAsyncCpsExpr(dm=${dm.show},prev=$prev, fLastExpr=${fLastExpr.show})"
+    }
 
 }
 

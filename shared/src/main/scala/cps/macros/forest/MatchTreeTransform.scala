@@ -28,24 +28,34 @@ trait MatchTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
      val cpsScrutinee = runRoot(scrutinee)
      val cpsCases = matchTerm.cases.map( caseDef => runRoot(caseDef.rhs) )
      val asyncCases = cpsCases.exists( _.isAsync )
+     val changedCases = cpsCases.exists( _.isChanged )
+     if (cpsCtx.flags.debugLevel >= 15) then
+        cpsCtx.log(s"matchTransform: asyncCases=${asyncCases}, changedCases=${changedCases}")
      val nCases = if (asyncCases) {
                       (matchTerm.cases zip cpsCases).map{(old,cpstree) =>
                          CaseDef.copy(old)(old.pattern, old.guard, cpstree.transformed)
                       }   
+                   } else if (changedCases) {
+                      (matchTerm.cases zip cpsCases).map{(old,cpstree) =>
+                        CaseDef.copy(old)(old.pattern, old.guard, cpstree.syncOrigin.get)
+                      }   
                    } else {
                       matchTerm.cases
                    }  
-     if (!cpsScrutinee.isAsync) 
-        if (!asyncCases) 
-           CpsTree.pure(matchTerm)
+     if (!cpsScrutinee.isAsync) then 
+        if (!asyncCases) then
+           if (!changedCases) then
+             CpsTree.pure(matchTerm)
+           else
+             CpsTree.pure(Match.copy(matchTerm)(scrutinee, nCases))
         else 
            val nTree = Match.copy(matchTerm)(scrutinee, nCases)
            CpsTree.impure(nTree, otpe)
      else
         if (!asyncCases) 
-           cpsScrutinee.monadMap( x => Match(x, nCases), otpe )
+           cpsScrutinee.monadMap( x => Match.copy(matchTerm)(x, nCases), otpe )
         else
-           cpsScrutinee.monadFlatMap( x => Match(x, nCases), otpe )
+           cpsScrutinee.monadFlatMap( x => Match.copy(matchTerm)(x, nCases), otpe )
 
 
    

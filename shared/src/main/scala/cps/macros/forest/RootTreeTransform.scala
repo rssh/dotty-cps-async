@@ -82,7 +82,7 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                         }
                         val r = exprToTree(rCpsExpr, term)
                         if cpsCtx.flags.debugLevel >= 10 then
-                           cpsCtx.log(s"runRoot: rCpsExpr=$rCpsExpr, async=${rCpsExpr.isAsync}")
+                           cpsCtx.log(s"runRoot: rCpsExpr=${rCpsExpr.show}, async=${rCpsExpr.isAsync}")
                            if cpsCtx.flags.debugLevel >= 15 then
                              cpsCtx.log(s"runRoot: r=$r")
                              cpsCtx.log(s"runRoot: origin=$term")
