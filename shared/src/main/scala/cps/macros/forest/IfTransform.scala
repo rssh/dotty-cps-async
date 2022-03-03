@@ -24,10 +24,20 @@ object IfTransform:
      var isAsync = true
 
      val cnBuild = {
-       if (!cR.isAsync)
-         if (!tR.isAsync && !fR.isAsync) 
+       if (!cR.isAsync) then
+         if (!tR.isAsync && !fR.isAsync) then
             isAsync = false
-            CpsExpr.sync(monad, patternCode, cR.isChanged || tR.isChanged || fR.isChanged)
+            if (cR.isChanged || tR.isChanged || fR.isChanged) then
+              CpsExpr.sync(monad,
+                  '{ if (${cR.syncOrigin.get}) 
+                       ${tR.syncOrigin.get}
+                     else
+                       ${fR.syncOrigin.get} 
+                   },
+                   true 
+              )
+            else 
+              CpsExpr.sync(monad, patternCode, false)
          else
             CpsExpr.async[F,T](monad,
                 '{ if ($cond) 
