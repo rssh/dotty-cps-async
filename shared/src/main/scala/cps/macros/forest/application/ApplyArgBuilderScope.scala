@@ -127,8 +127,11 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
        if (paramsDescriptor.isByName(acc.paramIndex))
           acc.advance(ApplyArgByNameRecord(t,acc.posIndex,termCpsTree,termCpsTree.isAsync))
        else
-          if (!termCpsTree.isAsync && termIsNoOrderDepended(t))
-             acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex))
+          if (!termCpsTree.isAsync && termIsNoOrderDepended(t)) then
+             if (!termCpsTree.isChanged) then
+               acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex,false))
+             else
+               acc.advance(ApplyArgNoPrecalcTermRecord(termCpsTree.syncOrigin.get,acc.posIndex,true))
           else
              if (termCpsTree.isLambda) 
                termCpsTree match
@@ -151,7 +154,7 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
                     throw MacroError("Impossible internal error, create ValDef but have ${symbol.tree}", posExpr(t))
                val ident = Ref(symbol)
                if (cpsCtx.flags.debugLevel > 15)
-                 cpsCtx.log(s"buildApplyArg: Precacl, t=$t, i=${acc.posIndex}")
+                 cpsCtx.log(s"buildApplyArg: Precacl, t=$t\n, termCpsTree=${termCpsTree}\n, i=${acc.posIndex}")
                acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree.castOtpe(widenType),valDef,ident))
 
     }

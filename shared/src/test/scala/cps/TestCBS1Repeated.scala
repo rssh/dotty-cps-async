@@ -41,13 +41,17 @@ class TestCBS1Repeated:
   case class FC(name:String, fun: ()=>Boolean)
 
   @Test def repeated_fun(): Unit = 
+     //implicit val printCode = cps.macros.flags.PrintCode
+     //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
      val c = async[ComputationBound]{
-       val esx: scala.collection.immutable.Seq[FC] = Seq(FC.apply(
-         "aaa", 
-         () => ({val tmp=1; tmp})==2
-       ))
+       val fc1 = FC(
+        "aaa", 
+        () => ({val tmp=1; tmp})==2
+       )
+       val fc2 = FC("bbb", ()=>true) 
+       val esx = Seq(fc1,fc2)
        f2(esx :_* )
      }
-     assert(c.run() == Success("aaa:false"))
+     assert(c.run() == Success("aaa:false,bbb:true"))
 
 

@@ -20,15 +20,23 @@ trait CpsMonadContext[F[_]] {
 
 }
 
+/**
+ * marker trait for context with NOOP intercaprAwait operation 
+ **/
+trait CpsMonadNoAdoptContext[F[_]] extends CpsMonadContext[F] {
 
-class CpsMonadInstanceContextBody[F[_]](m: CpsMonadInstanceContext[F]) extends CpsMonadContext[F] {
-  
   /**
    * If is it statically known, that monad is evaluated in this context, then
    * this call is completely eliminated by dotty-cps-async macro
    *@return fa
    **/
    def adoptAwait[A](fa:F[A]):F[A] = fa
+
+} 
+
+
+class CpsMonadInstanceContextBody[F[_]](m: CpsMonadInstanceContext[F]) extends CpsMonadNoAdoptContext[F] {
+
 
    def monad: CpsMonad[F] = m
 

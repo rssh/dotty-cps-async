@@ -280,6 +280,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
             cpsCtx.log(s" existsShiftedLambda=${existsShiftedLambda}")
             cpsCtx.log(s" existsAsyncArg=${existsAsyncArg}")
             cpsCtx.log(s" existsPrependArg=${existsPrependArg}")
+            cpsCtx.log(s" shouldBeChangedSync=${shouldBeChangedSync}")
 
         if (!existsAsyncArg && !existsShiftedLambda && !shouldBeChangedSync) {
            val tailArgss = tails.map(_.map(_.term).toList)
@@ -594,10 +595,13 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
           val args = argRecords.map(_.identArg(withAsync)).toList
           val tailArgss = tails.map(_.map(_.identArg(withAsync)).toList)
           val argss = args::tailArgss
-          cpsFun match
+          val retval = cpsFun match
              case lt:AsyncLambdaCpsTree =>
                     CpsTree.impure(lt.rLambda.appliedToArgss(argss), applyTpe)
              case cs:CallChainSubstCpsTree =>
+                    if (cpsCtx.flags.debugLevel >= 15) {
+                       cpsCtx.log(s"buildApply: cs:CallChainSubstCpsTree")
+                    }
                     shiftedResultCpsTree(applyTerm, cs.shifted.appliedToArgss(argss))
              case _ =>
                     cpsFun.syncOrigin match
@@ -613,9 +617,14 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                              shiftedResultCpsTree(applyTerm, shifted.appliedToArgss(argss))
                           else
                              cpsFun.monadMap(x => x.appliedToArgss(argss), applyTpe)
+          if (cpsCtx.flags.debugLevel >= 15) {
+             cpsCtx.log(s"buildApply: retval = $retval")
+          }
+          retval
 
 
   def shiftedResultCpsTree(origin: Term, shifted: Term): CpsTree =
+      
       if (shifted.tpe.isFunctionType)
          // TODO: extract argument types. now - one experiment
          shifted.tpe match

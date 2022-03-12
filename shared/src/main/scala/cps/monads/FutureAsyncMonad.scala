@@ -6,12 +6,23 @@ import scala.concurrent.duration._
 import scala.quoted._
 import scala.util._
 import scala.util.control._
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
+
+
+class FutureContext(m: FutureAsyncMonadAPI) extends CpsMonadNoAdoptContext[Future] {
+
+   def monad: FutureAsyncMonadAPI = m
+
+   def executionContext = m.executionContext
+
+}
 
 /**
  * Default CpsMonad implementation for `Future`
  **/
-class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Future] with CpsMonadInstanceContext[Future] {
+class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Future] with CpsContextMonad[Future, FutureContext] {
 
    type F[+T] = Future[T]
 
@@ -75,6 +86,11 @@ class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Fut
        }
        p.future
 
+   override def applyContext[A](f: FutureContext => Future[A]): Future[A] = {
+       val ctx = new FutureContext(this)
+       spawn(f(ctx))  
+   }
+
   
    def executionContext = summon[ExecutionContext]
 
@@ -105,3 +121,9 @@ given toFutureConversion[F[_], T](using ExecutionContext, CpsSchedulingMonad[F])
     summon[CpsSchedulingMonad[F]].spawn(u)
     p.future
 
+transparent inline def timedAwait[A](fa: Future[A], duration: FiniteDuration)(using FutureContext, ScheduledExecutorService): Future[A] =
+     val p = Promise[A]()
+     val runTimeout: Runnable = ()=>p.tryFailure(new TimeoutException())
+     summon[ScheduledExecutorService].schedule(runTimeout ,duration.toMillis, TimeUnit.MILLISECONDS )
+     p.completeWith(fa)
+     p.future 

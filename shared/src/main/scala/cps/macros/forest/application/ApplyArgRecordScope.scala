@@ -161,13 +161,14 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
   case class ApplyArgNoPrecalcTermRecord(
        term: Term,
-       index: Int
+       index: Int,
+       isChanged: Boolean
   ) extends ApplyArgRecord
   {
      def isAsync = false
      def hasShiftedLambda: Boolean = false
      def noOrderDepended = termIsNoOrderDepended(term)
-     def shouldBeChangedSync:Boolean = false
+     def shouldBeChangedSync:Boolean = isChanged
      def identArg(existsAsync: Boolean): Term = term
      def shift(): ApplyArgRecord = this
      override def append(tree: CpsTree): CpsTree = tree
@@ -184,9 +185,16 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
      def isAsync = termCpsTree.isAsync
      def hasShiftedLambda: Boolean = false
      def noOrderDepended = termIsNoOrderDepended(term)
-     def shouldBeChangedSync:Boolean = false
+     def shouldBeChangedSync:Boolean = termCpsTree.isChanged
+     
      def identArg(existsAsync: Boolean): Term =
-            if (existsAsync) ident else term
+            if (existsAsync) then
+              ident 
+            else if termCpsTree.isChanged then
+              termCpsTree.syncOrigin.get
+            else 
+              term
+
      def shift(): ApplyArgRecord = this
      override def append(tree: CpsTree): CpsTree =
         ValCpsTree(valDef, termCpsTree, tree)
@@ -437,7 +445,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
     def isAsync: Boolean = cpsTree.isAsync
     def hasShiftedLambda: Boolean = shifted
     def noOrderDepended: Boolean = true
-    def shouldBeChangedSync: Boolean = false
+    def shouldBeChangedSync: Boolean = cpsTree.isChanged
     def shift() = copy(shifted = true)
     def append(tree: CpsTree): CpsTree = tree
 

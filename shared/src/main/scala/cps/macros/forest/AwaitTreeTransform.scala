@@ -28,7 +28,7 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
 
   def runMyAwait(awaitTerm: Term, arg: Term, context: Term): CpsTree =
-      val adoptedArg = if (cpsCtx.monad.asTerm.tpe <:< TypeRepr.of[CpsMonadInstanceContext[?]]) {
+      val adoptedArg = if (context.tpe <:< TypeRepr.of[CpsMonadNoAdoptContext[?]]) {
                          arg
                        } else {  
                          adoptContextInMyAwait(awaitTerm, arg, context)

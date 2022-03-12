@@ -60,8 +60,8 @@ object Process {
 object TestProcessLike1 {
 
   def fun[T:Ordering](t: Int)(using ProcessContext): Process[Unit] = {
-    implicit val printCode = cps.macros.flags.PrintCode 
-    implicit val debugLevel = cps.macros.flags.DebugLevel(20)
+    //implicit val printCode = cps.macros.flags.PrintCode 
+    //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
     async[Process]{
        t match
          case 0 =>   

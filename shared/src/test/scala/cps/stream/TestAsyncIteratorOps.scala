@@ -117,6 +117,8 @@ class TestAsyncIteratorOps {
     @Test def testFindAsycPos() = {
       val stream = AsyncList.iterate[Future,Int](1 to 10)
       val iterator = stream.iterator
+      //implicit val printCode = cps.macros.flags.PrintCode
+      //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
       val f = async[Future] {
         val x = await(iterator.find(_ > await(Future successful 8)))
         assert(x == Some(9))

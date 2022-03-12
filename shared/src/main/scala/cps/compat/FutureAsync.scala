@@ -2,6 +2,7 @@ package cps.compat
 
 import scala.concurrent._
 import cps._
+import cps.monads.FutureContext
 import cps.monads.{ given CpsAsyncMonad[Future] }
 
 /**
@@ -10,13 +11,17 @@ import cps.monads.{ given CpsAsyncMonad[Future] }
 object FutureAsync:
 
   inline def async[T](inline x:T)(using ec:ExecutionContext):Future[T]=
-  ${  
-    cps.macros.Async.transformContextInstanceMonad('x, '{FutureAsyncMonad(using ec)} )
+  {  
+    FutureAsyncMonad(using ec).apply(ctx => transformFutureMonad(x,ctx) ) 
+  }
+
+  inline def transformFutureMonad[T](inline x:T, inline ctx: FutureContext): Future[T] = ${
+    cps.macros.Async.transformMonad('x, '{ ctx.monad} , 'ctx )
   }
 
   inline def await[T](x:Future[T])(using ec: ExecutionContext):T = 
     val fm = FutureAsyncMonad(using ec)
-    cps.await[Future, T, Future](x)(using fm, CpsMonadInstanceContextBody[Future](fm))
+    cps.await[Future, T, Future](x)(using fm, FutureContext(fm))
 
 
 val sip22 = FutureAsync
