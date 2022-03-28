@@ -19,6 +19,7 @@ class FutureContext(m: FutureAsyncMonadAPI) extends CpsMonadNoAdoptContext[Futur
 
 }
 
+
 /**
  * Default CpsMonad implementation for `Future`
  **/
@@ -121,9 +122,5 @@ given toFutureConversion[F[_], T](using ExecutionContext, CpsSchedulingMonad[F])
     summon[CpsSchedulingMonad[F]].spawn(u)
     p.future
 
-transparent inline def timedAwait[A](fa: Future[A], duration: FiniteDuration)(using FutureContext, ScheduledExecutorService): Future[A] =
-     val p = Promise[A]()
-     val runTimeout: Runnable = ()=>p.tryFailure(new TimeoutException())
-     summon[ScheduledExecutorService].schedule(runTimeout ,duration.toMillis, TimeUnit.MILLISECONDS )
-     p.completeWith(fa)
-     p.future 
+
+
