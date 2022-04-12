@@ -19,7 +19,7 @@ object FutureScope {
     
     type FutureScope[+T] = Future[T]
 
-    class FutureScopeContext(ec: ExecutionContext) extends CpsMonadContext[FutureScope] {
+    class FutureScopeContext(ec: ExecutionContext, parentScope: Option[FutureScopeContext] = None) extends CpsMonadContext[FutureScope] {
 
       final val INITIAL=0 
       final val CANCELLING=1
@@ -73,6 +73,11 @@ object FutureScope {
           state.set(CANCELLED)
       }  
       
+      def spawn[A](f: FutureScopeContext ?=> A): Future[A] = ???
+
+
+      def spawnAsync[A](f: FutureScopeContext => Future[A]): Future[A] = ???
+
       def onFinish(callback: ()=>Unit): Unit =
         pushFinishCallback(callback)
 

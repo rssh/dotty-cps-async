@@ -352,7 +352,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
                                  val nCaseDefs = caseDefs.map( cd =>
                                                     rebindCaseDef(cd, cd.rhs, b0, true, Symbol.spliceOwner))
                                  val nTerm = Match('x2.asTerm, nCaseDefs)
-                                 termCast(nTerm)
+                                 termCast[ttt](nTerm)
                                case _ =>
                                  throw MacroError(
                                    s"assumed that transformed match is Match, we have $nBody",
