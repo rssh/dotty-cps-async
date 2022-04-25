@@ -5,7 +5,8 @@ import org.junit.Assert._
 
 import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
-
+import scala.util.*
+import java.util.concurrent.atomic.*
 
 import cps.*
 import cps.stream.*
@@ -200,6 +201,33 @@ class TestAsyncIteratorOps {
       FutureCompleter(ft)
     }
 
-   
+    @Test def testInTry() = {
+      val myIterator = new AsyncIterator[Future,Int] {
+        val v = new AtomicInteger(0)
+        override def next: Future[Option[Int]] = {
+          val n = v.incrementAndGet() 
+          if ((n % 2) == 0) {
+              Future.failed(new RuntimeException("even"))
+          } else if (n <= 100) {
+              Future successful Some(n)
+          } else Future successful None
+        }
+      }
+
+      val tryIterator = myIterator.inTry
+      val ft = async[Future] {
+         val v1 = await(tryIterator.next)
+         assert(v1.get == Success(1))
+         val v2 = await(tryIterator.next)
+         assert(v2.get.isFailure)
+         val v3 = await(tryIterator.next)
+         assert(v3.get == Success(3))
+         val v4 = await(tryIterator.next)
+         assert(v4.get.isFailure)
+         val v5 = await(tryIterator.next)
+         assert(v5.get == Success(5))
+      }
+      FutureCompleter(ft)
+    }
 
 }

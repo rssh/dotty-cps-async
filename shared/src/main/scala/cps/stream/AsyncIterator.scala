@@ -36,6 +36,37 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       }
   }
 
+  def mapTry[S](f: Try[T]=>S): AsyncIterator[F,S] = new AsyncIterator[F,S] {
+    def next: F[Option[S]] = 
+      summon[CpsConcurrentMonad[F]].mapTry(thisAsyncIterator.next){ tx => 
+        tx match {
+          case Success(Some(x)) => 
+             Some(f(Success(x))) 
+          case Success(None) =>
+             None
+          case Failure(ex) =>
+             Some(f(Failure(ex)))  
+        }
+      }
+  }
+
+  def mapTryAsync[S](f: Try[T] => F[S]): AsyncIterator[F,S] = new AsyncIterator[F,S] {
+    def next:F[Option[S]] =
+      val m = summon[CpsConcurrentMonad[F]]
+      m.flatMapTry(thisAsyncIterator.next){ tx =>
+        tx match
+          case Success(Some(x)) => 
+            m.map(f(Success(x)))(Some(_))
+          case Success(None) =>
+            m.pure(None)
+          case Failure(ex) =>
+            m.map(f(Failure(ex)))(Some(_))
+      }
+  }
+
+  def inTry: AsyncIterator[F,Try[T]] = 
+    this.mapTry(identity)
+
   /**
    * filter accumulator by p, returning only those values, which as satisficy `p`.
    **/

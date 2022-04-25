@@ -20,6 +20,8 @@ sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
 
   def flatMap[S](f: T=>AsyncList[F,S]): AsyncList[F,S]
 
+  def flatMapAsync[S](f: T=>F[AsyncList[F,S]]): AsyncList[F,S] 
+
   def append[S >: T](x: =>AsyncList[F,S]): AsyncList[F,S]
 
   def appendAsync[S >: T](x: ()=>F[AsyncList[F,S]]): AsyncList[F,S] =
@@ -84,6 +86,9 @@ object AsyncList {
      def flatMap[S](f: T=>AsyncList[F,S]): AsyncList[F,S] =
           Wait(summon[CpsMonad[F]].map(fs)( _.flatMap(f) ))
 
+     def flatMapAsync[S](f: T=>F[AsyncList[F,S]]): AsyncList[F,S] =
+          Wait(summon[CpsMonad[F]].map(fs)( _.flatMapAsync(f) ))
+     
      def append[S >: T](x: =>AsyncList[F,S]): AsyncList[F,S] =
           Wait(summon[CpsMonad[F]].map(fs)( _.append(x) ))
 
@@ -163,7 +168,10 @@ object AsyncList {
 
      def flatMap[S](f: T=>AsyncList[F,S]): AsyncList[F,S] =
           f(head).append( tailFun().flatMap(f) )
-
+     
+     def flatMapAsync[S](f: T=>F[AsyncList[F,S]]): AsyncList[F,S] =
+          Wait(f(head)).append( tailFun().flatMapAsync(f) )   
+          
      def append[S >: T](x: =>AsyncList[F,S]): AsyncList[F,S] =
           Cons(head, ()=>tailFun().append(x))
 
@@ -249,6 +257,8 @@ object AsyncList {
      def mapAsync[S](f: Nothing=>F[S]): AsyncList[F,S] = this
 
      def flatMap[S](f: Nothing=> AsyncList[F,S]): AsyncList[F,S] = this
+
+     def flatMapAsync[S](f: Nothing=> F[AsyncList[F,S]]): AsyncList[F,S] = this
 
      def append[S >: Nothing](x: =>AsyncList[F,S]): AsyncList[F,S] = x
 
