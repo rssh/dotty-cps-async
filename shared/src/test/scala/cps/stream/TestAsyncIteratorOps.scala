@@ -126,7 +126,7 @@ class TestAsyncIteratorOps {
       FutureCompleter(f)
     }
 
-    @Test def testFold(): Unit = {
+    @Test def testFold() = {
       val stream = AsyncList.iterate[Future,Int](1 to 3)
       val iterator = stream.iterator
       val f = async[Future]{
@@ -153,7 +153,7 @@ class TestAsyncIteratorOps {
       FutureCompleter(f)
     }
 
-    @Test def testScan(): Unit = {
+    @Test def testScan() = {
       val stream = AsyncList.iterate[Future,Int](1 to 5)
       val iterator = stream.iterator
       val ft = async[Future]{
@@ -177,7 +177,7 @@ class TestAsyncIteratorOps {
     }
 
     
-    @Test def testScanAsync(): Unit = {
+    @Test def testScanAsync() = {
       val stream = AsyncList.iterate[Future,Int](1 to 5)
       val iterator = stream.iterator
       val ft = async[Future]{
@@ -199,5 +199,7 @@ class TestAsyncIteratorOps {
       }
       FutureCompleter(ft)
     }
+
+   
 
 }
