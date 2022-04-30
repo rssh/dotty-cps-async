@@ -40,7 +40,7 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                             )
                   case applyTerm@Apply(fun,args)  =>
                             val tree = B2.inNestedContext(applyTerm,  muted, scope =>
-                               scope.runApply(applyTerm.asInstanceOf[scope.qctx.reflect.Term],
+                               scope.runApply(applyTerm.asInstanceOf[scope.qctx.reflect.Apply],
                                               fun.asInstanceOf[scope.qctx.reflect.Term],
                                               args.asInstanceOf[List[scope.qctx.reflect.Term]],
                                               Nil).inCake(thisTransform)
@@ -106,7 +106,7 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
              cpsQual.select(term, term.symbol, term.tpe.widen)
        case Ident(name) =>
              CpsTree.pure(term)
-       case Apply(x, args) =>
+       case applyTerm@Apply(x, args) =>
              val thisScope = this
              val nestContext = cpsCtx.nestSame(muted)
              val nestScope = new TreeTransformScope[F,CT,CC] {
@@ -116,7 +116,7 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                 override val ctType = thisScope.ctType
                 override val ccType = thisScope.ccType
              }
-             nestScope.runApply(term.asInstanceOf[nestScope.qctx.reflect.Term],
+             nestScope.runApply(applyTerm.asInstanceOf[nestScope.qctx.reflect.Apply],
                                 x.asInstanceOf[nestScope.qctx.reflect.Term],
                                 args.asInstanceOf[List[nestScope.qctx.reflect.Term]],
                                 Nil).asInstanceOf[CpsTree]
