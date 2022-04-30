@@ -216,8 +216,8 @@ object Async {
          case _ =>
              val fTree = f.asTerm
              fTree match {
-                case Apply(fun,args) =>
-                   ApplyTransform(cpsCtx).run(fun,args)
+                case afTree@Apply(fun,args) =>
+                   ApplyTransform(cpsCtx).run(afTree,fun,args)
                 case TypeApply(fun,args) =>
                    TypeApplyTransform(cpsCtx).run(fun,args)
                 case Assign(left,right) =>
