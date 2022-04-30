@@ -66,7 +66,6 @@ class TestFbBAsyncListFilter:
     }
     FutureCompleter(r)
 
-
     
 
 

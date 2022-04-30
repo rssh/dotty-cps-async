@@ -16,6 +16,7 @@ import cps.util.FutureCompleter
 
 class TestAsyncIteratorOps {
 
+
     
     @Test  def testSimpleMap() = {
         val stream = AsyncList.iterate[Future,Int](1 to 10)
@@ -228,6 +229,79 @@ class TestAsyncIteratorOps {
          assert(v5.get == Success(5))
       }
       FutureCompleter(ft)
+    }
+
+    @Test
+    def testMapTry() = {
+
+      val myIterator = new AsyncIterator[Future,Int] {
+        val v = new AtomicInteger(0)
+        override def next: Future[Option[Int]] = {
+          val n = v.incrementAndGet() 
+          if ((n % 2) == 0) {
+              Future.failed(new RuntimeException("even"))
+          } else if (n <= 5) {
+              Future successful Some(n)
+          } else Future successful None
+        }
+      }
+
+      val mappedIterator = myIterator.mapTry{
+        case Success(x) => x
+        case Failure(ex) => 1
+      }
+
+      val ft = async[Future] {
+         val v1 = await(mappedIterator.next)
+         assert(v1.get == 1)
+         val v2 = await(mappedIterator.next)
+         assert(v2.get == 1)
+         val v3 = await(mappedIterator.next)
+         assert(v3.get == 3)
+         val v4 = await(mappedIterator.next)
+         assert(v4.get == 1)
+         val v5 = await(mappedIterator.next)
+         assert(v5.get == 5)
+         val v6 = await(mappedIterator.next)
+         assert(v6.get == 1)
+         val v7 = await(mappedIterator.next)
+         assert(v7 == None)
+      }
+      FutureCompleter(ft)
+    }
+
+    def testMapTryAsync() = {
+      val myIterator = new AsyncIterator[Future,Int] {
+        val v = new AtomicInteger(0)
+        override def next: Future[Option[Int]] = {
+          val n = v.incrementAndGet() 
+          if ((n % 2) == 0) {
+              Future.failed(new RuntimeException("even"))
+          } else if (n <= 5) {
+              Future successful Some(n)
+          } else Future successful None
+        }
+      }
+
+      val delayedOne = Future successful 1
+
+      val ft = async[Future] {
+
+        val mappedIterator = myIterator.mapTry{
+          case Success(x) => x + await(delayedOne)
+          case Failure(ex) => -1
+        }
+
+        val v1 = await(mappedIterator.next)
+        assert(v1.get == 2)
+        val v2 = await(mappedIterator.next)
+        assert(v2.get == -1)
+
+
+      }
+
+
+
     }
 
 }
