@@ -60,6 +60,8 @@ class TestAsyncListOps:
         val flatMapped = stream.flatMap(x => repeat(x,x))
         val l1 = await(flatMapped.take[List](5))
         assert(l1 == List(1,2,2,3,3))
+        val l2 = await(flatMapped.take[List](10))
+        assert(l2 == List(1,2,2,3,3,3))
     }
     FutureCompleter(ft)
 
