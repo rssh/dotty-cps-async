@@ -3,6 +3,8 @@ package cps.stream
 import cps.*
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.*
+import scala.collection.Factory
+import scala.collection.mutable.Growable
 import scala.collection.mutable.AbstractBuffer
 import scala.collection.mutable.ListBuffer
 import scala.util.*
@@ -62,12 +64,23 @@ sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
   def takeListAll(): F[List[T]@uncheckedVariance] =
        takeList(-1)
 
-  def takeTo[B <: AbstractBuffer[T]@uncheckedVariance](buffer: B, n: Int):F[B]       
+  def takeTo[B <: Growable[T]@uncheckedVariance](buffer: B, n: Int):F[B]
+  
+  def take[CC[_]](n:Int)(using Factory[T,CC[T]@uncheckedVariance]):F[CC[T]@uncheckedVariance] = {
+     val builder = summon[Factory[T,CC[T]]].newBuilder
+     summon[CpsMonad[F]].map(takeTo(builder,n))(_.result)
+  }
+
+  def takeAll[CC[_]](n:Int)(using Factory[T,CC[T]@uncheckedVariance]):F[CC[T]@uncheckedVariance] =
+     take[CC](-1)
+
   
   def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S]
 
   def iterator: AsyncIterator[F,T@uncheckedVariance] =
         new AsyncListIterator(this)
+
+  
 
 
 object AsyncList {
@@ -116,7 +129,7 @@ object AsyncList {
      def findAsync(p: T=> F[Boolean]): F[Option[T]] =
           summon[CpsMonad[F]].flatMap(fs)( _.findAsync(p) )
      
-     def takeTo[B <: AbstractBuffer[T]](buffer: B, n: Int):F[B] =
+     def takeTo[B <: Growable[T]](buffer: B, n: Int):F[B] =
           if n == 0 then
                summon[CpsMonad[F]].pure(buffer)
           else
@@ -221,7 +234,7 @@ object AsyncList {
                     tailFun().findAsync(p)
           }
 
-     def takeTo[B <: AbstractBuffer[T]](buffer: B, n: Int):F[B] =
+     def takeTo[B <: Growable[T]](buffer: B, n: Int):F[B] =
           if (n == 0) then
                summon[CpsMonad[F]].pure(buffer)
           else
@@ -280,7 +293,7 @@ object AsyncList {
      def findAsync(p: Nothing=>F[Boolean]): F[Option[Nothing]] = 
           summon[CpsMonad[F]].pure(None)
  
-     def takeTo[B <: AbstractBuffer[Nothing]](buffer: B, n: Int):F[B] =
+     def takeTo[B <: Growable[Nothing]](buffer: B, n: Int):F[B] =
           summon[CpsMonad[F]].pure(buffer)
        
      def merge[S](other: AsyncList[F,S]): AsyncList[F,S] =
@@ -289,6 +302,7 @@ object AsyncList {
 
   def empty[F[_]: CpsConcurrentMonad] : AsyncList[F,Nothing] =
      Empty[F]()
+
 
 
   def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]]): AsyncList[F,T] =
@@ -302,7 +316,9 @@ object AsyncList {
   def iterate[F[_]:CpsConcurrentMonad,T](collection: Iterable[T]): AsyncList[F,T] =
       def itList(it:Iterator[T]):AsyncList[F,T] =
           if it.hasNext then
-               Cons(it.next, ()=>itList(it))
+               val v = it.next
+               val nextList = itList(it)
+               Cons(v, () => nextList)
           else 
                empty[F]
       itList(collection.iterator)
@@ -310,6 +326,17 @@ object AsyncList {
 
   given absorber[F[_],C<:CpsMonadContext[F],T](using ExecutionContext, CpsConcurrentMonad.Aux[F,C]): CpsAsyncEmitAbsorber4[AsyncList[F,T],F,C,T] =
           AsyncListEmitAbsorber[F,C,T]()
+
+
+  given [F[_]:CpsConcurrentMonad]: CpsMonad[[T] =>> AsyncList[F,T]] with CpsMonadInstanceContext[[T]=>>AsyncList[F,T]] with
+     def pure[A](a:A): AsyncList[F,A] =
+          AsyncList.Cons(a,() => AsyncList.empty)
+     def map[A,B](fa:AsyncList[F,A])(f: A=>B): AsyncList[F,B] =
+          fa.map(f)
+     def flatMap[A,B](fa:AsyncList[F,A])(f: A=>AsyncList[F,B]): AsyncList[F,B] =
+          fa.flatMap(f)
+
+     
 
 }
 

@@ -270,6 +270,7 @@ class TestAsyncIteratorOps {
       FutureCompleter(ft)
     }
 
+    @Test
     def testMapTryAsync() = {
       val myIterator = new AsyncIterator[Future,Int] {
         val v = new AtomicInteger(0)
@@ -296,12 +297,39 @@ class TestAsyncIteratorOps {
         assert(v1.get == 2)
         val v2 = await(mappedIterator.next)
         assert(v2.get == -1)
-
-
       }
-
-
-
+      FutureCompleter(ft)
     }
+
+    @Test
+    def testTake1() = {
+      val stream1 = AsyncList.iterate[Future,Int](1 to 3)
+      val iterator = stream1.iterator
+      val ft = async[Future] {
+        val l1 = await(iterator.take[List](2))
+        assert(l1 == List(1,2))
+        val stream2 = AsyncList.iterate[Future,Int](1 to 3)
+        val it2 = stream2.iterator
+        val l2 = await(it2.take[List](10))
+        assert(l2 == List(1,2,3))
+      }
+      FutureCompleter(ft)
+    }
+    
+    @Test
+    def testTakeManyReaders() = {
+      val stream1 = AsyncList.iterate[Future,Int](1 to 3)
+      val iterator = stream1.iterator
+      val ft = async[Future] {
+        val l1 = await(iterator.take[List](2))
+        assert(l1 == List(1,2))
+        println(s"stream1 = $stream1")
+        val it2 = stream1.iterator
+        val l2 = await(it2.take[List](10))
+        assert(l2 == List(1,2,3))
+      }
+      FutureCompleter(ft)
+    }
+
 
 }

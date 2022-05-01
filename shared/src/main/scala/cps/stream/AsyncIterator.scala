@@ -1,9 +1,12 @@
 package cps.stream
 
 import cps.*
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.*
 import scala.util.*
+import scala.collection.Factory
+import scala.collection.mutable.Growable
 
 
 /**
@@ -64,8 +67,96 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       }
   }
 
+
   def inTry: AsyncIterator[F,Try[T]] = 
     this.mapTry(identity)
+
+  
+  def flatMap[S](f: T => AsyncIterator[F,S]): AsyncIterator[F,S] = new AsyncIterator[F,S] {
+    val refInternal = new AtomicReference[AsyncIterator[F,S]](AsyncIterator.empty)
+    override def next: F[Option[S]] =
+      summon[CpsMonad[F]].flatMap(refInternal.get.nn.next){ vi =>
+        vi match
+          case r@Some(s) => summon[CpsMonad[F]].pure(r)
+          case None =>
+            summon[CpsMonad[F]].flatMap(thisAsyncIterator.next){ ti =>
+              ti match
+                case Some(t) => 
+                  refInternal.set(f(t))
+                  next
+                case None => 
+                  summon[CpsMonad[F]].pure(None)
+            }
+
+      }
+  }
+
+  def flatMapAsync[S](f: T => F[AsyncIterator[F,S]]): AsyncIterator[F,S] = new AsyncIterator[F,S] {
+    val refInternal = new AtomicReference[AsyncIterator[F,S]](AsyncIterator.empty)
+    override def next: F[Option[S]] =
+      summon[CpsMonad[F]].flatMap(refInternal.get.nn.next){ si =>
+        si match
+          case r@Some(s) => summon[CpsMonad[F]].pure(r)
+          case None =>
+            summon[CpsMonad[F]].flatMap(thisAsyncIterator.next){ ti =>
+              ti match
+                case Some(t) =>
+                  summon[CpsMonad[F]].flatMap(f(t)){ ft =>
+                    refInternal.set(ft)
+                    next
+                  }
+                case None => 
+                  summon[CpsMonad[F]].pure(None)
+            }
+      }
+  }
+
+  def flatMapTry[S](f: Try[T] => AsyncIterator[F,S]): AsyncIterator[F,S] = new AsyncIterator[F,S] {
+    val refInternal = new AtomicReference[AsyncIterator[F,S]](AsyncIterator.empty)
+    override def next: F[Option[S]] = {
+      summon[CpsMonad[F]].flatMap(refInternal.get.nn.next){ si =>
+         si match
+            case r@Some(s) => summon[CpsMonad[F]].pure(r)
+            case None =>
+              summon[CpsMonad[F]].flatMapTry(thisAsyncIterator.next){ 
+                  case Success(Some(t)) =>
+                    refInternal.set(f(Success(t)))
+                    next
+                  case Success(None) => 
+                    summon[CpsMonad[F]].pure(None)
+                  case Failure(ex) =>
+                    refInternal.set(f(Failure(ex)))
+                    next
+              }
+      }
+    }
+  }
+
+  def flatMapTryAsync[S](f: Try[T] => F[AsyncIterator[F,S]]): AsyncIterator[F,S] = new AsyncIterator[F,S] {
+    val refInternal = new AtomicReference[AsyncIterator[F,S]](AsyncIterator.empty)
+    override def next: F[Option[S]] = {
+      summon[CpsMonad[F]].flatMap(refInternal.get.nn.next){ si =>
+         si match
+            case r@Some(s) => summon[CpsMonad[F]].pure(r)
+            case None =>
+              summon[CpsMonad[F]].flatMapTry(thisAsyncIterator.next){ 
+                  case Success(Some(t)) =>
+                    summon[CpsMonad[F]].flatMap(f(Success(t))){ ft =>
+                      refInternal.set(ft)
+                      next
+                    }
+                  case Success(None) => 
+                    summon[CpsMonad[F]].pure(None)
+                  case Failure(ex) =>
+                    summon[CpsMonad[F]].flatMap(f(Failure(ex))){ ft =>
+                      refInternal.set(ft)
+                      next
+                    }
+              }
+      }
+    }
+  }
+
 
   /**
    * filter accumulator by p, returning only those values, which as satisficy `p`.
@@ -200,6 +291,39 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       }
   }
 
+  def takeTo[B <: Growable[T]](buffer: B, n: Int):F[B] = {
+    if (n != 0) then
+      summon[CpsMonad[F]].flatMap(next){
+        case Some(v) => buffer.addOne(v)
+                        takeTo(buffer, n-1)
+        case None => summon[CpsMonad[F]].pure(buffer)
+      }
+    else 
+      summon[CpsMonad[F]].pure(buffer)  
+  }
+
+  def takeVector(n: Int): F[Vector[T]] = {
+    import scala.collection.immutable.VectorBuilder
+    val vb = VectorBuilder[T]()
+    summon[CpsMonad[F]].map(takeTo(vb, n))(_.result)
+  }
+  
+  def takeList(n: Int): F[List[T]] = {
+    import scala.collection.mutable.ListBuffer
+    val lb = ListBuffer[T]()
+    summon[CpsMonad[F]].map(takeTo(lb,n))(_.result)
+  }
+
+  def take[CC[_]](n:Int)(using Factory[T, CC[T]]):F[CC[T]] = {
+     val builder = summon[Factory[T,CC[T]]].newBuilder
+     summon[CpsMonad[F]].map(takeTo(builder,n))(_.result)
+  }
+
+  def takeAll[CC[_]](n:Int)(using Factory[T,CC[T]]):F[CC[T]] =
+     take[CC](-1)
+
+  
+
 end AsyncIterator
 
     
@@ -212,6 +336,35 @@ object AsyncIterator:
    given absorber[F[_],C<:CpsMonadContext[F],T](using ExecutionContext, CpsConcurrentMonad.Aux[F,C]): CpsAsyncEmitAbsorber4[AsyncIterator[F,T],F,C,T] =
      AsyncIteratorEmitAbsorber[F,C,T]()
 
+   def empty[F[_]:CpsConcurrentMonad,T] = new AsyncIterator[F,T] {
+     override def next: F[Option[T]] = summon[CpsMonad[F]].pure(None)
+   }
+
+   def error[F[_]:CpsConcurrentMonad,T](e: Throwable) = new AsyncIterator[F,T] {
+     override def next: F[Option[T]] = summon[CpsTryMonad[F]].error(e)
+   }
+
+   def one[F[_]:CpsConcurrentMonad,T](value:T) = new AsyncIterator[F,T] {
+     val readFlag = new AtomicBoolean(false)
+     override def next: F[Option[T]] = {
+       val v = {
+          if readFlag.compareAndSet(false,true) then
+            Some(value)
+          else
+            None
+       }
+       summon[CpsMonad[F]].pure(v)
+     }
+   }
+
+   given [F[_]:CpsConcurrentMonad]: CpsTryMonad[[T] =>> AsyncIterator[F,T]] with CpsMonadInstanceContext[[T]=>>AsyncIterator[F,T]] with
+     override def pure[A](a:A):AsyncIterator[F,A] = one(a)
+     override def map[A,B](fa:AsyncIterator[F,A])(f:A=>B):AsyncIterator[F,B] = fa.map(f)
+     override def flatMap[A,B](fa:AsyncIterator[F,A])(f:A=>AsyncIterator[F,B]):AsyncIterator[F,B] = fa.flatMap(f)
+     override def error[A](e:Throwable):AsyncIterator[F,A] = AsyncIterator.error(e)
+     override def mapTry[A,B](fa:AsyncIterator[F,A])(f: Try[A]=>B):AsyncIterator[F,B] = fa.mapTry(f)
+     override def flatMapTry[A,B](fa:AsyncIterator[F,A])(f: Try[A]=>AsyncIterator[F,B]):AsyncIterator[F,B] = fa.flatMapTry(f)
+     
      
 
 class AsyncIteratorEmitAbsorber[F[_],C<:CpsMonadContext[F],T](using ec: ExecutionContext, auxAsyncMonad: CpsConcurrentMonad.Aux[F,C]) extends CpsAsyncEmitAbsorber4[AsyncIterator[F,T],F,C,T]:
