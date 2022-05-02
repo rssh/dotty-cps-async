@@ -41,13 +41,13 @@ class FutureScopeContext(ec: ExecutionContext, parentScope: Option[FutureScopeCo
           }
         p.future
       case CANCELLING =>
-        Future failed CancelException()
+        Future failed ScopeCancellationException()
       case CANCELLED =>
-        Future failed CancelException()
+        Future failed ScopeCancellationException()
 
   def cancel(): Unit = {
     if (state.compareAndSet(INITIAL,CANCELLING)) then
-      val cancelException = new CancelException()
+      val cancelException = new ScopeCancellationException()
       //
       // // scalajs bug
       //cancelWaits.forEach( (k,v) =>

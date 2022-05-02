@@ -59,7 +59,7 @@ class DeferredDestructorsContext extends CpsMonadContext[ComputationBound] {
 
 }
 
-given DeferredDestructorsContextProvider: CpsMonadContextProvider[ComputationBound] with {
+object DeferredProvider extends CpsMonadContextProvider[ComputationBound] {
 
    type Context = DeferredDestructorsContext
 
@@ -75,7 +75,7 @@ class TestDeferredInContextMonad {
 
   @Test def testSimpleContext(): Unit = 
       var x = 0
-      val c = async.in{ scope ?=>
+      val c = async.in(DeferredProvider){ scope ?=>
         scope.deferr{ x = 1 } 
         1
       }

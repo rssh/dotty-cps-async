@@ -4,16 +4,21 @@ import scala.concurrent.*
 import scala.util.*
 import scala.concurrent.ExecutionContext.Implicits.global
 
-
 import cps.*
 import cps.monads.{*,given}
 import cps.util.*
 
+import java.util.concurrent.CancellationException
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
-class CancelException(message:String = "cancel") extends RuntimeException(message)
+case class ScopeCancellationException(message:String = "cancel", ex: Throwable|Null = null) extends CancellationException(message) {
+
+   if ex != null then
+      initCause(ex)
+
+}
 
 class FutureScope(ec: ExecutionContext) extends CpsMonadContextProvider[Future] {
   
@@ -43,7 +48,7 @@ class TestFutureScopeBase {
 
   @Test def testFutureScopeBase() = {
 
-      val f = async[Future].in(using Scope) {
+      val f = async[Future].in(Scope) {
          val x1 = await(foo(1))
          summon[FutureScopeContext].onFinish(() => x1+1)
          x1
