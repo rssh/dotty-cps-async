@@ -12,7 +12,7 @@ trait FutureGroup[E] extends Cancellable {
 
    def events: AsyncIterator[Future, E]
 
-   def cancel(): CancellationState
+   override def cancel(ex: ScopeCancellationException): CancellationResult
 
    def spawn(op: FutureScopeContext ?=> Future[E]): Unit = ???
    
@@ -59,7 +59,7 @@ class DefaultFutureGroup[E](using ctx: FutureScopeContext) extends FutureGroup[E
   
    def events: AsyncIterator[Future, E] = ???
 
-   def cancel(): CancellationState = ???
+   def cancel(ex: ScopeCancellationException): CancellationResult = ???
 
    override def spawn(op: FutureScopeContext ?=> Future[E]): Unit = ???
    

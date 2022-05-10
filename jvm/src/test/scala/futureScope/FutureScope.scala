@@ -13,12 +13,6 @@ import java.util.concurrent.CancellationException
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
-case class ScopeCancellationException(message:String = "cancel", ex: Throwable|Null = null) extends CancellationException(message) {
-
-   if ex != null then
-      initCause(ex)
-
-}
 
 class FutureScope(ec: ExecutionContext) extends CpsMonadContextProvider[Future] {
   
@@ -26,14 +20,21 @@ class FutureScope(ec: ExecutionContext) extends CpsMonadContextProvider[Future] 
 
    override def  contextualize[A](fa: Context => Future[A]): Future[A] = {
       val fsc = new FutureScopeContext(ec)
-      fa(fsc).map{ x => 
-        fsc.finish()
-        x
+      async[Future] {
+        try
+          // TODO: add continuations run.
+          println("before fa(fsc)await")
+          val r = await(fa(fsc))
+          println("after fa(fsc)await")
+          r
+        finally
+          await(fsc.finish())  
       }     
    }
    
 
 }
+
     
 val Scope = FutureScope(ExecutionContext.Implicits.global)
  
@@ -48,9 +49,10 @@ class TestFutureScopeBase {
 
   @Test def testFutureScopeBase() = {
 
+      var y = 0
       val f = async[Future].in(Scope) {
          val x1 = await(foo(1))
-         summon[FutureScopeContext].onFinish(() => x1+1)
+         summon[FutureScopeContext].onFinish{y = x1+1}
          x1
       }
       FutureCompleter(f.map(x => assert(x==2)))

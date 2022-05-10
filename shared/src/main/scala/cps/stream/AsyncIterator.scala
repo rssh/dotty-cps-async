@@ -30,6 +30,10 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       summon[CpsConcurrentMonad[F]].map(thisAsyncIterator.next)(_.map(f))
   }
 
+  /**
+   * map over async function. Substituted automatically when using await 
+   * inside async block in map.
+   **/
   def  mapAsync[S](f: T=> F[S]): AsyncIterator[F,S] = new AsyncIterator[F,S] {
     def next: F[Option[S]] = 
       summon[CpsConcurrentMonad[F]].flatMap(thisAsyncIterator.next){ ov =>
@@ -39,6 +43,12 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       }
   }
 
+
+  /**
+   * map over Try[T], which allows to handle the cases, when `next` returns a failure.
+   * Be carefuel for situation, when failed next have no effect - in this case we will
+   * receive the infinite sequence of failuers.
+   **/
   def mapTry[S](f: Try[T]=>S): AsyncIterator[F,S] = new AsyncIterator[F,S] {
     def next: F[Option[S]] = 
       summon[CpsConcurrentMonad[F]].mapTry(thisAsyncIterator.next){ tx => 
@@ -53,6 +63,9 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       }
   }
 
+  /**
+   * async version of mapTry
+   **/
   def mapTryAsync[S](f: Try[T] => F[S]): AsyncIterator[F,S] = new AsyncIterator[F,S] {
     def next:F[Option[S]] =
       val m = summon[CpsConcurrentMonad[F]]
@@ -67,7 +80,9 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
       }
   }
 
-
+  /**
+   * synonym for `mapTry(identity)`
+   **/
   def inTry: AsyncIterator[F,Try[T]] = 
     this.mapTry(identity)
 
