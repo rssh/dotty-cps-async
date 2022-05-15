@@ -8,9 +8,12 @@ import scala.concurrent.*
 
 import java.util.concurrent.ConcurrentLinkedDeque
 
-trait FutureGroup[E] extends Cancellable {
+trait FutureGroup[E] extends Cancellable  {
 
-   def events: AsyncIterator[Future, E]
+   def eventFlow: EventFlow[E] 
+
+   def events: AsyncIterator[Future, E] =
+      eventFlow.events
 
    override def cancel(ex: ScopeCancellationException): CancellationResult
 
@@ -56,14 +59,13 @@ object FutureGroup {
 }
 
 class DefaultFutureGroup[E](using ctx: FutureScopeContext) extends FutureGroup[E] {
-  
-   def events: AsyncIterator[Future, E] = ???
 
-   def cancel(ex: ScopeCancellationException): CancellationResult = ???
+   override val eventFlow = EventFlow()(using ctx.executionContext) 
+  
+   override def cancel(ex: ScopeCancellationException): CancellationResult = ???
 
    override def spawn(op: FutureScopeContext ?=> Future[E]): Unit = ???
    
    override def spawnAsync(op: FutureScopeContext ?=> Future[E]): Unit = ???
-
 
 }

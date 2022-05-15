@@ -20,18 +20,19 @@ class FutureScope(ec: ExecutionContext) extends CpsMonadContextProvider[Future] 
 
    override def  contextualize[A](fa: Context => Future[A]): Future[A] = {
       val fsc = new FutureScopeContext(ec)
-      async[Future] {
-        try
-          // TODO: add continuations run.
-          println("before fa(fsc)await")
-          val r = await(fa(fsc))
-          println("after fa(fsc)await")
-          r
-        finally
-          await(fsc.finish())  
-      }     
+      fsc.run(fa)
    }
    
+
+}
+
+object FutureScope {
+
+   def spawn[A](using fsc:FutureScopeContext)(f: FutureScopeContext ?=> A, executionContext: ExecutionContext = fsc.executionContext): Future[A] =
+      summon[FutureScopeContext].spawn(f,executionContext)
+
+   def spawnAsync[A](using fsc:FutureScopeContext)(f: FutureScopeContext => Future[A], executionContext: ExecutionContext = fsc.executionContext ) =
+      summon[FutureScopeContext].spawnAsync(f, executionContext)
 
 }
 

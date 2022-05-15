@@ -6,7 +6,7 @@ import scala.concurrent.*
 trait Cancellable {
 
   def cancel(ex: ScopeCancellationException): CancellationResult
-
+  
 }
 
 trait IsCancellable[T] {
