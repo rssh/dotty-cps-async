@@ -9,9 +9,11 @@ import scala.util.control._
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
+trait ExecutionContextProvider {
+     def executionContext: ExecutionContext
+}
 
-
-class FutureContext(m: FutureAsyncMonadAPI) extends CpsMonadNoAdoptContext[Future] {
+class FutureContext(m: FutureAsyncMonadAPI) extends CpsMonadNoAdoptContext[Future] with ExecutionContextProvider {
 
    def monad: FutureAsyncMonadAPI = m
 

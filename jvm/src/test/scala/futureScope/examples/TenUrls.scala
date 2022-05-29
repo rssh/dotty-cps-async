@@ -1,10 +1,10 @@
-package futureScope
+package futureScope.examples
 
 import scala.concurrent.*
 
 import cps.*
 import cps.monads.{*,given}
-
+import futureScope.*
 
 object TenUrls {
 

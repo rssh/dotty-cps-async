@@ -1,6 +1,8 @@
 package futureScope
 
-class ScopeCancellationException(message:String = "cancel", ex: Throwable|Null = null) extends RuntimeException(message) {
+import scala.util.control.ControlThrowable
+
+class ScopeCancellationException(message:String = "cancel", ex: Throwable|Null = null) extends ControlThrowable(message) {
 
    if ex != null then
       initCause(ex)

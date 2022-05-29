@@ -17,10 +17,12 @@ trait FutureGroup[E] extends Cancellable  {
 
    override def cancel(ex: ScopeCancellationException): CancellationResult
 
-   def spawn(op: FutureScopeContext ?=> Future[E]): Unit = ???
+   def spawn(op: FutureScopeContext ?=> Future[E]): Unit
    
-   def spawnAsync(op: FutureScopeContext ?=> Future[E]): Unit = ???
+   def spawnAsync(op: FutureScopeContext ?=> Future[E]): Unit
  
+   def spawn_async(op: FutureScopeContext => Future[E]): Unit
+
 }
 
 object FutureGroup {
@@ -37,11 +39,11 @@ object FutureGroup {
         type Event = E
 
         def build(ctx: FutureScopeContext, value: Iterable[FutureScopeContext ?=> Future[E]]): FutureGroup[E] =
-            val  group = new DefaultFutureGroup[E](using ctx)
+            val  group = new DefaultFutureGroup[E](ctx)
             val it = value.iterator
             while(it.hasNext) {
                val c: (FutureScopeContext ?=> Future[E]) = it.next
-               group.spawnAsync( (ctx) ?=> c(using ctx) )
+               group.spawnAsync( c )
             }
             group
 
@@ -58,14 +60,23 @@ object FutureGroup {
 
 }
 
-class DefaultFutureGroup[E](using ctx: FutureScopeContext) extends FutureGroup[E] {
+class DefaultFutureGroup[E](parent: FutureScopeContext) extends FutureGroup[E] {     
 
-   override val eventFlow = EventFlow()(using ctx.executionContext) 
+   override val eventFlow = EventFlow()(using parent.executionContext) 
+
+   val scopeContext = new FutureScopeContext(parent.executionContext, Some(parent))
   
-   override def cancel(ex: ScopeCancellationException): CancellationResult = ???
+   override def cancel(ex: ScopeCancellationException): CancellationResult = 
+      scopeContext.cancel(ex)
 
-   override def spawn(op: FutureScopeContext ?=> Future[E]): Unit = ???
+   override def spawn(op: FutureScopeContext ?=> Future[E]): Unit = 
+      scopeContext.spawn(op)
    
-   override def spawnAsync(op: FutureScopeContext ?=> Future[E]): Unit = ???
+   override def spawnAsync(op: FutureScopeContext ?=> Future[E]): Unit = 
+      scopeContext.spawnAsync(op)
+
+   override def spawn_async(op: FutureScopeContext => Future[E]): Unit = 
+      scopeContext.spawn_async(op)
+   
 
 }

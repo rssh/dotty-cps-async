@@ -1,8 +1,9 @@
 package futureScope
 
 import scala.concurrent.*
+import scala.concurrent.duration.*
+//import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.*
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import cps.*
 import cps.monads.{*,given}
@@ -28,11 +29,52 @@ class FutureScope(ec: ExecutionContext) extends CpsMonadContextProvider[Future] 
 
 object FutureScope {
 
-   def spawn[A](using fsc:FutureScopeContext)(f: FutureScopeContext ?=> A, executionContext: ExecutionContext = fsc.executionContext): Future[A] =
+   /**
+   * Spaen computation in current scope
+   * This computation is executed in the child wit carrent scope context and will be cancelled on finish of context owner.
+   **/
+   def spawn[A](using fsc:FutureScopeContext)(f: FutureScopeContext ?=> A, executionContext: ExecutionContext = fsc.executionContext): CancellableFuture[A] =
       summon[FutureScopeContext].spawn(f,executionContext)
 
-   def spawnAsync[A](using fsc:FutureScopeContext)(f: FutureScopeContext => Future[A], executionContext: ExecutionContext = fsc.executionContext ) =
+   /**
+    * Async version of spawn
+    **/   
+   def spawnAsync[A](using fsc:FutureScopeContext)(f: FutureScopeContext ?=> Future[A], executionContext: ExecutionContext = fsc.executionContext ): CancellableFuture[A] =
       summon[FutureScopeContext].spawnAsync(f, executionContext)
+
+   /**
+    * Async version of spawn with accept plain function. Need for automatic transclaing
+    **/   
+    def spawn_async[A](using fsc:FutureScopeContext)(f: FutureScopeContext => Future[A], executionContext: ExecutionContext = fsc.executionContext ): CancellableFuture[A] =
+      summon[FutureScopeContext].spawn_async(f, executionContext)
+
+
+   /**
+    * Spawn delay - return a future which can be cancelled
+    **/   
+   def spawnDelay(using FutureScopeContext)(duration: FiniteDuration):Future[FiniteDuration] =
+      summon[FutureScopeContext].spawnDelay(duration)
+   
+   def spawnTimeout(using FutureScopeContext)(duration: FiniteDuration): CancellableFuture[Nothing] =
+      summon[FutureScopeContext].spawnTimeout(duration)
+
+   transparent inline def join()(using FutureScopeContext): Unit =
+      summon[FutureScopeContext].join()
+     
+   def cancel()(using FutureScopeContext): CancellationResult =
+      summon[FutureScopeContext].cancel(ScopeCancellationException("cancel"))
+   
+   def cancel(ex: ScopeCancellationException)(using FutureScopeContext) =
+      summon[FutureScopeContext].cancel(ex)   
+
+   transparent inline def timedAwait[A](fa: Future[A], duration: FiniteDuration)(using fsc:FutureScopeContext):A =
+      given ExecutionContext = fsc.executionContext
+      await(fsc.timedAwaitAsync(fa,duration))
+      
+   transparent inline def timedAwaitCompleted[A](fa: Future[A], duration: FiniteDuration)(using fsc:FutureScopeContext) =
+      given ExecutionContext = fsc.executionContext
+      await(fsc.timedAwaitCompletedAsync(fa,duration))
+         
 
 }
 
