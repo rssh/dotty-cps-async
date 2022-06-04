@@ -10,13 +10,12 @@ trait CancellableFuture[+A] extends Future[A] with Cancellable
 
 object CancellableFuture {
 
-     
+     // TODO: implement CpsMonad
      given CpsAwaitable[CancellableFuture] with {}
 
      given CpsMonadConversion[CancellableFuture,Future] with
       def apply[T](ft:CancellableFuture[T]): Future[T] = ft
-
-
+ 
 }
 
 

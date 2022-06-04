@@ -32,8 +32,10 @@ object TimeOperations {
     val jf = se.schedule(setP, duration.toMillis, TimeUnit.MILLISECONDS).nn
     DelegatedCancellableFuture(p.future, reason => { 
                          jf.cancel(true)
-                         p.failure(reason)
-                         CancellationResult.Cancelled
+                         if (p.tryFailure(reason)) then
+                            CancellationResult.Cancelled
+                         else
+                            CancellationResult.AlreadyFinished 
                         })
   }
  

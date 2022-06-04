@@ -23,26 +23,22 @@ object BinaryTree {
     await(eventFlow.events.next)
   }
 
+
   def findFirstInContext[T:Ordering](tree: BinaryTree[T], events: EventFlow[T], p: T=> Boolean, level: Int)(using FutureScopeContext): Future[Unit] = {
-   //implicit val printCode = cps.macros.flags.PrintCode 
-   //implicit val debugLevel = cps.macros.flags.DebugLevel(10)
    async[Future]{
       tree match
         case BinaryTree.Empty => 
         case BinaryTree.Node(value, left, right) =>
-          if (p(value)) {
-             events.post(value)
-          }
-          val p1 = FutureScope.spawn( findFirstInContext(left, events, p, level+1) )
-          val p2 = FutureScope.spawn( findFirstInContext(right, events, p, level+1) )
-          if (level == 0) {
-            FutureScope.spawn{
-              await(p1)
-              await(p2)
-              events.finish()
-            }
-          }
-   }
+          if (p(value)) then
+            events.post(value)
+          else 
+            val p1 = FutureScope.spawn( findFirstInContext(left, events, p, level+1) )
+            val p2 = FutureScope.spawn( findFirstInContext(right, events, p, level+1) )
+            await(p1)
+            await(p2)
+      if (level == 0) then
+        events.finish()
+    }
   }
 
 

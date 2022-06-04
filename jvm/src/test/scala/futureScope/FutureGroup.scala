@@ -5,6 +5,7 @@ import cps.monads.{*,given}
 import cps.stream.{*,given}
 
 import scala.concurrent.*
+import scala.util.*
 
 import java.util.concurrent.ConcurrentLinkedDeque
 
@@ -17,7 +18,7 @@ trait FutureGroup[E] extends Cancellable  {
 
    override def cancel(ex: ScopeCancellationException): CancellationResult
 
-   def spawn(op: FutureScopeContext ?=> Future[E]): Unit
+   def spawn(op: FutureScopeContext ?=> E): Unit
    
    def spawnAsync(op: FutureScopeContext ?=> Future[E]): Unit
  
@@ -69,14 +70,19 @@ class DefaultFutureGroup[E](parent: FutureScopeContext) extends FutureGroup[E] {
    override def cancel(ex: ScopeCancellationException): CancellationResult = 
       scopeContext.cancel(ex)
 
-   override def spawn(op: FutureScopeContext ?=> Future[E]): Unit = 
-      scopeContext.spawn(op)
+   override def spawn(op: FutureScopeContext ?=> E): Unit = 
+      scopeContext.spawn{ ctx ?=> 
+         eventFlow.postTry(Try(op))
+      }
    
    override def spawnAsync(op: FutureScopeContext ?=> Future[E]): Unit = 
-      scopeContext.spawnAsync(op)
+      spawn_async( ctx => op(using ctx) )
 
    override def spawn_async(op: FutureScopeContext => Future[E]): Unit = 
-      scopeContext.spawn_async(op)
+      given ExecutionContext = scopeContext.executionContext
+      scopeContext.spawn_async{ ctx =>
+         op(ctx).transform( r => Success(eventFlow.postTry(r)))
+      }
    
 
 }

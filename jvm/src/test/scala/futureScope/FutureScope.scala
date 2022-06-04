@@ -23,7 +23,18 @@ class FutureScope(ec: ExecutionContext) extends CpsMonadContextProvider[Future] 
       val fsc = new FutureScopeContext(ec)
       fsc.run(fa)
    }
+
+   class Child(ctx: FutureScopeContext) extends CpsMonadContextProvider[Future] {
+ 
+      override type Context = FutureScopeContext
+      
+      override def  contextualize[A](fa: Context => Future[A]): Future[A] = {
+         ctx.spawn_async(fa)
+      }
+
+   }
    
+   def child(ctx:FutureScopeContext): Child = Child(ctx)
 
 }
 
@@ -74,7 +85,13 @@ object FutureScope {
    transparent inline def timedAwaitCompleted[A](fa: Future[A], duration: FiniteDuration)(using fsc:FutureScopeContext) =
       given ExecutionContext = fsc.executionContext
       await(fsc.timedAwaitCompletedAsync(fa,duration))
-         
+    
+   /*   
+   def noEscalate[A]( a: =>A)(using FutureScopeContext):A {
+      Try(a) match
+        case Success(a) => a
+        case Failure(ex) => throw   
+   }*/ 
 
 }
 
