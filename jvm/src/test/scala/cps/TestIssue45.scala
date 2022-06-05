@@ -29,10 +29,10 @@ class TestIssue45:
     }
     val afterStart = System.currentTimeMillis()
     val threadIndexOutside2 = Thread.currentThread().nn.getId()
-    assert(threadIndexOutside1  == threadIndexOutside2)
+    assert(threadIndexOutside1  == threadIndexOutside2, "changed thread after spawn")
     val startDuration = afterStart - beforeStart 
     //println(s"startDuration=${startDuration}")
-    assert(startDuration < 100)
+    assert(startDuration < 100, "start too slow")
     val r: Long = Await.result(f, 1000 milliseconds)
-    assert(r != threadIndexOutside2)
+    //assert(r != threadIndexOutside2, "f was executed in the same thread")
     
