@@ -258,23 +258,6 @@ object Async {
                    println("fTree:"+fTree)
                    throw MacroError(s"language construction is not supported: ${fTree}", f)
              }
-     if (true) then // check
-         val dummyMap = new TreeMap() {}
-         try {
-            val x = dummyMap.transformTerm(retval.transformed.asTerm)(Symbol.spliceOwner) 
-         }catch{
-            case ex: Throwable =>
-               val fShow = try {
-                  f.show
-               } catch {
-                  case NonFatal(e) =>
-                        //e.printStackTrace()
-                        report.warning("exception during printinh type")
-                        "(exception during show)"
-               }
-               println(s"Here, input term is ${fShow}, tree:${f.asTerm}")
-               throw ex;
-         }  
      retval
 
 

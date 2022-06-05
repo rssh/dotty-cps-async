@@ -68,12 +68,13 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
                                       report.warning(msg, t.pos)
                                   else
                                       report.error(msg, t.pos)
-                                  Async.nestTransform(p, cpsCtx)
+                                  Async.nestTransform[F,T,C,tp](p, cpsCtx)
                            else
                              report.warning(s"discarding non-unit value ${safeShow()}", t.pos)
-                             Async.nestTransform(p, cpsCtx)
+                             Async.nestTransform[F,T,C,tp](p, cpsCtx)
                        else
-                         Async.nestTransform(p, cpsCtx)
+                         // bug in dotty-3.1.2
+                         Async.nestTransform[F,T,C,tp](p, cpsCtx)
                case other =>
                        printf(other.show)
                        throw MacroError(s"can't handle term in block: $other",t.asExpr)
@@ -92,6 +93,7 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
      val blockResult = rPrevs.foldRight(rLast)((e,s) => e.append(s))
      // wrap yet in one Expr, to avoid unrolling during append in enclosing block).
      val retval = CpsExpr.wrap(blockResult)
+
      if (cpsCtx.flags.debugLevel >= 15) then
          cpsCtx.log(s"last.isAsync=${rLast.isAsync}")
          cpsCtx.log(s"blockResult.isAsync=${blockResult.isAsync}")

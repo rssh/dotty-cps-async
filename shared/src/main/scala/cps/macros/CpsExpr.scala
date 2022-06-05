@@ -35,7 +35,7 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
 
   def fLast(using Quotes): Expr[F[T]]
 
-  def transformed(using Quotes): Expr[F[T]] =
+  def transformed(using Quotes): Expr[F[T]] = {
      import quotes.reflect._
      val DEBUG = true
      if (prev.isEmpty)
@@ -68,13 +68,9 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
 
        val changedLast = lastTerm.changeOwner(newOwner)
 
-       try {
-          Block(changedPrevs, changedLast).asExprOf[F[T]]
-       } catch {
-         case ex: Throwable =>
-          println(s"here")
-          throw ex;
-       }
+       Block(changedPrevs, changedLast).asExprOf[F[T]]
+  }
+
 
   def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T]
 
