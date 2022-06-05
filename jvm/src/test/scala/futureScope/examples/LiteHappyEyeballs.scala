@@ -18,22 +18,12 @@ object LiteHappyEyeballs {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-
   trait NetworkAPI {
     def dnsResolve(name:String): List[InetAddress]
     def openSocket(addr: InetAddress): Future[Socket] 
-    //def establishConnection(socket: Socket): Future[Unit]
   }
 
-  case class Config(
-    val resolutionDelay: FiniteDuration = 50.milliseconds,
-    val connectionAttemptDelay: FiniteDuration = 250.milliseconds,
-    val openConnectionTimeout: FiniteDuration = 30.seconds
-  )
-
-  
-
-  def openConnection(networkApi: NetworkAPI, name: String, config: Config): Future[Socket] = async[Future].in(Scope){
+  def openConnection(networkApi: NetworkAPI, name: String, connectionAttemptDelay: FiniteDuration): Future[Socket] = async[Future].in(Scope){
     val result = Promise[Socket]()
     var addresses = networkApi.dnsResolve(name).iterator
     while(addresses.hasNext && !result.future.isCompleted) {
@@ -48,7 +38,7 @@ object LiteHappyEyeballs {
           case NonFatal(ex) =>
             println(s"Exception during trying connect to $addr ${ex.getMessage}")
       }
-      FutureScope.timedAwaitCompleted(result.future,config.connectionAttemptDelay)
+      FutureScope.timedAwaitCompleted(result.future,connectionAttemptDelay)
     }  
     await(result.future)
   }
