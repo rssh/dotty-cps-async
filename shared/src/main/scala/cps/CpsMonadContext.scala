@@ -76,7 +76,7 @@ trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] {
  **/
 trait CpsContextMonad[F[_],Ctx <: CpsMonadContext[F]]  extends CpsMonad[F] {
 
-  override type Context = Ctx
+  type Context = Ctx
 
   /**
    * Evaluate operation in context. 
@@ -90,4 +90,10 @@ trait CpsContextMonad[F[_],Ctx <: CpsMonadContext[F]]  extends CpsMonad[F] {
   def apply[T](op: Context => F[T]): F[T] =
     applyContext(c => op(c.asInstanceOf[Context]))
   
+}
+
+trait CpsConcurrentContextMonad[F[_], Ctx <: CpsMonadContext[F]] extends CpsConcurrentMonad[F] with CpsContextMonad[F, Ctx] {
+
+  type Context = Ctx
+
 }

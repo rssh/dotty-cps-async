@@ -3,11 +3,20 @@ package cps.macros.flags
 import scala.quoted._
 
 /**
- * define implicit 
+ * if implicit object is defined, than macro print code befroe and after expansion 
  **/
 object PrintCode
 
+/**
+ * if implicit object is defined, than macro print AST Tree befroe and after expansion 
+ **/
 object PrintTree
+
+/**
+ * if implicit object is defined, than macro use runtime await for CpsRuntimeAwait
+ *  (work only on JVM with JDK-19 early access, which inclipe project loom support)
+ **/
+object UseLoomAwait
 
 /**
  * Use this flag for debugging of async transformation process.

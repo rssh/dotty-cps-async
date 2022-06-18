@@ -31,6 +31,8 @@ class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Fut
 
    override type WF[T] = F[T]
 
+   type Context = FutureContext
+
    def pure[T](t:T):Future[T] = Future.successful(t)
 
    def map[A,B](fa:F[A])(f: A=>B):F[B] =
@@ -59,6 +61,7 @@ class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Fut
 
    def spawn[A](op: => F[A]): F[A] =
         val p = Promise[A]
+        //TODO: if loom enabled, ensure that we in loom thread
         summon[ExecutionContext].execute{ 
           () => 
               try

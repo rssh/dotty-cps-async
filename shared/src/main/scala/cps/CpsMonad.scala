@@ -365,12 +365,22 @@ trait CpsConcurrentEffectMonad[F[_]] extends CpsConcurrentMonad[F] with CpsAsync
  **/
 trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
 
+    /**
+    * schedule execution of op somewhere, immediatly.
+    * Note, that characteristics of scheduler can vary.
+    * TODO: rename to spawn until we not stabilized
+    **/
+   def spawnSync[A](op: => A): F[A] =
+      spawn( pure(op) )
 
    /**
     * schedule execution of op somewhere, immediatly.
     * Note, that characteristics of scheduler can vary.
     **/
    def spawn[A](op: => F[A]): F[A]
+
+
+
 
    /***
     * In eager monad, spawned process can be represented by F[_]

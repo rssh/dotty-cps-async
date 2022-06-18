@@ -11,7 +11,8 @@ case class AsyncMacroFlags(
    customValueDiscard: Boolean = false,
    warnValueDiscard: Boolean = true,
    automaticColoring: Boolean = false,
-   muted: Boolean = false
+   muted: Boolean = false,
+   useLoomAwait: Boolean = false
 )
 
 given FromExpr[AsyncMacroFlags] with
@@ -24,7 +25,8 @@ given FromExpr[AsyncMacroFlags] with
                                ${Expr(customValueDiscard)},
                                ${Expr(warnValueDiscard)}, 
                                ${Expr(automaticColoring)},
-                               ${Expr(eMuted)}
+                               ${Expr(eMuted)},
+                               ${Expr(useLoomAwait)}
                               ) 
                            } =>
                Some(AsyncMacroFlags(printCode, printTree,
@@ -34,6 +36,7 @@ given FromExpr[AsyncMacroFlags] with
                        warnValueDiscard,
                        automaticColoring,
                        eMuted,
+                       useLoomAwait
                    ))
        case _ => None
 
