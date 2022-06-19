@@ -72,7 +72,7 @@ object Async {
   def transformMonad[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], dm: Expr[CpsMonad[F]], mc:Expr[C])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     val flags = adoptFlags(f, dm)
-    val DEBUG = true
+    val DEBUG = flags.debugLevel > 0
     try
       if flags.printCode then
         try
