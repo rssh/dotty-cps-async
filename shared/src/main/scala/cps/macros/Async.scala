@@ -99,7 +99,7 @@ object Async {
               if ( flags.useLoomAwait && Expr.summon[CpsRuntimeAwait[F]].isDefined) {
                  val cpsRuntimeAwait = Expr.summon[CpsRuntimeAwait[F]].get
                  if  (TypeRepr.of[C] <:< TypeRepr.of[CpsRuntimeAwaitContext[F]]) {
-                     val transformed = loomTransform[F,T,C & CpsRuntimeAwaitContext[F]](f,dm,mc.asExprOf[C & CpsRuntimeAwaitContext[F]],cpsRuntimeAwait,observatory, flags)
+                     val transformed = loomTransform[F,T,C & CpsRuntimeAwaitContext[F]](f,dm,mc.asExprOf[C & CpsRuntimeAwaitContext[F]],cpsRuntimeAwait, memoization, observatory, flags)
                      if (dm.asTerm.tpe <:< TypeRepr.of[CpsAsyncEffectMonad[F]]) then
                         '{ ${dm.asExprOf[CpsEffectMonad[F]]}.delay(${transformed}) }
                      else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then
@@ -331,10 +331,11 @@ object Async {
                                                         dm: Expr[CpsMonad[F]], 
                                                         ctx: Expr[C], 
                                                         runtimeApi: Expr[CpsRuntimeAwait[F]],
+                                                        optMemoization: Option[TransformationContext.Memoization[F]],
                                                         observatory: Observatory.Scope#Observatory,
                                                         flags: AsyncMacroFlags,
                                                         )(using Quotes):Expr[T] = {
-      loom.LoomTransform.run(f,dm,ctx,runtimeApi,flags,observatory)
+      loom.LoomTransform.run(f,dm,ctx,runtimeApi,flags,optMemoization,observatory)
    } 
 
 

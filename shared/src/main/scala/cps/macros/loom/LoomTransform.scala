@@ -8,6 +8,7 @@ import cps.macros.*
 import cps.macros.misc.*
 import cps.macros.observatory.*
 
+import cps.macros.forest.TransformUtil
 
 // LoomTransform substitute all awaits in text
 //  Note, that this macros can be potentially eliminated completely, by makeing 
@@ -16,15 +17,28 @@ import cps.macros.observatory.*
 object LoomTransform:
 
 
+    
+
     def run[F[_]:Type, T:Type, C<:CpsRuntimeAwaitContext[F]:Type](f: Expr[T], 
         dm: Expr[CpsMonad[F]], 
         ctx: Expr[C], 
         runtimeApi: Expr[CpsRuntimeAwait[F]],
         flags: AsyncMacroFlags,
+        optMemoization: Option[TransformationContext.Memoization[F]],
         observatory: Observatory.Scope#Observatory)(using Quotes):Expr[T] = {
         import quotes.reflect.*
 
         val awaitSymbol = Symbol.requiredMethod("cps.await")
+
+        val needVarTransformationForAutomaticColoring: Boolean = {
+            flags.automaticColoring && 
+            { optMemoization match
+                 case None =>
+                     throw MacroError(s"Memoizaton is not defined for ${Type.show[F]}",f)
+                 case Some(memoization) =>
+                     memoization.kind != CpsMonadMemoization.Kind.BY_DEFAULT
+            }
+        } 
 
         val treeMap = new TreeMap() {
 
@@ -43,6 +57,13 @@ object LoomTransform:
                     handleFunSelect(applyTerm, fun, args, obj, method)(owner)
                   case _ =>
                     super.transformTerm(term)(owner)
+              case Lambda(params,body) => super.transformTerm(term)(owner)  // to be before Block
+              case block@Block(statements, expr) => 
+                if (needVarTransformationForAutomaticColoring) {
+                  runBlockWithAutomaticColoring(block)(owner)
+                } else {
+                  super.transformTerm(term)(owner)
+                }
               case _ =>
                 super.transformTerm(term)(owner)
           }
@@ -124,8 +145,83 @@ object LoomTransform:
                    throw MacroError(s"Can't find ${taConversionPrinted}: ${implFailure.explanation}", applyTerm.asExpr)
           }
 
+          def runBlockWithAutomaticColoring(block:Block)(owner: Symbol):Term = {
+              val (allChangedSymbols, nStats) = block.statements.foldLeft(
+                           (Map.empty[Symbol,Term], IndexedSeq.empty[Statement])){ (s, e) =>
+                val (symbolMap, out) = s
+                val ce0 = TransformUtil.changeSymsInTree(symbolMap, e, owner).asInstanceOf[Statement]
+                val ce1 = transformStatement(ce0)(owner)
+                e match
+                  case valDef@ValDef(_,_,_) =>
+                    runValDefWithAutomaticColoring(valDef) match
+                      case None =>
+                        (symbolMap, out appended ce1)
+                      case Some(nValDef) =>
+                        val nSymbolMap = symbolMap.updated(valDef.symbol,Ref(nValDef.symbol))
+                        val nOut = out appended ce1 appended nValDef
+                        (nSymbolMap, nOut)
+                  case _ =>
+                     (symbolMap, out.appended(ce1))
+              }
+              val nExpr0 = TransformUtil.changeSymsInTerm(allChangedSymbols,block.expr, owner)
+              val nExpr1 = transformTerm(nExpr0)(owner) 
+              Block.copy(block)(nStats.toList, nExpr1)
+          }
+
+         
+
+          /**
+           * return new valdef which holds memoized copy of origin valDef, which should be
+           * inserted after origin
+           **/
+          def runValDefWithAutomaticColoring(valDef: ValDef): Option[ValDef] = {
+            TransformUtil.inMonadOrChild[F](valDef.tpt.tpe).flatMap{ upte =>
+                println("we are here")
+                val analysis = observatory.effectColoring
+                val usageRecord = analysis.usageRecords.get(valDef.symbol).getOrElse{
+                      throw MacroError(s"Can't find analysis record for usage of ${valDef.symbol}", optRhs.get.asExpr)
+                }
+                if (usageRecord.nInAwaits > 0 && usageRecord.nWithoutAwaits > 0) then 
+                  report.error(s"value ${valDef.symbol} passed in sync and async form at the same time",valDef.pos)
+                  usageRecord.reportCases()
+                if (usageRecord.nInAwaits == 0) then
+                  None
+                else 
+                  // create second variable and 
+                  val memoization = optMemoization.get
+                  val mm = memoization.monadMemoization.asTerm
+                  val mRhs = memoization match
+                    case CpsMonadMemoization.Kind.BY_DEFAULT => Ref(valDef.symbol)
+                    case CpsMonadMemoization.Kind.INPLACE => 
+                      Apply(TypeApple(Select.unique(mm,"apply"),List(Inferred(utpe))),List(Ref(valDef.symbol)))
+                    case CpsMonadMemoization.Kind.PURE =>
+                      val ff = Apply(TypeApple(Select.unique(mm,"apply"),List(Inferred(utpe))),List(Ref(valDef.symbol)))
+                      Apply(
+                        TypeApply(Select.unique(runtimeApi.asTerm,"await"),List(Inferred(tpt.tpe))),
+                        List(ff)
+                      )
+                    case CpsMonadMemoization.Kind.DYNAMIC =>
+                      val mmClass = TypeIdent(Symbol.classSymbol("CpsMonadMemoization.DynamicAp")).tpe
+                      val mmType = mmClass.appliedTo(List(TypeRepr.of[F], utpe, valDef.tpt.tpe.widen))
+                      Implicits.search(mmType) match
+                          case Some(mm) =>
+                              val ff = Apply(Select.unique(mm,"apply"), List(Ref(valDef.symbol)))
+                              Apply(
+                                TypeApply(Select.unique(runtimeApi.asTerm,"await"),List(Inferred(tpt.tpe))),
+                                List(ff)
+                              )
+                          case None =>
+                              throw MacroError(s"Can't resolve ${mmType.show}", valDef.optRhs.get.asExpr)
+                  val nSym = Symbol.newVal
+                  val nValDef = ValDef(nSym, mRhs.changeOwner(nSym))            
+                  Some(nValDef)
+            }
+          }
 
         }
+
+
+
         val retval = treeMap.transformTerm(f.asTerm)(Symbol.spliceOwner)
         retval.asExprOf[T]
     } 

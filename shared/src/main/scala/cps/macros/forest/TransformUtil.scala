@@ -58,11 +58,18 @@ object TransformUtil:
     //def lookupParamTerm(sym: Symbol): Option[Term] =
     //      paramsMap.get(sym).map(i => Ref(indexedArgs(i).symbol))
     val assoc: Map[Symbol, Tree] = paramsMap.map((k,i) => (k, Ref(indexedArgs(i).symbol)))
-    changeSyms(assoc, body, owner)
+    changeSymsInTerm(assoc, body, owner)
 
-  def changeSyms(using qctx:Quotes)(association: Map[qctx.reflect.Symbol,qctx.reflect.Tree], 
-                                    body: quotes.reflect.Term, 
-                                    owner: quotes.reflect.Symbol): quotes.reflect.Term =
+  def changeSymsInTerm(using Quotes)(association: Map[quotes.reflect.Symbol,quotes.reflect.Tree], 
+                                    body: quotes.reflect.Term,
+                                    owner: quotes.reflect.Symbol 
+                                    ): quotes.reflect.Term = {
+     changeSymsInTree(association,body,owner).asInstanceOf[quotes.reflect.Term]
+  }
+
+  def changeSymsInTree(using qctx:Quotes)(association: Map[qctx.reflect.Symbol,qctx.reflect.Tree], 
+                                    body: quotes.reflect.Tree, 
+                                    owner: quotes.reflect.Symbol): quotes.reflect.Tree =
     import quotes.reflect._
 
     // TODO: mege wirh changeSyms
@@ -147,7 +154,7 @@ object TransformUtil:
                  case _ => tp
 
     }
-    argTransformer.transformTerm(body)(owner)
+    argTransformer.transformTree(body)(owner)
 
   /**
    * widen, which works over 'or' and 'and' types.
@@ -248,4 +255,16 @@ object TransformUtil:
         other.changeOwner(owner)
 
      
-
+  def inMonadOrChild[F[_]:Type](using Quotes)(te: quotes.reflect.TypeRepr): Option[quotes.reflect.TypeRepr] = {
+      import quotes.reflect.*
+      te.widen.asType match
+        case '[ F[r] ] =>
+          Some(TypeRepr.of[r])
+        case _ =>
+          TypeRepr.of[F].classSymbol match
+            case Some(fs) =>
+                   // TODO: rechek. can be incorrent.
+                   te.derivesFrom(fs)
+            case None =>
+                   false          
+  }

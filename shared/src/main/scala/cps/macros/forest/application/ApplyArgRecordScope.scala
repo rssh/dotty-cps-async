@@ -400,8 +400,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
          }
 
          val (nPattern, newBindings) = rebindPatterns(caseDef.pattern, assoc)
-         val nGuard = caseDef.guard.map( TransformUtil.changeSyms(newBindings, _, owner ) )
-         val nBody = if (processBody) TransformUtil.changeSyms(newBindings, body, owner) else body
+         val nGuard = caseDef.guard.map( TransformUtil.changeSymsInTerm(newBindings, _, owner ) )
+         val nBody = if (processBody) TransformUtil.changeSymsInTerm(newBindings, body, owner) else body
          CaseDef(nPattern, nGuard, nBody)
        }
 
@@ -410,7 +410,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
 
        private def changeIdent(body:Term, oldSym: Symbol, newSym: Symbol, owner: Symbol): Term =
-         TransformUtil.changeSyms(Map(oldSym->Ref(newSym)), body, owner)
+         TransformUtil.changeSymsInTerm(Map(oldSym->Ref(newSym)), body, owner)
 
   }
 
