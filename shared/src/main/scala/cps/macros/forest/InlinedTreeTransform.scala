@@ -219,7 +219,8 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
     val body  = 
       if (!awaitVals.isEmpty) {
              bodyWithoutAwaits.changeOwner(Symbol.spliceOwner) match
-                 case Block(statements, last) => Block(awaitVals ++ statements, last)
+                 case block@Block(statements, last) => 
+                     TransformUtil.prependStatementsToBlock(awaitVals,block)
                  case other => Block(awaitVals, other)
       } else 
              bodyWithoutAwaits 

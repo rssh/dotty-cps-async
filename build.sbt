@@ -40,7 +40,9 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     .jvmSettings(
         scalacOptions ++= Seq( "-Yexplicit-nulls",
                             "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
-                            "-Ydebug", "-uniqid", "-Xcheck-macros", "-Ycheck:macro", "-Yprint-syms", "-explain"  ),
+                            "-Ydebug", "-uniqid", "-Xcheck-macros", "-Ycheck:macro", "-Yprint-syms", "-explain",
+                            "-Ysafe-init"
+                             ),
                              // -explain
                              // -Ydebug-error
                              // -Ydebug-tree-with-id -1
