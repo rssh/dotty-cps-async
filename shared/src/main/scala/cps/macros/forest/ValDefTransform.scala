@@ -147,7 +147,11 @@ object ValDefTransform:
           val valDef = ValDef(castedOldValDef.symbol, Some(rhs.changeOwner(castedOldValDef.symbol)))
           exprTerm.changeOwner(castedOldValDef.symbol.owner) match 
               case Block(stats,last) =>
-                    Block(valDef::stats, last)
+                    last match
+                       case Closure(mech,optType) => 
+                          Block(valDef::Nil,Block(stats,last))
+                       case _ =>   
+                          Block(valDef::stats, last)
               case other =>
                     Block(valDef::Nil,other)
 
@@ -173,8 +177,8 @@ object ValDefTransform:
          val valDef: Statement = oldValDef.asInstanceOf[quotes.reflect.ValDef]
          val prevStats: List[Statement] = prev.map(_.extract.changeOwner(valDef.symbol.owner)).toList
          val outputTerm = n.asTerm.changeOwner(valDef.symbol.owner) match
-            case Block(statements, last) =>
-                   Block( prevStats ++: (valDef +: statements), last)
+            case block@Block(statements, last) =>
+                   TransformUtil.prependStatementsToBlock(prevStats ++: List(valDef), block )
             case other =>
                    Block( prevStats ++: List(valDef), other)
          outputTerm.asExprOf[T]
@@ -187,11 +191,12 @@ object ValDefTransform:
           import quotes.reflect._
 
           val valDef = oldValDef.asInstanceOf[quotes.reflect.ValDef]
+          val prevWithNewOwner = prev.map(_.extract.changeOwner(valDef.symbol.owner))
           val block = next.transformed.asTerm.changeOwner(valDef.symbol.owner) match 
-             case Block(stats, e) =>
-                 Block( prev.map(_.extract.changeOwner(valDef.symbol.owner)) ++: valDef +: stats, e)
+             case block@Block(stats, e) =>
+                  TransformUtil.prependStatementsToBlock(prevWithNewOwner ++: List(valDef), block)
              case other =>
-                 Block( prev.map(_.extract.changeOwner(valDef.symbol.owner)) ++: List(valDef) , other)
+                 Block( prevWithNewOwner ++: List(valDef) , other)
           block.asExprOf[F[T]]
 
        }
@@ -213,11 +218,8 @@ object ValDefTransform:
           if (prev.isEmpty) {
              term
           } else {
-             val retval = term match
-               case Block(stats, expr) =>
-                 Block(prev.map(_.extract) ++: stats, expr)
-               case other =>
-                 Block(prev.toList.map(_.extract) , other)
+             val prevExtracted = prev.toList.map(_.extract)
+             val retval = TransformUtil.prependStatementsToTerm(prevExtracted, term) 
              retval.changeOwner(Symbol.spliceOwner)
           }
 

@@ -254,6 +254,28 @@ object TransformUtil:
       case other =>
         other.changeOwner(owner)
 
+
+  def prependStatementToBlock(using Quotes)(st: quotes.reflect.Statement, block: quotes.reflect.Block ): quotes.reflect.Block = {
+    import quotes.reflect.*
+    block match
+      case lambda@Lambda(params,body) =>
+        Block(st::Nil, lambda)
+      case _ =>  
+        block.expr match
+          case Closure(_,_) => 
+            Block(st::Nil, block)
+          case _ =>
+            Block(st::block.statements, block.expr)
+  }
+
+  def prependStatementsToBlock(using Quotes)(sts: List[quotes.reflect.Statement], block: quotes.reflect.Block ): quotes.reflect.Block = {
+    import quotes.reflect.*
+    block.expr match
+      case Closure(_,_) => 
+         Block(sts, block)
+      case _ =>
+         Block(sts ++: block.statements, block.expr)
+  }
      
   def inMonadOrChild[F[_]:Type](using Quotes)(te: quotes.reflect.TypeRepr): Option[quotes.reflect.TypeRepr] = {
       import quotes.reflect.*
@@ -267,4 +289,15 @@ object TransformUtil:
                    te.derivesFrom(fs)
             case None =>
                    false          
+
+  def prependStatementsToTerm(using Quotes)(statements: List[quotes.reflect.Statement], term: quotes.reflect.Term): quotes.reflect.Block = {
+    import quotes.reflect.*
+    term match
+      case lambda@Lambda(_,_) =>
+        Block(statements, lambda)
+      case block@Block(_,_) =>
+        prependStatementsToBlock(statements, block)
+      case _ =>
+        Block(statements, term)     
   }
+
