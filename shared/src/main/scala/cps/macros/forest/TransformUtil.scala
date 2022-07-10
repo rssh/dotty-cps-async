@@ -283,12 +283,18 @@ object TransformUtil:
         case '[ F[r] ] =>
           Some(TypeRepr.of[r])
         case _ =>
-          TypeRepr.of[F].classSymbol match
-            case Some(fs) =>
-                   // TODO: rechek. can be incorrent.
-                   te.derivesFrom(fs)
-            case None =>
-                   false          
+          val bc = te.baseClasses
+          if (bc.isEmpty) then None
+          else
+            TypeRepr.of[F].classSymbol.flatMap(fs =>
+              if (bc.contains(fs)) {
+                Some(te.baseType(fs))
+              } else {
+                // TODO: search up, add tracking  F-bound to prevent infinite loop.
+                None
+              }
+          )                
+  }  
 
   def prependStatementsToTerm(using Quotes)(statements: List[quotes.reflect.Statement], term: quotes.reflect.Term): quotes.reflect.Block = {
     import quotes.reflect.*

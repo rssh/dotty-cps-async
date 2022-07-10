@@ -153,7 +153,7 @@ object LoomTransform:
                 val ce1 = transformStatement(ce0)(owner)
                 e match
                   case valDef@ValDef(_,_,_) =>
-                    runValDefWithAutomaticColoring(valDef) match
+                    runValDefWithAutomaticColoring(valDef, owner) match
                       case None =>
                         (symbolMap, out appended ce1)
                       case Some(nValDef) =>
@@ -174,12 +174,12 @@ object LoomTransform:
            * return new valdef which holds memoized copy of origin valDef, which should be
            * inserted after origin
            **/
-          def runValDefWithAutomaticColoring(valDef: ValDef): Option[ValDef] = {
+          def runValDefWithAutomaticColoring(valDef: ValDef, valDefOwner: Symbol): Option[ValDef] = {
             TransformUtil.inMonadOrChild[F](valDef.tpt.tpe).flatMap{ upte =>
                 println("we are here")
                 val analysis = observatory.effectColoring
                 val usageRecord = analysis.usageRecords.get(valDef.symbol).getOrElse{
-                      throw MacroError(s"Can't find analysis record for usage of ${valDef.symbol}", optRhs.get.asExpr)
+                      throw MacroError(s"Can't find analysis record for usage of ${valDef.symbol}", valDef.rhs.get.asExpr)
                 }
                 if (usageRecord.nInAwaits > 0 && usageRecord.nWithoutAwaits > 0) then 
                   report.error(s"value ${valDef.symbol} passed in sync and async form at the same time",valDef.pos)
@@ -190,30 +190,30 @@ object LoomTransform:
                   // create second variable and 
                   val memoization = optMemoization.get
                   val mm = memoization.monadMemoization.asTerm
-                  val mRhs = memoization match
+                  val mRhs = memoization.kind match
                     case CpsMonadMemoization.Kind.BY_DEFAULT => Ref(valDef.symbol)
                     case CpsMonadMemoization.Kind.INPLACE => 
-                      Apply(TypeApple(Select.unique(mm,"apply"),List(Inferred(utpe))),List(Ref(valDef.symbol)))
+                      Apply(TypeApply(Select.unique(mm,"apply"),List(Inferred(upte))),List(Ref(valDef.symbol)))
                     case CpsMonadMemoization.Kind.PURE =>
-                      val ff = Apply(TypeApple(Select.unique(mm,"apply"),List(Inferred(utpe))),List(Ref(valDef.symbol)))
+                      val ff = Apply(TypeApply(Select.unique(mm,"apply"),List(Inferred(upte))),List(Ref(valDef.symbol)))
                       Apply(
-                        TypeApply(Select.unique(runtimeApi.asTerm,"await"),List(Inferred(tpt.tpe))),
+                        TypeApply(Select.unique(runtimeApi.asTerm,"await"),List(Inferred(valDef.tpt.tpe))),
                         List(ff)
                       )
                     case CpsMonadMemoization.Kind.DYNAMIC =>
                       val mmClass = TypeIdent(Symbol.classSymbol("CpsMonadMemoization.DynamicAp")).tpe
-                      val mmType = mmClass.appliedTo(List(TypeRepr.of[F], utpe, valDef.tpt.tpe.widen))
+                      val mmType = mmClass.appliedTo(List(TypeRepr.of[F], upte, valDef.tpt.tpe.widen))
                       Implicits.search(mmType) match
-                          case Some(mm) =>
-                              val ff = Apply(Select.unique(mm,"apply"), List(Ref(valDef.symbol)))
+                          case success: ImplicitSearchSuccess =>
+                              val ff = Apply(Select.unique(success.tree,"apply"), List(Ref(valDef.symbol)))
                               Apply(
-                                TypeApply(Select.unique(runtimeApi.asTerm,"await"),List(Inferred(tpt.tpe))),
+                                TypeApply(Select.unique(runtimeApi.asTerm,"await"),List(Inferred(upte))),
                                 List(ff)
                               )
-                          case None =>
-                              throw MacroError(s"Can't resolve ${mmType.show}", valDef.optRhs.get.asExpr)
-                  val nSym = Symbol.newVal
-                  val nValDef = ValDef(nSym, mRhs.changeOwner(nSym))            
+                          case failure: ImplicitSearchFailure =>
+                              throw MacroError(s"Can't resolve ${mmType.show}: ${failure.explanation}", valDef.rhs.get.asExpr)
+                  val nSym = Symbol.newVal(valDefOwner, valDef.name+"$mem",valDef.tpt.tpe,Flags.Local,Symbol.noSymbol)
+                  val nValDef = ValDef(nSym, Some(mRhs.changeOwner(nSym)))            
                   Some(nValDef)
             }
           }
