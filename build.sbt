@@ -50,7 +50,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
                 "-source-links:shared=github://rssh/dotty-cps-async/master#shared",
                 "-source-links:jvm=github://rssh/dotty-cps-async/master#jvm"),
         libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
-        mimaPreviousArtifacts := Set("com.github.rssh" %% "dotty-cps-async" % "0.9.8")
+        mimaPreviousArtifacts := Set("com.github.rssh" %% "dotty-cps-async" % "0.9.9")
     ).jsSettings(
         scalaJSUseMainModuleInitializer := true,
         Compile / doc / scalacOptions := Seq("-groups",  
@@ -70,3 +70,26 @@ lazy val CpsJVM = config("cps.jvm")
 lazy val CpsJS = config("cps.js")
 //lazy val CpsNative = config("cps.native")
 lazy val Root = config("root")
+
+lazy val cpsLoomJVM = project.in(file("jvm-loom"))
+                      .settings(sharedSettings)
+                      .settings(name := "dotty-cps-async-loom-test")
+                      .settings(
+                        // TODO: remove sources, add dependency from java
+                        Compile / unmanagedSourceDirectories ++= Seq(
+                             baseDirectory.value / ".." / "jvm" / "src" / "main" / "scala",
+                             baseDirectory.value / ".." / "shared" / "src" / "main" / "scala",
+                        ),
+                        Test / unmanagedSourceDirectories ++= Seq(
+                             baseDirectory.value / ".." / "jvm" / "src" / "test" / "scala",
+                             baseDirectory.value / ".." / "shared" / "src" / "test" / "scala",
+                        ),
+                        libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
+                        Test/fork := true,
+                        Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
+                        Test/javaOptions ++= Seq(
+                           "--enable-preview", 
+                           "--add-modules", "jdk.incubator.concurrent"
+                        )
+                      )
+
