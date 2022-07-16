@@ -3,12 +3,13 @@ package cps.macros.flags
 import scala.quoted._
 
 /**
- * if implicit object is defined, than macro print code befroe and after expansion 
+ * if implicit object of type PrintCode.type is defined, than macro print code befroe and after expansion 
  **/
 object PrintCode
 
+
 /**
- * if implicit object is defined, than macro print AST Tree befroe and after expansion 
+ * if implicit of type PrintTree.type is defined, them macro print  ast tree before and after macro transformation.
  **/
 object PrintTree
 
@@ -33,28 +34,34 @@ object UseLoomAwait
  **/
 case class DebugLevel(value: Int)
 
-given FromExpr[DebugLevel] with
+object DebugLevel:
 
-   def unapply(x: Expr[DebugLevel])(using Quotes) =
-     import quotes.reflect._
-     println(s"Unliftable[DebugLevel], x=${x.show}")
-     x match
-       case '{ DebugLevel(${Expr(x)}) } =>
+   given FromExpr[DebugLevel] with
+
+      def unapply(x: Expr[DebugLevel])(using Quotes) =
+         import quotes.reflect._
+         x match
+            case '{ DebugLevel(${Expr(x)}) } =>
                  Some(DebugLevel(x))
-       case '{ new DebugLevel(${Expr(x)}) } =>
+            case '{ new DebugLevel(${Expr(x)}) } =>
                  Some(DebugLevel(x))
-       case other =>
-          val sym = other.asTerm.symbol
-          sym.tree match
-             case ValDef(name,tpt,Some(rhs)) =>
+            case other =>
+               val sym = other.asTerm.symbol
+               sym.tree match
+                  case ValDef(name,tpt,Some(rhs)) =>
                       unapply(rhs.asExprOf[DebugLevel])
-             case DefDef(name,params,rt,Some(rhs)) =>
+                  case DefDef(name,params,rt,Some(rhs)) =>
                       unapply(rhs.asExprOf[DebugLevel])
-             case DefDef(name,params,tp,None) =>
+                  case DefDef(name,params,tp,None) =>
                       // currently it is no-way to extract definition of given.
                       // TODO: submit request to dotty
                       None
-             case other =>
-                      println(s"other=${other.show}")
+                  case other =>
+                      println(s"unliftable cps.macros.flags.debugLevel ${other.show}")
                       None
+
+end DebugLevel
+
+
+
 
