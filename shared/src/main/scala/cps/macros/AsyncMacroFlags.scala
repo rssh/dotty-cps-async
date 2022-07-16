@@ -15,11 +15,13 @@ case class AsyncMacroFlags(
    useLoomAwait: Boolean = false
 )
 
-given FromExpr[AsyncMacroFlags] with
+object AsyncMacroFlags:
 
-   def unapply(v: Expr[AsyncMacroFlags])(using Quotes): Option[AsyncMacroFlags] =
-     v match
-       case '{ AsyncMacroFlags(${Expr(printCode)},${Expr(printTree)},
+   given FromExpr[AsyncMacroFlags] with
+
+      def unapply(v: Expr[AsyncMacroFlags])(using Quotes): Option[AsyncMacroFlags] =
+         v match
+            case '{ AsyncMacroFlags(${Expr(printCode)},${Expr(printTree)},
                                ${Expr(debugLevel)},
                                ${Expr(allowShiftedLambda)}, 
                                ${Expr(customValueDiscard)},
@@ -38,6 +40,9 @@ given FromExpr[AsyncMacroFlags] with
                        eMuted,
                        useLoomAwait
                    ))
-       case _ => None
+            case _ => None
+
+end AsyncMacroFlags
+
 
 
