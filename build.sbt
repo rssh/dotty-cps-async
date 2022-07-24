@@ -72,14 +72,16 @@ lazy val CpsJS = config("cps.js")
 lazy val Root = config("root")
 
 lazy val cpsLoomJVM = project.in(file("jvm-loom"))
+                      .dependsOn(cps.jvm)
                       .settings(sharedSettings)
                       .settings(name := "dotty-cps-async-loom-test")
                       .settings(
                         // TODO: remove sources, add dependency from java
-                        Compile / unmanagedSourceDirectories ++= Seq(
-                             baseDirectory.value / ".." / "jvm" / "src" / "main" / "scala",
-                             baseDirectory.value / ".." / "shared" / "src" / "main" / "scala",
-                        ),
+                        //Compile / unmanagedSourceDirectories ++= Seq(
+                        //     baseDirectory.value / ".." / "jvm" / "src" / "main" / "scala",
+                        //     baseDirectory.value / ".." / "shared" / "src" / "main" / "scala",
+                        //),
+                        Compile / unmanagedSourceDirectories := Seq(),
                         Test / unmanagedSourceDirectories ++= Seq(
                              baseDirectory.value / ".." / "jvm" / "src" / "test" / "scala",
                              baseDirectory.value / ".." / "shared" / "src" / "test" / "scala",

@@ -19,7 +19,7 @@ object LoomTransform:
 
     
 
-    def run[F[_]:Type, T:Type, C<:CpsRuntimeAwaitContext[F]:Type](f: Expr[T], 
+    def run[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], 
         dm: Expr[CpsMonad[F]], 
         ctx: Expr[C], 
         runtimeApi: Expr[CpsRuntimeAwait[F]],
@@ -90,6 +90,8 @@ object LoomTransform:
                          // transient inlines have no 'Typed' entry
                          //  TODO: handle non-inlined conversion
                          withInlineBindings(conv,runAwait(applyTerm, args.head, targs3.head.tpe, args1.head, args1.tail.head))
+              case _ =>
+                super.transformTerm(applyTerm)(owner)
           }
 
           def withInlineBindings(origin: Inlined, tree: Term): Term =

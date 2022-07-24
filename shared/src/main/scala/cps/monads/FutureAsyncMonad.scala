@@ -19,6 +19,10 @@ class FutureContext(m: FutureAsyncMonadAPI) extends CpsMonadNoAdoptContext[Futur
 
    def executionContext = m.executionContext
 
+   def submit[A](a: Future[A]):Unit = {
+     // do nothing, since future now evaluated.
+   }
+
 }
 
 
