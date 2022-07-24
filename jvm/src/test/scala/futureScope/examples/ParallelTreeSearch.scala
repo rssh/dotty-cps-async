@@ -4,6 +4,8 @@ import scala.concurrent.*
 
 import cps.*
 import cps.monads.{*,given}
+import cps.testconfig.given
+
 import futureScope.*
 
 

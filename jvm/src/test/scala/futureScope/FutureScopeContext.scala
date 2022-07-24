@@ -16,6 +16,7 @@ import cps.monads.{given,*}
 
 import futureScope.util.*
 
+import cps.testconfig.given
 
 /**
  * ScopedContext - bring structured concurrency primitives for futures.

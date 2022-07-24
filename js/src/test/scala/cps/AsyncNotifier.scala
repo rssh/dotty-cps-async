@@ -8,6 +8,10 @@ import scala.scalajs._
 import scala.scalajs.js._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits._
 
+
+import cts.testconfig.given
+
+
 class AsyncNotifier{
 
  var currentPromise: js.Promise[Unit] = _

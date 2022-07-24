@@ -1,6 +1,7 @@
 package cps
 
 import cps.monads.{*,given}
+import cps.testconfig.given
 //import cps.monads.FutureAsyncMonad
 import org.junit.{Test,Ignore}
 import org.junit.Assert._

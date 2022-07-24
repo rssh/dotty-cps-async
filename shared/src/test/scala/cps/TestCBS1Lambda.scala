@@ -6,6 +6,8 @@ import org.junit.Assert._
 import scala.quoted._
 import scala.util.Success
 
+import cps.testconfig.given
+
 trait P {
   type N
   def x: Int

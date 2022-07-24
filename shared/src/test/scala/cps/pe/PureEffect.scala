@@ -4,6 +4,7 @@ import scala.util._
 import scala.concurrent._
 
 import cps._
+import cps.testconfig.given
 
 /**
  * pure effect, which is referential transparent.

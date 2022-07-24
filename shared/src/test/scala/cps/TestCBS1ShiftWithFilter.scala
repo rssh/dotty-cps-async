@@ -5,6 +5,7 @@ import org.junit.Assert._
 
 import scala.util.Success
 import scala.util.Failure
+import cps.testconfig.given
 
 
 class TestCBS1ShiftWithFilter:

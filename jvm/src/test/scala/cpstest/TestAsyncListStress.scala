@@ -12,6 +12,7 @@ import cps.monads.{*,given}
 import cps.stream.*
 
 import cps.util.*
+import cps.testconfig.given
 
 
 class TestAsyncListStress:

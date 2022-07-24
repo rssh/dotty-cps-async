@@ -8,6 +8,7 @@ import scala.util.*
 import cps.*
 import cps.monads.{*,given}
 import cps.util.*
+import cps.testconfig.given
 
 import java.util.concurrent.CancellationException
 

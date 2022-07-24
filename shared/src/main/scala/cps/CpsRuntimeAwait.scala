@@ -43,31 +43,3 @@ trait CpsRuntimeAwait[F[_]] {
 }
 
 
-object CpsRuntimeAwait {
-
-  /*
-  def runAsyncImpl[F[_], A,C <: CpsRuntimeAwaitContext[F]](f: Expr[C=>A],ctx:Expr[C])(using Quotes):Expr[F[A]] = {
-       import quotes.reflect.*
-       val settings = CompilationInfo.XmacroSettings
-       if (settings.contains("cps-async:loom")) {
-          '{ this.runAsyncInternal($f)($ctx)   }
-       } else {
-          report.throwError("-Xmacro-settings:cps-async:loom should be enabled for use methods of CpsRuntimeAwaitMonad")
-       }    
-  }
-  */
-
-  /*
-  def runAsyncImpl[F[_], A,C <: CpsRuntimeAwaitContext[F]](f: Expr[C=>A],ctx:Expr[C])(using Quotes):Expr[F[A]] = {
-       import quotes.reflect.*
-       val settings = CompilationInfo.XmacroSettings
-       if (settings.contains("cps-async:loom")) {
-          '{ this.runAsyncInternal($f)($ctx)   }
-       } else {
-          report.throwError("-Xmacro-settings:cps-async:loom should be enabled for use methods of CpsRuntimeAwaitMonad")
-       }    
-  }
-  */
-
-
-}

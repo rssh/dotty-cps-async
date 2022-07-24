@@ -3,6 +3,8 @@ package cps.gopherlike2
 import cps._
 import cps.macros._
 
+import cps.testconfig.given
+
 import scala.quoted._
 import scala.compiletime._
 

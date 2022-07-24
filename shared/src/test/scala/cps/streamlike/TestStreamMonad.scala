@@ -5,6 +5,8 @@ import org.junit.Assert._
 
 
 import cps._
+import cps.testconfig.given
+
 
 class TestStreamMonad:
 

@@ -13,6 +13,7 @@ import scala.util._
 import java.util.concurrent.CompletableFuture
 
 import cps.monads.given
+import cps.testconfig.given
 
 class TestScalaJavaFutureIntegration:
 

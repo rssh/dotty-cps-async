@@ -7,6 +7,8 @@ import scala.quoted._
 import scala.util.Success
 
 import cps.macros._
+import cps.testconfig.given
+
 
 class TestBS1If:
 

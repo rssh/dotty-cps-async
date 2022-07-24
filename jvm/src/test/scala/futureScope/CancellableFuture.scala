@@ -5,6 +5,7 @@ import scala.concurrent.duration.*
 
 import cps.*
 import cps.monads.*
+import cps.testconfig.given
 
 trait CancellableFuture[+A] extends Future[A] with Cancellable
 

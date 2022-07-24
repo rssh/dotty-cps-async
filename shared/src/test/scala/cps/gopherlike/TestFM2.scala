@@ -8,6 +8,7 @@ import scala.concurrent.Future
 import scala.util.Success
 
 import cps._
+import cps.testconfig.given
 
 class TestFM2:
 

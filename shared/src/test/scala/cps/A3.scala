@@ -2,6 +2,7 @@ package cps
 
 import scala.quoted._
 
+
 trait X[T] { type V = T }
 
 trait MM[F[_]] {

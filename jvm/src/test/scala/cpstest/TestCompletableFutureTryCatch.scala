@@ -11,6 +11,7 @@ import scala.util.control.*
 import cps.*
 import scala.concurrent.ExecutionContext.Implicits.global
 import cps.monads.{*,given}
+import cps.testconfig.given
 
 import java.util.concurrent.CompletableFuture
 

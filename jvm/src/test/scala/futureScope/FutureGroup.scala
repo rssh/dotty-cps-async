@@ -3,6 +3,7 @@ package futureScope
 import cps.*
 import cps.monads.{*,given}
 import cps.stream.{*,given}
+import cps.testconfig.given
 
 import scala.concurrent.*
 import scala.util.*

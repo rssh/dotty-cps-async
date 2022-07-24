@@ -1,6 +1,7 @@
 package cps.example
 
 import cps._
+import cps.testconfig.given
 
 trait Connection[F[_]:CpsTryMonad]:
 

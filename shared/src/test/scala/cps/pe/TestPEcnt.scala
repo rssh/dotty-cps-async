@@ -8,7 +8,10 @@ import scala.util.*
 import cps.*
 import cps.automaticColoring.{*,given}
 import cps.util.FutureCompleter
+import cps.testconfig.given
+
 import scala.language.implicitConversions
+
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

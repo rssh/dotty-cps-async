@@ -18,6 +18,7 @@ import org.junit.Test
 //------------------------
 // dotty-cps-async changes
 import cps.compat.sip22.{async, await}
+import cps.testconfig.given
 //import scala.async.Async.{async, await}
 //------------------------
 import scala.async.TestUtil._

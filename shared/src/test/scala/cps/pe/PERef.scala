@@ -3,6 +3,8 @@ package cps.pe
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicInteger
 
+import cps.testconfig.given
+
 class PERef[T<:AnyRef](initValue: T):
 
   val value = new AtomicReference[T](initValue)

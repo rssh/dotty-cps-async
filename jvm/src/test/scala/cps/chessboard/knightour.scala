@@ -1,6 +1,7 @@
 package cps.chessboard
 
 import cps._
+import cps.testconfig.given
 
 //TODO: move to cps.runtime
 

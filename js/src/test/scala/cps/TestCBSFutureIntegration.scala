@@ -12,6 +12,7 @@ import scala.util._
 
 import cps.monads.given
 
+import cts.testconfig.given
 
 class TestCBSFutureIntegration:
 

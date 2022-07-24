@@ -1,6 +1,7 @@
 package cps.gopherlike
 
 import cps._
+import cps.testconfig.given
 import java.io.Closeable
 
 trait IFWriter[F[_],A]:

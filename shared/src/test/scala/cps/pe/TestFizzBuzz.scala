@@ -10,7 +10,10 @@ import cps.automaticColoring.given
 import cps.util.FutureCompleter
 import scala.language.implicitConversions
 
+import cps.testconfig.given
+
 import scala.concurrent.ExecutionContext.Implicits.global
+
 
 class TestFizzBuzz:
 

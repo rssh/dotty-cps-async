@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicInteger
 
   
- 
+import cps.testconfig.given
 
 class ASChannel[F[_]:CpsAsyncMonad,A]
 {

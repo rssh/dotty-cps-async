@@ -4,6 +4,9 @@ package cps.utestlike
 
 import scala.quoted._
 
+import cps.testconfig.given
+
+
 object Dummy
 
 case class TestValue(name: String, tpeName: String, value: Any)

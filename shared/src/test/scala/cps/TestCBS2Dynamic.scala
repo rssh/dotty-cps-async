@@ -9,6 +9,8 @@ import cps.automaticColoring
 import scala.language.implicitConversions
 import scala.language.dynamics
 
+import cps.testconfig.given
+
 
 class TestCBS2Dynamic:
 

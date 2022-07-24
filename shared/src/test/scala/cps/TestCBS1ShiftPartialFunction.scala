@@ -4,6 +4,8 @@ import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
 import scala.util._
+import cps.testconfig.given
+
 
 class TestCBS1ShiftPartialFunction:
 

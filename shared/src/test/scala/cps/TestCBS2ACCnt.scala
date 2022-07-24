@@ -10,6 +10,9 @@ import scala.language.implicitConversions
 
 import java.util.concurrent.atomic.*
 
+import cps.testconfig.given
+
+
 class TestCBS2ACCnt:
 
   def qqq:Int = 0

@@ -5,9 +5,10 @@ import scala.util.control.*
 import scala.collection.mutable.Stack
 
 import cps.*
+import cps.testconfig.given
 
 import org.junit.{Test,Ignore}
-import org.junit.Assert._
+import org.junit.Assert.*
 
 
 class DeferredDestructorsContext extends CpsMonadContext[ComputationBound] {

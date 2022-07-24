@@ -9,6 +9,7 @@ import scala.quoted._
 import scala.util.*
 
 import cps.*
+import cps.testconfig.given
 import cps.util.FutureCompleter
 import scala.concurrent.ExecutionContext.Implicits.global
 

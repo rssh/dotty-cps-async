@@ -18,6 +18,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import cps.monads.given
 import cps.monads.jsfuture.{given,*}
 
+
+import cts.testconfig.given
+
 class JSPromiseBasedTestAPI:
 
    def retrieveData(uri:String): JsPromise[java.lang.String] =

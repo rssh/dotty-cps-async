@@ -14,6 +14,7 @@ import java.util.TimerTask
 import org.junit.{Test,Ignore}
 import org.junit.Assert.*
 import cps.util.*
+import cps.testconfig.given
 
 import scala.concurrent.ExecutionContext.Implicits.global 
 

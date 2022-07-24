@@ -12,6 +12,7 @@ import cps.*
 import cps.stream.*
 import cps.monads.{*, given}
 
+import cps.testconfig.given
 import cps.util.FutureCompleter
 
 class TestAsyncIteratorOps {

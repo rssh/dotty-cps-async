@@ -1,6 +1,8 @@
 package cps.streamlike
 
 import cps._
+import cps.testconfig.given
+
 
 sealed trait LazyStream[+T]:
    def head:T

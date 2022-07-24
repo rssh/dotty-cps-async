@@ -9,6 +9,7 @@ import scala.util.control.NonFatal
 import futureScope.*
 import cps.*
 import cps.monads.{*,given}
+import cps.testconfig.given
 
 /**
  * Model for implementation if happy eyeball algorithm (see RFC 8305)

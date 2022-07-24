@@ -2,6 +2,7 @@ package cps.cantiBot
 
 import cps.*
 import cps.monads.FutureAsyncMonad
+import cps.testconfig.given
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

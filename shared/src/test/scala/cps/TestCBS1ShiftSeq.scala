@@ -8,6 +8,7 @@ import scala.util.Success
 import scala.util.Failure
 //  TODO: check, while implicit resolution is changed
 //import scala.collection._
+import cps.testconfig.given
 
 
 class TestBS1ShiftSeq:

@@ -13,6 +13,7 @@ import futureScope.*
 import cps.*
 import cps.monads.{*,given}
 import cps.util.FutureCompleter
+import cps.testconfig.given
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert.*

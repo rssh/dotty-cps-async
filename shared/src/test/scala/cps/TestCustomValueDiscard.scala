@@ -13,6 +13,9 @@ import scala.util.Success
 import cps.customValueDiscard.given 
 import cps.monads.given
 
+import cps.testconfig.given
+
+
 class TestCustomValueDiscard:
 
   import scala.concurrent.ExecutionContext.Implicits.global 

@@ -9,6 +9,7 @@ import scala.util.Success
 
 import cps._
 import cps.monads.FutureAsyncMonad
+import cps.testconfig.given
 import scala.concurrent.ExecutionContext.Implicits.global
 
 

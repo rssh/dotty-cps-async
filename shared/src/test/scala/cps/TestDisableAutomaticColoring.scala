@@ -11,6 +11,9 @@ import cps.automaticColoring.{*,given}
 import scala.language.implicitConversions
 import scala.annotation.implicitAmbiguous
 
+import cps.testconfig.given
+
+
 class TestDisableAutomaticColoring:
 
   def passInt(x:Int):Int = x

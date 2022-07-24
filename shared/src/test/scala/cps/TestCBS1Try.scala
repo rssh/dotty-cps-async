@@ -6,6 +6,7 @@ import org.junit.Assert._
 import scala.quoted._
 import scala.util.Success
 import scala.util.Failure
+import cps.testconfig.given
 
 
 class TestBS1Try:

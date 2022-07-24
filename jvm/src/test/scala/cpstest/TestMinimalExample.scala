@@ -9,6 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import cps.*
 import cps.monads.{*,given}
+import cps.testconfig.given
 
 
 class TestMinimalExample:

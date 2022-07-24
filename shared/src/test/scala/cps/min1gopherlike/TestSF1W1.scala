@@ -12,6 +12,7 @@ import cps.monads.FutureAsyncMonad
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import cps.gopherlike._
+import cps.testconfig.given
 
 class TestSF1W1:
 

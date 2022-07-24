@@ -5,6 +5,8 @@ import org.junit.Assert.*
 
 import scala.util.*
 import cps.syntax.*
+import cps.testconfig.given
+
 
 
 class TestCBS2ShortSyntax:

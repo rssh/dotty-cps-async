@@ -4,6 +4,8 @@ import cps._
 import cps.macros._
 import cps.macros.forest.TransformUtil
 
+import cps.testconfig.given
+
 import scala.quoted._
 import scala.compiletime._
 

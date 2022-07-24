@@ -7,6 +7,7 @@ import scala.util.*
 import cps.*
 import cps.monads.{*, given}
 import cps.stream.*
+import cps.testconfig.given
 
 
 trait EventFlow[E] {

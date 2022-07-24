@@ -9,6 +9,9 @@ import scala.util.Success
 
 import cps._
 
+import cps.testconfig.given
+
+
 class TestUtestLike:
   
   def qqq = 0

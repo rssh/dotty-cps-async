@@ -7,6 +7,7 @@ import scala.quoted._
 import scala.util.Success
 
 import cps.syntax.*
+import cps.testconfig.given
 
 def TestCBS1Apply_toplevelfun(x: =>Int):Int = x + x
 

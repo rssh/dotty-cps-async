@@ -2,6 +2,7 @@ package cps.util
 
 import scala.concurrent.*
 import scala.concurrent.duration.*
+import cps.testconfig.given
 
 import java.util.Timer
 import java.util.TimerTask

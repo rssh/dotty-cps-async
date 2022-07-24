@@ -7,6 +7,7 @@ import scala.quoted._
 import scala.util.Success
 
 import cps._
+import cps.testconfig.given
 
 class TestIF:
 

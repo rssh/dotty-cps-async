@@ -11,6 +11,7 @@ import cps._
 import cps.monads.FutureAsyncMonad
 import scala.concurrent.ExecutionContext.Implicits.global
 
+import cps.testconfig.given
 
 class TestSF3D:
 

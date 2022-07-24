@@ -7,7 +7,9 @@ import futureScope.*
 
 import cps.*
 import cps.monads.{*,given}
+import cps.testconfig.given
 import cps.util.FutureCompleter
+
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert.*
@@ -37,6 +39,9 @@ class TestExceptionPropagation {
       case Failure(ex) => 
            //println(s"message:${ex.getMessage()}")
            //ex.printStackTrace()
+           if (!ex.getMessage().nn.contains("exception:p1")) {
+             println(s"here will be asset-faile, ex.getMessage()=${ex.getMessage()}")
+           }
            assert(ex.getMessage().nn.contains("exception:p1"))
            Success(true)
       case Success(_) =>

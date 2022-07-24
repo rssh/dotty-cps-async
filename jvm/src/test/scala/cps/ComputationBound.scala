@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
 
-
+import cps.testconfig.given
 
 trait ComputationBound[+T] {
  

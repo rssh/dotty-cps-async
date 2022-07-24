@@ -1,5 +1,6 @@
 package cps
 
+import cps.testconfig.given
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert._

@@ -1,5 +1,6 @@
 package cps.pe
 
+import cps.testconfig.given
 
 class ToyLogger{
 

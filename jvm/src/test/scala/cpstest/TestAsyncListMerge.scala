@@ -16,6 +16,7 @@ import cps.stream.*
 import java.util.concurrent.CompletableFuture
 
 import cps.util.*
+import cps.testconfig.given
 
 class TestAsyncListMerge:
 

@@ -9,8 +9,12 @@ import scala.util.*
 import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
 
+import cps.testconfig.given
+
 import cps.monads.given
 import cps.util.FutureCompleter
+
+
 
 class TestFutureRangeWithFilterShift:
 

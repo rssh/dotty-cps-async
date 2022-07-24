@@ -16,6 +16,7 @@ import org.junit.{Assert, Test}
 //----changed for compability with dotty-cps-async  --------
 //import scala.async.Async._
 import cps.compat.FutureAsync._
+import cps.testconfig.given
 //----------------------------------------------------------
 import scala.concurrent._
 import scala.concurrent.Future.{successful => f}

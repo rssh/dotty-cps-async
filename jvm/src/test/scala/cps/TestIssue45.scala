@@ -13,6 +13,7 @@ import java.util.Timer
 import java.util.TimerTask
 
 import cps.monads.given
+import cps.testconfig.given
 
 class TestIssue45:
 
