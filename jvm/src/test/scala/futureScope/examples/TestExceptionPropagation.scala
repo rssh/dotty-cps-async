@@ -37,6 +37,9 @@ class TestExceptionPropagation {
       case Failure(ex) => 
            //println(s"message:${ex.getMessage()}")
            //ex.printStackTrace()
+           if (!ex.getMessage().nn.contains("exception:p1")) then
+              println(s"message:${ex.getMessage()}")
+              ex.printStackTrace()
            assert(ex.getMessage().nn.contains("exception:p1"))
            Success(true)
       case Success(_) =>
