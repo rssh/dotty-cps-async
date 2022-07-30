@@ -23,18 +23,18 @@ The following table presents the compatibility between versions of |Scala 3|_ an
 Sbt Example
 -----------
 
-The current prerelease is |0.9.9|_ for using with Scala |3.1.3|_.
+The current prerelease is |0.9.10|_ for using with Scala |3.1.3|_.
 
  .. code-block:: scala
 
    scalaVersion := "3.1.3"
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.9"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.10"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.9"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.10"
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
