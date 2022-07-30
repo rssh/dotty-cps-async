@@ -48,11 +48,12 @@ object LoomTransform:
                 fun match
                   case funApply@Apply(fun1@TypeApply(obj2,targs2), args1) if obj2.symbol == awaitSymbol =>
                     // catch await early
+                    println("catched await: "+term)
                     val (awaitable, monadContext) = args match
                       case List(frs, snd) => (frs, snd)
                       case other =>
                         throw MacroError(s"expected that await have two implicit argument, our args:${args}", applyTerm.asExpr)
-                    runAwait(applyTerm, args1.head, targs2.head.tpe, awaitable, monadContext)
+                    runAwait(applyTerm, args1.head, targs2.head.tpe, awaitable, monadContext)(owner)
                   case Select(obj,method) =>
                     handleFunSelect(applyTerm, fun, args, obj, method)(owner)
                   case _ =>
@@ -81,7 +82,7 @@ object LoomTransform:
                          // here we catch await, inserted by implicit conversion.
                          // this code is likey depends from implementation details of a compiler
                          // mb create compiler-level API ?
-                         withInlineBindings(conv, runAwait(applyTerm, args.head, targs3.head.tpe, args1.head, args1.tail.head))
+                         withInlineBindings(conv, runAwait(applyTerm, args.head, targs3.head.tpe, args1.head, args1.tail.head)(owner))
               case conv@Inlined(_,_,
                         Lambda(List(xValDef),
                           Block(List(),Apply(Apply(TypeApply(obj3,targs3),List(x)),args1)))
@@ -89,7 +90,7 @@ object LoomTransform:
                           && xValDef.symbol == x.symbol) =>
                          // transient inlines have no 'Typed' entry
                          //  TODO: handle non-inlined conversion
-                         withInlineBindings(conv,runAwait(applyTerm, args.head, targs3.head.tpe, args1.head, args1.tail.head))
+                         withInlineBindings(conv,runAwait(applyTerm, args.head, targs3.head.tpe, args1.head, args1.tail.head)(owner))
               case _ =>
                 super.transformTerm(applyTerm)(owner)
           }
@@ -101,13 +102,14 @@ object LoomTransform:
                Inlined.copy(origin)(origin.call, origin.bindings, tree)
     
       
-          def runAwait(term: Apply, arg: Term, awaitCpsMonadType: TypeRepr, awaitCpsMonad: Term, awaitCpsMonadContext: Term): Term = {
+          def runAwait(term: Apply, arg: Term, awaitCpsMonadType: TypeRepr, awaitCpsMonad: Term, awaitCpsMonadContext: Term)(owner: Symbol): Term = {
             if flags.debugLevel >= 10 then
                 report.info(s"loom:runAwait, arg=${arg.show}")
+            val transformedArg = super.transformTerm(arg)(owner)
             val r = if awaitCpsMonadType <:< TypeRepr.of[F] then
-              runMyAwait(term, arg, awaitCpsMonadContext)
+              runMyAwait(term, transformedArg, awaitCpsMonadContext)
             else
-              runOtherAwait(term, arg, awaitCpsMonadType, awaitCpsMonad, awaitCpsMonadContext)
+              runOtherAwait(term, transformedArg, awaitCpsMonadType, awaitCpsMonad, awaitCpsMonadContext)
             if flags.debugLevel >= 10 then
               report.info(s"loom:runAwait, result=${r}")
             r
