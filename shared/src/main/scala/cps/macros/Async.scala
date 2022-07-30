@@ -104,8 +104,9 @@ object Async {
                else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then
                   '{ ${dm.asExprOf[CpsSchedulingMonad[F]]}.spawnSync(${transformed}) }
                else  
+                  '{  ${dm}.lazyPure(${transformed}) }
                   // TODO: pure ?
-                  report.throwError(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.show} is not Scheduled or AsyncEffect")
+                  //report.throwError(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Scheduled or AsyncEffect, cpsRuntimeAwait = ${cpsRuntimeAwait.show}")
               } else {
                val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization,flags,observatory,0, None)
                if (DEBUG) {

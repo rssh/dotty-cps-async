@@ -48,7 +48,6 @@ object LoomTransform:
                 fun match
                   case funApply@Apply(fun1@TypeApply(obj2,targs2), args1) if obj2.symbol == awaitSymbol =>
                     // catch await early
-                    println("catched await: "+term)
                     val (awaitable, monadContext) = args match
                       case List(frs, snd) => (frs, snd)
                       case other =>

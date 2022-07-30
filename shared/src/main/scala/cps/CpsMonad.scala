@@ -45,6 +45,15 @@ trait CpsMonad[F[_]] extends CpsAwaitable[F] {
     **/
    def apply[T](op: Context => F[T]): F[T] 
 
+   /**
+    * Lazy variant of pure, which by default -
+    *  create monadic expression according to the 
+    *  choosen monad types.
+    *  (i.e. delaing for effect monads,  
+    *    starting for eager monand, pure by defiault)
+    **/
+   def lazyPure[T](op: =>T):F[T] =
+      map(pure(())){ _ => op}
 
 }
 
@@ -267,6 +276,12 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
     **/
    def flatDelay[T](x: => F[T]):F[T] = flatMap(delayedUnit)(_ => x)
 
+   /**
+    * synonim for delay
+    **/
+   override def lazyPure[T](op: =>T):F[T] =
+      delay(op)
+
 }
 
 
@@ -380,8 +395,6 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
    def spawn[A](op: => F[A]): F[A]
 
 
-
-
    /***
     * In eager monad, spawned process can be represented by F[_]
     **/
@@ -398,6 +411,12 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
     **/      
    def join[A](op: Spawned[A]): F[A] = op
 
+
+   /**
+    * spawnSync
+    **/
+   override def lazyPure[T](op: =>T): F[T] =
+      spawnSync(op)
          
 }
 
