@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit
 extension[A] (fa: Future[A])    
 
     
-
     /**
      * Create a future which will return true or false
      * <code> fa </code> has no completed duriong <code> duration </code>
@@ -21,13 +20,15 @@ extension[A] (fa: Future[A])
     def delayedComplete(duration: FiniteDuration)(a: =>Try[A])(using ExecutionContext, ScheduledExecutorService): Future[A] =          
       val p = Promise[A]()
       val runTimeout: Runnable = ()=>{
-        try
-          a match
-            case Failure(ex) => p.tryFailure(ex)
-            case Success(v) => p.trySuccess(v)
-        catch
-          case NonFatal(ex) =>
-            p.tryFailure(ex)
+        if ! p.isCompleted then
+          try
+            a match
+              case Failure(ex) => 
+                p.tryFailure(ex)
+              case Success(v) => p.trySuccess(v) 
+          catch
+            case NonFatal(ex) =>
+              p.tryFailure(ex)
       }
       summon[ScheduledExecutorService].schedule(runTimeout ,duration.toMillis.toLong, TimeUnit.MILLISECONDS )
       p.completeWith(fa)
