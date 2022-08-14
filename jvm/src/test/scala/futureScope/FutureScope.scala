@@ -58,8 +58,7 @@ object FutureScope {
     * Async version of spawn with accept plain function. Need for automatic transclaing
     **/   
     def spawn_async[A](using fsc:FutureScopeContext)(f: FutureScopeContext => Future[A], executionContext: ExecutionContext = fsc.executionContext ): CancellableFuture[A] =
-      summon[FutureScopeContext].spawn_async(f, executionContext)
-
+      summon[FutureScopeContext].spawn_async(f, executionContext)   
 
    /**
     * Spawn delay - return a future which can be cancelled
@@ -87,6 +86,17 @@ object FutureScope {
       given ExecutionContext = fsc.executionContext
       await(fsc.timedAwaitCompletedAsync(fa,duration))
     
+   def isFinished(using FutureScopeContext): Boolean = {
+      summon[FutureScopeContext].isFinished
+   }
+   
+   def isActive(using FutureScopeContext): Boolean = {
+      summon[FutureScopeContext].isActive
+   }
+
+   
+
+
    /*   
    def noEscalate[A]( a: =>A)(using FutureScopeContext):A {
       Try(a) match

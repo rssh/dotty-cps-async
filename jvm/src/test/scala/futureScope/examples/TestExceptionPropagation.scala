@@ -24,6 +24,7 @@ class TestExceptionPropagation {
 
       FutureScope.spawn[Unit]{
         // give time for second process to spawn
+        //println("testExceptionPropagation: before await")
         await(FutureScope.spawnDelay(10.milliseconds))
         throw new RuntimeException("exception:p1")
         () // TODO: problem ij cps-transform..

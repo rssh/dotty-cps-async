@@ -154,8 +154,15 @@ class FutureScopeContext(ec: ExecutionContext, parentScope: Option[FutureScopeCo
         )
         addCancellableFuture(childRecord)
         childRecord
-      case _ =>
-        throw new IllegalStateException("f is already cancelling")
+      case FutureScopeContext.State.Cancelling(e) =>
+        // TODO: think, what better throw -- cancellable excwption or illegal-state ? 
+        //throw new IllegalStateException("f is already cancelling", e)
+        throw e
+      case FutureScopeContext.State.Cancelled(e) =>  
+        //throw new IllegalStateException("f is already cancelled", e)
+        throw e
+      case FutureScopeContext.State.Finished =>  
+        throw new IllegalStateException("f is already finished")
   }
 
   def spawnDelay(duration: FiniteDuration): CancellableFuture[FiniteDuration] = {
@@ -206,7 +213,13 @@ class FutureScopeContext(ec: ExecutionContext, parentScope: Option[FutureScopeCo
     p.future
   }
 
+  def isFinished: Boolean = {
+    stateRef.get().nn.isFinished
+  }
 
+  def isActive: Boolean = {
+    stateRef.get().nn.isActive
+  }
 
   private def addCancellableFuture[A](c: CancellableFuture[A]): Unit = {
       cancellableFutures.put(c,c)
