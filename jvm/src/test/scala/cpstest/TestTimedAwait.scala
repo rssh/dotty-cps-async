@@ -35,7 +35,8 @@ class TestTimedAwait:
         if (ex.isInstanceOf[TimeoutException]) {
           Success(true)
         } else {
-          Failure(new IllegalStateException(s"Exception is not a TimeoutException but ${ex}"))
+          ex.printStackTrace()
+          Failure(new IllegalStateException(s"Exception is not a TimeoutException but ${ex}", ex))
         }
     }
     FutureCompleter(fr)
