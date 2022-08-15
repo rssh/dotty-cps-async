@@ -2,8 +2,10 @@ package cps.runtime
 
 import cps.*
 import java.util.concurrent.{CompletableFuture => JCompletableFuture}
+import java.util.concurrent.ExecutionException
 import scala.util.*
 import scala.util.control.NonFatal
+
 
 
 trait LoomRuntimeAwait[F[_]] extends CpsRuntimeAwait[F] {
@@ -34,12 +36,24 @@ trait LoomRuntimeAwait[F[_]] extends CpsRuntimeAwait[F] {
      submit{ 
          m.mapTry(wrapped){
           case Success(a) => jcf.complete(a)
-          case Failure(ex) => jcf.completeExceptionally(ex)
+          case Failure(ex) => 
+            jcf.completeExceptionally(ex)
         }
      }(m, ctx)   
-     jcf.get().nn
+     try 
+      jcf.get().nn
+     catch
+      case ex: ExecutionException => 
+        val cause = ex.getCause
+        if (cause != null) then
+          throw cause.nn
+        else
+          // impossible 
+          throw ex
+      case NonFatal(ex) =>
+        throw ex
   }
   
-  def submit[A](fa: F[A])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): Unit
+  def submit(fa: F[Unit])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): Unit
 
 }

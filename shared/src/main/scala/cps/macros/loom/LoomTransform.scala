@@ -40,11 +40,23 @@ object LoomTransform:
             }
         } 
 
+        def log(message: String): Unit = {
+          if (false) then
+            report.info(message)
+          else
+            println(message)
+        }
+
         val treeMap = new TreeMap() {
 
           override def transformTerm(term: Term)(owner: Symbol): Term = {
+            if flags.debugLevel >= 20 then
+              log(s"loom:transformTerm start, term=${term.show}")
+              log(s"loom:transformTerm start, tree=${term}")
             term match
               case applyTerm@Apply(fun,args) =>
+                if flags.debugLevel >= 20 then
+                  log(s"loom:transformTerm/applyTerm:1, term=${term.show}")
                 fun match
                   case funApply@Apply(fun1@TypeApply(obj2,targs2), args1) if obj2.symbol == awaitSymbol =>
                     // catch await early
@@ -53,18 +65,32 @@ object LoomTransform:
                       case other =>
                         throw MacroError(s"expected that await have two implicit argument, our args:${args}", applyTerm.asExpr)
                     runAwait(applyTerm, args1.head, targs2.head.tpe, awaitable, monadContext)(owner)
+                  case funApply@Apply(fun1@TypeApply(obj2,targs2), args1) =>
+                    if flags.debugLevel >= 20 then
+                      log(s"loom:transformTerm/applyTerm finish2 (noSyn), term=${term}, no await")
+                      log(s"loom:transformTerm/applyTerm finish2 (noSyn), obj2=${obj2}")
+                    super.transformTerm(term)(owner)
                   case Select(obj,method) =>
                     handleFunSelect(applyTerm, fun, args, obj, method)(owner)
                   case _ =>
+                    if flags.debugLevel >= 20 then
+                      log(s"loom:transformTerm/applyTerm finish1, term=${term}, no await")
                     super.transformTerm(term)(owner)
-              case Lambda(params,body) => super.transformTerm(term)(owner)  // to be before Block
+              case Lambda(params,body) =>  // to be before Block
+                if flags.debugLevel >= 20 then
+                  log(s"loom:transformTerm/lambda, term=${term.show}")
+                super.transformTerm(term)(owner) 
               case block@Block(statements, expr) => 
+                if flags.debugLevel >= 20 then
+                  log(s"loom:transformTerm/block, term=${term.show}")
                 if (needVarTransformationForAutomaticColoring) {
                   runBlockWithAutomaticColoring(block)(owner)
                 } else {
                   super.transformTerm(term)(owner)
                 }
               case _ =>
+                if flags.debugLevel >= 20 then
+                  log(s"loom:transformTerm: call suoer of ${term}")
                 super.transformTerm(term)(owner)
           }
 
@@ -103,14 +129,15 @@ object LoomTransform:
       
           def runAwait(term: Apply, arg: Term, awaitCpsMonadType: TypeRepr, awaitCpsMonad: Term, awaitCpsMonadContext: Term)(owner: Symbol): Term = {
             if flags.debugLevel >= 10 then
-                report.info(s"loom:runAwait, arg=${arg.show}")
-            val transformedArg = super.transformTerm(arg)(owner)
+                log(s"loom:runAwait, arg code=${arg.show}")
+                log(s"loom:runAwait, arg tree=${arg}")
+            val transformedArg = this.transformTerm(arg)(owner)
             val r = if awaitCpsMonadType <:< TypeRepr.of[F] then
               runMyAwait(term, transformedArg, awaitCpsMonadContext)
             else
               runOtherAwait(term, transformedArg, awaitCpsMonadType, awaitCpsMonad, awaitCpsMonadContext)
             if flags.debugLevel >= 10 then
-              report.info(s"loom:runAwait, result=${r}")
+              log(s"loom:runAwait, result=${r}")
             r
           }
       

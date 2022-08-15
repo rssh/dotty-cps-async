@@ -6,7 +6,7 @@ import scala.concurrent.*
 
 object FutureRuntimeAwait extends LoomRuntimeAwait[Future] {
 
-  override def submit[A](fa: Future[A])(m: CpsAsyncMonad[Future], ctx: CpsMonadContext[Future]): Unit = {
+  override def submit(fu: Future[Unit])(m: CpsAsyncMonad[Future], ctx: CpsMonadContext[Future]): Unit = {
     // do nothing, because Future is already started.
   }
 

@@ -334,8 +334,7 @@ object Async {
                                                         observatory: Observatory.Scope#Observatory,
                                                         flags: AsyncMacroFlags,
                                                         )(using Quotes):Expr[T] = {
-      
-      println("loomTransform for ${f.show}")                                                   
+      //println(s"loomTransform for ${f.show}")                                                   
       loom.LoomTransform.run(f,dm,ctx,runtimeApi,flags,optMemoization,observatory)
    } 
 
