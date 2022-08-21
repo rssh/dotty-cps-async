@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
 import scalajs.concurrent.JSExecutionContext.Implicits.queue
 
-import cts.testconfig.given
+import cps.testconfig.given
 
 
 trait ComputationBound[+T] {

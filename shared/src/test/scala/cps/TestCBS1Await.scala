@@ -80,8 +80,8 @@ class TestCBS1Await:
   
 
   @Test def nested_await_3(): Unit = {
-     implicit val printCode = cps.macros.flags.PrintCode
-     implicit val debugLevel = cps.macros.flags.DebugLevel(20)
+     //implicit val printCode = cps.macros.flags.PrintCode
+     //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
      val c = async{
        val fffx = T1.cbt(T1.cbt(T1.cbi(2)))
        val x:Int = await(await(await(fffx))) + 1

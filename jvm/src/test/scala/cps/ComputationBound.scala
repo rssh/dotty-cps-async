@@ -79,6 +79,8 @@ trait ComputationBound[+T] {
 
   def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S]
 
+  def  flatMapTry[S](f: Try[T] => ComputationBound[S]): ComputationBound[S]    
+
 }
 
 object ComputationBound {
@@ -110,6 +112,12 @@ object ComputationBound {
         case Success(a) => Done(a)
         case Failure(e) => Error(e)
         
+   def  tryOp[A](op: =>ComputationBound[A]): ComputationBound[A] =
+      try {
+        op
+      } catch {
+        case NonFatal(ex) => Error(ex)
+      }
 
    case class Deferred[A](ref: AtomicReference[Option[Try[A]]],
                      optComputations: Option[ComputationBound[A]])
@@ -194,7 +202,6 @@ object ComputationBound {
    def lazyMemoize[T](f: ComputationBound[T]): ComputationBound[T] =
         Thunk(() => spawn(f))  
         
-   
 
 }
 
@@ -251,7 +258,6 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
 
 case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] {
 
-
   
   def progress(timeout: Duration): ComputationBound[T] = 
          // TODO: rewrite using progressNoBlock
@@ -305,7 +311,25 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
                  case Thunk(f1) => f1().flatMap(f)
                  case Wait(ref,f1) => Wait(ref, x => f1(x).flatMap(f))
              }
-     
+   
+  def  flatMapTry[S](f: Try[T] => ComputationBound[S]): ComputationBound[S] =
+    Thunk[S]( () =>
+      try {
+        thunk() match
+          case Done(t) => f(Success(t))
+          case Error(e) => f(Failure(e))
+          case Thunk(f1) => 
+                      ComputationBound.tryOp(f1()).flatMapTry(f)
+          case Wait(ref, f1) => Wait(ref, 
+                x => ComputationBound.tryOp(f1(x)).flatMapTry(f))
+                      
+      } catch {
+        case NonFatal(ex) =>
+          f(Failure(ex))
+      }
+    )    
+
+
 }
 
 case class Done[T](value:T) extends ComputationBound[T]:
@@ -316,9 +340,12 @@ case class Done[T](value:T) extends ComputationBound[T]:
 
   override def progressNoBlock(deadline: Long, nNestedCalls: Int): ComputationBound[T] = this
 
-
   override def flatMap[S](f: T=>ComputationBound[S] ): ComputationBound[S] =
      Thunk( () => f(value) )
+
+  override def flatMapTry[S](f: Try[T]=>ComputationBound[S] ): ComputationBound[S] =
+    Thunk( () => f(Success(value)) )
+ 
 
 
 case class Error[T](e: Throwable) extends ComputationBound[T]:
@@ -331,6 +358,9 @@ case class Error[T](e: Throwable) extends ComputationBound[T]:
 
   override def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] =
      this.asInstanceOf[ComputationBound[S]]
+
+  override def flatMapTry[S](f: Try[T]=>ComputationBound[S] ): ComputationBound[S] =
+      Thunk( () => f(Failure(e)) )
 
 
 case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => ComputationBound[T]) extends ComputationBound[T] {
@@ -369,6 +399,10 @@ case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => Computa
       
   override def flatMap[S](f: T => ComputationBound[S]): ComputationBound[S] =
         Wait(ref, x => op(x) flatMap f)
+
+  override def flatMapTry[S](f: Try[T] => ComputationBound[S]): ComputationBound[S] =
+          Wait(ref, x => ComputationBound.tryOp(op(x)) flatMapTry f)
+  
 
   override def map[S](f: T=>S): ComputationBound[S] =
         Wait(ref, x => op(x).map(f) )

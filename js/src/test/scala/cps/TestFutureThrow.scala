@@ -16,7 +16,7 @@ import scala.util.Try
 import java.util.Timer
 import java.util.TimerTask
 
-import cts.testconfig.given
+import cps.testconfig.given
 
 class TestFutureThrow :
 

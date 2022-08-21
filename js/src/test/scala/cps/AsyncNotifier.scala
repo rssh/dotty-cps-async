@@ -9,7 +9,7 @@ import scala.scalajs.js._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits._
 
 
-import cts.testconfig.given
+import cps.testconfig.given
 
 
 class AsyncNotifier{

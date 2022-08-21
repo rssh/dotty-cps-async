@@ -19,7 +19,7 @@ import cps.monads.given
 import cps.monads.jsfuture.{given,*}
 
 
-import cts.testconfig.given
+import cps.testconfig.given
 
 class JSPromiseBasedTestAPI:
 
