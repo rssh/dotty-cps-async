@@ -336,8 +336,10 @@ class TestBS1ShiftIterableOps:
 
   @Test def testScanRight(): Unit =
      val c = async[ComputationBound]{
-          val l = (1 to 5).toSeq
-          l.scanRight(0)( (x,y) => x + await(T1.cbi(y)) )
+         val l = (1 to 5).toSeq
+         l.scanRight(0){ (x,y) => 
+            x + await(T1.cbi(y)) 
+         }
      }
      val r = c.run().get
      assert(r == Seq(0,5,9,12,14,15))
