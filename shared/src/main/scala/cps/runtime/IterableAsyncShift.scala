@@ -114,9 +114,7 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
     }
 
   def foldRight[F[_],B](c:CA,monad: CpsMonad[F])(z:B)(op:(A,B)=>F[B]):F[B]=
-    println(s"foldRight begin: c = $c")
     c.foldRight(monad.pure(z)){ (e,s) =>
-       println(s"foldRight loop: (e,s) = ${(e,s)}")
        monad.flatMap(s)(si => op(e, si))
     }
 
