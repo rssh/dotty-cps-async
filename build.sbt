@@ -89,9 +89,9 @@ lazy val cpsLoomJVM = project.in(file("jvm-loom"))
                         libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
                         Test/fork := true,
                         //for macos
-                        //Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
+                        Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
                         //for linux:
-                        Test/javaHome := Some(file("/usr/lib/jvm/jdk-19")),
+                        //Test/javaHome := Some(file("/usr/lib/jvm/jdk-19")),
 
                         Test/javaOptions ++= Seq(
                            "--enable-preview", 

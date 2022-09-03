@@ -206,8 +206,7 @@ object ComputationBound {
                                 } else {
                                   true
                                 }
-                          } do ()
-                         }
+                         } do ()
                          //val nextR = r.fullfill((endNanos - System.nanoTime) nanos)
                          //nextR match
                          //  case Some(x) =>
@@ -238,39 +237,8 @@ object ComputationBound {
    def lazyMemoize[T](f: ComputationBound[T]): ComputationBound[T] =
         Thunk(() => spawn(f))  
         
+   transparent inline def useLoom: Boolean = ComputationBoundLoomUsage.useLoom
                                       
-   transparent inline def useLoom: Boolean = ComputationBoundLoomUsage.useLoom 
-
-   transparent inline def loomInTestconfig: Boolean = 
-        summonFrom {
-          case given UseLoomAwait.type => true
-          case _ => false
-        }
-
-   def wrapVirtualThread[A](op: =>ComputationBound[A]):ComputationBound[A] =
-      if (loomInTestconfig && Loom.isEnabled) {
-         val nextRef: AtomicReference[Option[ComputationBound[A]]] = new AtomicReference(None)
-         Loom.startVirtualThread{ () =>
-              val next = try {
-                            op
-                         } catch {
-                            case NonFatal(ex) => Error(ex)
-                         }
-              nextRef.set(Some(Success(next))) 
-         }
-         Wait(nextRef, {
-           case Success(r) => r
-           case Failure(ex) => Error(ex) 
-         })
-      } else {
-        try {
-          op
-        } catch {
-          case NonFatal(ex) => Error(ex)
-        }
-      }
-            
-
 }
 
 
@@ -299,7 +267,7 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
    override def restore[A](fa: ComputationBound[A])(fx:Throwable => ComputationBound[A]): ComputationBound[A] = 
          flatMapTry(fa) {
            case Success(a) => Done(a)
-           case Failure(ex) => ComputationBound.wrapVirtualThread(fx(ex))
+           case Failure(ex) => fx(ex) 
          }
 
    //override def withAction[A](fa:ComputationBound[A])(action: =>Unit):ComputationBound[A] = Thunk(() => {
