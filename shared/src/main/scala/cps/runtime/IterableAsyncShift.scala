@@ -340,19 +340,19 @@ class IterableOpsAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <
     )
 
   def scanRight[F[_],B](c:CA,monad: CpsMonad[F])(z: B)(op: (A,B) => F[B]):F[C[B]] =
-    val it0 = c.iterableFactory.newBuilder[B]
-    it0.addOne(z)
+    var it0 = z :: List.empty[B]
     val s0 = monad.pure((it0, z))
     val itb = c.foldRight(s0){ (e,fs) =>
        monad.flatMap(fs){ s =>
           val fnb = op(e,s._2)
           monad.map(fnb){ nb =>
-             s._1.addOne(nb)
-             (s._1,nb)
+             (nb :: s._1, nb)
           }
        }
     }
-    monad.map(itb)( _._1.result())
+    monad.map(itb){ case (it, s) =>
+      c.iterableFactory.newBuilder.addAll(it).result()
+    }
 
 
   // TODO: make abstract here, different impl

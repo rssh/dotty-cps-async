@@ -336,7 +336,6 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
   }
  
   def scanRight[F[_], B](arrOps: ArrayOps[A], monad: CpsMonad[F])(z:B)(op: (A,B) => F[B])(using ClassTag[B]): F[Array[B]] = {
-      println(s"ArrayOps: scanRignt,  ops=$arrOps")
       val trace0 = ArrayBuilder.make[B]
       val r = arrOps.foldRight(monad.pure((trace0,z))){ (a, b) =>
          monad.flatMap(b){ case (trace, state) =>
@@ -348,7 +347,7 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
       }
       monad.map(r){ case (trace,next) =>
          trace.addOne(next)
-         trace.result
+         trace.result.reverse
       }
   }
 
