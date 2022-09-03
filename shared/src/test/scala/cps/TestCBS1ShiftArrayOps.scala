@@ -331,8 +331,13 @@ class TestCBS1ShiftArrayOps:
           val l = (1 to 5).toArray
           l.scanRight(0)( (x,y) => x + await(T1.cbi(y)) )
      }
+     val checkC = {
+       val l = (1 to 5).toArray
+       l.scanRight(0)( (x,y) => x + y )  
+     }
      val r = c.run().get
-     assert(r.toSeq == Seq(0,5,9,12,14,15))
+     assert(r.toSeq == checkC.toSeq)
+     assert(r.toSeq == Seq(15,14,12,9,5,0))
 
   @Test def testSpan(): Unit =
       val c = async[ComputationBound]{

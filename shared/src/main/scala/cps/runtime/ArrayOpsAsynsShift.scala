@@ -347,7 +347,7 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
       }
       monad.map(r){ case (trace,next) =>
          trace.addOne(next)
-         trace.result
+         trace.result.reverse
       }
   }
 
