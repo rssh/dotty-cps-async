@@ -19,6 +19,7 @@ object Loom {
          throw new RuntimeException("startVirtualThread is not available on this JVM")
        }
        startVirtualThreadMethod.invoke(
+         null,
          new Runnable{
            override def run(): Unit = f()
          }

@@ -27,7 +27,11 @@ class TestCBS2ACCnt:
   //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
 
   def increment(cnt: AtomicInteger): ComputationBound[Int] =
-    Thunk( () => ComputationBound.pure(cnt.incrementAndGet()) )
+    Thunk( 
+      () =>
+         println("TestCBS2ACCnt: running increment thunk") 
+         ComputationBound.pure(cnt.incrementAndGet()) 
+    )
 
   class Log:
     private var lines = Vector[String]()
@@ -40,7 +44,9 @@ class TestCBS2ACCnt:
 
   def cntAutomaticColoring(counter: AtomicInteger): ComputationBound[Log] = async[ComputationBound]{
     val log = new Log
+    println("TestCBS2ACCnt: cntAutomaticColoeing before incremant set")
     val value = increment(counter) 
+    println("TestCBS2ACCnt: cntAutomaticColoeing after incremant set")
     if value % LOG_MOD == 0 then
        log.log(s"counter value = ${await(value)}")
     if (value - 1 == LOG_TRESHOLD) then  
@@ -63,7 +69,9 @@ class TestCBS2ACCnt:
   @Test def cnt_automatic_coloring(): Unit = 
      val counter = createCounter(9)
      val c = cntAutomaticColoring(counter)
+     println("cnt_automatic_coloring::before run")
      val r: Try[Log] = c.run()
+     println("cnt_automatic_coloring::after run")
      //println(s"cn_automatic_coloring, r=$r, r.get.all=${r.get.all} counter.get()=${counter.get()} ")
      assert(r.isSuccess, "r should be success")
      assert(r.get.all.size == 1, "r.get.all.size==1")

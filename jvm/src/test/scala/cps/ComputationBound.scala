@@ -6,11 +6,14 @@ import scala.quoted._
 import scala.language.postfixOps
 import scala.util.{Try,Success,Failure}
 import scala.util.control.NonFatal
+import scala.compiletime.summonFrom
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
 
+import cps.runtime.*
 import cps.testconfig.given
+import cps.macros.flags.UseLoomAwait
 
 trait ComputationBound[+T] {
  
@@ -34,10 +37,11 @@ trait ComputationBound[+T] {
    * you should not use one in async environment. 
    **/    
   def fulfill(timeout: Duration): Option[Try[T]] = 
-        progress(timeout) match 
-           case Done(t) => Some(Success(t))
-           case Error(e) => Some(Failure(e))
-           case _ => None
+      progressTimeoutBlocking(timeout) match {
+            case Done(t) => Some(Success(t))
+            case Error(e) => Some(Failure(e))
+            case _ => None
+      }
 
   /**
    * run computation during some time and return
@@ -47,7 +51,23 @@ trait ComputationBound[+T] {
    * Note, that this function is blocks current thread, so
    * you should not use one in async environment. 
    **/               
-  def progress(timeout: Duration): ComputationBound[T]
+  def progressTimeoutBlocking(timeout: Duration): ComputationBound[T] =
+    if (timeout != Duration.Inf) {
+       progress(System.currentTimeMillis + timeout.toMillis, 0, true, true)
+    } else {
+       var current = this
+       while{
+         current match
+           case Done(v) => false
+           case Error(ex) => false
+           case _ =>
+              current = progress(System.currentTimeMillis + 1000, 0, true, true)
+              true
+       } do ()
+       current
+    }
+
+
 
   /**
    * run computation during some time and return
@@ -56,15 +76,16 @@ trait ComputationBound[+T] {
    *
    * When computation is block current thread or number of nested calls 
    * is bigger than some constant, return partially progressed result
+   *
    **/               
-  def progressNoBlock(deadline: Long, nNestedCalls: Int): ComputationBound[T] 
+  def progress(deadline: Long, nNestedCalls: Int, runAdvanceQueue: Boolean = true, waitDeadline: Boolean = false): ComputationBound[T] 
 
 
 
   /**
    * needed for compability with javascript version.
    */
-  def runTicks(timeout: Duration): Future[T] =
+  def runTicks(timeout: Duration): Future[T] = 
     import scala.concurrent.ExecutionContext.Implicits.global
     Future{
       progress(timeout) match {
@@ -72,14 +93,14 @@ trait ComputationBound[+T] {
         case Error(e) => throw e
         case _ => throw new TimeoutException()
       }
-    }
+    } 
 
   def map[S](f:T=>S): ComputationBound[S] =
-     flatMap( x => Done(f(x)) )
+     flatMap( x => Done(f(x)) ) 
 
-  def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S]
+  def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] 
 
-  def  flatMapTry[S](f: Try[T] => ComputationBound[S]): ComputationBound[S]    
+  def  flatMapTry[S](f: Try[T] => ComputationBound[S]): ComputationBound[S]     
 
 }
 
@@ -103,7 +124,9 @@ object ComputationBound {
    def spawn[A](op: =>ComputationBound[A]):ComputationBound[A] = {
         val ref = new AtomicReference[Option[Try[A]]](None)
         val waiter = Wait[A,A](ref, fromTry[A] _ )
-        deferredQueue.add(Deferred(ref, Some(Thunk( () => op )) ))
+        val deferred = Deferred(ref, Some(Thunk( () => op ))) 
+        println(s"ComputationBound::spawn, ref=$ref, deferred item=${deferred}")
+        deferredQueue.add(deferred)
         waiter
    }
 
@@ -119,21 +142,29 @@ object ComputationBound {
         case NonFatal(ex) => Error(ex)
       }
 
-   case class Deferred[A](ref: AtomicReference[Option[Try[A]]],
-                     optComputations: Option[ComputationBound[A]])
+    case class Deferred[A](ref: AtomicReference[Option[Try[A]]],
+                     optComputations: Option[ComputationBound[A]]) {
+
+      type Value = A             
+
+    }
    
     // TODO: make private back after debug
    val deferredQueue: ConcurrentLinkedQueue[Deferred[?]] = new ConcurrentLinkedQueue()
+   //val traceDeferredQueue: 
    private[cps] val waitQuant = (100 millis).toMillis
    private val externalAsyncNotifier = new { }
 
    private[cps] final val MAX_NESTED_CALLS = 100
 
+
    def  advanceDeferredQueue(endMillis: Long, doWait: Boolean): Boolean = {
+      println(s"advanceQueue: $endMillis $doWait, isEmptu = ${deferredQueue.isEmpty}")
       var nFinished = 0
       val secondQueue = new ConcurrentLinkedQueue[Deferred[?]]
       while(!deferredQueue.isEmpty && System.currentTimeMillis < endMillis) 
         val c = deferredQueue.poll()
+        println(s"advanceQueue: c=$c")
         if (c != null) then
           val cr: Option[?] = c.nn.ref.get().nn
           cr match 
@@ -143,14 +174,44 @@ object ComputationBound {
                   case Some(r) =>     
                     r match
                        case Wait(ref1, _) if ref1.get().nn.isEmpty => 
+                         println("advanceQueue: wait, added to second")
                          secondQueue.add(c)
+                       case Done(v) =>
+                         nFinished = nFinished + 1
+                         c.ref.set(Some(Success(v)))
+                       case Error(e) => nFinished = nFinished + 1
+                         c.ref.set(Some(Failure(e))) 
                        case _ =>
-                         var inProgress = r
-                         while {
-                            inProgress = inProgress.progressNoBlock( endMillis, 0)
+                         var inProgress = r 
+                         if (false & loomInTestconfig && Loom.isEnabled()) {
+                            val nextRef = new AtomicReference[Option[Try[ComputationBound[c.Value]]]](None)
+                            Loom.startVirtualThread(() => {
+                              try {
+                                val next = inProgress.progressNoBlock(endMillis, 0, false)
+                                nextRef.set(Some(Success(next)))
+                              } catch {
+                                case NonFatal(ex) =>
+                                  nextRef.set(Some(Failure(ex)))
+                              } finally {
+                                externalAsyncNotifier.synchronized {
+                                  externalAsyncNotifier.notifyAll()
+                                }
+                              }
+                            }) 
+                            val nextWait = Wait(nextRef, {
+                                                  case Success(cb) => cb
+                                                  case Failure(ex) => Error(ex)
+                                           })
+                            secondQueue.add(Deferred(c.ref,Some(nextWait)))
+                         } else {
+                          while {
+                            println(s"advanceQieie:: before progressNoBlock for $inProgress")
+                            inProgress = inProgress.progress( endMillis, 0, false, false)
+                            println(s"advanceQieie:: after progressNoBlock for $inProgress")
                             inProgress match
                               case Done(x) => 
                                 nFinished = nFinished + 1
+                                println(s"advanceQueue: done, ref=")
                                 c.ref.set(Some(Success(x)))
                                 false
                               case Error(e) => 
@@ -171,7 +232,8 @@ object ComputationBound {
                                 } else {
                                   true
                                 }
-                         } do ()
+                          } do ()
+                         }
                          //val nextR = r.fullfill((endNanos - System.nanoTime) nanos)
                          //nextR match
                          //  case Some(x) =>
@@ -203,6 +265,36 @@ object ComputationBound {
         Thunk(() => spawn(f))  
         
 
+   transparent inline def loomInTestconfig: Boolean = 
+        summonFrom {
+          case given UseLoomAwait.type => true
+          case _ => false
+        }
+
+   def wrapVirtualThread[A](op: =>ComputationBound[A]):ComputationBound[A] =
+      if (loomInTestconfig && Loom.isEnabled) {
+         val nextRef: AtomicReference[Option[ComputationBound[A]]] = new AtomicReference(None)
+         Loom.startVirtualThread{ () =>
+              val next = try {
+                            op
+                         } catch {
+                            case NonFatal(ex) => Error(ex)
+                         }
+              nextRef.set(Some(Success(next))) 
+         }
+         Wait(nextRef, {
+           case Success(r) => r
+           case Failure(ex) => Error(ex) 
+         })
+      } else {
+        try {
+          op
+        } catch {
+          case NonFatal(ex) => Error(ex)
+        }
+      }
+            
+
 }
 
 
@@ -231,7 +323,7 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
    override def restore[A](fa: ComputationBound[A])(fx:Throwable => ComputationBound[A]): ComputationBound[A] = 
          flatMapTry(fa) {
            case Success(a) => Done(a)
-           case Failure(ex) => fx(ex)
+           case Failure(ex) => ComputationBound.wrapVirtualThread(fx(ex))
          }
 
    //override def withAction[A](fa:ComputationBound[A])(action: =>Unit):ComputationBound[A] = Thunk(() => {
@@ -257,52 +349,23 @@ implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBoun
 }
 
 case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] {
+             
 
-  
-  def progress(timeout: Duration): ComputationBound[T] = 
-         // TODO: rewrite using progressNoBlock
-         val r = try {
-                   thunk() 
-                 } catch {
-                   case NonFatal(e) => Error(e)
-                 }
-         r match 
-           case Done(t) => r
-           case Error(e) => r
-           case w@Wait(ref, f) => 
-                w.progress(timeout)
-           case Thunk(f1) => 
-                   try {
-                     f1().progress(timeout)
-                   } catch {
-                     case NonFatal(e) => Error(e)
-                   }
-
-  
-  def progressNoBlock(deadline: Long, nNestedCalls: Int): ComputationBound[T] =
-      if (nNestedCalls > ComputationBound.MAX_NESTED_CALLS) {
-        this
-      } else if (System.currentTimeMillis() >= deadline ) {
-        this 
-      } else {
-        val r = try {
-          thunk()
-        } catch {
-          case NonFatal(e) => Error(e)
-        }
-        r match {
-          case Done(t) => r
-          case Error(e) => r
-          case Thunk(w1) =>
-            r.progressNoBlock(deadline, nNestedCalls + 1)
-          case w@Wait(ref,f) =>
-            r.progressNoBlock(deadline, nNestedCalls + 1)
-        }
-      }
-
-
-
-
+  def progress(deadline: Long, runAdvanceQueue: Boolean, waitDeadline: Boolean): ComputationBound[T] = {
+    if (System.currentTimeMillis() >= deadline) {
+      this
+    } else {
+      val next = if (ComputationBound.useLoomAwait && Loom.isEnabled()) {
+              ComputationBound.wrapVirtualThread( thunk() )
+            } else {
+              Thunk.runNested(deadline,0)
+            }
+      next match
+        case Done(t) => next
+        case Error(ex) => next
+        case other => other.progress(deadline, runAdvanceQueue, waitDeadline)
+    }
+  }
 
   def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] =
      Thunk[S]{ () => thunk() match 
@@ -329,16 +392,13 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
       }
     )    
 
-
 }
 
 case class Done[T](value:T) extends ComputationBound[T]:
 
   override def fulfill(timeout: Duration): Option[Try[T]] = Some(Success(value))
 
-  override def progress(timeout: Duration): ComputationBound[T] = this
-
-  override def progressNoBlock(deadline: Long, nNestedCalls: Int): ComputationBound[T] = this
+  override def progressNoBlock(deadline: Long, runAdvanceQueue: Boolean, waitDeadline: Boolean): ComputationBound[T] = this
 
   override def flatMap[S](f: T=>ComputationBound[S] ): ComputationBound[S] =
      Thunk( () => f(value) )
@@ -352,9 +412,9 @@ case class Error[T](e: Throwable) extends ComputationBound[T]:
 
   override def fulfill(timeout: Duration): Option[Try[T]] = Some(Failure(e))
 
-  override def progress(timeout: Duration): ComputationBound[T] = this
+  override def progressDeadline(deadline: Long): ComputationBound[T] = this
 
-  override def progressNoBlock(deadline: Long, nNestedCalls: Int): ComputationBound[T] = this
+  override def progressNoBlock(deadline: Long, nNestedCalls: Int, runAdvanceQueue: Boolean): ComputationBound[T] = this
 
   override def flatMap[S](f: T=> ComputationBound[S]): ComputationBound[S] =
      this.asInstanceOf[ComputationBound[S]]
@@ -364,38 +424,23 @@ case class Error[T](e: Throwable) extends ComputationBound[T]:
 
 
 case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => ComputationBound[T]) extends ComputationBound[T] {
+       
 
-
-  def progress(timeout: Duration): ComputationBound[T] = 
-     ref.get match
-       case Some(r) => op(r).progress(timeout)
-       case None =>
-         val beforeWait = Duration(System.currentTimeMillis, MILLISECONDS)
-         if (timeout.isFinite) 
-            val endTime = (beforeWait + timeout).toMillis
-            while(ref.get().nn.isEmpty && ( System.currentTimeMillis < endTime ) )
-               ComputationBound.advanceDeferredQueue(endTime, true)
-         else
-            while(ref.get().nn.isEmpty)
-               val endTime = System.currentTimeMillis + ComputationBound.waitQuant
-               ComputationBound.advanceDeferredQueue(endTime, true)
-         ref.get().nn.map{ r => 
-             val afterWait = Duration(System.currentTimeMillis, MILLISECONDS)
-             op(r).progress(timeout - (afterWait - beforeWait)) 
-         }.getOrElse(this)
-
-  override def progressNoBlock(deadline: Long, nNestedCalls: Int): ComputationBound[T] = {
+  override def progress(deadline: Long, nNestedCalls: Int, runAdvanceQueue: Boolean, waitDeadline: Boolean): ComputationBound[T] = {
       ref.get match 
-        case Some(r) => op(r).progressNoBlock(deadline, nNestedCalls + 1)
+        case Some(r) => 
+          val next = ComputationBound.wrapVirtualThread(op(r))
+          next.progress(deadline, nNestedCalls + 1, runAdvanceQueue, waitDeadline)
         case None =>
-          val wasProgress = ComputationBound.advanceDeferredQueue(deadline, false)
-          if (wasProgress && nNestedCalls < ComputationBound.MAX_NESTED_CALLS) {
-              progressNoBlock(deadline, nNestedCalls + 1)
-          } else {
-              this
-          }
+          if (runAdvanceQueue) {
+            val wasProgress = ComputationBound.advanceDeferredQueue(deadline, waitDeadline)
+            if (wasProgress && nNestedCalls < ComputationBound.MAX_NESTED_CALLS) {
+                progress(deadline, nNestedCalls + 1, runAdvanceQueue, waitDeadline)
+            } else {
+                this
+            }
+          } else this
   }
-
       
   override def flatMap[S](f: T => ComputationBound[S]): ComputationBound[S] =
         Wait(ref, x => op(x) flatMap f)
@@ -406,6 +451,7 @@ case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => Computa
 
   override def map[S](f: T=>S): ComputationBound[S] =
         Wait(ref, x => op(x).map(f) )
+
 
 }
 

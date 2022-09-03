@@ -35,11 +35,14 @@ trait LoomRuntimeAwait[F[_]] extends CpsRuntimeAwait[F] {
      val wrapped = ctx.adoptAwait(fa)
      submit{ 
          m.mapTry(wrapped){
-          case Success(a) => jcf.complete(a)
+          case Success(a) =>
+            println(s"LoomRuntimeAwait: await-submitted, success $a") 
+            jcf.complete(a)
           case Failure(ex) => 
+            println(s"LoomRuntimeAwait: await-submitted, failure $ex") 
             jcf.completeExceptionally(ex)
         }
-     }(m, ctx)   
+     }(m, ctx)
      try 
       jcf.get().nn
      catch

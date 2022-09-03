@@ -4,6 +4,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util._
 
+
 // for use futures in jvm and js test.
 object FutureCompleter
 {
