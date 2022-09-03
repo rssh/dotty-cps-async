@@ -36,10 +36,8 @@ trait LoomRuntimeAwait[F[_]] extends CpsRuntimeAwait[F] {
      submit{ 
          m.mapTry(wrapped){
           case Success(a) =>
-            println(s"LoomRuntimeAwait: await-submitted, success $a") 
             jcf.complete(a)
           case Failure(ex) => 
-            println(s"LoomRuntimeAwait: await-submitted, failure $ex") 
             jcf.completeExceptionally(ex)
         }
      }(m, ctx)

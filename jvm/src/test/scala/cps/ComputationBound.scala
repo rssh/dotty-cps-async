@@ -122,7 +122,6 @@ object ComputationBound {
         val ref = new AtomicReference[Option[Try[A]]](None)
         val waiter = Wait[A,A](ref, fromTry[A] _ )
         val deferred = Deferred(ref, Some(Thunk( () => op ))) 
-        println(s"ComputationBound::spawn, ref=$ref, deferred item=${deferred}")
         deferredQueue.add(deferred)
         waiter
    }
@@ -156,12 +155,10 @@ object ComputationBound {
 
 
    def  advanceDeferredQueue(endMillis: Long, doWait: Boolean): Boolean = {
-      println(s"advanceQueue: $endMillis $doWait, isEmptu = ${deferredQueue.isEmpty}")
       var nFinished = 0
       val secondQueue = new ConcurrentLinkedQueue[Deferred[?]]
       while(!deferredQueue.isEmpty && System.currentTimeMillis < endMillis) 
         val c = deferredQueue.poll()
-        println(s"advanceQueue: c=$c")
         if (c != null) then
           val cr: Option[?] = c.nn.ref.get().nn
           cr match 
@@ -171,7 +168,6 @@ object ComputationBound {
                   case Some(r) =>     
                     r match
                        case Wait(ref1, _) if ref1.get().nn.isEmpty => 
-                         println("advanceQueue: wait, added to second")
                          secondQueue.add(c)
                        case Done(v) =>
                          nFinished = nFinished + 1
@@ -185,7 +181,6 @@ object ComputationBound {
                             inProgress match
                               case Done(x) => 
                                 nFinished = nFinished + 1
-                                println(s"advanceQueue: done, ref=")
                                 c.ref.set(Some(Success(x)))
                                 false
                               case Error(e) => 
