@@ -1,11 +1,12 @@
 // CPS Transform for tasty inlined
-// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021
+// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021, 2022
 package cps.macros.forest
 
 import scala.quoted._
 
 import cps._
 import cps.macros._
+import cps.macros.common._
 import cps.macros.misc._
 import scala.collection.immutable.HashMap
 

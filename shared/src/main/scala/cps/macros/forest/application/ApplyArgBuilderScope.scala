@@ -2,6 +2,7 @@ package cps.macros.forest.application
 
 import cps._
 import cps.macros._
+import cps.macros.common._
 import cps.macros.forest._
 import cps.macros.misc._
 

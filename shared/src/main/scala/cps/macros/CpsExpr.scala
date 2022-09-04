@@ -5,6 +5,7 @@ package cps.macros
 import scala.quoted._
 
 import cps._
+import cps.macros.common._
 import cps.macros.misc._
 
 import cps.macros.forest.*

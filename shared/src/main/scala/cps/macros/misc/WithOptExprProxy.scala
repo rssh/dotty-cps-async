@@ -1,10 +1,12 @@
 /**
  * part of dotty-cps-async
- * (C) Ruslan Shevchenko, <ruslan@shevchenko.kiev.ua>, 2020, 2021
+ * (C) Ruslan Shevchenko, <ruslan@shevchenko.kiev.ua>, 2020, 2021, 2022
  **/
 package cps.macros.misc
 
-import scala.quoted._
+import scala.quoted.*
+
+import cps.macros.common.*
 import cps.macros.forest.*
 
 object WithOptExprProxy:

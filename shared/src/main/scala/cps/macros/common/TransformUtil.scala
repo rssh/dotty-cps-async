@@ -1,4 +1,4 @@
-package cps.macros.forest
+package cps.macros.common
 
 import scala.quoted._
 

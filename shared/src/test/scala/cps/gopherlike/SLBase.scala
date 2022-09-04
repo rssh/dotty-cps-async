@@ -2,7 +2,7 @@ package cps.gopherlike
 
 import cps._
 import cps.macros._
-import cps.macros.forest.TransformUtil
+import cps.macros.common.TransformUtil
 
 import cps.testconfig.given
 

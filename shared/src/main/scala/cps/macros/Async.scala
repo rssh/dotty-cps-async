@@ -13,6 +13,7 @@ import scala.util.control.NonFatal
 
 import cps.*
 import cps.macros.*
+import cps.macros.common.*
 import cps.macros.forest.*
 import cps.macros.misc.*
 import cps.macros.observatory.*

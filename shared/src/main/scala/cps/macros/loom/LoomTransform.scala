@@ -9,7 +9,6 @@ import cps.macros.misc.*
 import cps.macros.common.*
 import cps.macros.observatory.*
 
-import cps.macros.forest.TransformUtil
 
 // LoomTransform substitute all awaits in text
 //  Note, that this macros can be potentially eliminated completely, by makeing 

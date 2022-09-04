@@ -4,6 +4,7 @@ import scala.quoted._
 
 import cps._
 import cps.macros._
+import cps.macros.common._
 import cps.macros.misc._
 
 trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:

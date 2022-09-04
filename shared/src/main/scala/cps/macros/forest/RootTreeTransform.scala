@@ -7,6 +7,7 @@ import scala.util.control.NonFatal
 
 import cps._
 import cps.macros._
+import cps.macros.common._
 import cps.macros.misc._
 
 

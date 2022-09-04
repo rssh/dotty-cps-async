@@ -9,6 +9,7 @@ import scala.quoted._
 import scala.concurrent._
 
 import cps.{*,given}
+import cps.macros.common.*
 import cps.macros.misc.*
 
 
@@ -87,7 +88,7 @@ object CpsAsyncStreamMacro:
                      val contextTerm = contextArgs.head.asInstanceOf[Term]
                      val lambda2 = Lambda(owner, mt2, {(owner, args) =>
                         val emitterTerm = args.head.asInstanceOf[Term]
-                        val nBody = cps.macros.forest.TransformUtil.substituteLambdaParams(
+                        val nBody = cps.macros.common.TransformUtil.substituteLambdaParams(
                                           List(param,context), List(args.head, contextArgs.head), body, owner) 
                         val asyncBody = cps.macros.Async.transformMonad[F,Unit,C](nBody.asExprOf[Unit],
                                                                                  '{ ${absorber}.asyncMonad },
