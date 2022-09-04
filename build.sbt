@@ -1,7 +1,7 @@
 //val dottyVersion = "3.0.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.1.2-RC1-bin-SNAPSHOT"
-val dottyVersion = "3.1.3"
-//val dottyVersion = "3.1.1"
+val dottyVersion = "3.2.0"
+//val dottyVersion = "3.1.3"
 
 ThisBuild/version := "0.9.11-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
@@ -89,9 +89,9 @@ lazy val cpsLoomJVM = project.in(file("jvm-loom"))
                         libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
                         Test/fork := true,
                         //for macos
-                        //Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
+                        Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
                         //for linux:
-                        Test/javaHome := Some(file("/usr/lib/jvm/jdk-19")),
+                        //Test/javaHome := Some(file("/usr/lib/jvm/jdk-19")),
 
                         Test/javaOptions ++= Seq(
                            "--enable-preview", 
