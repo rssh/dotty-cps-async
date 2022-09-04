@@ -98,15 +98,17 @@ object Async {
            dm => 
               if ( flags.useLoomAwait && Expr.summon[CpsRuntimeAwait[F]].isDefined) {
                val cpsRuntimeAwait = Expr.summon[CpsRuntimeAwait[F]].get
-               val transformed = loomTransform[F,T,C](f,dm,mc.asExprOf[C],cpsRuntimeAwait, memoization, observatory, flags)
-               if (dm.asTerm.tpe <:< TypeRepr.of[CpsAsyncEffectMonad[F]]) then
-                  '{ ${dm.asExprOf[CpsEffectMonad[F]]}.delay(${transformed}) }
-               else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then
-                  '{ ${dm.asExprOf[CpsSchedulingMonad[F]]}.spawnSync(${transformed}) }
-               else  
-                  '{  ${dm}.lazyPure(${transformed}) }
-                  // TODO: pure ?
-                  //report.throwError(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Scheduled or AsyncEffect, cpsRuntimeAwait = ${cpsRuntimeAwait.show}")
+               if (dm.asTerm.tpe <:< TypeRepr.of[CpsAsyncMonad[F]]) then
+                  val dma = dm.asExprOf[CpsAsyncMonad[F]]
+                  val transformed = loomTransform[F,T,C](f,dma,mc.asExprOf[C],cpsRuntimeAwait, memoization, observatory, flags)
+                  if (dm.asTerm.tpe <:< TypeRepr.of[CpsAsyncEffectMonad[F]]) then
+                     '{ ${dm.asExprOf[CpsEffectMonad[F]]}.delay(${transformed}) }
+                  else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then
+                     '{ ${dm.asExprOf[CpsSchedulingMonad[F]]}.spawnSync(${transformed}) }
+                  else  
+                     '{  ${dm}.lazyPure(${transformed}) }
+               else
+                  report.throwError(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Async, runtimeAwait = ${cpsRuntimeAwait.show}")
               } else {
                val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization,flags,observatory,0, None)
                if (DEBUG) {
@@ -327,7 +329,7 @@ object Async {
           }
 
   def loomTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], 
-                                                        dm: Expr[CpsMonad[F]], 
+                                                        dm: Expr[CpsAsyncMonad[F]], 
                                                         ctx: Expr[C], 
                                                         runtimeApi: Expr[CpsRuntimeAwait[F]],
                                                         optMemoization: Option[TransformationContext.Memoization[F]],

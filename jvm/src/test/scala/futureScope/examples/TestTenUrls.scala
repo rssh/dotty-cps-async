@@ -62,6 +62,7 @@ class TestTenUrls {
         val first10 = await(TenUrls.readFirstN(mockApi,urls,10))
         assert(first10.length == 10)
       }
+      //Await.ready(f)
       FutureCompleter(f)
     }
 

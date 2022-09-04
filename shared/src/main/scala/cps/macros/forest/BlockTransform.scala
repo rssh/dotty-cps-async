@@ -6,6 +6,7 @@ import scala.quoted._
 
 import cps._
 import cps.macros._
+import cps.macros.common._
 import cps.macros.misc._
 
 
@@ -49,10 +50,7 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
                                TypeTree.of[tp].toString + " [exception during print]"
 
                            if (cpsCtx.flags.customValueDiscard)
-                             val valueDiscard = TypeIdent(Symbol.classSymbol("cps.ValueDiscard")).tpe
-                             val tpe = t.tpe.widen.dealias
-                             val tpTree = valueDiscard.appliedTo(tpe)
-                             Implicits.search(tpTree) match
+                             ValueDiscardHelper.searchCustomDiscardFor(t) match
                                case sc: ImplicitSearchSuccess =>
                                   val pd = {
                                     if sc.tree.tpe <:< TypeRepr.of[cps.AwaitValueDiscard[?,?]] then

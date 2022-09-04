@@ -6,6 +6,7 @@ import scala.util.control.NonFatal
 import cps._
 import cps.macros._
 import cps.macros.misc._
+import cps.macros.common._
 
 /**
  * BlockTreeTransform -- the same as BlockTransform but on term level.
@@ -68,10 +69,7 @@ trait BlockTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
   }
 
   def blockCheckValueDiscarded(t: Term): Boolean =
-    ( (cpsCtx.flags.customValueDiscard || cpsCtx.flags.warnValueDiscard)
-     &&
-      ( !(t.tpe =:= TypeRepr.of[Unit]) && !(t.tpe =:= TypeRepr.of[Nothing]) )
-    )
+    ValueDiscardHelper.checkValueDiscarded(t, cpsCtx.flags)
 
 
   def blockBuildAwaitValueDiscard(discardTerm: Term, p: Term): Term =

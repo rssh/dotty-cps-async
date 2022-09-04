@@ -49,12 +49,21 @@ class TestCBS2Dynamic:
      }
      val r: Try[Any] = c.run()
      assert(r.isSuccess)
-     r match
-       case Success(v) => assert(v == 3)
-       case Failure(ex) => throw ex
-     val lines = log.all
-     assert(lines(0).startsWith("MyDynamic:applyDynamic, methodName: f"))
-     assert(lines(1).startsWith("MyDynamic:applyDynamic, methodName: runAsync"))
+     if (!ComputationBoundLoomUsage.useLoom) { 
+      r match
+        case Success(v) => assert(v == 3)
+        case Failure(ex) => throw ex
+        val lines = log.all
+        assert(lines(0).startsWith("MyDynamic:applyDynamic, methodName: f"))
+        assert(lines(1).startsWith("MyDynamic:applyDynamic, methodName: runAsync"))
+     } else {
+      r match
+        case Success(v) => assert(v == 1)
+        case Failure(ex) => throw ex
+        val lines = log.all
+        assert(lines(0).startsWith("MyDynamic:applyDynamic, methodName: f"))
+        assert(lines(1).startsWith("MyDynamic:applyDynamic, methodName: f")) 
+     }
 
 
 

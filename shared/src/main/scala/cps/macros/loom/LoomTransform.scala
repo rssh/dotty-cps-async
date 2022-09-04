@@ -6,6 +6,7 @@ import scala.util.control.NonFatal
 import cps.*
 import cps.macros.*
 import cps.macros.misc.*
+import cps.macros.common.*
 import cps.macros.observatory.*
 
 import cps.macros.forest.TransformUtil
@@ -16,11 +17,8 @@ import cps.macros.forest.TransformUtil
 //  via yet one inline.  
 object LoomTransform:
 
-
-    
-
     def run[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], 
-        dm: Expr[CpsMonad[F]], 
+        dm: Expr[CpsAsyncMonad[F]], 
         ctx: Expr[C], 
         runtimeApi: Expr[CpsRuntimeAwait[F]],
         flags: AsyncMacroFlags,
@@ -86,7 +84,7 @@ object LoomTransform:
                 if (needVarTransformationForAutomaticColoring) {
                   runBlockWithAutomaticColoring(block)(owner)
                 } else {
-                  super.transformTerm(term)(owner)
+                  runBlockCheckDiscards(block)(owner)  
                 }
               case _ =>
                 if flags.debugLevel >= 20 then
@@ -190,10 +188,12 @@ object LoomTransform:
                         val nSymbolMap = symbolMap.updated(valDef.symbol,Ref(nValDef.symbol))
                         val nOut = out appended ce1 appended nValDef
                         (nSymbolMap, nOut)
+                  case t: Term =>
+                      (symbolMap, out.appended(runTermWithValueDiscard(t, owner)))
                   case _ =>
-                     (symbolMap, out.appended(ce1))
+                      (symbolMap, out.appended(ce1))
               }
-              val nExpr0 = TransformUtil.changeSymsInTerm(allChangedSymbols,block.expr, owner)
+              val nExpr0 = TransformUtil.changeSymsInTerm(allChangedSymbols, block.expr, owner)
               val nExpr1 = transformTerm(nExpr0)(owner) 
               Block.copy(block)(nStats.toList, nExpr1)
           }
@@ -206,7 +206,6 @@ object LoomTransform:
            **/
           def runValDefWithAutomaticColoring(valDef: ValDef, valDefOwner: Symbol): Option[ValDef] = {
             TransformUtil.inMonadOrChild[F](valDef.tpt.tpe).flatMap{ upte =>
-                println("we are here")
                 val analysis = observatory.effectColoring
                 val usageRecord = analysis.usageRecords.get(valDef.symbol).getOrElse{
                       throw MacroError(s"Can't find analysis record for usage of ${valDef.symbol}", valDef.rhs.get.asExpr)
@@ -248,9 +247,50 @@ object LoomTransform:
             }
           }
 
+          def runBlockCheckDiscards(block: Block)(owner: Symbol):Block = {
+            val nStats = block.statements.foldLeft(IndexedSeq.empty[Statement]){ (s,e) =>
+              val e1 = transformStatement(e)(owner)
+              e1 match 
+                case t:Term =>
+                  s.appended(runTermWithValueDiscard(t, owner))
+                case _ =>
+                  s.appended(e1)  
+            }
+            val nExpr = transformTerm(block.expr)(owner)
+            Block.copy(block)(nStats.toList, nExpr)
+          }
+
+          def runTermWithValueDiscard(t:Term, owner: Symbol): Term = {
+            if (ValueDiscardHelper.checkValueDiscarded(t,flags)) {
+              if (flags.customValueDiscard) {
+                ValueDiscardHelper.searchCustomDiscardFor(t) match
+                  case sc: ImplicitSearchSuccess =>
+                    if sc.tree.tpe <:< TypeRepr.of[cps.AwaitValueDiscard[?,?]] then
+                      sc.tree.tpe.asType match
+                        case '[AwaitValueDiscard[F,tt]] =>
+                           '{  ${runtimeApi}.await[tt](${t.asExprOf[F[tt]]})($dm,$ctx) }.asTerm
+                        case _ =>   
+                           ???
+                    else
+                        Apply(Select.unique(sc.tree,"apply"),List(t))
+                  case sf: ImplicitSearchFailure =>
+                    val msg = s"discarding non-unit value without custom discard for $t (${sf.explanation})"
+                    if (flags.warnValueDiscard) then
+                      report.warning(msg, t.pos)
+                    else
+                      report.error(msg, t.pos)
+                    t
+              } else {   // (flags.warnValueDiscard) if we here
+                  report.warning(s"discarding non-unit value ${t.show}", t.pos)
+                  t
+              }
+            } else {
+              t
+            }
+          }
+
+
         }
-
-
 
         val retval = treeMap.transformTerm(f.asTerm)(Symbol.spliceOwner)
         retval.asExprOf[T]
