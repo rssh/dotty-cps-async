@@ -9,7 +9,7 @@ import scala.util.Failure
 import cps.testconfig.given
 
 
-class TestBS1Try:
+class TestСBS1Try:
 
 
   @Test def try_00n_p(): Unit = 
@@ -152,7 +152,7 @@ class TestBS1Try:
      val r = c.run()
      assert(r.isFailure)
      val Failure(ex) = r
-     assert(ex.getMessage == "failSyncOp")
+     assert(ex.getMessage == "BBB")
      assert(x == 2)
 
 

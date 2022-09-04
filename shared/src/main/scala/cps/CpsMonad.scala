@@ -1,7 +1,7 @@
 /*
  * dotty-cps-async: https://github.com/rssh/dotty-cps-async
  *
- * (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, Kyiv, 2020, 2021
+ * (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, Kyiv, 2020, 2021, 2022
  */
 package cps
 
@@ -128,9 +128,9 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
        catch
          case NonFatal(ex) =>
            r match
-             case Success(_) => error(ex)
-             case Failure(mEx) => mEx.addSuppressed(ex)
-                                error(mEx)
+             case Failure(mEx) => ex.addSuppressed(mEx)
+             case _ => 
+           error(ex)
     }
 
 
@@ -153,18 +153,18 @@ trait CpsTryMonad[F[_]] extends CpsMonad[F] {
              case Success(_) => fromTry(ra)
              case Failure(raaex) =>
                    ra match
-                     case Success(rav) => error(raaex)
+                     case Success(rav) =>
                      case Failure(raex) =>
-                            raex.addSuppressed(raaex)
-                            error(raex)
+                            raaex.addSuppressed(raex)
+                   error(raaex)
          }
        catch
          case NonFatal(ex) =>
            ra match
-             case Success(_) => error(ex)
              case Failure(raex) =>
-                   raex.addSuppressed(ex)
-                   error(raex)
+                   ex.addSuppressed(raex)
+             case Success(_) => 
+           error(ex)
     }
   
 
