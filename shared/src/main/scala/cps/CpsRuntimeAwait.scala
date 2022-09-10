@@ -1,7 +1,11 @@
 package cps
 
 
-
+/**
+ * When this typeclass is implemented for a monad F, 
+ * dotty-cps-async can use runtime await invocations:
+ *  - for handling of hight-order functions
+ **/
 trait CpsRuntimeAwait[F[_]] {
 
     def async[A,C <: CpsMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A] = {
@@ -37,5 +41,8 @@ trait CpsRuntimeAwait[F[_]] {
     }
 
 }
+
+
+trait CpsFastRuntimeAwait[F[_]] extends CpsRuntimeAwait[F]
 
 

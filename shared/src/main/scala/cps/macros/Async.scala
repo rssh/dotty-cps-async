@@ -97,8 +97,10 @@ object Async {
       observatory.analyzeTree[F]
       val r = WithOptExprProxy("cpsMonad", dm){
            dm => 
-              if ( flags.useLoomAwait && Expr.summon[CpsRuntimeAwait[F]].isDefined) {
-               val cpsRuntimeAwait = Expr.summon[CpsRuntimeAwait[F]].get
+              val optRuntimeAwait = Expr.summon[CpsRuntimeAwait[F]]
+              if ( flags.useLoomAwait && optRuntimeAwait.isDefined && 
+                                         optRuntimeAwait.forall(_.asTerm.tpe <:< TypeRepr.of[CpsFastRuntimeAwait[F]])  ) {
+               val cpsRuntimeAwait = optRuntimeAwait.get
                if (dm.asTerm.tpe <:< TypeRepr.of[CpsAsyncMonad[F]]) then
                   val dma = dm.asExprOf[CpsAsyncMonad[F]]
                   val transformed = loomTransform[F,T,C](f,dma,mc.asExprOf[C],cpsRuntimeAwait, memoization, observatory, flags)
@@ -111,7 +113,7 @@ object Async {
                else
                   report.throwError(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Async, runtimeAwait = ${cpsRuntimeAwait.show}")
               } else {
-               val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization,flags,observatory,0, None)
+               val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization, optRuntimeAwait, flags,observatory,0, None)
                if (DEBUG) {
                  TransformUtil.dummyMapper(cpsExpr.transformed.asTerm, Symbol.spliceOwner)
                }
@@ -217,6 +219,7 @@ object Async {
 
   def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], dm:Expr[CpsMonad[F]], mc:Expr[C], 
                                       optMemoization: Option[TransformationContext.Memoization[F]],
+                                      optRuntimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
                                       flags: AsyncMacroFlags,
                                       observatory: Observatory.Scope#Observatory,
                                       nesting: Int,
@@ -224,7 +227,8 @@ object Async {
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._    
-     val cpsCtx = TransformationContext[F,T,C](f,tType,dm,mc,optMemoization,flags,observatory,nesting,parent)
+     val cpsCtx = TransformationContext[F,T,C](f,tType,dm,mc,optMemoization,optRuntimeAwait,
+                                               flags,observatory,nesting,parent)
      val retval = f match 
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
@@ -286,6 +290,7 @@ object Async {
                               cpsCtx: TransformationContext[F,T,C]
                               )(using Quotes):CpsExpr[F,S]=
         rootTransform(f,cpsCtx.monad, cpsCtx.monadContext, cpsCtx.memoization,
+                      cpsCtx.runtimeAwait,
                       cpsCtx.flags,cpsCtx.observatory,cpsCtx.nesting+1, Some(cpsCtx))
 
 
