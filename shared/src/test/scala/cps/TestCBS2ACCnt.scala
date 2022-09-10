@@ -21,7 +21,12 @@ class TestCBS2ACCnt:
   val LOG_TRESHOLD = 100
   
   def createCounter(n:Int) = new AtomicInteger(n)
+
+  //  disable loom, to prevent compiler crash
+  given noLoom1: cps.macros.flags.UseLoomAwait.type = ???
+  given noLoom2: cps.macros.flags.UseLoomAwait.type = ???
   
+   
   //implicit val printCode: cps.macroFlags.PrintCode.type = cps.macroFlags.PrintCode
   //implicit val printTree = cps.macroFlags.PrintTree
   //implicit val debugLevel = cps.macroFlags.DebugLevel(20)

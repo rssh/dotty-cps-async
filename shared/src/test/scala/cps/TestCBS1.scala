@@ -7,25 +7,29 @@ import scala.quoted._
 import scala.util.Success
 import cps.testconfig.given
 
-class TestBS1:
+class TestCBS1:
 
   @Test def tConstantMeta(): Unit = 
      val c = macros.Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.Context](3, CpsMonadInstanceContextBody(ComputationBoundAsyncMonad))
-     assert(c == Done(3))
+     val r = c.run()
+     assert(r == Success(3))
   
   @Test def tConstantMetaTypeInference(): Unit = 
      val c = async[ComputationBound](3)
-     assert(c == Done(3))
+     val r = c.run()
+     assert(r == Success(3))
 
   @Test def tAwaitErase(): Unit = 
      val c = async[ComputationBound](await(T1.cb()))
-     assert(c == Done(()))
+     val r = c.run()
+     assert(r == Success(()))
   
   @Test def tValDef(): Unit = 
      val c = async[ComputationBound]{
               val t = 3
              }
-     assert(c == Done(()))
+     val r = c.run()   
+     assert(r == Success(()))
 
   @Test def tValDefAsyn(): Unit = 
      val c = async[ComputationBound]{
