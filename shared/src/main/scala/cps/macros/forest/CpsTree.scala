@@ -6,6 +6,7 @@ import cps._
 import cps.macros._
 import cps.macros.common._
 import cps.macros.misc._
+import cps.macros.forest.application.ApplicationShiftType
 
 
 
@@ -684,13 +685,13 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     override def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherScope: TreeTransformScope[F1,T1,C1]): otherScope.AppendCpsTree =
          otherScope.AppendCpsTree(frs.inCake(otherScope), snd.inCake(otherScope))
-
+ 
   end AppendCpsTree
 
   case class AsyncLambdaCpsTree(originLambda: Term,
                                 params: List[ValDef],
                                 body: CpsTree,
-                                otpe: TypeRepr ) extends CpsTree:
+                                otpe: TypeRepr) extends CpsTree:
 
     override def isAsync = true
 
@@ -727,7 +728,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
     def rLambda: Term =
       val paramNames = params.map(_.name)
       val paramTypes = params.map(_.tpt.tpe)
-      val shiftedType = shiftedMethodType(paramNames, paramTypes, body.otpe.asInstanceOf[TypeRepr])
+      val shiftedType = cpsShiftedMethodType(paramNames, paramTypes, body.otpe.asInstanceOf[TypeRepr])
        // TODO: think, maybe exists case, where we need substitute Ident(param) for x[i] (?)
        //       because otherwise it's quite strange why we have such interface in compiler
 

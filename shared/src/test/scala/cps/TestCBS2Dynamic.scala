@@ -49,7 +49,7 @@ class TestCBS2Dynamic:
      }
      val r: Try[Any] = c.run()
      assert(r.isSuccess)
-     if (!ComputationBoundLoomUsage.useLoom) { 
+     if (!ComputationBoundLoomUsage.useLoomFast) { 
       r match
         case Success(v) => assert(v == 3)
         case Failure(ex) => throw ex

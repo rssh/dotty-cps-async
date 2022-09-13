@@ -81,7 +81,7 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
             val nextRecord = if (paramsDescriptor.isByName(acc.paramIndex)) {
                                throw MacroError("passing lamda as byName params is not supported yet",posExpr(t))
                              } else {
-                               ApplyArgLambdaRecord(lambda,acc.posIndex,cpsBody, false, isInMonad(body.tpe))
+                               ApplyArgLambdaRecord(lambda,acc.posIndex,cpsBody, None, isInMonad(body.tpe))
                              }
             acc.advance(nextRecord)
          case namedArg@NamedArg(name, arg) =>
@@ -126,7 +126,7 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
           cpsCtx.log(s"termCpsTree.isAsync = ${termCpsTree.isAsync}")
              
        if (paramsDescriptor.isByName(acc.paramIndex))
-          acc.advance(ApplyArgByNameRecord(t,acc.posIndex,termCpsTree,termCpsTree.isAsync))
+          acc.advance(ApplyArgByNameRecord(t,acc.posIndex,termCpsTree,None))
        else
           if (!termCpsTree.isAsync && termIsNoOrderDepended(t)) then
              if (!termCpsTree.isChanged) then
@@ -137,7 +137,7 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
              if (termCpsTree.isLambda) 
                termCpsTree match
                   case AsyncLambdaCpsTree(originLambda,params,cpsBody,otpe) =>
-                     val nextRecord = ApplyArgLambdaRecord(originLambda,acc.posIndex,cpsBody,false,isInMonad(otpe))
+                     val nextRecord = ApplyArgLambdaRecord(originLambda,acc.posIndex,cpsBody,None,isInMonad(otpe))
                      acc.advance(nextRecord)
                   case BlockCpsTree(prevs, last) => 
                      // TODO: create instance of ApplyArgLambdaBlockRecord   

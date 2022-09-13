@@ -5,6 +5,7 @@ import scala.quoted._
 import cps._
 import cps.macros._
 import cps.macros.misc._
+import cps.macros.forest.application.ApplicationShiftType
 
 
 trait LambdaTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
@@ -18,6 +19,7 @@ trait LambdaTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
      if (cpsCtx.flags.debugLevel >= 10)
        cpsCtx.log(s"runLambda, lambda=${safeShow(lambdaTerm)}")
        cpsCtx.log(s"runLambda, expr=${safeShow(expr)}")
+     // TODO:  push cpsCtx is this is context function.  
      val cpsBody = runRoot(expr)
      val retval = if (cpsBody.isAsync) {
         // in general, shifted lambda
@@ -31,8 +33,12 @@ trait LambdaTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
      retval
 
 
-  def shiftedMethodType(paramNames: List[String], paramTypes:List[TypeRepr], otpe: TypeRepr): MethodType =
+  /**
+  *  method type for (p1 ... pn) => F[otpe]
+  **/   
+  def cpsShiftedMethodType(paramNames: List[String], paramTypes:List[TypeRepr], otpe: TypeRepr): MethodType =
      MethodType(paramNames)(_ => paramTypes, _ => TypeRepr.of[F].appliedTo(otpe.widen))
+                                          
 
 
 

@@ -10,7 +10,8 @@ import cps.macros.misc._
 
 trait ApplicationHelper[F[_],CT, CC<:CpsMonadContext[F]] extends ApplyArgRecordScope[F,CT, CC] 
                                       with MethodParamsDescriptorScope[F,CT, CC]
-                                      with ApplyArgBuilderScope[F,CT, CC]:
+                                      with ApplyArgBuilderScope[F,CT, CC]
+                                      with PartialShiftedApplyScope[F,CT,CC]:
 
   thisTreeTransform: TreeTransformScope[F,CT, CC] =>
 
