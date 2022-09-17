@@ -3,8 +3,8 @@ package cps
 
 /**
  * When this typeclass is implemented for a monad F, 
- * dotty-cps-async can use runtime await invocations:
- *  - for handling of hight-order functions
+ * dotty-cps-async can use runtime await invocations
+ * for handling of high-order functions when shifted variants are not available. 
  **/
 trait CpsRuntimeAwait[F[_]] {
 
@@ -16,33 +16,13 @@ trait CpsRuntimeAwait[F[_]] {
 
     def await[A](fa: F[A])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): A 
 
-    def asyncFun0[R](f: ()=>F[R])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): ()=>R = {
-        () => this.await(f())(m,ctx)
-    }
-
-    def asyncFun1[A,R](f: A=>F[R])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): A=>R = {
-        a => this.await(f(a))(m,ctx)     
-    }
-
-    def asyncFun2[A,B,R](f: (A,B)=>F[R])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): (A,B)=>R = {
-        (a,b) => this.await(f(a,b))(m,ctx)     
-    }
-
-    def asyncFun3[A,B,C,R](f: (A,B,C)=>F[R])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): (A,B,C)=>R = {
-        (a,b,c) => this.await(f(a,b,c))(m,ctx)     
-    }
-
-    def asyncFun4[A,B,C,D,R](f: (A,B,C,D)=>F[R])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): (A,B,C,D)=>R = {
-      (a,b,c,d) => this.await(f(a,b,c,d))(m,ctx)       
-    }
-
-    def asyncFun5[A,B,C,D,E,R](f: (A,B,C,D,E)=>F[R])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): (A,B,C,D,E)=>R = {
-      (a,b,c,d,e) => this.await(f(a,b,c,d,e))(m,ctx)       
-    }
-
 }
 
-
+/**
+ * Marker class which mean that CpsRuntimeAwait implemented in such way,
+ * that performance penalty in comparison with cps run is relative low
+ * and we can not to use cps transformation in async block for such monad.
+ **/
 trait CpsFastRuntimeAwait[F[_]] extends CpsRuntimeAwait[F]
 
 

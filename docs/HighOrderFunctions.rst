@@ -26,7 +26,13 @@ If we want all requests to run in parallel, we can start them in one map and, wh
 
        urls.map( httpClient.fetchData(_) ).map(await(_))
 
-During async transform, |dotty-cps-async|_ substitutes method |map|_ with signature ``List[A].map[B](f: A => B)`` to  
+
+For handling awaits inside high-order functions, dotty-cps-async use different strategies in dependency of execution runtime capabilities.
+
+Async shift substitution.
+-------------------------
+
+The most general way is compile-time substitution: during async transform, |dotty-cps-async|_ substitutes method |map|_ with signature ``List[A].map[B](f: A => B)`` to  
 
 .. index:: AsyncShift
 
@@ -51,12 +57,24 @@ So, we can write something like
   val x = cache.getOrElse( await(fetchData() )
 
 
+Loom-based runtime await.
+-------------------------
+
+JDK-19 includes a set of interfaces (project Loom) that allows execution of code in virtual threads, 
+where runtime blocking wait is not blocking from OS view:  real thread can execute tasks from other virtual threads during the wait.   
+In this case, we don't need to substitute a high-order function but transform instead change the function argument to the original form 
+if our monad implements the `CpsRuntimeAwait <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsRuntimeAwait.scala>`_  typeclass.
+
+This experimental feature should be enabled by declaring the implicit value of cps.macros.flags.UsingLoomAwait
+
+
+
 How to provide shifted functions.
 ---------------------------------
 
 
 Functional interface.
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Suppose you want to make high-order methods of your class ``C`` be able to accept lambda functions with |await|_. 
 For that purpose you have to implement the |given AsyncShift[C]|_ type class with a shifted version of your high-order methods.  

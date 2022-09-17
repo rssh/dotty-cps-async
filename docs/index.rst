@@ -18,6 +18,7 @@ User Manual
    AsyncStreams
    Integrations
    MonadContexts
+   RuntimeAwait
    Features
    random-notes/index.rst
    FAQ

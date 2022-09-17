@@ -5,19 +5,22 @@ import scala.quoted._
 /**
  * if implicit object of type PrintCode.type is defined, than macro print code befroe and after expansion 
  **/
-object PrintCode
+class PrintCode
+object PrintCode extends PrintCode
 
 
 /**
  * if implicit of type PrintTree.type is defined, them macro print  ast tree before and after macro transformation.
  **/
-object PrintTree
+class PrintTree
+object PrintTree extends PrintTree
 
 /**
  * if implicit object is defined, than macro use runtime await for CpsRuntimeAwait
  *  (work only on JVM with JDK-19 early access, which inclipe project loom support)
  **/
-object UseLoomAwait
+class UseLoomAwait
+object UseLoomAwait extends UseLoomAwait
 
 /**
  * Use this flag for debugging of async transformation process.
@@ -61,7 +64,5 @@ object DebugLevel:
                       None
 
 end DebugLevel
-
-
 
 

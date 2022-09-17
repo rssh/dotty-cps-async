@@ -8,6 +8,10 @@ import scala.util.control.NonFatal
 
 
 
+/**
+ * Trait which can be used as a base trait for the implementation of CpsRuntimeAwait in Loom.
+ * To use - inherit you class from the `LoomRuntimeAwait` and implement `submit` method.
+ **/
 trait LoomRuntimeAwait[F[_]] extends CpsRuntimeAwait[F] {
 
   def runAsync[A,C <: CpsMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A] = {
