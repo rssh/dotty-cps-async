@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>High-order functions. &#8212; dotty-cps-async 0.9.10-SNAPSHOT documentation</title>
+    <title>High-order functions. &#8212; dotty-cps-async 0.9.11-SNAPSHOT documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.10-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>  
@@ -58,7 +58,10 @@
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">urls</span><span class="p">.</span><span class="n">map</span><span class="p">(</span> <span class="n">httpClient</span><span class="p">.</span><span class="n">fetchData</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="n">await</span><span class="p">(</span><span class="n">_</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>During async transform, <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> substitutes method <a class="reference external" href="https://www.scala-lang.org/api/current/scala/collection/immutable/List.html#map[B](f:A=%3EB):List[B]"><code class="docutils literal notranslate"><span class="pre">map</span></code></a> with signature <code class="docutils literal notranslate"><span class="pre">List[A].map[B](f:</span> <span class="pre">A</span> <span class="pre">=&gt;</span> <span class="pre">B)</span></code> to</p>
+<p>For handling awaits inside high-order functions, dotty-cps-async use different strategies in dependency of execution runtime capabilities.</p>
+<section id="async-shift-substitution">
+<h2>Async shift substitution.<a class="headerlink" href="#async-shift-substitution" title="Permalink to this headline">¶</a></h2>
+<p>The most general way is compile-time substitution: during async transform, <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> substitutes method <a class="reference external" href="https://www.scala-lang.org/api/current/scala/collection/immutable/List.html#map[B](f:A=%3EB):List[B]"><code class="docutils literal notranslate"><span class="pre">map</span></code></a> with signature <code class="docutils literal notranslate"><span class="pre">List[A].map[B](f:</span> <span class="pre">A</span> <span class="pre">=&gt;</span> <span class="pre">B)</span></code> to</p>
 <div class="highlight-scala notranslate" id="index-0"><div class="highlight"><pre><span></span><span class="n">summon</span><span class="p">[</span><span class="nc">AsyncShift</span><span class="p">[</span><span class="nc">List</span><span class="p">[</span><span class="nc">A</span><span class="p">]]].</span><span class="n">map</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span> <span class="nc">B</span><span class="p">](</span><span class="n">c</span><span class="p">,</span> <span class="n">summon</span><span class="p">[</span><span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">]])</span>
 </pre></div>
 </div>
@@ -71,6 +74,15 @@
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="kd">val</span> <span class="n">x</span> <span class="o">=</span> <span class="n">cache</span><span class="p">.</span><span class="n">getOrElse</span><span class="p">(</span> <span class="n">await</span><span class="p">(</span><span class="n">fetchData</span><span class="p">()</span> <span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section id="loom-based-runtime-await">
+<h2>Loom-based runtime await.<a class="headerlink" href="#loom-based-runtime-await" title="Permalink to this headline">¶</a></h2>
+<p>JDK-19 includes a set of interfaces (project Loom) that allows execution of code in virtual threads,
+where runtime blocking wait is not blocking from OS view:  real thread can execute tasks from other virtual threads during the wait.
+In this case, we don’t need to substitute a high-order function but transform instead change the function argument to the original form
+if our monad implements the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsRuntimeAwait.scala">CpsRuntimeAwait</a>  typeclass.</p>
+<p>This experimental feature should be enabled by declaring the implicit value of cps.macros.flags.UsingLoomAwait</p>
+</section>
 <section id="how-to-provide-shifted-functions">
 <h2>How to provide shifted functions.<a class="headerlink" href="#how-to-provide-shifted-functions" title="Permalink to this headline">¶</a></h2>
 <section id="functional-interface">
@@ -210,6 +222,8 @@ Also, we have the method <a class="reference external" href="https://github.com/
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">High-order functions.</a><ul>
+<li><a class="reference internal" href="#async-shift-substitution">Async shift substitution.</a></li>
+<li><a class="reference internal" href="#loom-based-runtime-await">Loom-based runtime await.</a></li>
 <li><a class="reference internal" href="#how-to-provide-shifted-functions">How to provide shifted functions.</a><ul>
 <li><a class="reference internal" href="#functional-interface">Functional interface.</a></li>
 <li><a class="reference internal" href="#object-oriented-interface">Object-oriented interface.</a></li>
@@ -261,7 +275,7 @@ Also, we have the method <a class="reference external" href="https://github.com/
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.10-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>
