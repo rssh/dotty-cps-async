@@ -36,7 +36,7 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
   def runInlined(origin: Inlined): CpsTree =
     if (cpsCtx.flags.debugLevel >= 15) then
         cpsCtx.log(s"Inlined, origin=${safeShow(origin)}")  
-    val monad = cpsCtx.monad.asTerm
+    val monadGen = cpsCtx.monadGen
     val s0 = InlinedBindingsRecord(HashMap.empty, List.empty, List.empty)
     val funValDefs = origin.bindings.zipWithIndex.foldLeft(s0){ (s, xi) =>
        val (x,i) = xi

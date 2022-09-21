@@ -21,7 +21,7 @@ import cps.macros.observatory.*
 
 object Async {
 
-  class InferAsyncArg[F[_],C<:CpsMonadContext[F]](using val am:CpsMonad.Aux[F,C]) {
+  class InferAsyncArg[F[_],C](using val am: MonadExprGen.Aux[F,C]) {
 
        transparent inline def apply[T](inline expr: C ?=> T) =
             //transform[F,T](using am)(expr)
@@ -32,8 +32,8 @@ object Async {
             //)
 
        
-       transparent inline def in[T](mc: CpsMonadContextProvider[F] )(inline expr: mc.Context ?=> T ): F[T]  = 
-            mc.contextualize(transformContextLambda(expr))
+       //transparent inline def in[T](mcGen: [F] )(inline expr: mc.Context ?=> T ): F[T]  = 
+       //     mc.contextualize(transformContextLambda(expr))
        
   }
 
@@ -71,7 +71,7 @@ object Async {
    * transform expression within given monad.  Use this function is you need to force async-transform
    * from other macros.
    **/
-  def transformMonad[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], dm: Expr[CpsMonad[F]], mc:Expr[C])(using Quotes): Expr[F[T]] =
+  def transformMonad[F[_]:Type,T:Type, C:Type](f: Expr[T], dm: MonadExprGen[F], mcg:MonadContextExprGen[F,C], mc:Expr[C])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
     val flags = adoptFlags(f, dm)
     val DEBUG = flags.debugLevel > 0
@@ -217,7 +217,7 @@ object Async {
                 
 
 
-  def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], dm:Expr[CpsMonad[F]], mc:Expr[C], 
+  def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], dm: MonadExprGen[F], mc: MonadContextExprGen[F,C], 
                                       optMemoization: Option[TransformationContext.Memoization[F]],
                                       optRuntimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
                                       flags: AsyncMacroFlags,

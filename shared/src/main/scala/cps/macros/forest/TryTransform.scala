@@ -49,16 +49,17 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
 
      val builder = if (!isAsync) {
                       if (!isChanged) {
-                         CpsExpr.sync(monad, patternCode, false)
+                         CpsExpr.sync(monadGen, patternCode, false)
                       } else {
                          val expr = quotes.reflect.Try.copy(origin)(
                                             cpsBody.syncOrigin.get.asTerm, 
                                             makeSyncCaseDefs(),
                                             optCpsFinalizer.map(_.syncOrigin.get.asTerm)
                          ).asExprOf[T]
-                         CpsExpr.sync(monad, expr, true)
+                         CpsExpr.sync(monadGen, expr, true)
                       }
                    } else {
+                      
                       val errorMonad = if (monad.asTerm.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
                                           monad.asExprOf[CpsTryMonad[F]]
                                       } else {
@@ -71,7 +72,7 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
                            else
                              cpsBody.syncOrigin match
                                case None =>
-                                 CpsExpr.async[F,T](cpsCtx.monad,
+                                 CpsExpr.async[F,T](cpsCtx.monadGen,
                                   '{
                                      ${errorMonad}.restore(
                                        ${errorMonad}.tryImpure(
@@ -137,7 +138,7 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
                                          )($syncFinalizer)
                                      })
                                    case None =>
-                                     CpsExpr.async[F,T](cpsCtx.monad,
+                                     CpsExpr.async[F,T](cpsCtx.monadGen,
                                       '{
                                          ${errorMonad}.withAsyncAction(
                                            ${errorMonad}.restore(

@@ -6,11 +6,11 @@ import scala.quoted.*
 import cps.*
 import cps.macros.observatory.*
 
-case class TransformationContext[F[_],T,C <: CpsMonadContext[F]](
+case class TransformationContext[F[_],T,C](
    patternCode: Expr[T],  // code, for which we build pattern expression
    patternType: Type[T],
-   monad: Expr[CpsMonad[F]],
-   monadContext: Expr[C],
+   monadGen: MonadExprGen[F],
+   monadContextGen: MonadContextExprGen[F,C],
    memoization: Option[TransformationContext.Memoization[F]],
    runtimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
    flags: AsyncMacroFlags,
@@ -24,7 +24,7 @@ case class TransformationContext[F[_],T,C <: CpsMonadContext[F]](
 
   def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], 
                                          muted: Boolean = flags.muted):   TransformationContext[F,S,C] =
-      TransformationContext(newPatternCode, newPatternType, monad, monadContext, memoization, runtimeAwait,
+      TransformationContext(newPatternCode, newPatternType, monadGen, monadContextGen, memoization, runtimeAwait,
                              flags.copy(muted=muted), 
                              observatory, nesting + 1, parent=Some(this) )
 
