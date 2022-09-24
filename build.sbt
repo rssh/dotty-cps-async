@@ -3,7 +3,7 @@
 val dottyVersion = "3.2.0"
 //val dottyVersion = "3.1.3"
 
-ThisBuild/version := "0.9.11"
+ThisBuild/version := "0.9.12-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers += Opts.resolver.sonatypeSnapshots
 
@@ -98,4 +98,13 @@ lazy val cpsLoomJVM = project.in(file("jvm-loom"))
                            "--add-modules", "jdk.incubator.concurrent"
                         )
                       )
+
+
+lazy val compilerPlugin = project.in(file("compiler-plugin"))
+                           .dependsOn(cps.jvm)  //temporary (?)
+                           .settings(sharedSettings)
+                           .settings(
+                              name := "dotty-cps-compiler-plugin",
+                              libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
+                           )
 
