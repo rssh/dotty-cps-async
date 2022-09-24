@@ -1,6 +1,6 @@
 //val dottyVersion = "3.0.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.1.2-RC1-bin-SNAPSHOT"
-val dottyVersion = "3.2.0"
+val dottyVersion = "3.2.1-RC1"
 //val dottyVersion = "3.1.3"
 
 ThisBuild/version := "0.9.12-SNAPSHOT"
@@ -105,6 +105,15 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
                            .settings(sharedSettings)
                            .settings(
                               name := "dotty-cps-compiler-plugin",
-                              libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
+                              libraryDependencies ++= Seq(
+                                  "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
+                                  "com.novocode" % "junit-interface" % "0.11" % Test,
+                              ),
+                              // TODO: split test into subdirectories.
+                              Test/scalacOptions ++= {
+                                 val jar = (Compile / packageBin).value
+                                 Seq(s"-Xplugin:${jar.getAbsolutePath}","-Ycc", s"-Jdummy=${jar.lastModified}") 
+                              },
+                              Test/fork := true
                            )
 
