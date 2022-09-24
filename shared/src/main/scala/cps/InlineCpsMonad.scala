@@ -6,7 +6,7 @@ import scala.util.Try
  * Inline cps monad which can used for
  * (usefull for deep embedding of other languages into scala, sending data over network, etc..)   
  **/
-trait InlineCpsMonad[F[_]] extends CpsAwaitable[F] {
+trait InlineCpsMonad[F[_]] extends CpsContextCarrier[F] {
 
     inline def pure[A](a:A): F[A]
 

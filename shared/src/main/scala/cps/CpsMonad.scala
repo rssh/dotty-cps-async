@@ -17,11 +17,11 @@ import java.util.concurrent.atomic.AtomicReference
  * Implementing this typeclass is enough to use async/await with supports of
  * basic control-flow constructions (if, loops, but no exceptions).
  */
-trait CpsMonad[F[_]] extends CpsAwaitable[F] {
+trait CpsMonad[F[_]] extends CpsAwaitable[F] with CpsContextCarrier[F] {
 
    type WF[X] = F[X]
 
-   type Context <: CpsMonadContext[F]
+   //type Context <: CpsMonadContext[F]
   
    /**
     * Pure - wrap value `t` inside monad. 

@@ -27,8 +27,6 @@ def await[F[_],T,G[_]](f: F[T])(using am:CpsAwaitable[F], ctx: CpsMonadContext[G
  * i.e. async return a transitional object, which accepts body and perform async transform with the given 
  * `CpsMonad[F]`.
  **/
-transparent inline def async[F[_]](using am: CpsMonad[F]) =
+transparent inline def async[F[_]](using am: CpsContextCarrier[F]) =
    macros.Async.InferAsyncArg(using am)
 
-transparent inline def async[F[_]](using am: CpsInlineMonad[F])=
-   macros.Async.InfernAsyncArgForInline(am)

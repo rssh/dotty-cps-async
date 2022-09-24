@@ -1,13 +1,11 @@
 // CPS Transform expression building block
-// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021,2022
+// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 20212022
 package cps.macros
 
 import scala.quoted.*
 import scala.util.Try
 
-trait MonadExprGen[F[_]:Type]:
-
-  type Context
+trait MonadExprGen[F[_]:Type, C:Type]:
 
   def pure[T](t:Expr[T])(using Quotes):Expr[F[T]]
 
@@ -15,7 +13,7 @@ trait MonadExprGen[F[_]:Type]:
   
   def flatMap[A,B](fa:Expr[F[A]])(f: Expr[A=>F[B]])(using Quotes): Expr[F[B]]
 
-  def supportsTryCatch: Boolean
+  def supportsTryCatch(using Quotes): Boolean
 
   def mapTry[A,B](fa: Expr[F[A]])(f: Expr[Try[A]=>B])(using Quotes): Expr[F[B]]
 
@@ -25,9 +23,9 @@ trait MonadExprGen[F[_]:Type]:
 
   def withAction[A](fa: Expr[F[A]])(action: Expr[Unit])(using Quotes): Expr[F[A]]   
 
-  def applyGen[T](op: Expr[Context =>F[T]]): Expr[F[T]]
+  def applyGen[T](op: Expr[C =>F[T]]): Expr[F[T]]
 
-  def contextExprGen: MonadContextExprGen[F,Context]
+  def adoptAwait[A](c:Expr[C],fa:Expr[F[A]]):Expr[F[A]]
 
   def show: String
 
@@ -40,8 +38,46 @@ object MonadExprGen:
 end MonadExprGen
 
 
-trait MonadContextExprGen[F[_]:Type, C:Type]:
+class CpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[CpsMonad[F]]) extends MonadExprGen[F,C]:
 
-  def adoptAwait[A](c:Expr[C],fa:Expr[F[A]]):F[A]
+  def pure[T](t:Expr[T])(using Quotes):Expr[F[T]] =
+    '{  $dm.pure($t) }
 
-end MonadContextExprGen
+  def map[A,B](fa:Expr[F[A]])(f: Expr[A=>B])(using Quotes): Expr[F[B]] =
+    '{ ${dm}.map($fa)($f) }
+
+  def flatMap[A,B](fa:Expr[F[A]])(f: Expr[A=>F[B]])(using Quotes): Expr[F[B]] =
+    '{ ${dm}.flatMap($fa)($f) }
+
+  def supportsTryCatch(using Quotes): Boolean =
+    import quotes.reflect.*
+    dm.tpe <:< TypeRepr.of[CpsTryMonad[F]]
+
+  def tryMonadExpr(using Quotes): Expr[CpsTryMonad[F]] =
+    import quotes.reflect.*
+    if (dm.tpe <:< TypeRepr.of{CpsTryMonad[F]}) {
+       dm.asExprOf[CpsTryMonad[F]]
+    } else {
+       report.throwError("Monad is not supports try/catch")
+    } 
+
+  def mapTry[A,B](fa: Expr[F[A]])(f: Expr[Try[A]=>B])(using Quotes): Expr[F[B]] =
+      '{ ${tryMonadExpr}.mapTry($fa)($f) }
+
+  def flatMapTry[A,B](fa: Expr[F[A]])(f: Expr[Try[A]=>F[B]])(using Quotes): Expr[F[B]] =
+      '{ ${tryMonadExpr}.flatMapTry($fa)($f) }
+  
+  def restore[A](fa: Expr[F[A]])(fx: Expr[Throwable => F[A]])(using Quotes): Expr[F[A]] =
+    '{ ${tryMonadExpr}.restore($fa)($fx) }
+
+  def withAction[A](fa: Expr[F[A]])(action: Expr[Unit])(using Quotes): Expr[F[A]] =
+    '{ ${tryMonadExpr}.withAction($fa)($action) }
+  
+  def applyGen[T](op: Expr[C =>F[T]]): Expr[F[T]] =
+    '{ $dm.apply($op) }
+
+  def adoptAwait[A](c:Expr[C],fa:Expr[F[A]]):Expr[F[A]] =
+    '{ ${c}.adoptAwait(fa)  }
+
+end CpsMonadExprGen
+
