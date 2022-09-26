@@ -9,8 +9,7 @@ import cps.macros.observatory.*
 case class TransformationContext[F[_],T,C](
    patternCode: Expr[T],  // code, for which we build pattern expression
    patternType: Type[T],
-   monadGen: MonadExprGen[F],
-   monadContextGen: MonadContextExprGen[F,C],
+   monadGen: MonadExprGen.Aux[F,C],
    memoization: Option[TransformationContext.Memoization[F]],
    runtimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
    flags: AsyncMacroFlags,

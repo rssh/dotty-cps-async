@@ -3,6 +3,7 @@ package cps
 /**
   * Minimal things that can be used for inferring monad context.
   * Used as common base for CpsMonad and InlineCpsMonad
+  * TODO:  merge with CpsMonadContextProvider.
   **/
 trait CpsContextCarrier[F[_]]  {
 

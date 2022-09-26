@@ -26,13 +26,13 @@ object Async {
        transparent inline def apply[T](inline expr: C ?=> T) =
             //transform[F,T](using am)(expr)
             //   
-            am.apply(transformContextLambda(expr))
+            am.apply(transformContextLambda[F,T,C](expr))
             //am.apply(x =>
             //   transform[F,T,C](expr,x)
             //)
 
        
-       transparent inline def in[T](mc: CtxMonadContextProvider[F] )(inline expr: mc.Context ?=> T ): F[T]  = 
+       transparent inline def in[T](mc: CpsMonadContextProvider[F] )(inline expr: mc.Context ?=> T ): F[T]  = 
             mc.contextualize(transformContextLambda(expr))
        
   }
@@ -46,10 +46,11 @@ object Async {
         Async.transformContextLambdaImpl[F,T,C]('expr)
      } 
 
-  transparent inline def transform[F[_],T,C<:CpsMonadContext[F]](inline expr: T, inline ctx: C)(using m: CpsMonad[F]): F[T] =
-     ${
-        Async.transformImpl[F,T,C]('expr, 'ctx)
-     } 
+  
+  //transparent inline def transform[F[_],T,C<:CpsMonadContext[F]](inline expr: T, inline ctx: C)(using m: CpsContextCarrier.Aux[F,C]): F[T] =
+  //   ${
+  //      Async.transformImpl[F,T,C]('expr, 'ctx)
+  //   } 
  
   /**
    * transform expression and get monad from context.
@@ -58,10 +59,13 @@ object Async {
    **/
   def transformImpl[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], c:Expr[C])(using Quotes): Expr[F[T]] =
     import quotes.reflect._
-      
+    
+    // Here we don't use supplied but summon[From]
+    // because supplied can be a variable of type CpsMonad previously captured.
+
     Expr.summon[CpsMonad[F]] match
        case Some(dm) =>
-          transformMonad[F,T,C](f,dm,c)
+          transformMonad[F,T,C](f,dm.asExprOf[CpsMonad.Aux[F,C]],c)
        case None =>
           val msg = s"Can't find async monad for ${TypeRepr.of[F].show} (transformImpl)"
           report.throwError(msg, f)
@@ -71,15 +75,9 @@ object Async {
    * transform expression within given monad.  Use this function is you need to force async-transform
    * from other macros.
    **/
-  def transformMonad[F[_]:Type,T:Type, C:Type](f: Expr[T], dm: Expr[CpsMonad[F]], mc:Expr[C])(using Quotes): Expr[F[T]] =
-    val monadGen = CpsMonadGen(dm)
-    val monadContextGen = 
-    transformMonadGen[F,T,C](f, monadGen)
-  }
-
-  def transformMonadGen[F[_]:Type,T:Type, C:Type](f: Expr[T], dm: MonadExprGen[F], mcg:MonadContextExprGen[F,C], mc:Expr[C])(using Quotes): Expr[F[T]] =
+  def transformMonad[F[_]:Type,T:Type, C:Type](f: Expr[T],   dm: Expr[CpsContextCarrier.Aux[F,C]], mc:Expr[C])(using Quotes): Expr[F[T]] = {
     import quotes.reflect._
-    val flags = adoptFlags(f, dm)
+    val flags = adoptFlags[F]
     val DEBUG = flags.debugLevel > 0
     try
       if flags.printCode then
@@ -95,10 +93,10 @@ object Async {
       val observatory = Observatory(f.asTerm, flags)
       val memoization: Option[TransformationContext.Memoization[F]] = 
         if flags.automaticColoring then
-          val resolvedMemoization = resolveMemoization[F,T](f,dm)
+          val resolvedMemoization = resolveMemoization[F,T](f)
           if (resolvedMemoization.kind !=  CpsMonadMemoization.Kind.BY_DEFAULT) then
              observatory.effectColoring.enabled = true
-          Some(resolveMemoization[F,T](f,dm))
+          Some(resolvedMemoization)
         else None
       observatory.analyzeTree[F]
       val r = WithOptExprProxy("cpsMonad", dm){
@@ -114,8 +112,22 @@ object Async {
                      '{ ${dm.asExprOf[CpsEffectMonad[F]]}.delay(${transformed}) }
                   else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then
                      '{ ${dm.asExprOf[CpsSchedulingMonad[F]]}.spawnSync(${transformed}) }
+                  else if (dm.asTerm.tpe <:< TypeRepr.of[CpsMonad[F]]) then
+                     '{  ${dm.asExprOf[CpsMonad[F]]}.lazyPure(${transformed}) }
+                  else if (dm.asTerm.tpe <:< TypeRepr.of[InlineCpsMonad[F]]) then
+                     // Inline monad and RuntimeAwau at the same time.
+                     val lazyPure = TypeApply(
+                        Select.unique(dm.asTerm, "lazyPure"),
+                        List(Inferred(TypeRepr.of[T]))
+                     )
+                     Apply(lazyPure, List(transformed.asTerm)).asExprOf[F[T]]
+                     //dm.asTerm.tpe.asType match
+                     //   case '[m] =>
+                     //       '{  ${dm.asExprOf[m]}.lazyPure(${transformed}) }
+                     //   case _ => 
+                     //      throw new MacroError(s"Can't get concrete type for inline monad ${dm.tpe.widen.show}")                    
                   else  
-                     '{  ${dm}.lazyPure(${transformed}) }
+                     throw new MacroError(s"Can't find monad for type ${dm.asTerm.tpe.widen.show}")
                else
                   report.throwError(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Async, runtimeAwait = ${cpsRuntimeAwait.show}")
               } else {
@@ -127,6 +139,7 @@ object Async {
                  '{ ${dm.asExprOf[CpsEffectMonad[F]]}.flatDelay(${cpsExpr.transformed}) }
                else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then       
                  '{ ${dm.asExprOf[CpsSchedulingMonad[F]]}.spawn(${cpsExpr.transformed}) }
+
                else
                  if (flags.debugLevel > 10) then
                     println(s"dm.asTerm.tpe = ${dm.asTerm.tpe.show} not implements CpsEffectMonad[F], f=$Type[F].show")
@@ -160,10 +173,11 @@ object Async {
         if (flags.debugLevel > 0)
            ex.printStackTrace
         report.throwError(ex.msg, ex.posExpr)
+  }
 
 
 
-  def adoptFlags[F[_]:Type,T](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): AsyncMacroFlags =
+  def adoptFlags[F[_]:Type](using Quotes): AsyncMacroFlags = 
     import quotes.reflect._
     /*
     Expr.summon[AsyncMacroFlags] match
@@ -200,7 +214,7 @@ object Async {
                             useLoomAwait = useLoomAwait)
 
 
-  def resolveMemoization[F[_]:Type, T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): 
+  def resolveMemoization[F[_]:Type, T:Type](posExpr: Expr[T])(using Quotes): 
                                                                   TransformationContext.Memoization[F] =
      import cps.monads._
      import quotes.reflect._
@@ -218,12 +232,12 @@ object Async {
              else
                 throw MacroError(s"Can't extract memoization kind from ${mm.show} for ${TypeRepr.of[F].show}", mm)
        case None =>
-             throw MacroError(s"Can't resolve CpsMonadMemoization for ${TypeRepr.of[F].show}", f)
+             throw MacroError(s"Can't resolve CpsMonadMemoization for ${TypeRepr.of[F].show}", posExpr)
              
                 
 
 
-  def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], dm: MonadExprGen[F], mc: MonadContextExprGen[F,C], 
+  def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], dm: MonadExprGen[F],
                                       optMemoization: Option[TransformationContext.Memoization[F]],
                                       optRuntimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
                                       flags: AsyncMacroFlags,

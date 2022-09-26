@@ -5,7 +5,11 @@ package cps.macros
 import scala.quoted.*
 import scala.util.Try
 
-trait MonadExprGen[F[_]:Type, C:Type]:
+import cps.*
+
+trait MonadExprGen[F[_]:Type]:
+
+  type Context
 
   def pure[T](t:Expr[T])(using Quotes):Expr[F[T]]
 
@@ -23,9 +27,11 @@ trait MonadExprGen[F[_]:Type, C:Type]:
 
   def withAction[A](fa: Expr[F[A]])(action: Expr[Unit])(using Quotes): Expr[F[A]]   
 
-  def applyGen[T](op: Expr[C =>F[T]]): Expr[F[T]]
+  def contextType: Type[Context]
 
-  def adoptAwait[A](c:Expr[C],fa:Expr[F[A]]):Expr[F[A]]
+  def applyGen[T](op: Expr[Context =>F[T]]): Expr[F[T]]
+
+  def adoptAwait[A](c:Expr[Context],fa:Expr[F[A]]):Expr[F[A]]
 
   def show: String
 
@@ -38,7 +44,9 @@ object MonadExprGen:
 end MonadExprGen
 
 
-class CpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[CpsMonad[F]]) extends MonadExprGen[F,C]:
+class CpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[CpsMonad[F]]) extends MonadExprGen[F]:
+
+  type Context = C 
 
   def pure[T](t:Expr[T])(using Quotes):Expr[F[T]] =
     '{  $dm.pure($t) }
@@ -78,6 +86,9 @@ class CpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[CpsMonad[F]]) extends MonadExpr
 
   def adoptAwait[A](c:Expr[C],fa:Expr[F[A]]):Expr[F[A]] =
     '{ ${c}.adoptAwait(fa)  }
+
+  def contextType: Type[Context] =
+    summon[Type[C]]
 
 end CpsMonadExprGen
 
