@@ -1,12 +1,13 @@
 package cpstest
 
+import scala.annotation.*
 import cps.*
 
-
+@experimental
 object Example1 {
 
-  def asyncPlus[F[_]](a:Int, b:F[Int])(using cps: CpsTransform[F]): { cps } Int =
-    a + cps.await(b)
+  def asyncPlus[F[_]](a:Int, b:F[Int]): CpsTransform[F] ?=> Int =
+    a + cpsAwait(b)
   
 
 }
