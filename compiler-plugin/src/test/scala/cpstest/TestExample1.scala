@@ -8,12 +8,14 @@ import scala.util.*
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
+
 import cps.*
 
 import cps.monads.{*,given}
 
 @experimental
 class TestExample1:
+  import cps.E.*
 
   @Test def testExample1Future(): Unit = 
      import scala.concurrent.ExecutionContext.Implicits.global

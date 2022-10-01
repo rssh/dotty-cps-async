@@ -2,6 +2,10 @@ package cps
 
 import scala.annotation.*
 
+// workarround against https://github.com/lampepfl/dotty/issues/16129
+@experimental
+object E {
+
 @experimental
 @capability
 class CpsTransform[F[_]](m:CpsTryMonad[F]) {
@@ -33,3 +37,8 @@ object CpsTransform {
   given mk[F[_]](using m:CpsTryMonad[F]):CpsTransform[F] = new CpsTransform[F](m)
 
 }
+
+}//E
+
+
+
