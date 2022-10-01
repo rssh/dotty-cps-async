@@ -28,7 +28,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
               tails: List[Seq[ApplyArgRecord]]): CpsTree =
      if (cpsCtx.flags.debugLevel >= 10)
        cpsCtx.log(s"runApply, appyTerm=${safeShow(applyTerm)}")
-     val monad = cpsCtx.monad
+     //val monad = cpsCtx.monad
      // try to omit things, which should be eta-expanded,
      val r = fun match
        case TypeApply(obj,targs) =>

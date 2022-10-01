@@ -10,6 +10,7 @@ case class TransformationContext[F[_],T,C](
    patternCode: Expr[T],  // code, for which we build pattern expression
    patternType: Type[T],
    monadGen: MonadExprGen.Aux[F,C],
+   monadContext: Expr[C],  
    memoization: Option[TransformationContext.Memoization[F]],
    runtimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
    flags: AsyncMacroFlags,
@@ -23,7 +24,7 @@ case class TransformationContext[F[_],T,C](
 
   def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], 
                                          muted: Boolean = flags.muted):   TransformationContext[F,S,C] =
-      TransformationContext(newPatternCode, newPatternType, monadGen, monadContextGen, memoization, runtimeAwait,
+      TransformationContext(newPatternCode, newPatternType, monadGen, monadContext, memoization, runtimeAwait,
                              flags.copy(muted=muted), 
                              observatory, nesting + 1, parent=Some(this) )
 

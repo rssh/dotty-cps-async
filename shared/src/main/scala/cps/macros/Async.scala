@@ -75,7 +75,7 @@ object Async {
    * transform expression within given monad.  Use this function is you need to force async-transform
    * from other macros.
    **/
-  def transformMonad[F[_]:Type,T:Type, C:Type](f: Expr[T],   dm: Expr[CpsContextCarrier.Aux[F,C]], mc:Expr[C])(using Quotes): Expr[F[T]] = {
+  def transformMonad[F[_]:Type,T:Type, C:Type](f: Expr[T], dm: Expr[CpsContextCarrier.Aux[F,C]], mc:Expr[C])(using Quotes): Expr[F[T]] = {
     import quotes.reflect._
     val flags = adoptFlags[F]
     val DEBUG = flags.debugLevel > 0
@@ -101,6 +101,7 @@ object Async {
       observatory.analyzeTree[F]
       val r = WithOptExprProxy("cpsMonad", dm){
            dm => 
+              val monadGen = MonadExprGen(dm)
               val optRuntimeAwait = Expr.summon[CpsRuntimeAwait[F]]
               if ( flags.useLoomAwait && optRuntimeAwait.isDefined && 
                                          optRuntimeAwait.forall(_.asTerm.tpe <:< TypeRepr.of[CpsFastRuntimeAwait[F]])  ) {
@@ -127,11 +128,12 @@ object Async {
                      //   case _ => 
                      //      throw new MacroError(s"Can't get concrete type for inline monad ${dm.tpe.widen.show}")                    
                   else  
-                     throw new MacroError(s"Can't find monad for type ${dm.asTerm.tpe.widen.show}")
+                     throw new MacroError(s"Can't find monad for type ${dm.asTerm.tpe.widen.show}",dm)
                else
                   report.throwError(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Async, runtimeAwait = ${cpsRuntimeAwait.show}")
               } else {
-               val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization, optRuntimeAwait, flags,observatory,0, None)
+               //mc removide from rootTransform. [think: temporary or not]
+               val cpsExpr = rootTransform[F,T,C](f,monadGen,mc, memoization, optRuntimeAwait, flags,observatory,0, None)
                if (DEBUG) {
                  TransformUtil.dummyMapper(cpsExpr.transformed.asTerm, Symbol.spliceOwner)
                }
@@ -237,7 +239,9 @@ object Async {
                 
 
 
-  def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], dm: MonadExprGen[F],
+  def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], 
+                                      dm: MonadExprGen.Aux[F,C],
+                                      mc: Expr[C],
                                       optMemoization: Option[TransformationContext.Memoization[F]],
                                       optRuntimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
                                       flags: AsyncMacroFlags,
@@ -309,7 +313,7 @@ object Async {
   def nestTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type,S:Type](f:Expr[S],
                               cpsCtx: TransformationContext[F,T,C]
                               )(using Quotes):CpsExpr[F,S]=
-        rootTransform(f,cpsCtx.monad, cpsCtx.monadContext, cpsCtx.memoization,
+        rootTransform(f,cpsCtx.monadGen, cpsCtx.monadContext, cpsCtx.memoization,
                       cpsCtx.runtimeAwait,
                       cpsCtx.flags,cpsCtx.observatory,cpsCtx.nesting+1, Some(cpsCtx))
 
