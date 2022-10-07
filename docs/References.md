@@ -3,6 +3,10 @@
 
 ## Presentations
 
+Embedding generic monadic transformers into scala.
+
+* TFP2022 slides: <https://www.slideshare.net/rssh1/embedding-generic-monadic-transformer-into-scala-tfp2022> (May 2022)
+
 Can we free concurrent programming from the monadic style:
 
 * ScalaR:  <https://www.youtube.com/watch?v=ImlUuTQUeaQ>  (June 2020)
@@ -83,8 +87,9 @@ Can we free concurrent programming from the monadic style:
 
 ## Monadic Computations in Functional Programming (unrelated to PO Syntax, most examples are Haskell).
 
-
    - Extending monads via pattern matching (joinads for haskell): <http://tomasp.net/academic/papers/docase/docase.pdf>
+   - ‘do’ Unchained: Embracing Local Imperativity in a Purely Functional Language (Lean): <https://leanprover.github.io/papers/do.pdf>
+                                                               
 
 
 <!-- hyperlinks -->
