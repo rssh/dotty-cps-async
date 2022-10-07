@@ -43,6 +43,19 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
     tree
   }
 
+  override def transformApply(tree: Apply)(using Context):Tree = {
+    case Apply(
+            TypeApply(infernApplyCandidate,List(aCnd)),
+            List(Lambda(params,body))
+         ) =>
+            val infernAsyncClassSym = Symbols.requiredClass("cps.E.CpsTransform.InfernAsyncArg")
+            val infernAsyncArgApply = infernAsyncClassSym.findMember("apply")
+            val infernAsyncArgDm = ???
+
+    case _ => super.transformApply(tree)
+
+
+  }
 
   @tailrec
   private def findCpsTransformInContextFunctionArgs(args:List[Type])(using Context):Option[Type] =
