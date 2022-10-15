@@ -14,41 +14,16 @@ trait KnownTreeFragments[F[_], CT, CC <: CpsMonadContext[F]]:
 
   import qctx.reflect._
 
-  lazy val awaitPure = '{ _root_.cps.await[F,Int,F](${cpsCtx.monad}.pure(3))(using ${cpsCtx.monad}, ${cpsCtx.monadContext}) }.asTerm
 
   lazy val awaitSymbol = Symbol.requiredMethod("cps.await")
 
-  lazy val monadTypeTree = TransformUtil.find(awaitPure,
-                       { case TypeApply(Select(x,"await"),List(f1,f2,f3)) => Some(f1)
-                         case _ => None
-                       }).get.asInstanceOf[TypeTree]
+  lazy val monadTypeTree = Inferred(TypeRepr.of[F])
 
+  lazy val pureSymbol = Select.unique(cpsCtx.monad.asTerm,"pure").symbol
 
-  lazy val pureSymbol = TransformUtil.find(awaitPure,
-                           { case v@Select(x,m) if m == "pure" => Some(v)
-                             case _ => None
-                           }).get.symbol
+  lazy val mapSymbol = Select.unique(cpsCtx.monad.asTerm,"map").symbol
 
-
-  lazy val mapSymbol = {
-        val mapTmpl = '{ ${cpsCtx.monad}.map(${cpsCtx.monad}.pure(3))(_ + 1)  }.asTerm
-
-        TransformUtil.find(mapTmpl,
-                           { case v@Select(x,m) if m == "map" => Some(v)
-                             case _ => None
-                           }).get.symbol
-  }
-
-
-  lazy val flatMapSymbol = {
-        val flatMapTmpl = '{ ${cpsCtx.monad}.flatMap(${cpsCtx.monad}.pure(3))( x =>
-                                                                ${cpsCtx.monad}.pure(1 + x))  }.asTerm
-
-        TransformUtil.find(flatMapTmpl,
-                           { case v@Select(x,m) if m == "flatMap" => Some(v)
-                             case _ => None
-                           }).get.symbol
-  }
+  lazy val flatMapSymbol = Select.unique(cpsCtx.monad.asTerm,"flatMap").symbol
 
 
   lazy val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
