@@ -25,6 +25,9 @@ For more details, please, read the documentation at https://rssh.github.io/dotty
 
 ## <span id="presentations">Presentations</span>
 
+* Embedding generic monadic transformers into scala.
+    * Trends in Functional Programming 2022. https://www.slideshare.net/rssh1/embedding-generic-monadic-transformer-into-scala-tfp2022 (May 2022)
+
 * Scala3 & Async: Behind Futures.
    * Svitla Smart Talk. https://www.youtube.com/watch?v=fBcGhjM2s-c (April 2021. In Ukrainian language).
 
