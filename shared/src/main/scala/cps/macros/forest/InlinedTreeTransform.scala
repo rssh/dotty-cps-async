@@ -249,7 +249,7 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
 
 
   def generateAwaitFor(term: Term, tpe:TypeRepr): Term =
-   val monad = cpsCtx.monad.asTerm
+   val monad = cpsCtx.monadGen.monadInstance.asTerm
    val monadContext = cpsCtx.monadContext.asTerm
    Apply(
       Apply(

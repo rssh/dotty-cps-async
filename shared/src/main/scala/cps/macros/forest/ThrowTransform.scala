@@ -28,9 +28,9 @@ object ThrowTransform:
       if (!cpsEx.isAsync)  then
         // TODO: think, mb leave as is...
         // TDOD: pass origin to monadGen for right error message (?)
-        CpsExpr.async[F,T](monad, monadGen.error(ex) )
+        CpsExpr.async[F,T](monadGen, monadGen.error(ex) )
       else
-        CpsExpr.async[F,T](monad,
+        CpsExpr.async[F,T](monadGen,
             cpsEx.flatMap[T]( '{ (ex:S) => ${monadGen.error('ex)} } ).transformed )
      else
        throw MacroError("this monad not support try/catch",ex)

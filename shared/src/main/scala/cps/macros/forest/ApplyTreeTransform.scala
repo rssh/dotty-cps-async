@@ -415,7 +415,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
   def shiftedApplyTerm(funTerm: Term, argRecords: Seq[ApplyArgRecord], withAsync: Boolean): PartialShiftedApply =
 
-    val monad = cpsCtx.monad.asTerm
+    val monad = cpsCtx.monadGen.monadInstance.asTerm
 
     def shiftArgs(shiftType: ApplicationShiftType): List[Term] =     
       argRecords.map(_.shift(shiftType).identArg(withAsync)).toList

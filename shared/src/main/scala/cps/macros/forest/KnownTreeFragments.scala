@@ -14,7 +14,11 @@ trait KnownTreeFragments[F[_], CT, CC <: CpsMonadContext[F]]:
 
   import qctx.reflect._
 
-  lazy val awaitPure = '{ _root_.cps.await[F,Int,F](${cpsCtx.monad}.pure(3))(using ${cpsCtx.monad}, ${cpsCtx.monadContext}) }.asTerm
+  // TODO: eliminate
+  lazy val awaitPure = '{ _root_.cps.await[F,Int,F](
+                           ${cpsCtx.monadGen.pure(Expr(3))})(
+                               using ${cpsCtx.monadGen.monadInstance}, ${cpsCtx.monadContext}) 
+                        }.asTerm
 
   lazy val awaitSymbol = Symbol.requiredMethod("cps.await")
 

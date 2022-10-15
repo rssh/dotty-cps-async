@@ -60,11 +60,12 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
                       }
                    } else {
                       
-                      val errorMonad = if (monad.asTerm.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
-                                          monad.asExprOf[CpsTryMonad[F]]
-                                      } else {
-                                          throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)
-                                      }
+                      //val errorMonad = if (monad.asTerm.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
+                      //                    monad.asExprOf[CpsTryMonad[F]]
+                      //                } else {
+                      //                    throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)
+                      //                }
+                      val monadGen = cpsCtx.monadGen
                       optCpsFinalizer match
                         case None =>
                            if (cpsCaseDefs.isEmpty)
@@ -73,103 +74,104 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
                              cpsBody.syncOrigin match
                                case None =>
                                  CpsExpr.async[F,T](cpsCtx.monadGen,
-                                  '{
-                                     ${errorMonad}.restore(
-                                       ${errorMonad}.tryImpure(
-                                         ${cpsBody.transformed}
-                                       )
-                                      )(${makeRestoreExpr()})
-                                  })
+                                  monadGen.restore(
+                                     monadGen.tryImpure(
+                                      cpsBody.transformed
+                                     )  
+                                  )(makeRestoreExpr())
+                                 )
+                                 //'{
+                                 //   ${errorMonad}.restore(
+                                 //     ${errorMonad}.tryImpure(
+                                 //       ${cpsBody.transformed}
+                                 //     )
+                                 //    )(${makeRestoreExpr()})
+                                 //})
                                case Some(syncBody) =>
-                                 val nBody = '{ ${monad}.pure($syncBody) }.asTerm
-                                 CpsExpr.async[F,T](cpsCtx.monad,
-                                    Try(nBody, makeAsyncCaseDefs(), None).asExprOf[F[T]]
+                                 //val nBody = '{ ${monad}.pure($syncBody) }.asTerm
+                                 //CpsExpr.async[F,T](cpsCtx.monad,
+                                 //   Try(nBody, makeAsyncCaseDefs(), None).asExprOf[F[T]]
+                                 //)
+                                 val nBody = monadGen.pure(syncBody).asTerm
+                                 CpsExpr.async[F,T](monadGen,
+                                     Try(nBody, makeAsyncCaseDefs(), None).asExprOf[F[T]]
                                  ) 
                         case Some(cpsFinalizer) =>
-                           if (cpsCaseDefs.isEmpty)
+                           if cpsCaseDefs.isEmpty then
                              cpsBody.syncOrigin match
                                case None =>
                                  cpsFinalizer.syncOrigin match
                                    case Some(syncFinalizer) =>
-                                      CpsExpr.async[F,T](cpsCtx.monad,
-                                       '{
-                                         ${errorMonad}.withAction(
-                                            ${errorMonad}.tryImpure(
-                                              ${cpsBody.transformed}
-                                            )
-                                         )(${syncFinalizer})
-                                      })
+                                      CpsExpr.async[F,T](monadGen,
+                                        monadGen.withAction(
+                                          monadGen.tryImpure(cpsBody.transformed)
+                                        )(syncFinalizer)
+                                      )
                                    case None =>
-                                      CpsExpr.async[F,T](cpsCtx.monad,
-                                       '{
-                                         ${errorMonad}.withAsyncAction(
-                                            ${errorMonad}.tryImpure(
-                                               ${cpsBody.transformed}
-                                            )
-                                         )(${cpsFinalizer.transformed})
-                                      })
+                                      CpsExpr.async[F,T](monadGen,
+                                         monadGen.withAsyncAction(
+                                            monadGen.tryImpure(cpsBody.transformed) 
+                                         )(cpsFinalizer.transformed)
+                                      )
                                case Some(syncBody) =>
                                  cpsFinalizer.syncOrigin match
                                    case Some(syncFinalizer) =>
-                                      CpsExpr.async[F,T](cpsCtx.monad,
-                                       '{
-                                         ${errorMonad}.withAction(
-                                           ${errorMonad}.tryPure($syncBody)
-                                         )(${syncFinalizer})
-                                      })
+                                      CpsExpr.async[F,T](monadGen,
+                                        monadGen.withAction(
+                                          monadGen.tryPure(syncBody)
+                                        )(syncFinalizer)
+                                      )
+                                      // '{
+                                      //   ${errorMonad}.withAction(
+                                      //     ${errorMonad}.tryPure($syncBody)
+                                      //   )(${syncFinalizer})
+                                      //})
                                    case None =>
-                                      CpsExpr.async[F,T](cpsCtx.monad,
-                                       '{
-                                         ${errorMonad}.withAsyncAction(
-                                           ${errorMonad}.tryPure($syncBody)
-                                         )(${cpsFinalizer.transformed})
-                                      })
+                                      CpsExpr.async[F,T](monadGen,
+                                        monadGen.withAsyncAction(
+                                          monadGen.tryPure(syncBody)
+                                        )(cpsFinalizer.transformed)
+                                      )                           
                            else
                              cpsBody.syncOrigin match
                                case Some(syncBody) =>
                                  cpsFinalizer.syncOrigin match
                                    case Some(syncFinalizer) =>
-                                     CpsExpr.async[F,T](cpsCtx.monad,
-                                      '{
-                                         ${errorMonad}.withAction(
-                                           ${errorMonad}.restore(
-                                             ${errorMonad}.tryPure($syncBody)
-                                           )(${makeRestoreExpr()})
-                                         )($syncFinalizer)
-                                     })
+                                     CpsExpr.async[F,T](monadGen,
+                                       monadGen.withAction(
+                                        monadGen.restore(
+                                          monadGen.tryPure(syncBody)
+                                        )(makeRestoreExpr())
+                                       )(syncFinalizer)
+                                     )
                                    case None =>
-                                     CpsExpr.async[F,T](cpsCtx.monadGen,
-                                      '{
-                                         ${errorMonad}.withAsyncAction(
-                                           ${errorMonad}.restore(
-                                             ${errorMonad}.tryPure($syncBody)
-                                           )(${makeRestoreExpr()})
-                                         )(${cpsFinalizer.transformed})
-                                      })
+                                     CpsExpr.async[F,T](monadGen,
+                                       monadGen.withAsyncAction(
+                                        monadGen.restore(
+                                          monadGen.tryPure(syncBody)
+                                        )(makeRestoreExpr())
+                                       )(cpsFinalizer.transformed)
+                                     )
                                case None =>
                                  cpsFinalizer.syncOrigin match
                                    case Some(syncFinalizer) =>
-                                     CpsExpr.async[F,T](cpsCtx.monad,
-                                      '{
-                                         ${errorMonad}.withAction(
-                                           ${errorMonad}.restore(
-                                             ${errorMonad}.tryImpure(
-                                               ${cpsBody.transformed}
-                                             )
-                                           )(${makeRestoreExpr()})
-                                         )($syncFinalizer)
-                                     })
+                                     CpsExpr.async[F,T](monadGen,
+                                       monadGen.withAction(
+                                        monadGen.restore(
+                                          monadGen.tryImpure(cpsBody.transformed)
+                                        )(makeRestoreExpr())
+                                       )(syncFinalizer)
+                                     )
                                    case None =>
-                                     CpsExpr.async[F,T](cpsCtx.monad,
-                                      '{
-                                         ${errorMonad}.withAsyncAction(
-                                           ${errorMonad}.restore(
-                                             ${errorMonad}.tryImpure(
-                                               ${cpsBody.transformed}
-                                             )
-                                           )(${makeRestoreExpr()})
-                                         )(${cpsFinalizer.transformed})
-                                     })
+                                     CpsExpr.async[F,T](monadGen,
+                                        monadGen.withAsyncAction(
+                                          monadGen.restore(
+                                            monadGen.tryImpure(
+                                              cpsBody.transformed
+                                            )
+                                          )(makeRestoreExpr())
+                                        )(cpsFinalizer.transformed)
+                                     )
                    }
      builder
 

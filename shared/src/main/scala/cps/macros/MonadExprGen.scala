@@ -12,31 +12,41 @@ trait MonadExprGen[F[_]:Type]:
 
   type Context
 
-  def pure[T](t:Expr[T])(using Quotes):Expr[F[T]]
+  type CpsMonadInstance
 
-  def map[A,B](fa:Expr[F[A]])(f: Expr[A=>B])(using Quotes): Expr[F[B]]
+  def pure[T:Type](t:Expr[T])(using Quotes):Expr[F[T]]
+
+  def map[A:Type,B:Type](fa:Expr[F[A]])(f: Expr[A=>B])(using Quotes): Expr[F[B]]
   
-  def flatMap[A,B](fa:Expr[F[A]])(f: Expr[A=>F[B]])(using Quotes): Expr[F[B]]
+  def flatMap[A:Type,B:Type](fa:Expr[F[A]])(f: Expr[A=>F[B]])(using Quotes): Expr[F[B]]
 
   def supportsTryCatch(using Quotes): Boolean
 
-  def error[A](ex:Expr[Throwable])(using Quotes):Expr[F[A]]
+  def error[A:Type](ex:Expr[Throwable])(using Quotes):Expr[F[A]]
 
-  def mapTry[A,B](fa: Expr[F[A]])(f: Expr[Try[A]=>B])(using Quotes): Expr[F[B]]
+  def mapTry[A:Type,B:Type](fa: Expr[F[A]])(f: Expr[Try[A]=>B])(using Quotes): Expr[F[B]]
 
-  def flatMapTry[A,B](fa: Expr[F[A]])(f: Expr[Try[A]=>F[B]])(using Quotes): Expr[F[B]]
+  def flatMapTry[A:Type,B:Type](fa: Expr[F[A]])(f: Expr[Try[A]=>F[B]])(using Quotes): Expr[F[B]]
 
-  def restore[A](fa: Expr[F[A]])(fx: Expr[Throwable => F[A]])(using Quotes): Expr[F[A]] 
+  def restore[A:Type](fa: Expr[F[A]])(fx: Expr[Throwable => F[A]])(using Quotes): Expr[F[A]] 
 
-  def withAction[A](fa: Expr[F[A]])(action: Expr[Unit])(using Quotes): Expr[F[A]]   
+  def withAction[A:Type](fa: Expr[F[A]])(action: Expr[Unit])(using Quotes): Expr[F[A]]   
+
+  def withAsyncAction[A:Type](fa:Expr[F[A]])(action: Expr[F[Unit]])(using Quotes): Expr[F[A]] 
+
+  def tryImpure[A:Type](a:Expr[F[A]])(using Quotes):Expr[F[A]]
+
+  def tryPure[A:Type](a:Expr[A])(using Quotes):Expr[F[A]]
 
   def contextType: Type[Context]
 
-  def applyGen[T](op: Expr[Context =>F[T]])(using Quotes): Expr[F[T]]
+  def applyGen[T:Type](op: Expr[Context =>F[T]])(using Quotes): Expr[F[T]]
 
-  def adoptAwait[A](c:Expr[Context],fa:Expr[F[A]])(using Quotes):Expr[F[A]]
+  def adoptAwait[A:Type](c:Expr[Context],fa:Expr[F[A]])(using Quotes):Expr[F[A]]
 
-  def show: String
+  def monadInstance(using Quotes): Expr[CpsMonadInstance]
+
+  def show(using Quotes): String
 
 end MonadExprGen
 
@@ -44,12 +54,18 @@ object MonadExprGen:
 
    type Aux[F[_],C] = MonadExprGen[F] { type Context = C }
 
-   def apply[F[_],C](dm:Expr[CpsContextCarrier.Aux[F,C]])(using Quotes): MonadExprGen[F] { type Context = C } = {
+   def apply[F[_]:Type,C <: CpsMonadContext[F]:Type](dm:Expr[CpsContextCarrier.Aux[F,C]])(using Quotes): MonadExprGen[F] { type Context = C } = {
       import quotes.reflect.* 
       if (dm.asTerm.tpe <:< TypeRepr.of[CpsMonad[F]]) {
-         CpsMonadExprGen[F,C](dm.asExprOf[CpsMonad[F]{type Context = C}])
-      } else if (dm.asTerm.tpe <:< TypeRepr.of[InlineCpsMonad[F]] ) {
-         InlineCpsMonadExprGen[F,C](dm.asExprOf[InlineCpsMonad[F]{ type Context = C} ])
+         dm.asTerm.tpe.widen.asType match
+          case '[t] =>
+              CpsMonadExprGen[F,C,t & CpsMonad.Aux[F,C]  ](dm.asExprOf[t & CpsMonad.Aux[F,C]])
+          case _ =>
+              throw MacroError(s"Can't get type for ${dm.show}", dm)     
+      } else if (dm.asTerm.tpe <:< TypeRepr.of[CpsInlineMonad[F]] ) {
+        dm.asTerm.tpe.widen.asType match
+          case '[t] =>         
+            InlineCpsMonadExprGen[F,C, t & CpsInlineMonad.Aux[F,C]](dm.asExprOf[t & CpsInlineMonad.Aux[F,C]])
       } else {
         throw MacroError(s"${dm.show} of type ${dm.asTerm.tpe.show} is not CpsMonad or CpsInlineMonad", dm)
       }
@@ -59,17 +75,19 @@ object MonadExprGen:
 end MonadExprGen
 
 
-class CpsMonadExprGen[F[_]:Type,C<:CpsMonadContext[F]:Type](dm: Expr[CpsMonad[F] {type Context = C}]) extends MonadExprGen[F]:
+class CpsMonadExprGen[F[_]:Type,C<:CpsMonadContext[F]:Type,M <: CpsMonad[F]{type Context = C} :Type](dm: Expr[M]) extends MonadExprGen[F]:
 
   type Context = C 
 
-  def pure[T](t:Expr[T])(using Quotes):Expr[F[T]] =
+  type CpsMonadInstance = M
+
+  override def pure[T:Type](t:Expr[T])(using Quotes):Expr[F[T]] =
     '{  $dm.pure($t) }
 
-  def map[A,B](fa:Expr[F[A]])(f: Expr[A=>B])(using Quotes): Expr[F[B]] =
+  def map[A:Type,B:Type](fa:Expr[F[A]])(f: Expr[A=>B])(using Quotes): Expr[F[B]] =
     '{ ${dm}.map($fa)($f) }
 
-  def flatMap[A,B](fa:Expr[F[A]])(f: Expr[A=>F[B]])(using Quotes): Expr[F[B]] =
+  def flatMap[A:Type,B:Type](fa:Expr[F[A]])(f: Expr[A=>F[B]])(using Quotes): Expr[F[B]] =
     '{ ${dm}.flatMap($fa)($f) }
 
   def supportsTryCatch(using Quotes): Boolean =
@@ -84,44 +102,62 @@ class CpsMonadExprGen[F[_]:Type,C<:CpsMonadContext[F]:Type](dm: Expr[CpsMonad[F]
        report.throwError("Monad is not supports try/catch")
     } 
 
-  def error[A](ex:Expr[Throwable])(using Quotes):Expr[F[A]] =
+  def error[A:Type](ex:Expr[Throwable])(using Quotes):Expr[F[A]] =
     '{ ${tryMonadExpr}.error($ex)  }   
 
-  def mapTry[A,B](fa: Expr[F[A]])(f: Expr[Try[A]=>B])(using Quotes): Expr[F[B]] =
+  def mapTry[A:Type,B:Type](fa: Expr[F[A]])(f: Expr[Try[A]=>B])(using Quotes): Expr[F[B]] =
       '{ ${tryMonadExpr}.mapTry($fa)($f) }
 
-  def flatMapTry[A,B](fa: Expr[F[A]])(f: Expr[Try[A]=>F[B]])(using Quotes): Expr[F[B]] =
+  def flatMapTry[A:Type,B:Type](fa: Expr[F[A]])(f: Expr[Try[A]=>F[B]])(using Quotes): Expr[F[B]] =
       '{ ${tryMonadExpr}.flatMapTry($fa)($f) }
   
-  def restore[A](fa: Expr[F[A]])(fx: Expr[Throwable => F[A]])(using Quotes): Expr[F[A]] =
+  def restore[A:Type](fa: Expr[F[A]])(fx: Expr[Throwable => F[A]])(using Quotes): Expr[F[A]] =
     '{ ${tryMonadExpr}.restore($fa)($fx) }
 
-  def withAction[A](fa: Expr[F[A]])(action: Expr[Unit])(using Quotes): Expr[F[A]] =
+  def withAction[A:Type](fa: Expr[F[A]])(action: Expr[Unit])(using Quotes): Expr[F[A]] =
     '{ ${tryMonadExpr}.withAction($fa)($action) }
+
+  def withAsyncAction[A:Type](fa:Expr[F[A]])(action: Expr[F[Unit]])(using Quotes): Expr[F[A]] =
+    '{ ${tryMonadExpr}.withAsyncAction($fa)($action) }
+
+  def tryImpure[A:Type](a:Expr[F[A]])(using Quotes):Expr[F[A]] =
+      '{ ${tryMonadExpr}.tryImpure($a) }
   
-  def applyGen[T](op: Expr[C =>F[T]])(using Quotes): Expr[F[T]] =
+  def tryPure[A:Type](a:Expr[A])(using Quotes):Expr[F[A]] =
+      '{ ${tryMonadExpr}.tryPure($a) }
+  
+  def applyGen[T:Type](op: Expr[C =>F[T]])(using Quotes): Expr[F[T]] =
     '{ $dm.apply($op) }
 
-  def adoptAwait[A](c:Expr[C],fa:Expr[F[A]])(using Quotes):Expr[F[A]] =
+  def adoptAwait[A:Type](c:Expr[C],fa:Expr[F[A]])(using Quotes):Expr[F[A]] =
     '{ ${c}.adoptAwait($fa)  }
 
   def contextType: Type[Context] =
     summon[Type[C]]
 
+  def monadInstance(using Quotes): Expr[CpsMonadInstance] =
+    dm
+
+  def show(using Quotes): String =
+    dm.show
+
+
 end CpsMonadExprGen
 
 
-class InlineCpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[InlineCpsMonad[F] {type Context = C}]) extends MonadExprGen[F]:
+class InlineCpsMonadExprGen[F[_]:Type,C:Type,M <: CpsInlineMonad[F] {type Context = C} :Type ](dm: Expr[M]) extends MonadExprGen[F]:
 
   type Context = C 
 
-  def pure[T](t:Expr[T])(using Quotes):Expr[F[T]] = {
+  type CpsMonadInstance = M
+
+  def pure[T:Type](t:Expr[T])(using Quotes):Expr[F[T]] = {
     import quotes.reflect.*
     val pureSym = Select.unique(dm.asTerm,"pure")
     Apply(TypeApply(pureSym,List(Inferred(TypeRepr.of[T]))), List(t.asTerm) ).asExprOf[F[T]]
   }
 
-  def map[A,B](fa:Expr[F[A]])(f: Expr[A=>B])(using Quotes): Expr[F[B]] = {
+  def map[A:Type,B:Type](fa:Expr[F[A]])(f: Expr[A=>B])(using Quotes): Expr[F[B]] = {
     import quotes.reflect.*
     //'{ ${dm}.map($fa)($f) }
     val mapSym = Select.unique(dm.asTerm,"map")
@@ -141,7 +177,7 @@ class InlineCpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[InlineCpsMonad[F] {type C
   }
     
 
-  def flatMap[A,B](fa:Expr[F[A]])(f: Expr[A=>F[B]])(using Quotes): Expr[F[B]] = {
+  def flatMap[A:Type,B:Type](fa:Expr[F[A]])(f: Expr[A=>F[B]])(using Quotes): Expr[F[B]] = {
     import quotes.reflect.*
     //'{ ${dm}.flatMap($fa)($f) }
     val flatMapSym = Select.unique(dm.asTerm,"flatMap")
@@ -162,11 +198,11 @@ class InlineCpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[InlineCpsMonad[F] {type C
 
   def supportsTryCatch(using Quotes): Boolean =
     import quotes.reflect.*
-    dm.asTerm.tpe <:< TypeRepr.of[InlineCpsTryMonad[F]]
+    dm.asTerm.tpe <:< TypeRepr.of[CpsInlineTryMonad[F]]
 
-  def tryMonadExpr(using Quotes): Expr[InlineCpsTryMonad[F]] = ???
+  def tryMonadExpr(using Quotes): Expr[CpsInlineTryMonad[F]] = ???
 
-  def error[A](ex:Expr[Throwable])(using Quotes): Expr[F[A]] = {
+  def error[A:Type](ex:Expr[Throwable])(using Quotes): Expr[F[A]] = {
     import quotes.reflect.*
     val errorSym = Select.unique(dm.asTerm, "error")
     Apply(
@@ -175,7 +211,7 @@ class InlineCpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[InlineCpsMonad[F] {type C
     ).asExprOf[F[A]]
   }
 
-  def mapTry[A,B](fa: Expr[F[A]])(f: Expr[Try[A]=>B])(using Quotes): Expr[F[B]] = {
+  def mapTry[A:Type,B:Type](fa: Expr[F[A]])(f: Expr[Try[A]=>B])(using Quotes): Expr[F[B]] = {
     import quotes.reflect.*
     // '{ ${tryMonadExpr}.mapTry($fa)($f) }
     val mapTrySym = Select.unique(dm.asTerm,"mapTry")
@@ -195,7 +231,7 @@ class InlineCpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[InlineCpsMonad[F] {type C
   }
 
 
-  def flatMapTry[A,B](fa: Expr[F[A]])(f: Expr[Try[A]=>F[B]])(using Quotes): Expr[F[B]] = {
+  def flatMapTry[A:Type,B:Type](fa: Expr[F[A]])(f: Expr[Try[A]=>F[B]])(using Quotes): Expr[F[B]] = {
     import quotes.reflect.*
     // '{ ${tryMonadExpr}.flatMapTry($fa)($f) }
     val flatMapTrySym = Select.unique(dm.asTerm,"flatMapTry")
@@ -214,7 +250,7 @@ class InlineCpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[InlineCpsMonad[F] {type C
     ).asExprOf[F[B]]
   }
   
-  def restore[A](fa: Expr[F[A]])(fx: Expr[Throwable => F[A]])(using Quotes): Expr[F[A]] = {
+  def restore[A:Type](fa: Expr[F[A]])(fx: Expr[Throwable => F[A]])(using Quotes): Expr[F[A]] = {
     import quotes.reflect.*
     //'{ ${tryMonadExpr}.restore($fa)($fx) }
     flatMapTry(fa)('{ x =>
@@ -224,21 +260,59 @@ class InlineCpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[InlineCpsMonad[F] {type C
     })
   }
 
-  def withAction[A](fa: Expr[F[A]])(action: Expr[Unit])(using Quotes): Expr[F[A]] = {
+  def withAction[A:Type](fa: Expr[F[A]])(action: Expr[Unit])(using Quotes): Expr[F[A]] = {
     import quotes.reflect.*
-    //'{ ${tryMonadExpr}.withAction($fa)($action) }
-    flatMapTry(fa)('{ x =>
-         ${action}
-         x match
-          case Success(v) => ${pure('v)}
-          case Failure(e) => ${error('e)}
-    }).asExprOf[F[A]]
+    // '{ ${tryMonadExpr}.withAction(fa)(action) }
+    Apply(
+      Apply(
+        TypeApply(
+           Select.unique(dm.asTerm,"withAction"),
+           List(Inferred(TypeRepr.of[A])) 
+        ),
+        List(fa.asTerm)
+      ),
+      List(action.asTerm)
+    ).asExprOf[F[A]]
+  }
+
+  def withAsyncAction[A:Type](fa: Expr[F[A]])(action: Expr[F[Unit]])(using Quotes): Expr[F[A]] = {
+    import quotes.reflect.*
+    // '{ ${tryMonadExpr}.withAsyncAction(fa)(action) }
+    Apply(
+      Apply(
+        TypeApply(
+           Select.unique(dm.asTerm,"withAsyncAction"),
+           List(Inferred(TypeRepr.of[A])) 
+        ),
+        List(fa.asTerm)
+      ),
+      List(action.asTerm)
+    ).asExprOf[F[A]]
   }
   
-  def applyGen[T](op: Expr[C =>F[T]])(using Quotes): Expr[F[T]] =
+  def tryImpure[A:Type](a:Expr[F[A]])(using Quotes):Expr[F[A]] = {
+    import quotes.reflect.*
+    val funSym = Select.unique(dm.asTerm,"tryImpure")
+    Apply(
+      TypeApply(funSym, List(Inferred(TypeRepr.of[A]))),
+      List(a.asTerm)
+    ).asExprOf[F[A]]
+  }
+
+  def tryPure[A:Type](a:Expr[A])(using Quotes):Expr[F[A]] = {
+    import quotes.reflect.*
+    val funSym = Select.unique(dm.asTerm,"tryPure")
+    Apply(
+      TypeApply(funSym, List(Inferred(TypeRepr.of[A]))),
+      List(a.asTerm)
+    ).asExprOf[F[A]]
+  }
+
+
+  def applyGen[T:Type](op: Expr[C =>F[T]])(using Quotes): Expr[F[T]] =
     '{ $dm.apply($op) }
 
-  def adoptAwait[A](c:Expr[C],fa:Expr[F[A]])(using Quotes):Expr[F[A]] =
+  def adoptAwait[A:Type](c:Expr[C],fa:Expr[F[A]])(using Quotes):Expr[F[A]] =
   {  
     import quotes.reflect.*
     //'{ ${c}.adoptAwait(fa)  }
@@ -249,6 +323,13 @@ class InlineCpsMonadExprGen[F[_]:Type,C:Type](dm: Expr[InlineCpsMonad[F] {type C
 
   def contextType: Type[Context] =
     summon[Type[C]]
+
+  def monadInstance(using Quotes): Expr[CpsMonadInstance] =
+    dm
+  
+  def show(using Quotes): String =
+    dm.show
+    
 
 end InlineCpsMonadExprGen
 

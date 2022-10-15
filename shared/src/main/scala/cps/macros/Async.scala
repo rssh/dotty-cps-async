@@ -21,7 +21,7 @@ import cps.macros.observatory.*
 
 object Async {
 
-  class InferAsyncArg[F[_],C](using val am: CpsContextCarrier.Aux[F,C]) {
+  class InferAsyncArg[F[_],C <:CpsMonadContext[F]](using val am: CpsContextCarrier.Aux[F,C]) {
 
        transparent inline def apply[T](inline expr: C ?=> T) =
             //transform[F,T](using am)(expr)
@@ -75,7 +75,7 @@ object Async {
    * transform expression within given monad.  Use this function is you need to force async-transform
    * from other macros.
    **/
-  def transformMonad[F[_]:Type,T:Type, C:Type](f: Expr[T], dm: Expr[CpsContextCarrier.Aux[F,C]], mc:Expr[C])(using Quotes): Expr[F[T]] = {
+  def transformMonad[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], dm: Expr[CpsContextCarrier.Aux[F,C]], mc:Expr[C])(using Quotes): Expr[F[T]] = {
     import quotes.reflect._
     val flags = adoptFlags[F]
     val DEBUG = flags.debugLevel > 0
@@ -115,7 +115,7 @@ object Async {
                      '{ ${dm.asExprOf[CpsSchedulingMonad[F]]}.spawnSync(${transformed}) }
                   else if (dm.asTerm.tpe <:< TypeRepr.of[CpsMonad[F]]) then
                      '{  ${dm.asExprOf[CpsMonad[F]]}.lazyPure(${transformed}) }
-                  else if (dm.asTerm.tpe <:< TypeRepr.of[InlineCpsMonad[F]]) then
+                  else if (dm.asTerm.tpe <:< TypeRepr.of[CpsInlineMonad[F]]) then
                      // Inline monad and RuntimeAwau at the same time.
                      val lazyPure = TypeApply(
                         Select.unique(dm.asTerm, "lazyPure"),
