@@ -10,35 +10,6 @@ import cps.macros.misc._
 object TransformUtil:
 
 
-  def find(using Quotes)(term: quotes.reflect.Tree,
-                       cond: quotes.reflect.Tree=> Option[quotes.reflect.Tree]) :Option[quotes.reflect.Tree] = {
-     import quotes.reflect._
-     import util._
-     val search = new TreeAccumulator[Option[Tree]] {
-
-        def foldTree(x: Option[Tree], tree: Tree)(owner: Symbol): Option[Tree] =
-                 foldOverTree(x,tree)(owner)
-
-        override def foldOverTree(x: Option[Tree], tree: Tree)(owner: Symbol): Option[Tree] = {
-           if (x.isDefined)
-             x
-           else
-             cond(tree) orElse super.foldOverTree(x,tree)(owner)
-        }
-     }
-     search.foldTree(None,term)(Symbol.spliceOwner)
-  }
-
-  def containsAwait(using Quotes)(term: quotes.reflect.Term): Boolean =
-    import quotes.reflect._
-    find(term, {
-           case v@Apply(TypeApply(id@Ident("await"),targs),args) =>
-                         if (id.symbol.fullName == "cps.await") Some(v) else None
-           case _ => None
-         }).isDefined
-
-
-
   def createFunctionType(using Quotes)(argTypes: List[quotes.reflect.TypeRepr], 
                                        resultType: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
     import quotes.reflect._
