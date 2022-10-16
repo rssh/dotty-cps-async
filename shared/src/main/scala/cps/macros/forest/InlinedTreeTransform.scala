@@ -87,8 +87,6 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                       } catch {
                          case ex: MacroError =>
                            report.warning(s"error during transformation of valdef in inline, tpt=${tpt.show}\n, rhs=${rhs.show}\n, ex=${ex}", posExprs(rhs))
-                           println("AAA:stdout")
-                           ex.printStackTrace(System.err)
                            throw ex
                       }
                     cpsRhs.syncOrigin match

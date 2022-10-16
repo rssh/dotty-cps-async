@@ -736,16 +736,8 @@ object ApplyTreeTransform:
                                 args.asInstanceOf[List[qctx.reflect.Term]],
                                 Nil
                              )
-            try
               val exprResult = treeResult.toResult[T]
               exprResult
-            catch
-              case ex: Throwable =>
-                println("AAAA")
-                cpsCtx.log("AAA-Log")
-                println("treeResult = "+treeResult)
-                ex.printStackTrace()
-                throw ex
 
      }
      (new Bridge).bridge()
