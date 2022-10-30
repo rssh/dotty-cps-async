@@ -10,6 +10,6 @@ class ThisTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfo
   import cpsCtx._
 
   def run(using Quotes)(thisTerm: quotes.reflect.This): CpsExpr[F,T] =
-     CpsExpr.sync(monad, patternCode, false)
+     CpsExpr.sync(monadGen, patternCode, false)
 
   

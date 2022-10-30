@@ -18,6 +18,6 @@ object ConstTransform:
         cpsCtx.log(s"const: T=${Type.show[T]}, code=${cpsCtx.patternCode.show}")
      //CpsExpr.sync(cpsCtx.monad, Typed(constTerm, TypeTree.of[T] ).asExprOf[T], true) 
      // policy: where to insert typed[?]
-     CpsExpr.sync(cpsCtx.monad, constTerm.asExprOf[T], false) 
+     CpsExpr.sync(cpsCtx.monadGen, constTerm.asExprOf[T], false) 
 
 

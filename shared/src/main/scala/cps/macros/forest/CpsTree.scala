@@ -83,7 +83,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
        syncOrigin match
          case Some(syncTerm) =>
-             CpsExpr.sync(monad,safeSealAs[T](syncTerm), isChanged)
+             CpsExpr.sync(monadGen,safeSealAs[T](syncTerm), isChanged)
          case None =>
              try {
                val candidate = transformed
@@ -105,7 +105,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                     else
                        // we should not cast to F[T]
                        safeSealAs[F[T]](candidate)
-               CpsExpr.async[F,T](monad, sealedTransformed)
+               CpsExpr.async[F,T](monadGen, sealedTransformed)
              } catch {
                case ex: Throwable =>
                  println("failed seal:"+ transformed.asExpr.show )
@@ -181,7 +181,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
     def transformed: Term =
       origin match
         case t: Term =>    
-          val untpureTerm = cpsCtx.monad.asTerm.select(pureSymbol)
+          val untpureTerm = cpsCtx.monadGen.monadInstance.asTerm.select(pureSymbol)
           val tpureTerm = untpureTerm.appliedToType(otpe.widen)
           val r = tpureTerm.appliedTo(t)
           r
@@ -329,7 +329,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
           FlatMappedCpsTree(this, f, ntpe)
 
     def transformed: Term = {
-          val untmapTerm = cpsCtx.monad.asTerm.select(mapSymbol)
+          val untmapTerm = cpsCtx.monadGen.monadInstance.asTerm.select(mapSymbol)
           val wPrevOtpe = TransformUtil.veryWiden(prev.otpe.widen)
           val tmapTerm = untmapTerm.appliedToTypes(List(wPrevOtpe,otpe))
           val r = tmapTerm.appliedToArgss(
@@ -365,6 +365,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
 
 
+  // TOOD: add origin for error reference
   case class FlatMappedCpsTree(
                       val prev: CpsTree,
                       opm: Term => Term,
@@ -387,27 +388,35 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     def transformed: Term = {
         // ${cpsCtx.monad}.flatMap(${prev.transformed})((x:${prev.it}) => ${op('x)})
-        val monad = cpsCtx.monad.asTerm
-        val untpFlatMapTerm = monad.select(flatMapSymbol)
+
+        (prev.otpe.widen.asType, otpe.widen.asType) match
+          case ('[p],'[t]) =>
+            cpsCtx.monadGen.flatMap[p,t](prev.transformed.asExprOf[F[p]])('{ (x:p) => ${opm('x.asTerm).asExprOf[F[t]]} }).asTerm
+          case _ =>
+            throw MacroError(s"Can;t determinate types for ${prev.otpe.widen.show} or ${otpe.widen.show}", cpsCtx.patternCode)
+
+        //def flatMap[A:Type,B:Type](fa:Expr[F[A]])(f: Expr[A=>F[B]])(using Quotes): Expr[F[B]]
+        //val monad = cpsCtx.monad.asTerm
+        //val untpFlatMapTerm = monad.select(flatMapSymbol)
         //val wPrevOtpe = prev.otpe.widen
-        val wPrevOtpe = TransformUtil.veryWiden(prev.otpe)
+        //val wPrevOtpe = TransformUtil.veryWiden(prev.otpe)
         //val wOtpe = otpe.widen
-        val wOtpe = TransformUtil.veryWiden(otpe)
-        val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
-        val r = tpFlatMapTerm.appliedToArgss(
-            List(
-              List(prev.castOtpe(wPrevOtpe).transformed.changeOwner(Symbol.spliceOwner)),
-              List(
-                Lambda(
-                  Symbol.spliceOwner,
-                  MethodType(List("x"))(mt => List(wPrevOtpe),
-                                        mt => TypeRepr.of[F].appliedTo(wOtpe)),
-                  (owner,opArgs) => opm(opArgs.head.asInstanceOf[Term]).changeOwner(owner)
-                )
-             )
-           )
-        )
-        r
+        //val wOtpe = TransformUtil.veryWiden(otpe)
+        //val tpFlatMapTerm = untpFlatMapTerm.appliedToTypes(List(wPrevOtpe,wOtpe))
+        //val r = tpFlatMapTerm.appliedToArgss(
+        //    List(
+        //      List(prev.castOtpe(wPrevOtpe).transformed.changeOwner(Symbol.spliceOwner)),
+        //      List(
+        //        Lambda(
+        //          Symbol.spliceOwner,
+        //          MethodType(List("x"))(mt => List(wPrevOtpe),
+        //                                mt => TypeRepr.of[F].appliedTo(wOtpe)),
+        //          (owner,opArgs) => opm(opArgs.head.asInstanceOf[Term]).changeOwner(owner)
+        //        )
+        //     )
+        //   )
+        //)
+        //r
     }
 
     override def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.FlatMappedCpsTree =

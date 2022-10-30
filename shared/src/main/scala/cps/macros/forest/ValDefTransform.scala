@@ -54,7 +54,7 @@ object ValDefTransform:
                            else
                               val rhsExpr = cpsRight.syncOrigin.get
                               val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
-                              CpsExpr.sync(monad, nextRhs, changed=true).asInstanceOf[CpsExpr[F,et]]
+                              CpsExpr.sync(monadGen, nextRhs, changed=true).asInstanceOf[CpsExpr[F,et]]
                         case CpsMonadMemoization.Kind.PURE => 
                            val mm = memoization.monadMemoization.asExprOf[CpsMonadMemoization.Pure[F]]
                            if (cpsRight.isAsync) then
@@ -62,7 +62,7 @@ object ValDefTransform:
                            else
                               val rhsExpr = cpsRight.syncOrigin.get
                               val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
-                              CpsExpr.async(monad, nextRhs.asExprOf[F[F[r]]]).asInstanceOf[CpsExpr[F,et]]
+                              CpsExpr.async(monadGen, nextRhs.asExprOf[F[F[r]]]).asInstanceOf[CpsExpr[F,et]]
                         case CpsMonadMemoization.Kind.DYNAMIC => 
                            Expr.summon[CpsMonadMemoization.DynamicAp[F,r,et]] match
                                case Some(mm) => 
@@ -71,7 +71,7 @@ object ValDefTransform:
                                  else
                                     val rhsExpr = cpsRight.syncOrigin.get
                                     val nextRhs = '{ ${mm}.apply( ${rhsExpr} ) }
-                                    CpsExpr.async(monad, nextRhs.asExprOf[F[et]]).asInstanceOf[CpsExpr[F,et]]
+                                    CpsExpr.async(monadGen, nextRhs.asExprOf[F[et]]).asInstanceOf[CpsExpr[F,et]]
                                case None =>
                                  // todo: use search instead summon for additional message in failure
                                  val msg = 
@@ -86,7 +86,7 @@ object ValDefTransform:
             if (memCpsRight.isAsync) then
                if (cpsCtx.flags.debugLevel > 15) 
                   cpsCtx.log(s"rightPart is async")
-               RhsFlatMappedCpsExpr(using quotes)(monad, Seq(), valDef, memCpsRight, CpsExpr.unit(monad))
+               RhsFlatMappedCpsExpr(using quotes)(monadGen, Seq(), valDef, memCpsRight, CpsExpr.unit(monadGen))
             else 
                if (cpsCtx.flags.debugLevel > 15) 
                  cpsCtx.log(s"ValDef: rightPart no async, rhs.isChanged = ${memCpsRight.isChanged}  memCpsRight.transformed=${TransformUtil.safeShow(memCpsRight.transformed.asTerm)}")
@@ -95,7 +95,7 @@ object ValDefTransform:
                                      ValDef(valDef.symbol, Some(rhsTerm.changeOwner(valDef.symbol)))
                                 } else 
                                      valDef
-               ValWrappedCpsExpr(using quotes)(monad, Seq(), nextValDef,   CpsExpr.unit(monad) )
+               ValWrappedCpsExpr(using quotes)(monadGen, Seq(), nextValDef,   CpsExpr.unit(monadGen) )
         case other =>
             throw MacroError(s"Can't concretize type of right-part $rhs ", rhs.asExpr)
 
@@ -104,38 +104,48 @@ object ValDefTransform:
 
 
   class RhsFlatMappedCpsExpr[F[_]:Type, T:Type, V:Type](using thisQuotes: Quotes)
-                                     (monad: Expr[CpsMonad[F]],
+                                     (monadGen: MonadExprGen[F],
                                       prev: Seq[ExprTreeGen],
                                       oldValDef: quotes.reflect.ValDef,
                                       cpsRhs: CpsExpr[F,V],
                                       next: CpsExpr[F,T]
                                      )
-                                    extends AsyncCpsExpr[F,T](monad, prev) {
+                                    extends AsyncCpsExpr[F,T](monadGen, prev) {
 
        override def fLast(using Quotes) =
           import quotes.reflect._
          
           next.syncOrigin match
             case Some(nextOrigin) =>
-             '{
-               ${monad}.map(${cpsRhs.transformed})((v:V) =>
-                          ${buildAppendBlockExpr('v, nextOrigin)})
-              }
+              monadGen.map(cpsRhs.transformed)(
+               '{ (v:V) =>
+                   ${buildAppendBlockExpr('v, nextOrigin)}
+               }
+              )
+              //'{
+              //  ${monad}.map(${cpsRhs.transformed})((v:V) =>
+              //             ${buildAppendBlockExpr('v, nextOrigin)})
+              // }
             case  None =>
-             '{
-               ${monad}.flatMap(${cpsRhs.transformed})((v:V)=>
-                          ${buildAppendBlockExpr('v, next.transformed)})
-             }
+               monadGen.flatMap(cpsRhs.transformed)(
+                  '{ (v:V) =>
+                     ${buildAppendBlockExpr('v, next.transformed)}
+                  }
+               )
+               //'{
+               //${monad}.flatMap(${cpsRhs.transformed})((v:V)=>
+               //           ${buildAppendBlockExpr('v, next.transformed)})
+               //}
 
        override def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,T] =
           if (exprs.isEmpty)
              this
           else
-             RhsFlatMappedCpsExpr(using thisQuotes)(monad, exprs ++: prev,oldValDef,cpsRhs,next)
+             RhsFlatMappedCpsExpr(using thisQuotes)(monadGen, exprs ++: prev,oldValDef,cpsRhs,next)
 
 
        override def append[A:quoted.Type](e: CpsExpr[F,A])(using Quotes) =
-          RhsFlatMappedCpsExpr(using thisQuotes)(monad,prev,oldValDef,cpsRhs,next.append(e))
+          RhsFlatMappedCpsExpr(using thisQuotes)(monadGen,prev,oldValDef,cpsRhs,next.append(e))
 
 
        private def buildAppendBlock(using Quotes)(rhs:quotes.reflect.Term,
@@ -165,10 +175,10 @@ object ValDefTransform:
   }
 
   class ValWrappedCpsExpr[F[_]:Type, T:Type, V:Type](using Quotes)(
-                                      monad: Expr[CpsMonad[F]],
+                                      monadGen: MonadExprGen[F],
                                       prev: Seq[ExprTreeGen],
                                       oldValDef: quotes.reflect.ValDef,
-                                      next: CpsExpr[F,T] ) extends AsyncCpsExpr[F,T](monad,prev):
+                                      next: CpsExpr[F,T] ) extends AsyncCpsExpr[F,T](monadGen,prev):
 
 
        override def isAsync = next.isAsync
@@ -206,10 +216,10 @@ object ValDefTransform:
           if (exprs.isEmpty)
             this
           else
-            ValWrappedCpsExpr[F,T,V](using quotes)(monad, exprs ++: prev, oldValDef, next)
+            ValWrappedCpsExpr[F,T,V](using quotes)(monadGen, exprs ++: prev, oldValDef, next)
 
        override def append[A:quoted.Type](e:CpsExpr[F,A])(using Quotes) =
-           ValWrappedCpsExpr(using quotes)(monad, prev,
+           ValWrappedCpsExpr(using quotes)(monadGen, prev,
                                          oldValDef.asInstanceOf[quotes.reflect.ValDef],
                                          next.append(e))
 

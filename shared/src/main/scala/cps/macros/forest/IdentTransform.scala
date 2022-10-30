@@ -13,7 +13,7 @@ class IdentTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
   def run(using Quotes)(name: String): CpsExpr[F,T] =
      import quotes.reflect._
      import cpsCtx._
-     CpsExpr.sync(monad, patternCode, false) 
+     CpsExpr.sync(monadGen, patternCode, false) 
   
   
 

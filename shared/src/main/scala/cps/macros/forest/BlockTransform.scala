@@ -33,7 +33,7 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
                val nestCtx = cpsCtx.nest(valDefExpr, uType)
                ValDefTransform.fromBlock(using qctx)(nestCtx, v)
              case _ =>
-               DefCpsExpr(using qctx)(cpsCtx.monad,Seq(),d, false)
+               DefCpsExpr(using qctx)(cpsCtx.monadGen,Seq(),d, false)
            }
          case t: Term =>
            // TODO: rootTransform
@@ -81,7 +81,7 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
             //   in macros.
             // From another side - all symbols on this stage are already resolved, so
             //  we can just erase import for our purpose.
-            CpsExpr.unit(monad)
+            CpsExpr.unit(monadGen)
          case other =>
             printf(other.show)
             throw MacroError(s"unknown tree type in block: $other",patternCode)
@@ -134,7 +134,8 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
       discardTerm.tpe.asType match
         case '[AwaitValueDiscard[F,tt]] =>
            val refP = p.asExprOf[F[tt]]
-           '{  await[F,tt,F]($refP)(using ${cpsCtx.monad}, ${cpsCtx.monadContext})  }
+           val monadInstance = cpsCtx.monadGen.monadInstance.asExprOf[CpsAwaitable[F]]
+           '{  await[F,tt,F]($refP)(using ${monadInstance}, ${cpsCtx.monadContext})  }
         //bug in dotty. TODO: submit
         //case '[AwaitValueDiscard[[xt]=>>ft,tt]] =>
         //   ???
@@ -159,20 +160,22 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
 
 
 class DefCpsExpr[F[_]:Type](using qctx: Quotes)(
-                     monad: Expr[CpsMonad[F]],
+                     monadGen: MonadExprGen[F],
                      prev: Seq[ExprTreeGen],
                      definition: quotes.reflect.Definition,
-                     changed: Boolean) extends SyncCpsExpr[F, Unit](monad, prev) {
+                     changed: Boolean) extends SyncCpsExpr[F, Unit](monadGen, prev) {
 
   override def isChanged = changed
 
-  def last(using Quotes): Expr[Unit] = '{ () }
+  def last(using Quotes): Expr[Unit] = 
+    // TODO:  emit warning
+    '{ () }
 
   def prependExprs(exprs: Seq[ExprTreeGen]): CpsExpr[F,Unit] =
        if (exprs.isEmpty)
          this
        else
-         new DefCpsExpr(using quotes)(monad,exprs ++: prev,definition, changed || exprs.exists(_.isChanged)  )
+         new DefCpsExpr(using quotes)(monadGen, exprs ++: prev,definition, changed || exprs.exists(_.isChanged)  )
 
   def append[A:Type](chunk: CpsExpr[F,A])(using Quotes): CpsExpr[F,A] =
        chunk.prependExprs(Seq(StatementExprTreeGen(using this.qctx)(definition, false))).prependExprs(prev)

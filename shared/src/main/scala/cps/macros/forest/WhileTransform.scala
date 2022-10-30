@@ -23,52 +23,22 @@ object WhileTransform:
      val DEBUG = true
 
      val unitBuilder = {
-       if (!cpsCond.isAsync)
-         if (!cpsRepeat.isAsync) 
+       if (!cpsCond.isAsync) then
+         if (!cpsRepeat.isAsync) then
             if (!cpsCond.isChanged && !cpsRepeat.isChanged)
-               CpsExpr.sync(monad, patternCode, false)
+               CpsExpr.sync(monadGen, patternCode, false)
             else 
                val term = While(cpsCond.syncOrigin.get.asTerm, cpsRepeat.syncOrigin.get.asTerm)
-               CpsExpr.sync(monad, term.asExprOf[T], true)
+               CpsExpr.sync(monadGen, term.asExprOf[T], true)
          else
-            /*
-            CpsExpr.async[F,Unit](monad,
-               // TODO: add name to whileFun ?
-               '{
-                 def _whilefun(): F[Unit] = {
-                   if (${cond}) 
-                     ${cpsRepeat.flatMapIgnore(
-                          '{ _whilefun() }
-                      ).transformed}
-                   else
-                     ${monad}.pure(())
-                 }
-                 _whilefun()
-               })
-             */
-             CpsExpr.async[F,Unit](monad, '{
+             val monad = monadGen.monadInstance.asExprOf[CpsMonad[F]]
+             CpsExpr.async[F,Unit](monadGen, '{
               cps.runtime.WhileHelper.w01(${monad},${cond},${cpsRepeat.transformed})
              })  
        else // (cpsCond.isAsync) 
+         val monad = monadGen.monadInstance.asExprOf[CpsMonad[F]]
          if (!cpsRepeat.isAsync) {
-            /*
-            CpsExpr.async[F,Unit](monad,
-               '{
-                 def _whilefun(): F[Unit] = {
-                   ${cpsCond.flatMap[Unit]( '{ c =>
-                       if (c) {
-                         $repeat 
-                         _whilefun()
-                       } else {
-                         ${monad}.pure(())
-                       }
-                    }
-                   ).transformed}
-                 }
-                 _whilefun()
-               })
-            */
-            CpsExpr.async[F,Unit](monad, '{
+            CpsExpr.async[F,Unit](monadGen, '{
               cps.runtime.WhileHelper.w10(${monad},${cpsCond.transformed},${repeat})
             })
          } else {
@@ -91,7 +61,7 @@ object WhileTransform:
                  _whilefun()
                })
             */   
-            CpsExpr.async[F,Unit](monad, 
+            CpsExpr.async[F,Unit](monadGen, 
             '{
               cps.runtime.WhileHelper.w11(${monad},${cpsCond.transformed},${cpsRepeat.transformed})
             })

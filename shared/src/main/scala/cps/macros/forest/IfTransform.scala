@@ -28,7 +28,7 @@ object IfTransform:
          if (!tR.isAsync && !fR.isAsync) then
             isAsync = false
             if (cR.isChanged || tR.isChanged || fR.isChanged) then
-              CpsExpr.sync(monad,
+              CpsExpr.sync(monadGen,
                   '{ if (${cR.syncOrigin.get}) 
                        ${tR.syncOrigin.get}
                      else
@@ -37,38 +37,54 @@ object IfTransform:
                    true 
               )
             else 
-              CpsExpr.sync(monad, patternCode, false)
+              CpsExpr.sync(monadGen, patternCode, false)
          else
-            CpsExpr.async[F,T](monad,
+            CpsExpr.async[F,T](monadGen,
                 '{ if ($cond) 
                      ${tR.transformed}
                    else 
                      ${fR.transformed} })
        else // (cR.isAsync) 
          def condAsyncExpr() = cR.transformed
-         if (!tR.isAsync && !fR.isAsync) 
-           CpsExpr.async[F,T](monad,
-                    '{ ${monad}.map(
-                                 ${condAsyncExpr()}
-                        )( c =>
-                                   if (c) {
-                                     ${ifTrue}
-                                   } else {
-                                     ${ifFalse}
-                                   } 
-                     )})
+         if (!tR.isAsync && !fR.isAsync) then
+           CpsExpr.async[F,T](monadGen,
+                    monadGen.map(condAsyncExpr())( '{ c =>
+                      if (c) {
+                        ${ifTrue}
+                      } else {
+                        ${ifFalse}
+                      }
+                    })
+           )
+                    //'{ ${monad}.map(
+                    //             ${condAsyncExpr()}
+                    //    )( c =>
+                    //               if (c) {
+                    //                 ${ifTrue}
+                    //               } else {
+                    //                 ${ifFalse}
+                    //               } 
+                    // )})
          else
-           CpsExpr.async[F,T](monad,
-                   '{ ${monad}.flatMap(
-                         ${condAsyncExpr()}
-                       )( c =>
-                           if (c) {
-                              ${tR.transformed}
-                           } else {
-                              ${fR.transformed} 
-                           } 
-                        )
-                    }) 
+           CpsExpr.async[F,T](monadGen,
+                    monadGen.flatMap(condAsyncExpr())('{ c =>
+                      if (c) {
+                        ${tR.transformed}
+                      } else {
+                        ${fR.transformed}
+                      }
+                    })
+           )
+                    //'{ ${monad}.flatMap(
+                    //     ${condAsyncExpr()}
+                    //   )( c =>
+                    //       if (c) {
+                    //          ${tR.transformed}
+                    //       } else {
+                    //          ${fR.transformed} 
+                    //       } 
+                    //    )
+                    //}) 
        }
      cnBuild
      

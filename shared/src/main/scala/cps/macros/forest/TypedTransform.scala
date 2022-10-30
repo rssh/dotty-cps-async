@@ -19,10 +19,10 @@ class TypedTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transf
          val r = Async.nestTransform(t1, cpsCtx)
          if (!r.isAsync)  
             if (!r.isChanged)
-               CpsExpr.sync(monad, patternCode, false)
+               CpsExpr.sync(monadGen, patternCode, false)
             else
                val expr = Typed(r.syncOrigin.get.asTerm, tp).asExprOf[T]
-               CpsExpr.sync(monad, expr, true)
+               CpsExpr.sync(monadGen, expr, true)
          else 
             r.map( '{ x => ${Typed('x.asTerm, TypeTree.of[T]).asExprOf[T]} } )
        case _ =>

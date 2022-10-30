@@ -98,7 +98,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
     def  applyRuntimeAwait(arg:Term, resultType: TypeRepr ): Term = 
       val runtimeAwait = cpsCtx.runtimeAwait.getOrElse(throw new MacroError("Can't resolve runtime-await", posExpr(arg))).asTerm
-      val m = cpsCtx.monad.asTerm
+      val m = cpsCtx.monadGen.monadInstance.asTerm
       val mc = cpsCtx.monadContext.asTerm
       //TODO:  think how to setup pos.
       Apply(
@@ -256,8 +256,11 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
                  if (existsLambdaUnshift) then
                     body.tpe.widen.asType match
                       case '[F[r]] =>
-                         val nBody = '{ ${cpsCtx.monad}.flatMap(
-                                             ${cpsBody.transformed.asExprOf[F[F[r]]]})((x:F[r])=>x) }.asTerm
+                         val nBody = cpsCtx.monadGen.flatMap(cpsBody.transformed.asExprOf[F[F[r]]])('{
+                           (x:F[r]) => x
+                         }).asTerm
+                         //val nBody = '{ ${cpsCtx.monad}.flatMap(
+                         //                    ${cpsBody.transformed.asExprOf[F[F[r]]]})((x:F[r])=>x) }.asTerm
                          val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
                          Lambda(Symbol.spliceOwner, mt, 
                               (owner,args) => changeArgs(params,args,nBody,owner).changeOwner(owner))

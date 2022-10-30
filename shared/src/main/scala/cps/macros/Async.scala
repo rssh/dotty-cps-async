@@ -47,10 +47,10 @@ object Async {
      } 
 
   
-  //transparent inline def transform[F[_],T,C<:CpsMonadContext[F]](inline expr: T, inline ctx: C)(using m: CpsContextCarrier.Aux[F,C]): F[T] =
-  //   ${
-  //      Async.transformImpl[F,T,C]('expr, 'ctx)
-  //   } 
+  transparent inline def transform[F[_],T,C<:CpsMonadContext[F]](inline expr: T, inline ctx: C)(using m: CpsContextCarrier.Aux[F,C]): F[T] =
+     ${
+        Async.transformImpl[F,T,C]('expr, 'ctx)
+     } 
  
   /**
    * transform expression and get monad from context.

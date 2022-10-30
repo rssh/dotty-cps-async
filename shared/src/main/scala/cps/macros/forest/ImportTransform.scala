@@ -23,7 +23,7 @@ object ImportTransform:
      // Import is not statement - so, it is impossible to create block with import in macros.
      //  from other side - all symbols on this stage are already resolved, so we can
      //  just erase import for our purpose.
-     CpsExpr.unit(monad)
+     CpsExpr.unit(monadGen)
   }
 
 

@@ -11,6 +11,6 @@ class SuperTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transf
   import cpsCtx._
 
   def run(using Quotes)(superTerm: quotes.reflect.Super): CpsExpr[F,T] =
-     CpsExpr.sync(monad, patternCode, false)
+     CpsExpr.sync(monadGen, patternCode, false)
 
   

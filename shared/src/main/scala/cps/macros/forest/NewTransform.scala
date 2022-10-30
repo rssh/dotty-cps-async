@@ -14,7 +14,7 @@ class NewTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
 
   // case New(tp) 
   def run(using Quotes)(tp: quotes.reflect.TypeTree): CpsExpr[F,T] =
-     CpsExpr.sync(monad, patternCode, false)
+     CpsExpr.sync(monadGen, patternCode, false)
 
   
 

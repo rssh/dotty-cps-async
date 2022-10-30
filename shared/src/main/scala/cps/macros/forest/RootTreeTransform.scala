@@ -59,7 +59,6 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                              cpsLast
                   case _ =>  // TODO: elimi
                     val expr = term.asExpr
-                    val monad = cpsCtx.monad
                     TransformUtil.veryWiden(term.tpe).asType match
                       case '[ et ] =>
                         val rCpsExpr = try {
@@ -101,7 +100,6 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
      // TODO: change cpsCtx to show nesting
      if (cpsCtx.flags.debugLevel >= 15 && !muted)
         cpsCtx.log(s"runRootUneta, term=$term")
-     val monad = cpsCtx.monad
      val r = term match {
        case Select(qual, name) =>
              val cpsQual = runRoot(qual, muted)

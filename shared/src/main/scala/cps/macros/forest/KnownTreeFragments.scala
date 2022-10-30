@@ -18,11 +18,11 @@ trait KnownTreeFragments[F[_], CT, CC <: CpsMonadContext[F]]:
 
   lazy val monadTypeTree = Inferred(TypeRepr.of[F])
 
-  lazy val pureSymbol = Select.unique(cpsCtx.monad.asTerm,"pure").symbol
+  lazy val pureSymbol = Select.unique(cpsCtx.monadGen.monadInstance.asTerm,"pure").symbol
 
-  lazy val mapSymbol = Select.unique(cpsCtx.monad.asTerm,"map").symbol
+  lazy val mapSymbol = Select.unique(cpsCtx.monadGen.monadInstance.asTerm,"map").symbol
 
-  lazy val flatMapSymbol = Select.unique(cpsCtx.monad.asTerm,"flatMap").symbol
+  lazy val flatMapSymbol = Select.unique(cpsCtx.monadGen.monadInstance.asTerm,"flatMap").symbol
 
 
   lazy val objAsyncShift = TypeIdent(Symbol.classSymbol("cps.ObjectAsyncShift")).tpe
