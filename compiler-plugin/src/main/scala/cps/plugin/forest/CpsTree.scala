@@ -7,6 +7,8 @@ import core.Types.*
 import core.Decorators.*
 import ast.tpd.*
 
+import cps.plugin.*
+
 sealed trait CpsTree {
   def monadType: Type
   
@@ -22,7 +24,7 @@ sealed trait CpsTree {
   def transformed(using Context): Tree
 
   def transformedType(using Context): Type =
-    AppliedType(monadType, List(originType))
+    CpsTransformHelper.cpsTransformedType(originType, monadType)
   
   def isAsync: Boolean 
 
@@ -140,7 +142,7 @@ case class FlatMapCpsTree(
         List(flatMapSource.transformed)
       ),
       List(flatMapFun)
-    )
+    ).withSpan(unchangedOrigin.span)
 
 }
 

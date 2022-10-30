@@ -17,6 +17,7 @@ import cps.monads.{*,given}
 class TestExample1:
   import cps.E.*
 
+  @experimental
   @Test def testExample1Future(): Unit = 
      import scala.concurrent.ExecutionContext.Implicits.global
      

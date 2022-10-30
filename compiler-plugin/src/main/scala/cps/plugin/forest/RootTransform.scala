@@ -14,6 +14,7 @@ object RootTransform {
 
       def apply(term: Tree, ctx: TransformationContext)(using Context): CpsTree = {
         term match
+          case block: Block => BlockTransform(block,ctx)
           case tIf@If(_,_,_) => IfTransform(tIf,ctx)
           case _ =>
             throw CpsTransformException(s"Unsupported tree in cps: $term",term.srcPos)

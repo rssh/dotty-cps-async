@@ -6,6 +6,7 @@ import dotty.tools.dotc.*
 import ast.tpd.*
 import core.*
 import core.Contexts.*
+import core.Symbols.*
 import core.Types.*
 import util.SrcPos
 
@@ -28,7 +29,7 @@ object CpsTransformHelper {
 
 
   /**
-   * Transform method type of function (...params) ?=> T  to  (...params) ?=> F[T]
+   * Transform method type of function (...params) ?=> T  to  (...params) ?=> Cps[F,T]
    * @param lambdaTree - origin function
    * @param params - list of parameters of lambda function
    * @param body - function boldy
@@ -40,24 +41,38 @@ object CpsTransformHelper {
     val paramTypes = params.map(_.tpt.tpe)
     ContextualMethodType(paramNames)(
       x => paramTypes,
-      x => decorateTypeApplications(fType).appliedTo(body.tpe.widen)
+      x => cpsTransformedType(body.tpe.widen, fType)
     )    
   }
 
 
   /**
-   * ([T1,...Tn,R], ([T1,..Tn] ?=> F[R])  tranfrom to [T1,...Tn,F[R]]
+   * ([T1,...Tn,R]   tranfrom to [T1,...Tn,CpsType[F,R]]
    *@param targs - type arguments of origin context function,
    **/
-  def adoptResultTypeParam(targs:List[Type],mt:MethodType) = {
+  def adoptResultTypeParam(targs:List[Type],fType:Type)(using Context):List[Type] = {
     @tailrec
     def advance(rest:List[Type], acc:List[Type]):List[Type] = {
        rest match
          case Nil  => acc  // impossible
-         case last::Nil  => (mt.resType :: acc).reverse
+         case last::Nil  => (cpsTransformedType(last,fType) :: acc).reverse
          case head::tail => advance(tail, head::acc)
     }
     advance(targs,Nil)
+  }
+
+  /**
+   * CpsType[F[_],T] =
+   *   F[T]  is T is not function type
+   *   (X1..Xn) => CpsType[F, Y]  if T = (X1...Xn) => Y
+   **/
+  def cpsTransformedType(t:Type, fType:Type)(using Context): Type = {
+    t match
+      case AppliedType(funCn,params) if (defn.isFunctionType(funCn)) =>
+        val nParams = adoptResultTypeParam(params, fType)
+        AppliedType(funCn, nParams)
+      case _  =>
+        decorateTypeApplications(fType).appliedTo(t)
   }
 
 }

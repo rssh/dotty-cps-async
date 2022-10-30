@@ -60,7 +60,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                               TransformUtil.substParams(transformedBody,params,tss.head).changeOwner(bodyOwner,meth).withSpan(body.span)
                            }
                           )
-                          val nTpt = AppliedType(tycon,CpsTransformHelper.adoptResultTypeParam(targs,mt))
+                          val nTpt = AppliedType(tycon,CpsTransformHelper.adoptResultTypeParam(targs,monadType))
                           val defDef = cpy.DefDef(tree)(rhs=nRhs,tpt=TypeTree(nTpt))
                           println(s"result: ${defDef.show}")
                           defDef
