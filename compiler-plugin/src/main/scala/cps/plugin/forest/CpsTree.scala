@@ -59,10 +59,13 @@ case class AsyncTermCpsTree(
   override val monadType: Type,
   override val cpsMonadRef: Tree,
   override val unchangedOrigin: Tree,
-  override val transfomed: Tree
+  val transformedTree: Tree
 ) extends CpsTree {
 
   def isAsync: Boolean = true
+
+  override def transformed(using Context): Tree =
+    transformedTree
 
 }
 

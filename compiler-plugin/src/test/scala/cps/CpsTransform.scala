@@ -8,17 +8,14 @@ object E {
 
 @experimental
 @capability
-class CpsTransform[F[_]](m:CpsTryMonad[F]) {
+class CpsTransform[F[_]](val m:CpsTryMonad[F])
 
-  @compileTimeOnly("this call should be eliminated by cps plugin")
-  def await[A](fa:F[A]):  A =
-    ???
 
-}
 
 @experimental
-inline def cpsAwait[F[_],A](fa:F[A]): CpsTransform[F] ?=> A =
-  summon[CpsTransform[F]].await(fa)
+@compileTimeOnly("await should be used inside async block")
+def cpsAwait[F[_],A,G[_]](fa:F[A])(using CpsTransform[G],CpsMonadConversion[F,G]): A =
+  ???
 
 @experimental
 inline def cpsAsync[F[_]](using m:CpsTryMonad[F]) =

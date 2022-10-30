@@ -7,6 +7,7 @@ import core.Types.*
 import core.Decorators.*
 import ast.tpd.*
 
+import cps.plugin.*
 
 object RootTransform {
 
@@ -15,7 +16,7 @@ object RootTransform {
         term match
           case tIf@If(_,_,_) => IfTransform(tIf,ctx)
           case _ =>
-            throw CpsTransformError(s"Unsupported tree in cps: $term",term.srcPos)
+            throw CpsTransformException(s"Unsupported tree in cps: $term",term.srcPos)
             //report.error(s"Unsupported tree in cps: $term",term.srcPos)
 
 
