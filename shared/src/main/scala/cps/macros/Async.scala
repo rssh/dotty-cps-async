@@ -65,7 +65,7 @@ object Async {
 
     Expr.summon[CpsMonad[F]] match
        case Some(dm) =>
-          transformMonad[F,T,C](f,dm.asExprOf[CpsMonad.Aux[F,C]],c)
+          transformMonad[F,T,C](f,dm,c)
        case None =>
           val msg = s"Can't find async monad for ${TypeRepr.of[F].show} (transformImpl)"
           report.throwError(msg, f)
@@ -75,7 +75,7 @@ object Async {
    * transform expression within given monad.  Use this function is you need to force async-transform
    * from other macros.
    **/
-  def transformMonad[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], dm: Expr[CpsContextCarrier.Aux[F,C]], mc:Expr[C])(using Quotes): Expr[F[T]] = {
+  def transformMonad[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], dm: Expr[CpsContextCarrier[F]], mc:Expr[C])(using Quotes): Expr[F[T]] = {
     import quotes.reflect._
     val flags = adoptFlags[F]
     val DEBUG = flags.debugLevel > 0
@@ -101,7 +101,7 @@ object Async {
       observatory.analyzeTree[F]
       val r = WithOptExprProxy("cpsMonad", dm){
            dm => 
-              val monadGen = MonadExprGen(dm)
+              val monadGen = MonadExprGen[F,C](dm)
               val optRuntimeAwait = Expr.summon[CpsRuntimeAwait[F]]
               if ( flags.useLoomAwait && optRuntimeAwait.isDefined && 
                                          optRuntimeAwait.forall(_.asTerm.tpe <:< TypeRepr.of[CpsFastRuntimeAwait[F]])  ) {

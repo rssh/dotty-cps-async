@@ -21,6 +21,8 @@ object HappyEyeballs2 {
 
     import scala.concurrent.ExecutionContext.Implicits.global
 
+    implicit val debugLevel: cps.macros.flags.DebugLevel = cps.macros.flags.DebugLevel(10)
+
     enum AddressFamily {
       case Ip4, Ip6
     }

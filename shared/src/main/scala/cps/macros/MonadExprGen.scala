@@ -40,7 +40,7 @@ trait MonadExprGen[F[_]:Type]:
 
   def contextType: Type[Context]
 
-  def applyGen[T:Type](op: Expr[Context =>F[T]])(using Quotes): Expr[F[T]]
+  //def applyGen[T:Type](op: Expr[Context =>F[T]])(using Quotes): Expr[F[T]]
 
   def adoptAwait[A:Type](c:Expr[Context],fa:Expr[F[A]])(using Quotes):Expr[F[A]]
 
@@ -54,18 +54,18 @@ object MonadExprGen:
 
    type Aux[F[_],C] = MonadExprGen[F] { type Context = C }
 
-   def apply[F[_]:Type,C <: CpsMonadContext[F]:Type](dm:Expr[CpsContextCarrier.Aux[F,C]])(using Quotes): MonadExprGen[F] { type Context = C } = {
+   def apply[F[_]:Type,C <: CpsMonadContext[F]:Type](dm:Expr[CpsContextCarrier[F]])(using Quotes): MonadExprGen[F] { type Context = C } = {
       import quotes.reflect.* 
       if (dm.asTerm.tpe <:< TypeRepr.of[CpsMonad[F]]) {
          dm.asTerm.tpe.widen.asType match
           case '[t] =>
-              CpsMonadExprGen[F,C,t & CpsMonad.Aux[F,C]  ](dm.asExprOf[t & CpsMonad.Aux[F,C]])
+              CpsMonadExprGen[F,C,t & CpsMonad[F]](dm.asExprOf[t & CpsMonad[F]] )
           case _ =>
               throw MacroError(s"Can't get type for ${dm.show}", dm)     
       } else if (dm.asTerm.tpe <:< TypeRepr.of[CpsInlineMonad[F]] ) {
         dm.asTerm.tpe.widen.asType match
           case '[t] =>         
-            InlineCpsMonadExprGen[F,C, t & CpsInlineMonad.Aux[F,C]](dm.asExprOf[t & CpsInlineMonad.Aux[F,C]])
+            InlineCpsMonadExprGen[F,C, t & CpsInlineMonad[F]](dm.asExprOf[t & CpsInlineMonad[F]])
       } else {
         throw MacroError(s"${dm.show} of type ${dm.asTerm.tpe.show} is not CpsMonad or CpsInlineMonad", dm)
       }
@@ -75,7 +75,7 @@ object MonadExprGen:
 end MonadExprGen
 
 
-class CpsMonadExprGen[F[_]:Type,C<:CpsMonadContext[F]:Type,M <: CpsMonad[F]{type Context = C} :Type](dm: Expr[M]) extends MonadExprGen[F]:
+class CpsMonadExprGen[F[_]:Type,C<:CpsMonadContext[F]:Type,M <: CpsMonad[F]:Type](dm: Expr[M]) extends MonadExprGen[F]:
 
   type Context = C 
 
@@ -126,8 +126,8 @@ class CpsMonadExprGen[F[_]:Type,C<:CpsMonadContext[F]:Type,M <: CpsMonad[F]{type
   def tryPure[A:Type](a:Expr[A])(using Quotes):Expr[F[A]] =
       '{ ${tryMonadExpr}.tryPure($a) }
   
-  def applyGen[T:Type](op: Expr[C =>F[T]])(using Quotes): Expr[F[T]] =
-    '{ $dm.apply($op) }
+  //def applyGen[T:Type](op: Expr[C =>F[T]])(using Quotes): Expr[F[T]] =
+  //  '{ $dm.apply($op) }
 
   def adoptAwait[A:Type](c:Expr[C],fa:Expr[F[A]])(using Quotes):Expr[F[A]] =
     '{ ${c}.adoptAwait($fa)  }
@@ -145,7 +145,7 @@ class CpsMonadExprGen[F[_]:Type,C<:CpsMonadContext[F]:Type,M <: CpsMonad[F]{type
 end CpsMonadExprGen
 
 
-class InlineCpsMonadExprGen[F[_]:Type,C:Type,M <: CpsInlineMonad[F] {type Context = C} :Type ](dm: Expr[M]) extends MonadExprGen[F]:
+class InlineCpsMonadExprGen[F[_]:Type,C:Type,M <: CpsInlineMonad[F]:Type ](dm: Expr[M]) extends MonadExprGen[F]:
 
   type Context = C 
 
@@ -309,8 +309,8 @@ class InlineCpsMonadExprGen[F[_]:Type,C:Type,M <: CpsInlineMonad[F] {type Contex
   }
 
 
-  def applyGen[T:Type](op: Expr[C =>F[T]])(using Quotes): Expr[F[T]] =
-    '{ $dm.apply($op) }
+  //def applyGen[T:Type](op: Expr[C =>F[T]])(using Quotes): Expr[F[T]] =
+  //  '{ $dm.apply($op) }
 
   def adoptAwait[A:Type](c:Expr[C],fa:Expr[F[A]])(using Quotes):Expr[F[A]] =
   {  
