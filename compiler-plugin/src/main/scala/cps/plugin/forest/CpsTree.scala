@@ -10,16 +10,22 @@ import ast.tpd.*
 import cps.plugin.*
 
 sealed trait CpsTree {
-  def monadType: Type
+  def tctx: TransformationContext,
   
-  def cpsMonadRef: Tree
-  
-  def unchangedOrigin: Tree
+  /**
+  * origin term, used for diagnostics.
+  **/
+  def origin: Tree
 
-  def isOriginChanged: Boolean = false
+  /**
+  * owner of origin
+  **/
+  def originOwner: Symbol
 
-  def changedOrigin(using Context): Tree =
-    unchangedOrigin
+  /**
+   * is this is a sync-tree ?
+   **/
+  def unpure(using Context): Option[Tree] 
 
   def transformed(using Context): Tree
 
@@ -28,15 +34,15 @@ sealed trait CpsTree {
   
   def isAsync: Boolean 
 
-  def originType: Type = unchangedOrigin.tpe
+  def originType: Type = origin.tpe
 
 } 
 
 
 case class PureCpsTree(
-  override val monadType: Type,
-  override val cpsMonadRef: Tree,
-  override val unchangedOrigin: Tree,
+  override val tctx: TransformationContext,
+  override val origin: Tree,
+  override val originOwner: Symbol
 ) extends CpsTree {
 
   def isAsync: Boolean = false
@@ -46,7 +52,7 @@ case class PureCpsTree(
     // TODO: setPos
     Apply(
       TypeApply(
-        Select(cpsMonadRef,pureName),
+        Select(tctx.cpsMonadRef,pureName),
         List(TypeTree(originType.widen))
       ),
       List(changedOrigin)
@@ -55,12 +61,16 @@ case class PureCpsTree(
      .withType(transformedType)
   }
 
+  override def unpure = Some(origin) 
+
+  def getUnpure = origin 
+
 }
 
 case class AsyncTermCpsTree(
-  override val monadType: Type,
-  override val cpsMonadRef: Tree,
-  override val unchangedOrigin: Tree,
+  tctx: TransformationContext,
+  override val origin: Tree,
+  override val originOwner: Symbol,
   val transformedTree: Tree
 ) extends CpsTree {
 
@@ -73,9 +83,9 @@ case class AsyncTermCpsTree(
 
 
 case class AwaitSyncCpsTree(
-  override val monadType: Type,
-  override val cpsMonadRef: Tree,
-  override val unchangedOrigin: Apply,
+  override val tctx: TransformationContext
+  override val origin: Apply,
+  override val originOwner: Symbol,
            val awaitArg: Tree
 ) extends CpsTree {
 
@@ -87,11 +97,11 @@ case class AwaitSyncCpsTree(
 }
 
 case class MapCpsTree(
-  override val monadType: Type,
-  override val cpsMonadRef: Tree,
-  override val unchangedOrigin: Tree,
+  override val tctx: TransformationContext
+  override val origin: Tree,
+  override val originOwner: Symbol,
   val mapSource: CpsTree,
-  val mapFun: Tree  //  lambda function
+  val mapFun: MapCpsTreeArgument  //  lambda function
 ) extends CpsTree {
 
   def isAsync: Boolean =
@@ -109,24 +119,48 @@ case class MapCpsTree(
           ),
           List(mapSource.transformed)
         ),
-        List(mapFun)
+        List(mapFun.makeLambda)
       ).withSpan(unchangedOrigin.span)
-    } else if (!isOriginChanged) {
-      Apply(mapFun,List(mapSource.changedOrigin))
+    } else if (!(unpure eq origin)) {
+      Apply(mapFun.makeLambda ,List(mapSource.changedOrigin))
             .withSpan(unchangedOrigin.span)
     } else {
-      unchangedOrigin
+      origin
     }
   }
 
 }
 
+
+case class MapCpeTreeArgument(
+    param: ValDef
+    body:  PureCpsTree
+)  {
+
+  def makeLambda(using Context): Block = {
+    val mt = MethodType(List(param.name))(
+      x => List(param.tpe),
+      x => body.tpe.widen
+    )    
+    val meth = Symbols.newAnonFun(summon[Context].owner,mt)
+    val retval = Closure(meth,tss => {
+          TransformUtil.substParams(body.getUnpure,List(param),tss.head).changeOwner(body.originOwner,meth)
+                       .withSpan(body.origin.span)
+      }
+    )
+    retval
+  }
+
+  
+  
+}
+
 case class FlatMapCpsTree(
-  override val monadType: Type,
-  override val cpsMonadRef: Tree,
-  override val unchangedOrigin: Tree,
+  override val tctx: TransformationContext
+  override val origin: Tree,
+  override val originOwner: Symbol,
   val flatMapSource: CpsTree,
-  val flatMapFun: Tree
+  val flatMapFun: FlatMapCpsTreeArgument
 ) extends CpsTree {
 
   def isAsync: Boolean = true
@@ -146,16 +180,69 @@ case class FlatMapCpsTree(
 
 }
 
-/*
-case class LambdaCpsTree(
-  override val monadType: Type,
-  override val cpsMonadRef: Tree,
-  override val unchangedOrigin: Block,
-  val defDef: DefDef,
-  val transformedBody: CpsTree
-)  {
+case class FlatMapCpsTreeArgument(
+   param: ValDef,
+   body: CpsTree
+) {
 
-  
+  def makeLambda(using Context): Block = {
+    val mt = MethodType(List(param.name))(
+      x => List(param.tpe),
+      x => body.tpe.widen
+    )    
+    val meth = Symbols.newAnonFun(summon[Context].owner,mt)
+    val retval = Closure(meth,tss => {
+          TransformUtil.substParams(body.transformed,List(param),tss.head).changeOwner(body.originOwner,meth)
+                       .withSpan(body.origin.span)
+      }
+    )
+    retval
+  }
+
 
 }
-*/
+
+
+/**
+ *lambda without type-params and one argument list.
+ **/
+case class LambdaCpsTree(
+  override val tctx: TransformationContext,
+  override val origin: Block,
+  override val originOwner: Symbol,
+  val originDefDef: DefDef,
+  val cpsBody: CpsTree
+)  extends CpsTree {
+
+  if (originDefDef.termParamss.length != 1) {
+    throw new CpsTransfromException("Lambda function can have only one parameter list")
+  }
+
+  def isAsync: Boolean = transformedBody.isAsync
+
+  override def transformed(using Context): Tree = {
+    val tpe = createShiftetType()
+    val meth = Symbols.newAnonFun(summon[Context].owner,tpe)
+    // here cpsBody is received in other context
+    // .  TODO:  check ownitu in cpsBody.transformed
+    Closure(meth, tss => TransformUtil.substParams(cpsBody.transformed, originParams, tss.head).changeOwner(meth))
+  }
+
+  private def originParams = originDefDef.termParamss.head
+
+  private def createShiftetType(): Type = {
+    val params = originDefDef.termParamss.head
+    val paramNames = params.map(_.name)
+    val paramTypes = params.map(_.tpe)
+    MethodType(paramNames)(
+      x => paramTypes,
+      x => CpsHelper.cpsTransformedType(body.tpe.widen, fType)
+    )    
+  }
+}
+
+
+case class BlockCpsTree(
+  revStats:List[CpsTree], last:ExprTree) extends CpsTree
+
+case class ValDefCpsTree()

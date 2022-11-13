@@ -40,4 +40,6 @@ object TransformUtil {
 
    }
 
+   def makeLambda(params: List[ValDef], resultType: Type,  )
+
 }

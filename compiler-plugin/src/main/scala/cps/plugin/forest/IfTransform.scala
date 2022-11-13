@@ -14,10 +14,10 @@ import ast.tpd.*
 object IfTransform {
 
 
-      def apply(ifTerm: If, ctx: TransformationContext)(using Context): CpsTree = {
-        val cpsCond = RootTransform(ifTerm.cond, ctx)
-        val cpsIfTrue = RootTransform(ifTerm.thenp, ctx)
-        val cpsIfFalse = RootTransform(ifTerm.elsep, ctx)
+      def apply(ifTerm: If, owner: Symbol, ctx: TransformationContext)(using Context): CpsTree = {
+        val cpsCond = RootTransform(ifTerm.cond, owner, ctx)
+        val cpsIfTrue = RootTransform(ifTerm.thenp, owner, ctx)
+        val cpsIfFalse = RootTransform(ifTerm.elsep, owner, ctx)
         if (!cpsCond.isAsync) then
           if (!cpsIfTrue.isAsync &&  !cpsIfTrue.isAsync) then
             if (cpsCond.isOriginChanged || cpsIfTrue.isOriginChanged || cpsIfFalse.isOriginChanged) then
