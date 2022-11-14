@@ -40,6 +40,19 @@ object TransformUtil {
 
    }
 
-   def makeLambda(params: List[ValDef], resultType: Type,  )
+   def makeLambda(params: List[ValDef], resultType: Type, owner: Symbol,  body: Tree, bodyOwner: Symbol)(using Context): Block = {
+      val paramNames = params.map(_.name)
+      val paramTypes = params.map(_.tpe)
+      val mt = MethodType(paramNames)(
+         x => paramTypes,
+         x => resultType
+      )    
+      val meth = Symbols.newAnonFun(owner,mt)
+      val retval = Closure(meth,tss => {
+             TransformUtil.substParams(body,params,tss.head).changeOwner(bodyOwner,meth)
+         }
+      )
+      retval
+   }
 
 }

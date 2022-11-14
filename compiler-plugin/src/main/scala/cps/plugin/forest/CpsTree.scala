@@ -2,15 +2,20 @@ package cps.plugin.forest
 
 import dotty.tools.dotc.*
 import core.*
+import core.Constants.*
 import core.Contexts.*
 import core.Types.*
 import core.Decorators.*
+import core.Symbols.*
 import ast.tpd.*
 
 import cps.plugin.*
 
+/**
+ * CpsTree -- transfomed element
+ **/
 sealed trait CpsTree {
-  def tctx: TransformationContext,
+  def tctx: TransformationContext
   
   /**
   * origin term, used for diagnostics.
@@ -30,22 +35,59 @@ sealed trait CpsTree {
   def transformed(using Context): Tree
 
   def transformedType(using Context): Type =
-    CpsTransformHelper.cpsTransformedType(originType, monadType)
+    CpsTransformHelper.cpsTransformedType(originType, tctx.monadType)
   
+  /**
+   * is  (can't be reprsesented as pure(x))
+   **/
   def isAsync: Boolean 
+
+  def isOriginEqSync(using Context): Boolean =
+    unpure match
+      case None => false
+      case Some(unpureTerm) => (unpureTerm eq origin)
 
   def originType: Type = origin.tpe
 
-} 
+  /**
+   * let we have block {A; B}
+   * cps({A;B}) = cps(A).appendInBlock(cps(B))
+   **/
+  def appendInBlock(next: CpsTree): CpsTree
+
+  /**
+   *@returns a copy of cpstree with origin set to origin.
+   **/
+  def withOrigin(term:Tree):CpsTree 
 
 
-case class PureCpsTree(
-  override val tctx: TransformationContext,
-  override val origin: Tree,
-  override val originOwner: Symbol
-) extends CpsTree {
+
+}
+
+object CpsTree {
+
+  def unchangedPure(tctx: TransformationContext, origin: Tree, owner: Symbol): PureCpsTree =
+     PureCpsTree(tctx, origin, owner, origin)
+
+
+  def pure(tctx: TransformationContext, origin: Tree, owner: Symbol, changed: Tree): PureCpsTree =
+     PureCpsTree(tctx, origin, owner, changed)
+
+  def impure(tctx: TransformationContext, origin: Tree, owner: Symbol, impure: Tree): CpsTree =
+     AsyncTermCpsTree(tctx, origin, owner, impure)
+
+  def unit(tctx: TransformationContext, owner: Symbol): SyncCpsTree =
+     UnitCpsTree(tctx, owner)
+
+}
+
+sealed trait SyncCpsTree extends CpsTree {
 
   def isAsync: Boolean = false
+
+  def getUnpure(using Context): Tree
+
+  def unpure(using Context): Option[Tree] = Some(getUnpure)
 
   override def transformed(using Context): Tree = {
     val pureName = "pure".toTermName
@@ -55,15 +97,28 @@ case class PureCpsTree(
         Select(tctx.cpsMonadRef,pureName),
         List(TypeTree(originType.widen))
       ),
-      List(changedOrigin)
+      List(getUnpure)
     )
-     .withSpan(unchangedOrigin.span)
+     .withSpan(origin.span)
      .withType(transformedType)
   }
 
-  override def unpure = Some(origin) 
 
-  def getUnpure = origin 
+}
+
+
+case class PureCpsTree(
+  override val tctx: TransformationContext,
+  override val origin: Tree,
+  override val originOwner: Symbol,
+  override val term: Tree
+) extends SyncCpsTree {
+
+  override def unpure(using Context) = Some(term) 
+
+  override def getUnpure(using Context) = term 
+
+  def appendInBlock(next: CpsTree): CpsTree =
 
 }
 
@@ -83,7 +138,7 @@ case class AsyncTermCpsTree(
 
 
 case class AwaitSyncCpsTree(
-  override val tctx: TransformationContext
+  override val tctx: TransformationContext,
   override val origin: Apply,
   override val originOwner: Symbol,
            val awaitArg: Tree
@@ -97,7 +152,7 @@ case class AwaitSyncCpsTree(
 }
 
 case class MapCpsTree(
-  override val tctx: TransformationContext
+  override val tctx: TransformationContext,
   override val origin: Tree,
   override val originOwner: Symbol,
   val mapSource: CpsTree,
@@ -108,55 +163,48 @@ case class MapCpsTree(
         mapSource.isAsync
 
   override def transformed(using Context): Tree = {
-    if (mapSource.isAsync) {
-      val mapName = "map".toTermName
-      //TODO: setPos
-      Apply(
+    mapSource.unpure match 
+      case None =>
+        val mapName = "map".toTermName
         Apply(
-          TypeApply(
-            Select(cpsMonadRef, mapName),
-            List(TypeTree(mapSource.originType.widen), TypeTree(originType.widen))
+          Apply(
+            TypeApply(
+              Select(tctx.cpsMonadRef, mapName),
+              List(TypeTree(mapSource.originType.widen), TypeTree(originType.widen))
+            ),
+            List(mapSource.transformed)
           ),
-          List(mapSource.transformed)
-        ),
-        List(mapFun.makeLambda)
-      ).withSpan(unchangedOrigin.span)
-    } else if (!(unpure eq origin)) {
-      Apply(mapFun.makeLambda ,List(mapSource.changedOrigin))
-            .withSpan(unchangedOrigin.span)
-    } else {
-      origin
-    }
+          List(mapFun.makeLambda(originOwner))
+        ).withSpan(origin.span)
+      case Some(unpureTerm) =>
+        if (!(unpureTerm eq origin)) {
+          Apply(mapFun.makeLambda(originOwner) ,List(unpureTerm))
+              .withSpan(origin.span)
+        } else {
+          origin
+        }
   }
 
 }
 
 
-case class MapCpeTreeArgument(
-    param: ValDef
-    body:  PureCpsTree
+case class MapCpsTreeArgument(
+    param: ValDef,
+    body:  CpsTree
 )  {
 
-  def makeLambda(using Context): Block = {
-    val mt = MethodType(List(param.name))(
-      x => List(param.tpe),
-      x => body.tpe.widen
-    )    
-    val meth = Symbols.newAnonFun(summon[Context].owner,mt)
-    val retval = Closure(meth,tss => {
-          TransformUtil.substParams(body.getUnpure,List(param),tss.head).changeOwner(body.originOwner,meth)
-                       .withSpan(body.origin.span)
-      }
-    )
-    retval
-  }
-
-  
+  def makeLambda(owner: Symbol)(using Context): Block = {
+    body.unpure match
+      case None =>
+        throw CpsTransformException("attempt use MapCpsTree with async argumemt. use FlatMapCpsTree instead",body.origin.srcPos)
+      case Some(syncBody) =>
+        TransformUtil.makeLambda(List(param), body.originType.widen, owner, syncBody, body.originOwner)
+  }  
   
 }
 
 case class FlatMapCpsTree(
-  override val tctx: TransformationContext
+  override val tctx: TransformationContext,
   override val origin: Tree,
   override val originOwner: Symbol,
   val flatMapSource: CpsTree,
@@ -170,33 +218,24 @@ case class FlatMapCpsTree(
     Apply(
       Apply(
         TypeApply(
-          Select(cpsMonadRef, flatMapName),
+          Select(tctx.cpsMonadRef, flatMapName),
           List(TypeTree(flatMapSource.originType), TypeTree(originType))
         ),
         List(flatMapSource.transformed)
       ),
-      List(flatMapFun)
-    ).withSpan(unchangedOrigin.span)
+      List(flatMapFun.makeLambda(originOwner))
+    ).withSpan(origin.span)
 
 }
 
 case class FlatMapCpsTreeArgument(
-   param: ValDef,
+   param: ValDef, 
    body: CpsTree
 ) {
 
-  def makeLambda(using Context): Block = {
-    val mt = MethodType(List(param.name))(
-      x => List(param.tpe),
-      x => body.tpe.widen
-    )    
-    val meth = Symbols.newAnonFun(summon[Context].owner,mt)
-    val retval = Closure(meth,tss => {
-          TransformUtil.substParams(body.transformed,List(param),tss.head).changeOwner(body.originOwner,meth)
-                       .withSpan(body.origin.span)
-      }
-    )
-    retval
+   def makeLambda(owner: Symbol)(using Context): Block = {
+    val transformedBody = body.transformed(using summon[Context].withOwner(body.originOwner))
+    TransformUtil.makeLambda(List(param),body.transformedType,owner,transformedBody, body.originOwner)
   }
 
 
@@ -214,35 +253,46 @@ case class LambdaCpsTree(
   val cpsBody: CpsTree
 )  extends CpsTree {
 
-  if (originDefDef.termParamss.length != 1) {
-    throw new CpsTransfromException("Lambda function can have only one parameter list")
+  if (originDefDef.paramss.length != 1) {
+    throw new  CpsTransformException("Lambda function can have only one parameter list",origin.srcPos)
   }
 
-  def isAsync: Boolean = transformedBody.isAsync
+  def isAsync: Boolean = cpsBody.isAsync
 
   override def transformed(using Context): Tree = {
-    val tpe = createShiftetType()
+    val tpe = createShiftedType()
     val meth = Symbols.newAnonFun(summon[Context].owner,tpe)
     // here cpsBody is received in other context
     // .  TODO:  check ownitu in cpsBody.transformed
-    Closure(meth, tss => TransformUtil.substParams(cpsBody.transformed, originParams, tss.head).changeOwner(meth))
+    Closure(meth, tss => TransformUtil.substParams(cpsBody.transformed, originParams, tss.head).changeOwner(cpsBody.originOwner, meth))
   }
 
-  private def originParams = originDefDef.termParamss.head
+  private def originParams(using Context) = originDefDef.termParamss.head
 
-  private def createShiftetType(): Type = {
+  private def createShiftedType()(using Context): Type = {
     val params = originDefDef.termParamss.head
     val paramNames = params.map(_.name)
     val paramTypes = params.map(_.tpe)
     MethodType(paramNames)(
       x => paramTypes,
-      x => CpsHelper.cpsTransformedType(body.tpe.widen, fType)
+      x => CpsTransformHelper.cpsTransformedType(cpsBody.transformedType, tctx.monadType)
     )    
   }
 }
 
 
-case class BlockCpsTree(
-  revStats:List[CpsTree], last:ExprTree) extends CpsTree
+/**
+ * one Unit 
+ **/
+case class UnitCpsTree(override val tctx: TransformationContext, override val originOwner: Symbol) extends SyncCpsTree {
 
-case class ValDefCpsTree()
+    override def origin: Tree = EmptyTree
+
+    override def getUnpure(using Context): Tree =
+        Literal(Constant(()))
+
+}
+
+case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
+  
+}

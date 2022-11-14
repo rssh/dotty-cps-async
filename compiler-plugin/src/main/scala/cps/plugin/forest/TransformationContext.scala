@@ -8,6 +8,6 @@ import ast.tpd.*
 
 
 case class TransformationContext(
-  val monadType: Type,
-  val cpsMonadRef: Tree
+  val monadType: Type,  // F[_]
+  val cpsMonadRef: Tree  // summon[CpsTryMonad[F]]
 )

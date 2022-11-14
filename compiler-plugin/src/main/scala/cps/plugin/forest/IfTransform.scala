@@ -18,52 +18,54 @@ object IfTransform {
         val cpsCond = RootTransform(ifTerm.cond, owner, ctx)
         val cpsIfTrue = RootTransform(ifTerm.thenp, owner, ctx)
         val cpsIfFalse = RootTransform(ifTerm.elsep, owner, ctx)
-        if (!cpsCond.isAsync) then
-          if (!cpsIfTrue.isAsync &&  !cpsIfTrue.isAsync) then
-            if (cpsCond.isOriginChanged || cpsIfTrue.isOriginChanged || cpsIfFalse.isOriginChanged) then
-              PureCpsTree(
-                ctx.monadType,
-                ctx.cpsMonadRef,
-                cpy.If(ifTerm)(cpsCond.changedOrigin,cpsIfTrue.changedOrigin,cpsIfFalse.changedOrigin)
-              )
-            else
-              PureCpsTree(
-                ctx.monadType,
-                ctx.cpsMonadRef,
-                ifTerm
-              )
-          else 
-            AsyncTermCpsTree(
-              ctx.monadType,
-              ctx.cpsMonadRef,
-              ifTerm,
-              cpy.If(ifTerm)(cpsCond.changedOrigin, cpsIfTrue.transformed, cpsIfFalse.transformed)
-            )
-        else 
-          if (!cpsIfTrue.isAsync &&  !cpsIfTrue.isAsync) then
-            val mt = MethodType(List("c".toTermName))(_ => List(defn.BooleanType), _ => ifTerm.tpe)
-            val lambda = Lambda(mt, 
-                 params=>cpy.If(ifTerm)(params.head,cpsIfTrue.changedOrigin,cpsIfFalse.changedOrigin) 
-              )
-            MapCpsTree(
-              ctx.monadType,
-              ctx.cpsMonadRef,
-              ifTerm,
-              cpsCond,
-              lambda
-            )
-          else
-            val mt = MethodType(List("c".toTermName))(_ => List(defn.BooleanType), _ => AppliedType(ctx.monadType, List(ifTerm.tpe)) )
-            val lambda = Lambda(mt, 
-                 params=>cpy.If(ifTerm)(params.head,cpsIfTrue.transformed,cpsIfFalse.transformed) 
-              )
-            FlatMapCpsTree(
-              ctx.monadType,
-              ctx.cpsMonadRef,
-              ifTerm,
-              cpsCond,
-              lambda
-            )  
-      }
+        cpsCond.unpure match
+          case Some(condSync) =>
+            (cpsIfTrue.unpure,  cpsIfFalse.unpure) match
+              case (Some(ifTrueSync), Some(ifFalseSync)) =>
+                if ( !cpsCond.isOriginEqSync || !cpsIfTrue.isOriginEqSync || !cpsIfFalse.isOriginEqSync) then
+                  PureCpsTree(
+                    ctx,
+                    ifTerm,
+                    owner,
+                    cpy.If(ifTerm)(condSync,ifTrueSync,ifFalseSync),
+                  )
+                else
+                  PureCpsTree(
+                    ctx,
+                    ifTerm,
+                    owner,
+                    ifTerm
+                  )
+              case _ =>
+                  AsyncTermCpsTree(
+                    ctx,
+                    ifTerm,
+                    owner,
+                    cpy.If(ifTerm)(condSync, cpsIfTrue.transformed, cpsIfFalse.transformed)
+                  )
+          case None =>
+            val sym = newSymbol(owner, "c".toTermName , Flags.EmptyFlags, defn.BooleanType)
+            val valDef = ValDef(sym.asTerm, EmptyTree)
+            (cpsIfTrue.unpure,  cpsIfFalse.unpure) match
+              case (Some(ifTrueSync), Some(ifFalseSync)) =>
+                val newIf = If(ref(sym),ifTrueSync,ifFalseSync).withSpan(ifTerm.span)
+                MapCpsTree(
+                  ctx,
+                  ifTerm,
+                  owner,
+                  cpsCond,
+                  MapCpsTreeArgument(valDef, CpsTree.pure(ctx,ifTerm,owner,newIf))
+                )
+              case _ =>
+                val newIf = If(ref(sym),cpsIfTrue.transformed,cpsIfFalse.transformed)
+                              .withSpan(ifTerm.span)
+                FlatMapCpsTree(
+                  ctx,
+                  ifTerm,
+                  owner,
+                  cpsCond,
+                  FlatMapCpsTreeArgument(valDef, AsyncTermCpsTree(ctx,ifTerm,owner,newIf) )
+                )
+     }
 
 }
