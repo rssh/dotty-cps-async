@@ -1,5 +1,5 @@
 // CPS Transform for tasty apply
-// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021
+// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021, 2022
 package cps.macros.forest
 
 import scala.quoted.*
