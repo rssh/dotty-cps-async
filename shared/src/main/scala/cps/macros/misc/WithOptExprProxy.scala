@@ -20,10 +20,11 @@ object WithOptExprProxy:
     originExpr.asTerm match
        case Ident(_) => buildExpr(originExpr) 
        case originTerm =>
-         val proxy = Symbol.newVal(Symbol.spliceOwner,name,originExpr.asTerm.tpe.widen,Flags.Local,Symbol.noSymbol)
+         val proxy = Symbol.newVal(Symbol.spliceOwner,name,originExpr.asTerm.tpe.widen,Flags.Local|Flags.Synthetic,Symbol.noSymbol)
          val proxyValDef = ValDef(proxy,Some(originTerm))
          val proxyIdent = Ref(proxy).asExprOf[T]
-         val resTerm = buildExpr(proxyIdent).asTerm.changeOwner(Symbol.spliceOwner) match
+         val buildTerm = buildExpr(proxyIdent).asTerm.changeOwner(Symbol.spliceOwner) 
+         val resTerm = buildTerm match
            case lambdaExpr@Lambda(params, body) => Block(List(proxyValDef), lambdaExpr)
            case blockExpr@Block(stats, expr) => 
                    Block(proxyValDef::stats, expr)

@@ -51,7 +51,7 @@ trait AutomaticColoringOfEffectsQuoteScope:
 
     override def visitStart[F[_]:Type](tree: Tree, ctx: ObservationContext[F])(owner: Symbol): Unit =
       tree match
-        case v@ValDef(name, vtt, Some(rhs)) =>
+        case v@ValDef(name, vtt, Some(rhs)) => 
             val usageRecord = usageRecords.getOrUpdate(v.symbol, ValUsage())
             usageRecord.optValDef = Some(v)
             rhs match
@@ -119,7 +119,7 @@ trait AutomaticColoringOfEffectsQuoteScope:
          case _ => ctx.scheduleChildrenVisit(applyTerm, this)(owner)
       
                                                     
-    def checkAwait[F[_]](term: Term, arg: Term, 
+    def checkAwait[F[_]:Type](term: Term, arg: Term, 
                                   awaitCpsMonadType: TypeRepr, 
                                   awaitCpsMonad: Term,
                                   ctx: ObservationContext[F],
@@ -138,15 +138,19 @@ trait AutomaticColoringOfEffectsQuoteScope:
                                            && usageRecord.nInAwaits > 1)  then
                   val allInAwaits = usageRecord.allInAwaits
                   val frs = allInAwaits.head
-                  report.info("external variable used with await more than once", frs.pos)
+                  report.info(s"external variable used with await more than once, val=${usageRecord.optValDef.get.name}", frs.pos)
                   for(a <- allInAwaits) {
                      report.info("await: ", a.pos)
                   }
             else if (usageRecord.definedInside && usageRecord.aliases.isEmpty
                       && usageRecord.inAwaits.isEmpty && usageRecord.withoutAwaits.isEmpty) then
                   val valDef = usageRecord.optValDef.get
-                  report.warning("unused variable creation, effect may be lost", usageRecord.optValDef.get.pos)
+                  if ( !(valDef.symbol.flags.is(Flags.Synthetic)) ) then 
+                     report.warning(s"unused variable, effect may be lost, val=${usageRecord.optValDef.get.name}", usageRecord.optValDef.get.pos)
      
         }
+
+
+
      
 

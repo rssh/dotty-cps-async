@@ -37,7 +37,7 @@ object Async {
        
   }
 
-  inline def async[F[_]](using am:CpsMonad[F]) =
+  transparent inline def async[F[_]](using am:CpsMonad[F]) =
           new InferAsyncArg(using am)
      
 
@@ -158,40 +158,40 @@ object Async {
 
 
   def adoptFlags[F[_]:Type,T](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): AsyncMacroFlags =
-    import quotes.reflect._
-    /*
-    Expr.summon[AsyncMacroFlags] match
-      case Some(flagsExpr) =>
-        flagsExpr match
-          case Expr(flags) => flags
-          case _  =>
-            throw MacroError(
+      import quotes.reflect._
+      /*
+      Expr.summon[AsyncMacroFlags] match
+         case Some(flagsExpr) =>
+            flagsExpr match
+               case Expr(flags) => flags
+               case _  =>
+                  throw MacroError(
                     s"AsyncMacroFlags ($flagsExpr) is not a compile-time value", flagsExpr )
-      case None =>
-     */
-       import cps.macros.flags.{*, given}
-            val printTree = Expr.summon[PrintTree.type].isDefined
-            val printCode = Expr.summon[PrintCode.type].isDefined
-            val debugLevel = Expr.summon[DebugLevel] match
+         case None =>
+      */
+      import cps.macros.flags.{*, given}
+      val printTree = Expr.summon[PrintTree.type].isDefined
+      val printCode = Expr.summon[PrintCode.type].isDefined
+      val debugLevel = Expr.summon[DebugLevel] match
                  case Some(expr) =>
                    expr match
                       case Expr(v) => v.value
                       case other  =>
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0
-            val automaticColoringTag = Expr.summon[cps.automaticColoring.AutomaticColoringTag[F]]
-            val automaticColoring = automaticColoringTag.isDefined
-            if (debugLevel > 0)
+      val automaticColoringTag = Expr.summon[cps.automaticColoring.AutomaticColoringTag[F]]
+      val automaticColoring = automaticColoringTag.isDefined
+      if (debugLevel > 0)
                println(s"automaticColoringTag: ${automaticColoringTag.map(_.show)}")
-            val customValueDiscard = Expr.summon[cps.ValueDiscard.CustomTag].isDefined || automaticColoring
-            val warnValueDiscard = Expr.summon[cps.ValueDiscard.WarnTag].isDefined || 
+      val customValueDiscard = Expr.summon[cps.ValueDiscard.CustomTag].isDefined || automaticColoring
+      val warnValueDiscard = Expr.summon[cps.ValueDiscard.WarnTag].isDefined || 
                                      (automaticColoring && 
                                       Expr.summon[cps.automaticColoring.WarnValueDiscard[F]].isDefined )
-            val useLoomAwait = Expr.summon[UseLoomAwait.type].isDefined // || CompilationInfo.XmacroSettings.contains("cps:loom") - experimental
-            //val pos = Position.ofMacroExpansion
-            //println(s"!!!adoptFlags, useLoomAwait = ${useLoomAwait} for ${pos.sourceFile.path}:${pos.startLine}")
-            AsyncMacroFlags(printCode,printTree,debugLevel, true, customValueDiscard, warnValueDiscard, automaticColoring,
-                            useLoomAwait = useLoomAwait)
+      val useLoomAwait = Expr.summon[UseLoomAwait.type].isDefined // || CompilationInfo.XmacroSettings.contains("cps:loom") - experimental
+      //val pos = Position.ofMacroExpansion
+      //println(s"!!!adoptFlags, useLoomAwait = ${useLoomAwait} for ${pos.sourceFile.path}:${pos.startLine}")
+      AsyncMacroFlags(printCode,printTree,debugLevel, true, customValueDiscard, warnValueDiscard, automaticColoring,
+                     useLoomAwait = useLoomAwait)
 
 
   def resolveMemoization[F[_]:Type, T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): 
