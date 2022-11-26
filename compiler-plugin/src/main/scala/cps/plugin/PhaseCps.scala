@@ -55,7 +55,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                           val meth = Symbols.newAnonFun(summon[Context].owner,mt)
                           val nRhs = Closure(meth,tss => {
                               val tc = TransformationContext(monadType,monad)
-                              val cpsTree = RootTransform(body,tc)
+                              val cpsTree = RootTransform(body, bodyOwner, tc)
                               val transformedBody = cpsTree.transformed
                               TransformUtil.substParams(transformedBody,params,tss.head).changeOwner(bodyOwner,meth).withSpan(body.span)
                            }
@@ -110,7 +110,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                     val meth = Symbols.newAnonFun(summon[Context].owner,mt)
                     val ctxFun = Closure(meth, tss => {
                       val tc = TransformationContext(monadType,am)
-                      val cpsTree = RootTransform(body,tc)
+                      val cpsTree = RootTransform(body,bodyOwner,tc)
                       val transformedBody = cpsTree.transformed
                       TransformUtil.substParams(transformedBody,List(params(1)),tss.head)
                                     .changeOwner(bodyOwner,meth)

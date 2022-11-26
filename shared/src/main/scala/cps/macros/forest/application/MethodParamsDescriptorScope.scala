@@ -34,7 +34,7 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
      def  apply(fun: Term): MethodParamsDescriptor =
        fun.tpe.widen.dealias match
-         case mt@MethodType(_,_,_) =>
+         case mt: MethodType =>
                    MethodTypeBasedParamsDescriptor(mt)
          case other =>
                    report.warning(s"apply to non-method, tpe=${fun.tpe}",posExpr(fun))

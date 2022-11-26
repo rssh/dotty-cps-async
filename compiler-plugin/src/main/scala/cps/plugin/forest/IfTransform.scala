@@ -54,7 +54,7 @@ object IfTransform {
                   ifTerm,
                   owner,
                   cpsCond,
-                  MapCpsTreeArgument(valDef, CpsTree.pure(ctx,ifTerm,owner,newIf))
+                  MapCpsTreeArgument(Some(valDef), CpsTree.pure(ctx,ifTerm,owner,newIf))
                 )
               case _ =>
                 val newIf = If(ref(sym),cpsIfTrue.transformed,cpsIfFalse.transformed)
@@ -64,7 +64,7 @@ object IfTransform {
                   ifTerm,
                   owner,
                   cpsCond,
-                  FlatMapCpsTreeArgument(valDef, AsyncTermCpsTree(ctx,ifTerm,owner,newIf) )
+                  FlatMapCpsTreeArgument(Some(valDef), AsyncTermCpsTree(ctx,ifTerm,owner,newIf) )
                 )
      }
 
