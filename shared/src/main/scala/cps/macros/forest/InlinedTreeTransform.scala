@@ -83,7 +83,7 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                          s.copy(newBindings = vx::s.newBindings)
                  case None => 
                     val cpsRhs = try {
-                            runRoot(rhs)
+                            runRoot(rhs)(owner)
                       } catch {
                          case ex: MacroError =>
                            report.warning(s"error during transformation of valdef in inline, tpt=${tpt.show}\n, rhs=${rhs.show}\n, ex=${ex}", posExprs(rhs))

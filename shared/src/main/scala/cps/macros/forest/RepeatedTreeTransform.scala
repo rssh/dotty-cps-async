@@ -16,23 +16,23 @@ trait RepeatedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
   // case Repeated(elements,tpt) 
   def runRepeated( repeated: qctx.reflect.Term, 
                     elements: List[qctx.reflect.Term], 
-                    tpt: qctx.reflect.TypeTree): CpsTree =
+                    tpt: qctx.reflect.TypeTree)(owner: Symbol): CpsTree =
     val paramsDescriptor = new MethodParamsDescriptor {
        override def  paramIndex(name: String): Option[Int] = None
        override def  paramName(index: Int): Option[String] = Some(index.toString)
        override def  paramType(index: Int): Option[TypeRepr] = Some(tpt.tpe)
     }
-    val args = O.buildApplyArgsRecords(paramsDescriptor, elements, cpsCtx)
+    val args = O.buildApplyArgsRecords(paramsDescriptor, elements, cpsCtx)(owner)
     // TODO: pass allowShiftedLambda = false ?
     args.find(_.hasShiftedLambda).foreach(a =>
        throw MacroError("shifted lambda is not supported in SeqLiteral", posExprs(a.term))
     )
     if (!args.exists(x => x.isAsync)) then
        // TODO: check 'isChanged?'
-       CpsTree.pure(repeated)
+       CpsTree.pure(owner,repeated)
     else
        val syncArgs = args.map(_.identArg(true)).toList
-       val rightCps = CpsTree.pure(Repeated(syncArgs, tpt))
+       val rightCps = CpsTree.pure(owner,Repeated(syncArgs, tpt))
        args.foldRight(rightCps)((e,s) =>
           if (e.usePrepend(true))
              e.append(s)

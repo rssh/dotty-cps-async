@@ -55,7 +55,7 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
 
     }
 
-    def buildApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, cpsCtx: TransformationContext[F,?,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
+    def buildApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, cpsCtx: TransformationContext[F,?,?], acc:BuildApplyArgsAcc)(owner: Symbol): BuildApplyArgsAcc = {
        import scala.quoted.Quotes
        import scala.quoted.Expr
 
@@ -77,7 +77,7 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
          case lambda@Lambda(params, body) =>
             // mb, this will not work, for expressions, which return block.
             //  look's like somewhere in future, better add 'shifted' case to CpsExpr
-            val cpsBody = runRoot(body)
+            val cpsBody = runRoot(body)(owner)
             val nextRecord = if (paramsDescriptor.isByName(acc.paramIndex)) {
                                throw MacroError("passing lamda as byName params is not supported yet",posExpr(t))
                              } else {
@@ -103,24 +103,26 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
                                                 acc.copy(records=IndexedSeq.empty)).records.head
                acc.advance(nested)
             else
-               runInlined(inlined) match
-                 case inlined@InlinedCpsTree(origin, binding, cpsNested) =>
+               runInlined(inlined)(owner) match
+                 case inlined@InlinedCpsTree(inlineOwner, origin, binding, cpsNested) =>
                    val nested = buildCpsTreeApplyArgRecord(paramsDescriptor, body, cpsNested, cpsCtx,
-                                                acc.copy(records=IndexedSeq.empty)).records.head
+                                                acc.copy(records=IndexedSeq.empty))(owner).records.head
                    acc.advance(ApplyArgInlinedRecord(inlined, nested))
                  case nonInlined =>
-                   buildCpsTreeApplyArgRecord(paramsDescriptor, body, nonInlined, cpsCtx, acc)
+                   buildCpsTreeApplyArgRecord(paramsDescriptor, body, nonInlined, cpsCtx, acc)(owner)
          case _ =>
             if cpsCtx.flags.debugLevel >= 15 then
                cpsCtx.log(s"paramType=${paramsDescriptor.paramType(acc.paramIndex)}")
                cpsCtx.log(s"byName=${paramsDescriptor.isByName(acc.paramIndex)}")
             val termCpsTree = runRoot(t)
-            buildCpsTreeApplyArgRecord(paramsDescriptor, t, termCpsTree, cpsCtx, acc)
+            buildCpsTreeApplyArgRecord(paramsDescriptor, t, termCpsTree, cpsCtx, acc)(owner)
 
        }
     }
 
-    def buildCpsTreeApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, termCpsTree: CpsTree, cpsCtx: TransformationContext[F,?,?], acc:BuildApplyArgsAcc): BuildApplyArgsAcc = {
+    def buildCpsTreeApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, termCpsTree: CpsTree, 
+                                   cpsCtx: TransformationContext[F,?,?], 
+                                   acc:BuildApplyArgsAcc)(owner: Symbol): BuildApplyArgsAcc = {
        if cpsCtx.flags.debugLevel >= 15 then
           cpsCtx.log(s"termCpsTree = ${termCpsTree}")
           cpsCtx.log(s"termCpsTree.isAsync = ${termCpsTree.isAsync}")
