@@ -20,7 +20,7 @@ object ApplyTransform {
 
 
   def applyMArgs(term: Apply, owner: Symbol, tctx: TransformationContext, tail:List[ApplyArgList] )(using Context): CpsTree = {
-    val argList = makeArgList(term, MethodParamsDescriptor(term.fun))
+    val argList = makeArgList(term, MethodParamsDescriptor(term.fun), owner, tctx)
     term.fun match
       case tfa@Apply(fun1,args1) => 
         applyMArgs(tfa, owner, tctx, argList::tail)
@@ -43,7 +43,7 @@ object ApplyTransform {
           if (haveAsync) {
             FlatMapCpsTree(tctx,appTerm,owner,cpsApplicant,FlatMapCpsTreeArgument(Some(valDef),parseSyncApplication(appTerm,owner,tctx,valRef,args)))
           } else {
-            MapCpsTree(tctx,appTerm,owner,cpsApplicant,MapCpsTreeArgument(Some(valDef), parseSyncPureApplication(aooTerm,owner,tctx,valRef,args)))
+            MapCpsTree(tctx,appTerm,owner,cpsApplicant,MapCpsTreeArgument(Some(valDef), parseSyncPureApplication(appTerm,owner,tctx,valRef,args)))
           }
   }
 
@@ -56,12 +56,18 @@ object ApplyTransform {
   }
 
 
-  def makeArgList(term: Apply, mt: MethodParamsDescriptor): ApplyTermArgList = {
-    ApplyArgList(term, term.args.map.zipWithIndex((a,i) => ApplyArg(a, i, mt.paramType(i), mt.isByName(i)) ))
+  def makeArgList(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, tctx: TransformationContext)(using Context): ApplyTermArgList = {
+    ApplyTermArgList(term, term.args.zipWithIndex.map((a,i) => ApplyArg(a, i, 
+                mt.paramName(i, a.srcPos).toTermName,  
+                mt.paramType(i, a.srcPos),
+                mt.isByName(i, a.srcPos),
+                owner,
+                tctx
+    ) ))
   }
 
   def makeTypeArgList(term: TypeApply): ApplyTypeArgList = {
-    ApplyTypeArgList(term,term.args)
+    ApplyTypeArgList(term,term.args.map(_.tpe))
   }
 
 

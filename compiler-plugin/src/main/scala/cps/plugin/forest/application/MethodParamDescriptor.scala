@@ -3,10 +3,13 @@ package cps.plugin.forest.application
 import dotty.tools.dotc.*
 import core.*
 import core.Contexts.*
+import core.Names.*
 import core.Types.*
 import core.Decorators.*
 import core.Symbols.*
 import ast.tpd.*
+import dotty.tools.dotc.util.SrcPos
+
 
 import cps.plugin.*
 import cps.plugin.forest.*
@@ -16,13 +19,13 @@ trait MethodParamsDescriptor {
 
   def  paramIndex(name: String): Option[Int]
 
-  def  paramName(index: Int): Option[String]
+  def  paramName(index: Int, pos: SrcPos): TermName
 
-  def  paramType(index: Int): Option[TypeRepr]
+  def  paramType(index: Int, pos: SrcPos): Type
 
-  def  isByName(index: Int): Boolean =
-        paramType(index) match
-          case Some(ByNameType(_)) => true
+  def  isByName(index: Int, pos: SrcPos): Boolean =
+        paramType(index, pos) match
+          case _: ExprType => true
           case _ => false
 
 }
@@ -42,23 +45,23 @@ object MethodParamsDescriptor {
 
 class MethodTypeBasedParamsDescriptor(mt: MethodType) extends MethodParamsDescriptor {
 
-  override def  paramIndex(name: String): Option[Int] = paramIndexes.get(name)
+  override def  paramIndex(name: String): Option[Int] = paramIndexes.get(name.toTermName)
 
-  override def  paramName(index: Int): Option[String] =
+  override def  paramName(index: Int, pos: SrcPos): TermName =
        if (index >= 0 && index < paramNames.size)
-         Some(paramNames(index))
+         paramNames(index)
        else
-         None
+         throw CpsTransformException(s"method $mt have no parameter with index $index", pos)
 
-  override def  paramType(index: Int): Option[TypeRepr] =
+  override def  paramType(index: Int, pos: SrcPos): Type =
        if (index >= 0 && index < paramTypes.size)
-         Some(paramTypes(index))
+         paramTypes(index)
        else
-         None
+        throw CpsTransformException(s"method $mt have no parameter with index $index",pos)
 
   private lazy val paramNames = mt.paramNames.toIndexedSeq
   private lazy val paramIndexes = paramNames.zipWithIndex.toMap
-  private lazy val paramTypes = mt.paramTypes.toIndexedSeq
+  private lazy val paramTypes = mt.paramInfos.toIndexedSeq
 
 
 }

@@ -3,9 +3,10 @@ package cps.plugin.forest.application
 import dotty.tools.dotc.*
 import core.*
 import core.Contexts.*
-import core.Types.*
 import core.Decorators.*
+import core.Names.*
 import core.Symbols.*
+import core.Types.*
 import ast.tpd.*
 
 import cps.plugin.*
@@ -21,20 +22,20 @@ sealed trait ApplyArg {
 
 object ApplyArg {
 
-  def apply(expr: Tree, index: Int, paramName: TermName, paramType: Type, isByName: Boolean, owner: Symbol, tctx: TransformationContext): ApplyArg = {
+  def apply(expr: Tree, index: Int, paramName: TermName, paramType: Type, isByName: Boolean, owner: Symbol, tctx: TransformationContext)(using Context): ApplyArg = {
     expr match
       case SeqLiteral(elems, elementtp) =>
-        RepeatApplyArg(paramName, paramType, elems.map(p => rootTransform(p,owner,ctx) ))
+        RepeatApplyArg(paramName, paramType, elems.map(p => RootTransform(p,owner,tctx) ))
       case _ =>
         val cpsExpr = RootTransform(expr, owner, tctx)
         if (isByName) then
           ByNameApplyArg(paramName, paramType, cpsExpr)
         else
           paramType match
-            case AnnotatedType(tp,defn.InlineParamAnnot) =>
+            case AnnotatedType(tp, an) if an.symbol == defn.InlineParamAnnot =>
                 InlineApplyArg(paramName,tp,cpsExpr)
-            case AnnotatedType(tp,defn.ErasedParamAnnot) =>
-                ErdasedApplyArg(paramName,tp,cpsExpr)
+            case AnnotatedType(tp, an) if an.symbol == defn.ErasedParamAnnot =>
+                ErasedApplyArg(paramName,tp,cpsExpr)
             case _ =>
                 PlainApplyArg(paramName,paramType,cpsExpr)    
   }
