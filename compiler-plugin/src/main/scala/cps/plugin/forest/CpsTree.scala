@@ -19,6 +19,7 @@ sealed trait CpsTree {
   
   /**
   * origin term, used for diagnostics.
+  * TODO: only pos ?
   **/
   def origin: Tree
 
@@ -53,15 +54,26 @@ sealed trait CpsTree {
    * let we have block {A; B}
    * cps({A;B}) = cps(A).appendInBlock(cps(B))
    **/
-  def appendInBlock(next: CpsTree): CpsTree
+  def appendInBlock(next: CpsTree): CpsTree = {
+    if (isAsync) then
+      if (next.isAsync) then
+        FlatMapCpsTree(tctx,EmptyTree,originOwner, this,
+              FlatMapCpsTreeArgument(None,next)
+        )
+      else
+        MapCpsTree(tctx,EmptyTree,originOwner, this,
+              MapCpsTreeArgument(None,next)
+        )
+    else
+      SeqCpsTree(tctx,EmptyTree,originOwner,IndexedSeq(this),next)
+  }
 
   /**
    *@returns a copy of cpstree with origin set to origin.
    **/
   def withOrigin(term:Tree):CpsTree 
 
-
-
+  
 }
 
 object CpsTree {
@@ -432,24 +444,72 @@ case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
 
     override def transformed(using Context) = internal.transformed
 
-    override def appendInBlock(next: CpsTree) = {
-      if (isAsync) then
-        if (next.isAsync) then
-          FlatMapCpsTree(tctx,EmptyTree,originOwner, this,
-                FlatMapCpsTreeArgument(None,next)
-          )
-        else
-          MapCpsTree(tctx,EmptyTree,originOwner, this,
-                MapCpsTreeArgument(None,next)
-          )
-      else
-        SeqCpsTree(tctx,EmptyTree,originOwner,IndexedSeq(this),next)
-    }
-
     override def withOrigin(term:Tree): CpsTree =
       BlockBoundsCpsTree(internal.withOrigin(term))
 
   
 }
 
+case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation], 
+                                  nested: CpsTree,  
+                                  override val origin:Tree,
+                                  override val originOwner: Symbol
+                                ) extends CpsTree {
 
+    override def tctx = nested.tctx
+
+    override def isAsync = nested.isAsync
+
+    override def transformed(using Context): Tree = {
+      nested.unpure match
+        case None =>
+          val paramSym = newSymbol(originOwner, "x".toTermName, Flags.EmptyFlags, 
+                                   nested.originType.widen, Symbols.NoSymbol)
+          val param = ValDef(paramSym, EmptyTree)
+          //TODO:  we can not change owner in bodu,
+          TransformUtil.makeLambda(List(param),originType.widen, originOwner,  prefixTerm(ref(paramSym)), ctx.owner)
+        case Some(nestedTerm) =>
+          if (nested.isOriginEqSync) then
+            origin
+          else 
+            prefixTerm(nestedTerm)   
+    } 
+
+    override def unpure(using Context) = {
+      nested.unpure map (prefixTerm _)
+    }
+  
+    override def withOrigin(newOrigin: Tree) =
+      copy(origin = newOrigin)
+
+
+    private def prefixTerm(nestedTerm: Tree)(using Context): Tree =
+      records.foldLeft(nestedTerm){(s,e) => 
+        e.prefixTerm(s)
+      }
+
+  
+
+}
+
+object SelectTypeApplyCpsTree {
+
+   sealed trait Operation {
+      def prefixTerm(term:Tree)(using Context): Tree
+   }
+
+   case class OpSelect(sym:Symbol, origin:Tree) extends Operation {
+      override def prefixTerm(term:Tree)(using Context): Tree =
+        Select(term,Types.TermRef(term.tpe,sym)).withSpan(origin.span)
+   }
+
+   case class OpTypeApply(args:List[Tree], origin:Tree) extends Operation {
+      override def prefixTerm(term:Tree)(using Context): Tree =
+        if (args.isEmpty) then
+          term
+        else
+          TypeApply(term,args).withSpan(origin.span)
+   }
+
+
+}
