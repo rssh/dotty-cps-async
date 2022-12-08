@@ -1,19 +1,21 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Categorical interpretation for substitutions in async call chains: &#8212; dotty-cps-async 0.9.11-SNAPSHOT documentation</title>
+    <title>Categorical interpretation for substitutions in async call chains: &#8212; dotty-cps-async 0.9.12 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="../_static/css/s4defs-roles.css" />
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -32,7 +34,7 @@
         <li class="right" >
           <a href="CpsAsyncOverview.html" title="CPS-Async transformations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Random Notes</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Categorical interpretation for substitutions in async call chains:</a></li> 
       </ul>
@@ -44,16 +46,17 @@
           <div class="body" role="main">
             
   <section id="categorical-interpretation-for-substitutions-in-async-call-chains">
-<span id="categorical-interpretation-for-callchainasyncsubst"></span><h1>Categorical interpretation for substitutions in async call chains:<a class="headerlink" href="#categorical-interpretation-for-substitutions-in-async-call-chains" title="Permalink to this headline">¶</a></h1>
+<span id="categorical-interpretation-for-callchainasyncsubst"></span><h1>Categorical interpretation for substitutions in async call chains:<a class="headerlink" href="#categorical-interpretation-for-substitutions-in-async-call-chains" title="Permalink to this heading">¶</a></h1>
 <p>Substitutions in async call chains is described in <a class="reference internal" href="../HighOrderFunctions.html#substitutions-in-call-chains"><span class="std std-ref">Special semantics for substitutions in call chains</span></a>.</p>
 <p>Let’s look at the folowing diagram:</p>
 <img alt="../_images/AsyncSubst3.png" src="../_images/AsyncSubst3.png" />
-<p>Let we have hight-order function <span class="math notranslate nohighlight">\(f: A\to B\)</span> (example: <span class="math notranslate nohighlight">\(f = withFilter: Iterable \to WithFilter\)</span>); then direct async transform will give us an async variant of <span class="math notranslate nohighlight">\(f\)</span> – <span class="math notranslate nohighlight">\(f_{async}\)</span>  (example:  naive implementation of <cite>withFilter_async</cite>), and substituted is <span class="math notranslate nohighlight">\(f'_{async}\)</span> (example - our delayed implementation of <cite>withFiter_async</cite>). <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
-<dl class="footnote brackets">
-<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd><p>Here we write <cite>AsyncSubst</cite> instead <cite>CallChainAsyncSubst</cite> to save space on the picture.</p>
-</dd>
-</dl>
+<p>Let we have hight-order function <span class="math notranslate nohighlight">\(f: A\to B\)</span> (example: <span class="math notranslate nohighlight">\(f = withFilter: Iterable \to WithFilter\)</span>); then direct async transform will give us an async variant of <span class="math notranslate nohighlight">\(f\)</span> – <span class="math notranslate nohighlight">\(f_{async}\)</span>  (example:  naive implementation of <cite>withFilter_async</cite>), and substituted is <span class="math notranslate nohighlight">\(f'_{async}\)</span> (example - our delayed implementation of <cite>withFiter_async</cite>). <a class="footnote-reference brackets" href="#id2" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id2" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>Here we write <cite>AsyncSubst</cite> instead <cite>CallChainAsyncSubst</cite> to save space on the picture.</p>
+</aside>
+</aside>
 <p>For any function <span class="math notranslate nohighlight">\(h: B-&gt;C\)</span>  from <cite>B</cite> to any <cite>C</cite>,  we have an image of <cite>h</cite> in <cite>F[B]</cite>: <span class="math notranslate nohighlight">\(h_F = F.map(h)\)</span> and in AsyncSubst: <span class="math notranslate nohighlight">\(h_{AsyncShift}\)</span>.
 The diagram is commutative:
 * <span class="math notranslate nohighlight">\(h_{F} * f_{async} = h_{AsyncSubst} * f'_{async}\)</span> . (Example - <cite>h</cite> is <cite>flatMap</cite>, our implementation performs the same operation as usual flatMap, but in one batch with filtering).
@@ -74,12 +77,16 @@ The diagram is commutative:
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="CpsAsyncOverview.html"
-                        title="previous chapter">CPS-Async transformations</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="../FAQ.html"
-                        title="next chapter">FAQ</a></p>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="CpsAsyncOverview.html"
+                          title="previous chapter">CPS-Async transformations</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="../FAQ.html"
+                          title="next chapter">FAQ</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -96,7 +103,7 @@ The diagram is commutative:
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -113,14 +120,14 @@ The diagram is commutative:
         <li class="right" >
           <a href="CpsAsyncOverview.html" title="CPS-Async transformations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" >Random Notes</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Categorical interpretation for substitutions in async call chains:</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2022, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.3.
     </div>
   </body>
 </html>

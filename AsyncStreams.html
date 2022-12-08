@@ -1,19 +1,21 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Generators &#8212; dotty-cps-async 0.9.11-SNAPSHOT documentation</title>
+    <title>Generators &#8212; dotty-cps-async 0.9.12 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Integrations" href="Integrations.html" />
@@ -31,7 +33,7 @@
         <li class="right" >
           <a href="AutomaticColoring.html" title="Automatic Coloring"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Generators</a></li> 
       </ul>
     </div>  
@@ -42,35 +44,35 @@
           <div class="body" role="main">
             
   <section id="generators">
-<h1>Generators<a class="headerlink" href="#generators" title="Permalink to this headline">¶</a></h1>
+<h1>Generators<a class="headerlink" href="#generators" title="Permalink to this heading">¶</a></h1>
 <section id="async-streaming">
-<h2>Async Streaming<a class="headerlink" href="#async-streaming" title="Permalink to this headline">¶</a></h2>
+<h2>Async Streaming<a class="headerlink" href="#async-streaming" title="Permalink to this heading">¶</a></h2>
 <p>The generator syntax is a way to deliver values into some form of stream asynchronously.</p>
 <p>Example:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.{</span><span class="nc">Await</span><span class="p">,</span> <span class="nc">Future</span><span class="p">}</span>
-<span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nc">ExecutionContext</span><span class="p">.</span><span class="nc">Implicits</span><span class="p">.</span><span class="n">global</span>
-<span class="k">import</span> <span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nn">duration</span><span class="p">.</span><span class="nc">Duration</span>
-<span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="n">*</span>                  <span class="c1">// asyncStream, await</span>
-<span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">monads</span><span class="p">.{</span><span class="n">*</span><span class="p">,</span> <span class="k">given</span><span class="p">}</span>  <span class="c1">// support for built-in monads (i.e. Future)</span>
-<span class="k">import</span> <span class="nn">cps</span><span class="p">.</span><span class="nn">stream</span><span class="p">.</span><span class="n">*</span>           <span class="c1">// AsyncList</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.{</span><span class="nc">Await</span><span class="p">,</span><span class="w"> </span><span class="nc">Future</span><span class="p">}</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nc">ExecutionContext</span><span class="p">.</span><span class="nc">Implicits</span><span class="p">.</span><span class="n">global</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nn">duration</span><span class="p">.</span><span class="nc">Duration</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">cps</span><span class="p">.</span><span class="n">*</span><span class="w">                  </span><span class="c1">// asyncStream, await</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">cps</span><span class="p">.</span><span class="nn">monads</span><span class="p">.{</span><span class="n">*</span><span class="p">,</span><span class="w"> </span><span class="k">given</span><span class="p">}</span><span class="w">  </span><span class="c1">// support for built-in monads (i.e. Future)</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">cps</span><span class="p">.</span><span class="nn">stream</span><span class="p">.</span><span class="n">*</span><span class="w">           </span><span class="c1">// AsyncList</span>
 
-<span class="k">object</span> <span class="nc">Example</span><span class="p">:</span>
+<span class="k">object</span><span class="w"> </span><span class="nc">Example</span><span class="p">:</span><span class="w"></span>
 
-  <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nc">Array</span><span class="p">[</span><span class="nc">String</span><span class="p">]):</span> <span class="nc">Unit</span> <span class="o">=</span>
-    <span class="kd">val</span> <span class="n">stream</span> <span class="o">=</span> <span class="n">asyncStream</span><span class="p">[</span><span class="nc">AsyncList</span><span class="p">[</span><span class="nc">Future</span><span class="p">,</span> <span class="nc">Int</span><span class="p">]]</span> <span class="p">{</span> <span class="n">out</span> <span class="o">=&gt;</span>
-      <span class="n">out</span><span class="p">.</span><span class="n">emit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-      <span class="k">for</span> <span class="n">i</span> <span class="o">&lt;-</span> <span class="mi">1</span> <span class="n">to</span> <span class="mi">10</span> <span class="k">do</span> <span class="n">out</span><span class="p">.</span><span class="n">emit</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-    <span class="p">}</span>
-    <span class="kd">val</span> <span class="n">f</span> <span class="o">=</span> <span class="n">stream</span><span class="p">.</span><span class="n">takeListAll</span><span class="p">()</span>
-    <span class="kd">val</span> <span class="n">res</span> <span class="o">=</span> <span class="nc">Await</span><span class="p">.</span><span class="n">result</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="nc">Duration</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;seconds&quot;</span><span class="p">))</span>
-    <span class="n">println</span><span class="p">(</span><span class="s">s&quot;res=</span><span class="si">$</span><span class="n">res</span><span class="s">&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span><span class="w"> </span><span class="nc">Array</span><span class="p">[</span><span class="nc">String</span><span class="p">]):</span><span class="w"> </span><span class="nc">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">asyncStream</span><span class="p">[</span><span class="nc">AsyncList</span><span class="p">[</span><span class="nc">Future</span><span class="p">,</span><span class="w"> </span><span class="nc">Int</span><span class="p">]]</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">out</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
+<span class="w">      </span><span class="n">out</span><span class="p">.</span><span class="n">emit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">out</span><span class="p">.</span><span class="n">emit</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stream</span><span class="p">.</span><span class="n">takeListAll</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Await</span><span class="p">.</span><span class="n">result</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="nc">Duration</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;seconds&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="n">println</span><span class="p">(</span><span class="s">s&quot;res=</span><span class="si">$</span><span class="n">res</span><span class="s">&quot;</span><span class="p">)</span><span class="w"></span>
 </pre></div>
 </div>
 <p>I recommend you try <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/AsyncList.scala"><code class="docutils literal notranslate"><span class="pre">cps.stream.AsyncList</span></code></a>.</p>
 <p>Here <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/AsyncList.scala"><code class="docutils literal notranslate"><span class="pre">cps.stream.AsyncList</span></code></a> is a minimal implementation of async stream supplied with <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a>.
 There exist integration modules for well-known async streaming libraries (see section <a class="reference internal" href="Integrations.html#integrations"><span class="std std-ref">Integrations</span></a>).</p>
 <p>The input of <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/AsyncStream.scala#L20"><code class="docutils literal notranslate"><span class="pre">asyncStream</span></code></a> is a code block which should be a lambda expression that accepts an emitter argument; i.e., the simplified definition looks as follows :</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">inline</span> <span class="k">def</span> <span class="nf">asyncStream</span><span class="p">[</span><span class="nc">R</span><span class="p">](</span><span class="k">using</span> <span class="n">a</span><span class="p">:</span> <span class="nc">CpsAsyncAbsorber</span><span class="p">[</span><span class="nc">R</span><span class="p">])(</span><span class="n">f</span><span class="p">:</span> <span class="nc">CpsAsyncEmitter</span><span class="p">[</span><span class="n">a</span><span class="p">.</span><span class="nc">Stream</span><span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="nc">Monad</span><span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="nc">Element</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nc">Unit</span><span class="p">):</span> <span class="nc">R</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">inline</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">asyncStream</span><span class="p">[</span><span class="nc">R</span><span class="p">](</span><span class="k">using</span><span class="w"> </span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="nc">CpsAsyncAbsorber</span><span class="p">[</span><span class="nc">R</span><span class="p">])(</span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="nc">CpsAsyncEmitter</span><span class="p">[</span><span class="n">a</span><span class="p">.</span><span class="nc">Stream</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="nc">Monad</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="nc">Element</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">Unit</span><span class="p">):</span><span class="w"> </span><span class="nc">R</span><span class="w"></span>
 </pre></div>
 </div>
 <p>For a full definition, look at the source:</p>
@@ -81,20 +83,20 @@ There exist integration modules for well-known async streaming libraries (see se
 </ul>
 </section>
 <section id="writing-generator-adapters-for-custom-streams">
-<h2>Writing generator adapters for custom streams<a class="headerlink" href="#writing-generator-adapters-for-custom-streams" title="Permalink to this headline">¶</a></h2>
+<h2>Writing generator adapters for custom streams<a class="headerlink" href="#writing-generator-adapters-for-custom-streams" title="Permalink to this heading">¶</a></h2>
 <dl class="simple">
 <dt>To allow generator syntax for your stream, you need to implement trait</dt><dd><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitAbsorber.scala#L27"><code class="docutils literal notranslate"><span class="pre">CpsAsyncEmitAbsorber[R]</span></code></a> where <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitAbsorber.scala#L33"><code class="docutils literal notranslate"><span class="pre">eval</span></code></a> accepts a cps-transformed function and outputs the result stream.</p>
 </dd>
 </dl>
 <p><a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> provides a platform-specific trait <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/jvm/src/main/scala/cps/stream/BaseUnfoldCpsAsyncEmitAbsorber.scala#L10"><code class="docutils literal notranslate"><span class="pre">BaseUnfoldCpsAsyncEmitAbsorber</span></code></a> which can simplicify generator implementations for streams which has something like <code class="docutils literal notranslate"><span class="pre">unfoldAsync[S,</span> <span class="pre">E](s:</span> <span class="pre">S)(f:</span> <span class="pre">S</span> <span class="pre">=&gt;</span> <span class="pre">F[Option[(S,</span> <span class="pre">E)]]):</span> <span class="pre">R</span></code>.</p>
 <p>For example, look at the implementation of <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/stream/CpsAsyncEmitAbsorber.scala#L27"><code class="docutils literal notranslate"><span class="pre">CpsAsyncEmitAbsorber[R]</span></code></a> for <a class="reference external" href="https://doc.akka.io/docs/akka/current/stream/"><strong>Akka Streams</strong></a> source:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">given</span> <span class="nc">AkkaStreamEmitAbsorber</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="k">using</span> <span class="nc">ExecutionContext</span><span class="p">):</span>
-                             <span class="nc">BaseUnfoldCpsAsyncEmitAbsorber</span><span class="p">[</span><span class="nc">Source</span><span class="p">[</span><span class="nc">T</span><span class="p">,</span> <span class="nc">NotUsed</span><span class="p">],</span> <span class="nc">Future</span><span class="p">,</span> <span class="nc">T</span><span class="p">]</span> <span class="k">with</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">given</span><span class="w"> </span><span class="nc">AkkaStreamEmitAbsorber</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="k">using</span><span class="w"> </span><span class="nc">ExecutionContext</span><span class="p">):</span><span class="w"></span>
+<span class="w">                             </span><span class="nc">BaseUnfoldCpsAsyncEmitAbsorber</span><span class="p">[</span><span class="nc">Source</span><span class="p">[</span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="nc">NotUsed</span><span class="p">],</span><span class="w"> </span><span class="nc">Future</span><span class="p">,</span><span class="w"> </span><span class="nc">T</span><span class="p">]</span><span class="w"> </span><span class="k">with</span><span class="w"></span>
 
-  <span class="k">override</span> <span class="k">type</span> <span class="nc">Element</span> <span class="o">=</span> <span class="nc">T</span>
+<span class="w">  </span><span class="k">override</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nc">Element</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">T</span><span class="w"></span>
 
-  <span class="k">def</span> <span class="nf">unfold</span><span class="p">[</span><span class="nc">S</span><span class="p">](</span><span class="n">s0</span><span class="p">:</span> <span class="nc">S</span><span class="p">)(</span><span class="n">f</span><span class="p">:</span> <span class="nc">S</span> <span class="o">=&gt;</span> <span class="nc">Future</span><span class="p">[</span><span class="nc">Option</span><span class="p">[(</span><span class="nc">T</span><span class="p">,</span> <span class="nc">S</span><span class="p">)]]):</span> <span class="nc">Source</span><span class="p">[</span><span class="nc">T</span><span class="p">,</span> <span class="nc">NotUsed</span><span class="p">]</span> <span class="o">=</span>
-    <span class="nc">Source</span><span class="p">.</span><span class="n">unfoldAsync</span><span class="p">[</span><span class="nc">S</span><span class="p">,</span> <span class="nc">T</span><span class="p">](</span><span class="n">s0</span><span class="p">)((</span><span class="n">s</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">f</span><span class="p">(</span><span class="n">s</span><span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="n">_</span><span class="p">.</span><span class="n">map</span><span class="p">{</span> <span class="k">case</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="p">})</span> <span class="p">)</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">unfold</span><span class="p">[</span><span class="nc">S</span><span class="p">](</span><span class="n">s0</span><span class="p">:</span><span class="w"> </span><span class="nc">S</span><span class="p">)(</span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="nc">S</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">Future</span><span class="p">[</span><span class="nc">Option</span><span class="p">[(</span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="nc">S</span><span class="p">)]]):</span><span class="w"> </span><span class="nc">Source</span><span class="p">[</span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="nc">NotUsed</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">    </span><span class="nc">Source</span><span class="p">.</span><span class="n">unfoldAsync</span><span class="p">[</span><span class="nc">S</span><span class="p">,</span><span class="w"> </span><span class="nc">T</span><span class="p">](</span><span class="n">s0</span><span class="p">)((</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">s</span><span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="n">_</span><span class="p">.</span><span class="n">map</span><span class="p">{</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
 </pre></div>
 </div>
 </section>
@@ -107,8 +109,9 @@ There exist integration modules for well-known async streaming libraries (see se
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Generators</a><ul>
 <li><a class="reference internal" href="#async-streaming">Async Streaming</a></li>
 <li><a class="reference internal" href="#writing-generator-adapters-for-custom-streams">Writing generator adapters for custom streams</a></li>
@@ -116,12 +119,17 @@ There exist integration modules for well-known async streaming libraries (see se
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="AutomaticColoring.html"
-                        title="previous chapter">Automatic Coloring</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="Integrations.html"
-                        title="next chapter">Integrations</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="AutomaticColoring.html"
+                          title="previous chapter">Automatic Coloring</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="Integrations.html"
+                          title="next chapter">Integrations</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -138,7 +146,7 @@ There exist integration modules for well-known async streaming libraries (see se
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -155,13 +163,13 @@ There exist integration modules for well-known async streaming libraries (see se
         <li class="right" >
           <a href="AutomaticColoring.html" title="Automatic Coloring"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Generators</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2022, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.3.
     </div>
   </body>
 </html>

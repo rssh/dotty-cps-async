@@ -1,19 +1,21 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Integrations &#8212; dotty-cps-async 0.9.11-SNAPSHOT documentation</title>
+    <title>Integrations &#8212; dotty-cps-async 0.9.12 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Monad Context" href="MonadContexts.html" />
@@ -31,7 +33,7 @@
         <li class="right" >
           <a href="AsyncStreams.html" title="Generators"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Integrations</a></li> 
       </ul>
     </div>  
@@ -42,18 +44,18 @@
           <div class="body" role="main">
             
   <section id="integrations">
-<span id="id1"></span><h1>Integrations<a class="headerlink" href="#integrations" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>Integrations<a class="headerlink" href="#integrations" title="Permalink to this heading">¶</a></h1>
 <p><a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> itself provides type classes for monads, available without external dependencies: this is  <a class="reference external" href="https://https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/monads/FutureAsyncMonad.scala"><code class="docutils literal notranslate"><span class="pre">FutureAsyncMonad</span></code></a> ,  JVM-only Java <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/jvm/src/main/scala/cps/monads/CompletableFutureCpsMonad.scala"><code class="docutils literal notranslate"><span class="pre">CompletableFuture</span></code></a> and JS-only <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/js/src/main/scala/cps/monads/PromiseCpsAwaitable.scala"><code class="docutils literal notranslate"><span class="pre">js.Promise</span></code></a>  and <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/js/src/main/scala/cps/monads/jsfuture/JSFuture.scala"><code class="docutils literal notranslate"><span class="pre">JSFuture</span></code></a> .</p>
 <p>Third-party effect stacks are provided in external modules.</p>
 <section id="rssh-cps-async-connect">
-<h2>rssh/cps-async-connect<a class="headerlink" href="#rssh-cps-async-connect" title="Permalink to this headline">¶</a></h2>
+<h2>rssh/cps-async-connect<a class="headerlink" href="#rssh-cps-async-connect" title="Permalink to this heading">¶</a></h2>
 <p>GitHub project: <a class="reference external" href="https://github.com/rssh/cps-async-connect">https://github.com/rssh/cps-async-connect</a></p>
 <section id="cats-effect">
-<h3>Cats Effect<a class="headerlink" href="#cats-effect" title="Permalink to this headline">¶</a></h3>
+<h3>Cats Effect<a class="headerlink" href="#cats-effect" title="Permalink to this heading">¶</a></h3>
 <p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#cats-effect"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-cats-effect</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate <a class="reference external" href="https://typelevel.org/cats-effect/"><strong>Cats Effect</strong></a> :</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;org.typelevel&quot;</span> <span class="o">%%</span> <span class="s">&quot;cats-effect&quot;</span> <span class="o">%</span> <span class="s">&quot;3.3.12&quot;</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-cats-effect&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.9-1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;org.typelevel&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;cats-effect&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">catsEffectVersion</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;cps-async-connect-cats-effect&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">cpsAsyncConnectVersion</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -61,65 +63,65 @@
 <p><strong>Note</strong>: Typelevel’s project <a class="reference external" href="https://github.com/typelevel/cats-effect-cps"><code class="docutils literal notranslate"><span class="pre">cats-effect-cps</span></code></a> also provides async/await syntax support for <a class="reference external" href="https://typelevel.org/cats-effect/"><strong>Cats Effect</strong></a>.</p>
 </section>
 <section id="monix">
-<h3>Monix<a class="headerlink" href="#monix" title="Permalink to this headline">¶</a></h3>
+<h3>Monix<a class="headerlink" href="#monix" title="Permalink to this heading">¶</a></h3>
 <p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#monix"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-monix</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate <a class="reference external" href="https://monix.io/"><strong>Monix</strong></a> :</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;io.monix&quot;</span> <span class="o">%%</span> <span class="s">&quot;monix&quot;</span> <span class="o">%</span> <span class="s">&quot;3.4.1&quot;</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-monix&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.9-1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;io.monix&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;monix&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;3.4.1&quot;</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;cps-async-connect-monix&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">cpsAsyncConnectVersion</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
 <p><a class="reference external" href="https://monix.io/"><strong>Monix</strong></a> GitHub : <a class="reference external" href="https://github.com/monix/monix"><code class="docutils literal notranslate"><span class="pre">monix/monix</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/io.monix"><code class="docutils literal notranslate"><span class="pre">io.monix</span></code></a>.</p>
 </section>
 <section id="scalaz-io">
-<h3>Scalaz IO<a class="headerlink" href="#scalaz-io" title="Permalink to this headline">¶</a></h3>
+<h3>Scalaz IO<a class="headerlink" href="#scalaz-io" title="Permalink to this heading">¶</a></h3>
 <p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#scalaz-io"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-scalaz</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate <a class="reference external" href="https://scalaz.github.io/"><strong>Scalaz IO</strong></a>:</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;org.scalaz&quot;</span> <span class="o">%%</span> <span class="s">&quot;scalaz-core&quot;</span> <span class="o">%</span> <span class="s">&quot;7.4.0-M12&quot;</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;org.scalaz&quot;</span> <span class="o">%%</span> <span class="s">&quot;scalaz-effect&quot;</span> <span class="o">%</span> <span class="s">&quot;7.4.0-M12&quot;</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-scalaz&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.9-1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;org.scalaz&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;scalaz-core&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;7.4.0-M12&quot;</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;org.scalaz&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;scalaz-effect&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;7.4.0-M12&quot;</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;cps-async-connect-scalaz&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">cpsAsyncConnectVersion</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
 <p><a class="reference external" href="https://scalaz.github.io/"><strong>Scalaz IO</strong></a> GitHub : <a class="reference external" href="https://github.com/scalaz/scalaz"><code class="docutils literal notranslate"><span class="pre">scalaz/scalaz</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/org.scalaz"><code class="docutils literal notranslate"><span class="pre">org.scalaz</span></code></a>.</p>
 </section>
 <section id="zio-and-zio-streams">
-<h3>ZIO and ZIO Streams<a class="headerlink" href="#zio-and-zio-streams" title="Permalink to this headline">¶</a></h3>
+<h3>ZIO and ZIO Streams<a class="headerlink" href="#zio-and-zio-streams" title="Permalink to this heading">¶</a></h3>
 <p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#zio"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-zio</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate <a class="reference external" href="https://zio.dev/"><strong>ZIO</strong></a> :</p>
 <p>For 1.0.x series:</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;dev.zio&quot;</span> <span class="o">%%</span> <span class="s">&quot;zio&quot;</span> <span class="o">%</span> <span class="s">&quot;1.0.15&quot;</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-zio&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.9-1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;dev.zio&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;zio&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;1.0.17&quot;</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;cps-async-connect-zio&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">cpsAsyncConnectVersion</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>For 2.0.x series:</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;dev.zio&quot;</span> <span class="o">%%</span> <span class="s">&quot;zio&quot;</span> <span class="o">%</span> <span class="s">&quot;2.0.0&quot;</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-zio2&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.9-1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;dev.zio&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;zio&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;2.0.4&quot;</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;cps-async-connect-zio2&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">cpsAsyncConnectVersion</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
 <p><a class="reference external" href="https://zio.dev/"><strong>ZIO</strong></a> GitHub: <a class="reference external" href="https://github.com/zio/zio"><code class="docutils literal notranslate"><span class="pre">zio/zio</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/dev.zio"><code class="docutils literal notranslate"><span class="pre">dev.zio</span></code></a>.</p>
 </section>
 <section id="akka-stream">
-<h3>Akka Stream<a class="headerlink" href="#akka-stream" title="Permalink to this headline">¶</a></h3>
+<h3>Akka Stream<a class="headerlink" href="#akka-stream" title="Permalink to this heading">¶</a></h3>
 <p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#akka-streams"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-akka-stream</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate Lightbend’s <a class="reference external" href="&lt;https://doc.akka.io/docs/akka/current/stream/"><strong>Akka Stream</strong></a> :</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.typesafe.akka&quot;</span> <span class="o">%%</span> <span class="s">&quot;akka-stream&quot;</span> <span class="o">%</span> <span class="s">&quot;2.6.18&quot;</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-akka-stream&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.9-1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.typesafe.akka&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;akka-stream&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">akkaVersion</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;cps-async-connect-akka-stream&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">cpsAsyncConnectVersion</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
 <p><a class="reference external" href="&lt;https://doc.akka.io/docs/akka/current/stream/"><strong>Akka Stream</strong></a> GitHub : <a class="reference external" href="https://github.com/akka/akka"><code class="docutils literal notranslate"><span class="pre">akka/akka</span></code></a>, Maven : <a class="reference external" href="https://mvnrepository.com/artifact/com.typesafe.akka/akka-stream"><code class="docutils literal notranslate"><span class="pre">com.typesafe.akka»akka-stream</span></code></a>.</p>
 </section>
 <section id="fs2-stream">
-<h3>FS2 Stream<a class="headerlink" href="#fs2-stream" title="Permalink to this headline">¶</a></h3>
+<h3>FS2 Stream<a class="headerlink" href="#fs2-stream" title="Permalink to this heading">¶</a></h3>
 <p>Add dependency <a class="reference external" href="https://github.com/rssh/cps-async-connect#fs2-streams"><code class="docutils literal notranslate"><span class="pre">cps-async-connect-fs2</span></code></a> to your <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> to integrate Typelevel’s <a class="reference external" href="https://fs2.io/"><strong>FS2</strong></a> :</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;co.fs2&quot;</span> <span class="o">%%</span> <span class="s">&quot;fs2-core&quot;</span> <span class="o">%</span> <span class="s">&quot;3.2.9&quot;</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;co.fs2&quot;</span> <span class="o">%%</span> <span class="s">&quot;fs2-io&quot;</span> <span class="o">%</span> <span class="s">&quot;3.2.9&quot;</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&quot;com.github.rssh&quot;</span> <span class="o">%%%</span> <span class="s">&quot;cps-async-connect-fs2&quot;</span> <span class="o">%</span> <span class="s">&quot;0.9.9-1&quot;</span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;co.fs2&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;fs2-core&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">fs2Version</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;co.fs2&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;fs2-io&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">fs2Version</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;cps-async-connect-fs2&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">cpsAsyncConnectVersion</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -127,12 +129,12 @@
 </section>
 </section>
 <section id="typelevel-cats-effect-cps">
-<h2>typelevel/cats-effect-cps<a class="headerlink" href="#typelevel-cats-effect-cps" title="Permalink to this headline">¶</a></h2>
+<h2>typelevel/cats-effect-cps<a class="headerlink" href="#typelevel-cats-effect-cps" title="Permalink to this heading">¶</a></h2>
 <p>GitHub project: <a class="reference external" href="https://github.com/typelevel/cats-effect-cps">https://github.com/typelevel/cats-effect-cps</a></p>
 <p><a class="reference external" href="https://github.com/typelevel/cats-effect-cps"><code class="docutils literal notranslate"><span class="pre">cats-effect-cps</span></code></a> is an experimental library to support uniform async/await syntax for <a class="reference external" href="https://typelevel.org/cats-effect/"><strong>Cats Effect</strong></a> in Scala 2 and Scala 3, integrated with the <a class="reference external" href="https://typelevel.org/cats/typelevelEcosystem.html"><strong>Typelevel ecosystem</strong></a>.</p>
 </section>
 <section id="call-for-additions">
-<h2>Call for additions:<a class="headerlink" href="#call-for-additions" title="Permalink to this headline">¶</a></h2>
+<h2>Call for additions:<a class="headerlink" href="#call-for-additions" title="Permalink to this heading">¶</a></h2>
 <p>If you have implemented <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a> support for some effect stack and want to mention it here - please, send a <a class="reference external" href="https://github.com/rssh/dotty-cps-async/pulls">pull request</a> about this.</p>
 </section>
 </section>
@@ -144,8 +146,9 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Integrations</a><ul>
 <li><a class="reference internal" href="#rssh-cps-async-connect">rssh/cps-async-connect</a><ul>
 <li><a class="reference internal" href="#cats-effect">Cats Effect</a></li>
@@ -162,12 +165,17 @@
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="AsyncStreams.html"
-                        title="previous chapter">Generators</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="MonadContexts.html"
-                        title="next chapter">Monad Context</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="AsyncStreams.html"
+                          title="previous chapter">Generators</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="MonadContexts.html"
+                          title="next chapter">Monad Context</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -184,7 +192,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -201,13 +209,13 @@
         <li class="right" >
           <a href="AsyncStreams.html" title="Generators"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Integrations</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2022, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.3.
     </div>
   </body>
 </html>

@@ -1,43 +1,20 @@
 Dependency
 ==========
 
-The following table presents the compatibility between versions of |Scala 3|_ and |dotty-cps-async|_ :
-
- .. list-table::
-    :widths: 5 5
-    :header-rows: 1
-
-    * - |header_scala3|_
-      - |header_dotty-cps-async|_
-
-    * - |3.2.0|_\+
-      - |0.9.11|_\+
-
-    * - |3.1.1|_
-      - |0.9.6|_\+
-
-    * - |3.1.0|_
-      - |0.9.5|_
-
-    * - |3.0.2|_
-      - |0.9.4|_
-
-
 Sbt Example
 -----------
 
-The current prerelease is |0.9.11|_ for using with Scala |3.2.0|_.
+The current prerelease is |0.9.12| for using with Scala |3.2.1|_.
 
  .. code-block:: scala
 
-   scalaVersion := "3.2.0"
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.11"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.12"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.11"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.12"
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
@@ -114,7 +91,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.11"
+  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.12"
 
 
 **Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_ and streaming frameworks like |Akka Streams|_ and |fs2|_. 
@@ -191,17 +168,9 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
 
-.. |0.9.4| replace:: ``0.9.4``
-.. _0.9.4: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.4
+.. |0.9.12| replace:: ``0.9.12``
+.. _0.9.12: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.12/
 
-.. |0.9.5| replace:: ``0.9.5``
-.. _0.9.5: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.5
-
-.. |0.9.6| replace:: ``0.9.6``
-.. _0.9.6: https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async_3/0.9.6
-
-.. |0.9.11| replace:: ``0.9.11``
-.. _0.9.11: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.11/
 .. /*to update*/ 
 
 .. |3.0.2| replace:: ``3.0.2``
@@ -215,6 +184,10 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 
 .. |3.2.0| replace:: ``3.2.0``
 .. _3.2.0: https://github.com/lampepfl/dotty/releases/tag/3.2.0
+
+.. |3.2.1| replace:: ``3.2.1``
+.. _3.2.1: https://github.com/lampepfl/dotty/releases/tag/3.2.1
+
 
 .. |Akka Streams| replace:: **Akka Streams**
 .. _Akka Streams: https://doc.akka.io/docs/akka/current/stream/

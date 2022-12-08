@@ -1,19 +1,21 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>References &#8212; dotty-cps-async 0.9.11-SNAPSHOT documentation</title>
+    <title>References &#8212; dotty-cps-async 0.9.12 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="FAQ" href="FAQ.html" /> 
@@ -27,7 +29,7 @@
         <li class="right" >
           <a href="FAQ.html" title="FAQ"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">References</a></li> 
       </ul>
     </div>  
@@ -38,9 +40,17 @@
           <div class="body" role="main">
             
   <section id="references">
-<h1>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h1>
+<h1>References<a class="headerlink" href="#references" title="Permalink to this heading">¶</a></h1>
 <section id="presentations">
-<h2>Presentations<a class="headerlink" href="#presentations" title="Permalink to this headline">¶</a></h2>
+<h2>Presentations<a class="headerlink" href="#presentations" title="Permalink to this heading">¶</a></h2>
+<p>Embedding generic monadic transformers into scala.</p>
+<ul class="simple">
+<li><p>TFP2022 slides: <a class="reference external" href="https://www.slideshare.net/rssh1/embedding-generic-monadic-transformer-into-scala-tfp2022">https://www.slideshare.net/rssh1/embedding-generic-monadic-transformer-into-scala-tfp2022</a> (May 2022)</p>
+<ul>
+<li><p>preprint: https://arxiv.org/abs/2209.10941</p></li>
+</ul>
+</li>
+</ul>
 <p>Can we free concurrent programming from the monadic style:</p>
 <ul class="simple">
 <li><p>ScalaR:  <a class="reference external" href="https://www.youtube.com/watch?v=ImlUuTQUeaQ">https://www.youtube.com/watch?v=ImlUuTQUeaQ</a>  (June 2020)</p></li>
@@ -52,7 +62,7 @@
 </ul>
 </section>
 <section id="related-work-in-scala-2">
-<h2>Related work in Scala 2<a class="headerlink" href="#related-work-in-scala-2" title="Permalink to this headline">¶</a></h2>
+<h2>Related work in Scala 2<a class="headerlink" href="#related-work-in-scala-2" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Scala-continuations.  paper:  <a class="reference external" href="https://infoscience.epfl.ch/record/149136/files/icfp113-rompf.pdf">https://infoscience.epfl.ch/record/149136/files/icfp113-rompf.pdf</a></p></li>
 <li><p>Scala-async:   <a class="reference external" href="https://github.com/scala/scala-async">https://github.com/scala/scala-async</a></p></li>
@@ -64,14 +74,15 @@
 </ul>
 </section>
 <section id="related-work-in-scala-3">
-<h2>Related work in Scala 3<a class="headerlink" href="#related-work-in-scala-3" title="Permalink to this headline">¶</a></h2>
+<h2>Related work in Scala 3<a class="headerlink" href="#related-work-in-scala-3" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Monadic-reflection <a class="reference external" href="https://github.com/lampepfl/monadic-reflection">https://github.com/lampepfl/monadic-reflection</a>  (requires a <a class="reference external" href="https://openjdk.java.net/projects/loom/">project Loom</a> enabled JVM)</p></li>
 <li><p>Thoughtworks DSL.scala recently ported to Scala 3:  <a class="reference external" href="https://github.com/ThoughtWorksInc/Dsl.scala">https://github.com/ThoughtWorksInc/Dsl.scala</a></p></li>
+<li><p>zio-direct (direct translation of a subset of scala on top of ZIO effect system) <a class="reference external" href="https://github.com/zio/zio-direct">https://github.com/zio/zio-direct</a></p></li>
 </ul>
 </section>
 <section id="related-work-in-other-languages">
-<h2>Related work in other languages<a class="headerlink" href="#related-work-in-other-languages" title="Permalink to this headline">¶</a></h2>
+<h2>Related work in other languages<a class="headerlink" href="#related-work-in-other-languages" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Historical overview: <a class="reference external" href="https://softwareengineering.stackexchange.com/questions/377464/who-did-async-await-first">https://softwareengineering.stackexchange.com/questions/377464/who-did-async-await-first</a></p></li>
 </ul>
@@ -179,9 +190,10 @@
 </ul>
 </section>
 <section id="monadic-computations-in-functional-programming-unrelated-to-po-syntax-most-examples-are-haskell">
-<h2>Monadic Computations in Functional Programming (unrelated to PO Syntax, most examples are Haskell).<a class="headerlink" href="#monadic-computations-in-functional-programming-unrelated-to-po-syntax-most-examples-are-haskell" title="Permalink to this headline">¶</a></h2>
+<h2>Monadic Computations in Functional Programming (unrelated to PO Syntax, most examples are Haskell).<a class="headerlink" href="#monadic-computations-in-functional-programming-unrelated-to-po-syntax-most-examples-are-haskell" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Extending monads via pattern matching (joinads for haskell): <a class="reference external" href="http://tomasp.net/academic/papers/docase/docase.pdf">http://tomasp.net/academic/papers/docase/docase.pdf</a></p></li>
+<li><p>‘do’ Unchained: Embracing Local Imperativity in a Purely Functional Language (Lean): <a class="reference external" href="https://leanprover.github.io/papers/do.pdf">https://leanprover.github.io/papers/do.pdf</a></p></li>
 </ul>
 <!-- hyperlinks --></section>
 </section>
@@ -193,8 +205,9 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">References</a><ul>
 <li><a class="reference internal" href="#presentations">Presentations</a></li>
 <li><a class="reference internal" href="#related-work-in-scala-2">Related work in Scala 2</a></li>
@@ -205,9 +218,12 @@
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="FAQ.html"
-                        title="previous chapter">FAQ</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="FAQ.html"
+                          title="previous chapter">FAQ</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -224,7 +240,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -238,13 +254,13 @@
         <li class="right" >
           <a href="FAQ.html" title="FAQ"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">References</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2022, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.3.
     </div>
   </body>
 </html>

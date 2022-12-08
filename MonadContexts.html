@@ -1,19 +1,21 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Monad Context &#8212; dotty-cps-async 0.9.11-SNAPSHOT documentation</title>
+    <title>Monad Context &#8212; dotty-cps-async 0.9.12 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Runtime Await." href="RuntimeAwait.html" />
@@ -31,7 +33,7 @@
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monad Context</a></li> 
       </ul>
     </div>  
@@ -42,25 +44,25 @@
           <div class="body" role="main">
             
   <section id="monad-context">
-<h1>Monad Context<a class="headerlink" href="#monad-context" title="Permalink to this headline">¶</a></h1>
+<h1>Monad Context<a class="headerlink" href="#monad-context" title="Permalink to this heading">¶</a></h1>
 <p>Monad context is a way to provide an additional API, which is available only inside some monad
 (i.e., inside appropriative <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> block).
 In the introduction chapter, we have shown a simplified representation of the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> signature:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">async</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span> <span class="nc">T</span><span class="p">](</span><span class="k">using</span> <span class="n">am</span><span class="p">:</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])(</span><span class="n">expr</span><span class="p">:</span> <span class="nc">T</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">async</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="w"> </span><span class="nc">T</span><span class="p">](</span><span class="k">using</span><span class="w"> </span><span class="n">am</span><span class="p">:</span><span class="w"> </span><span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])(</span><span class="n">expr</span><span class="p">:</span><span class="w"> </span><span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span><span class="w"></span>
 </pre></div>
 </div>
 <p>The complete definition looks like:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">transparent</span> <span class="k">inline</span> <span class="k">def</span> <span class="nf">async</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]](</span><span class="k">using</span> <span class="n">am</span><span class="p">:</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])</span> <span class="o">=</span>
-  <span class="n">macros</span><span class="p">.</span><span class="nc">Async</span><span class="p">.</span><span class="nc">InferAsyncArg</span><span class="p">(</span><span class="k">using</span> <span class="n">am</span><span class="p">)</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">transparent</span><span class="w"> </span><span class="k">inline</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">async</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]](</span><span class="k">using</span><span class="w"> </span><span class="n">am</span><span class="p">:</span><span class="w"> </span><span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">])</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">  </span><span class="n">macros</span><span class="p">.</span><span class="nc">Async</span><span class="p">.</span><span class="nc">InferAsyncArg</span><span class="p">(</span><span class="k">using</span><span class="w"> </span><span class="n">am</span><span class="p">)</span><span class="w"></span>
 
 <span class="c1">// and then in macros.Async:</span>
 
-<span class="k">class</span> <span class="nc">InferAsyncArg</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span> <span class="nc">C</span><span class="p">](</span><span class="k">using</span> <span class="kd">val</span> <span class="n">am</span><span class="p">:</span> <span class="nc">CpsMonad</span><span class="p">.</span><span class="nc">Aux</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span> <span class="nc">C</span><span class="p">])</span> <span class="p">{</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InferAsyncArg</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="w"> </span><span class="nc">C</span><span class="p">](</span><span class="k">using</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="n">am</span><span class="p">:</span><span class="w"> </span><span class="nc">CpsMonad</span><span class="p">.</span><span class="nc">Aux</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span><span class="w"> </span><span class="nc">C</span><span class="p">])</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 
-  <span class="k">transparent</span> <span class="k">inline</span> <span class="k">def</span> <span class="nf">apply</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="k">inline</span> <span class="n">expr</span><span class="p">:</span> <span class="nc">C</span> <span class="o">?=&gt;</span> <span class="nc">T</span><span class="p">)</span> <span class="o">=</span>
-    <span class="c1">// ...</span>
+<span class="w">  </span><span class="k">transparent</span><span class="w"> </span><span class="k">inline</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="k">inline</span><span class="w"> </span><span class="n">expr</span><span class="p">:</span><span class="w"> </span><span class="nc">C</span><span class="w"> </span><span class="o">?=&gt;</span><span class="w"> </span><span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// ...</span>
 
-<span class="p">}</span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>Here we split an application into two parts, to have one type parameter in <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a>; this becomes possible with the <code class="docutils literal notranslate"><span class="pre">async[F]</span></code> syntax.
@@ -68,30 +70,30 @@ Take a look at the argument of the <code class="docutils literal notranslate"><s
 This is a context function. The context parameter <code class="docutils literal notranslate"><span class="pre">C</span></code> is extracted from the monad definition.
 Inside <code class="docutils literal notranslate"><span class="pre">expr</span></code> the Scala 3 compiler makes an implicit instance of <code class="docutils literal notranslate"><span class="pre">C</span></code> available, which we can use to provide an internal monad API.</p>
 <p>The complete await signature lools like:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">await</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span> <span class="nc">T</span><span class="p">,</span> <span class="nc">G</span><span class="p">[</span><span class="n">_</span><span class="p">]](</span><span class="k">using</span> <span class="nc">CpsAwaitabe</span><span class="p">[</span><span class="nc">F</span><span class="p">],</span> <span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">G</span><span class="p">])(</span><span class="n">expr</span><span class="p">:</span> <span class="nc">T</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">await</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="nc">G</span><span class="p">[</span><span class="n">_</span><span class="p">]](</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsAwaitabe</span><span class="p">[</span><span class="nc">F</span><span class="p">],</span><span class="w"> </span><span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">G</span><span class="p">])(</span><span class="n">expr</span><span class="p">:</span><span class="w"> </span><span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span><span class="w"></span>
 </pre></div>
 </div>
 <p>where <cite>F</cite> is a type of awaited wrapper and <cite>G</cite> monad in enclosing <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> block.</p>
 <p>Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like <a class="reference external" href="https://en.wikipedia.org/wiki/Structured_concurrency"><strong>structured concurrency</strong></a>.
 Jokingly, we can say that our monad is close to the original Leibnic definition of monad in his work <a class="reference external" href="https://en.wikipedia.org/wiki/Monadology"><strong>Monadology</strong></a>, where each monad has unique qualities, not accessible from outside.</p>
 <p>The monad context is defined as a type inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a> :</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span> <span class="p">....</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span><span class="w"> </span><span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span><span class="w"> </span><span class="p">....</span><span class="w"></span>
 
-  <span class="k">type</span> <span class="nc">Context</span> <span class="o">&lt;:</span> <span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">F</span><span class="p">]</span>
-  <span class="c1">// ...</span>
+<span class="w">  </span><span class="k">type</span><span class="w"> </span><span class="nc">Context</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">F</span><span class="p">]</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// ...</span>
 
-<span class="p">}</span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadContext.scala#L11"><code class="docutils literal notranslate"><span class="pre">CpsMonadContext</span></code></a> provides the functionality to adopt awaiting another monadic expression into the current context.</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span> <span class="p">{</span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span><span class="w"> </span><span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 
-  <span class="cm">/**</span>
+<span class="w">  </span><span class="cm">/**</span>
 <span class="cm">   * adopt external monadic value to the current context.</span>
-<span class="cm">   **/</span>
-  <span class="k">def</span> <span class="nf">adoptAwait</span><span class="p">[</span><span class="nc">A</span><span class="p">](</span><span class="n">fa</span><span class="p">:</span> <span class="nc">F</span><span class="p">[</span><span class="nc">A</span><span class="p">]):</span> <span class="nc">F</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span>
+<span class="cm">   **/</span><span class="w"></span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">adoptAwait</span><span class="p">[</span><span class="nc">A</span><span class="p">](</span><span class="n">fa</span><span class="p">:</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">A</span><span class="p">]):</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span><span class="w"></span>
 
-<span class="p">}</span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>As a practical example, let’s consider adding a timeout to the plain Scala future.
@@ -116,12 +118,16 @@ For more advanced cases, we advise using the <a class="reference external" href=
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="Integrations.html"
-                        title="previous chapter">Integrations</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="RuntimeAwait.html"
-                        title="next chapter">Runtime Await.</a></p>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="Integrations.html"
+                          title="previous chapter">Integrations</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="RuntimeAwait.html"
+                          title="next chapter">Runtime Await.</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -138,7 +144,7 @@ For more advanced cases, we advise using the <a class="reference external" href=
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -155,13 +161,13 @@ For more advanced cases, we advise using the <a class="reference external" href=
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.11-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monad Context</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020-2022, Ruslan Shevchenko.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.3.
     </div>
   </body>
 </html>
