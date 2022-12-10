@@ -18,27 +18,27 @@ trait BlockTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
   import qctx.reflect._  
 
-  def runBlock(block: Block, prevs: List[Statement], last: Term): CpsTree = {
+  def runBlock(block: Block, prevs: List[Statement], last: Term)(owner:Symbol): CpsTree = {
     if (prevs.isEmpty) then
-      runRoot(last)
+      runRoot(last)(owner)
     else
       val prevsCpsTrees = prevs.map{
         case d: Definition =>
             d match
-              case v@ValDef(vName,vtt,optRhs) => runValDefFromBlock(block, v)
-              case _ => PureCpsTree(d)
+              case v@ValDef(vName,vtt,optRhs) => runValDefFromBlock(block, v)(owner)
+              case _ => PureCpsTree(owner,d)
         case t: Term =>
-            blockApplyValueDiscard(t)
+            blockApplyValueDiscard(t)(owner)
         case i: Import => CpsTree.empty
         case other => 
           throw MacroError(s"unknown tree type in block: $other", block.asExpr)
       }
-      val lastCps = runRoot(last)
+      val lastCps = runRoot(last)(owner)
       val prevsCps: CpsTree = prevsCpsTrees.foldLeft(CpsTree.empty){ (s,e) => s.append(e) }
       prevsCps.appendFinal(lastCps)
   }
 
-  def blockApplyValueDiscard(t:Term): CpsTree = {
+  def blockApplyValueDiscard(t:Term)(owner: Symbol): CpsTree = {
     if (blockCheckValueDiscarded(t)) then
       if (cpsCtx.flags.customValueDiscard) then
         val valueDiscard = TypeIdent(Symbol.classSymbol("cps.ValueDiscard")).tpe
@@ -52,7 +52,7 @@ trait BlockTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                else
                 Apply(Select.unique(sc.tree,"apply"),List(t))
             }
-            runRoot(pd)
+            runRoot(pd)(owner)
           case fl: ImplicitSearchFailure =>
             val tps = safeTypeShow(tpTree)
             val msg = s"discarding non-unit value without custom discard $tps (${fl.explanation})"
@@ -60,12 +60,12 @@ trait BlockTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                report.warning(msg, t.pos)
             else
                report.error(msg, t.pos)
-            runRoot(t)
+            runRoot(t)(owner)
       else
         report.warning(s"discarding non-unit value ${t.show}", t.pos)
-        runRoot(t)
+        runRoot(t)(owner)
     else
-      runRoot(t)
+      runRoot(t)(owner)
   }
 
   def blockCheckValueDiscarded(t: Term): Boolean =

@@ -14,16 +14,16 @@ trait ValDefTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
 
   import quotes.reflect.*
 
-  def runValDefFromBlock(block: Block, valDef: ValDef): CpsTree = {
+  def runValDefFromBlock(block: Block, valDef: ValDef)(owner: Symbol): CpsTree = {
     if cpsCtx.flags.debugLevel >= 15 then
       cpsCtx.log(s"ValDefTreeTransform:runValDefFomBlock, valDef=$valDef")
     val rhs = valDef.rhs.getOrElse(
             throw MacroError(s"val $valDef without right part in block ", block.asExpr)
     )
     //val rhsType = TransformUtil.veryWiden(rhs.tpe).asType
-    val cpsRhs = runRoot(rhs)
+    val cpsRhs = runRoot(rhs)(valDef.symbol)
     val memRhs = valDefApplyMemoization(valDef, cpsRhs, rhs)
-    ValCpsTree(valDef,memRhs, CpsTree.empty, true)
+    ValCpsTree(owner,valDef, memRhs, CpsTree.empty, true)
   }
 
   
@@ -46,6 +46,7 @@ trait ValDefTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
           }
           val toMemoize = usageRecord.nInAwaits > 0
           if (toMemoize) then 
+            given Quotes = valDef.symbol.asQuotes
             val memoization = cpsCtx.memoization.get
             memoization.kind match
               case CpsMonadMemoization.Kind.BY_DEFAULT => cpsRhs
@@ -53,7 +54,7 @@ trait ValDefTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                 val mm = memoization.monadMemoization.asExprOf[CpsMonadMemoization.Inplace[F]]
                 cpsRhs.syncOrigin match
                   case Some(t) =>
-                    PureCpsTree( '{ ${mm}.apply(${t.asExprOf[F[r]]}) }.asTerm )
+                    PureCpsTree( valDef.symbol, '{ ${mm}.apply(${t.asExprOf[F[r]]}) }.asTerm )
                   case None =>  
                     cpsRhs.monadMap( t => '{ ${mm}.apply(${t.asExprOf[F[r]]}) }.asTerm , rhsTpe )
               case CpsMonadMemoization.Kind.PURE =>

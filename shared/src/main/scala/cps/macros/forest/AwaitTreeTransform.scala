@@ -15,28 +15,28 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
   import qctx.reflect._
 
-  def runAwait(term: Term, arg: Term, awaitCpsMonadType: TypeRepr, awaitCpsMonad: Term, awaitCpsMonadContext: Term): CpsTree =
+  def runAwait(term: Term, arg: Term, awaitCpsMonadType: TypeRepr, awaitCpsMonad: Term, awaitCpsMonadContext: Term)(owner:Symbol): CpsTree =
       if cpsCtx.flags.debugLevel >= 10 then
           cpsCtx.log(s"runAwait, arg=${arg.show}")
       val r = if awaitCpsMonadType =:= monadTypeTree.tpe then
-        runMyAwait(term, arg, awaitCpsMonadContext)
+        runMyAwait(term, arg, awaitCpsMonadContext)(owner)
       else
-        runOtherAwait(term, arg, awaitCpsMonadType, awaitCpsMonad, awaitCpsMonadContext)
+        runOtherAwait(term, arg, awaitCpsMonadType, awaitCpsMonad, awaitCpsMonadContext)(owner)
       if cpsCtx.flags.debugLevel >= 10 then
           cpsCtx.log(s"runAwait result=${r}")
       r
 
 
-  def runMyAwait(awaitTerm: Term, arg: Term, context: Term): CpsTree =
+  def runMyAwait(awaitTerm: Term, arg: Term, context: Term)(owner:Symbol): CpsTree =
       val adoptedArg = if (context.tpe <:< TypeRepr.of[CpsMonadNoAdoptContext[?]]) {
                          arg
                        } else {  
                          adoptContextInMyAwait(awaitTerm, arg, context)
                        } 
-      val cpsArg = runRoot(adoptedArg)
+      val cpsArg = runRoot(adoptedArg)(owner)
       cpsArg.applyAwait(awaitTerm.tpe)
 
-  def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, otherCpsMonad: Term, myMonadContext: Term): CpsTree =
+  def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, otherCpsMonad: Term, myMonadContext: Term)(owner: Symbol): CpsTree =
       val myCpsMonad = cpsCtx.monad.asTerm
       val myCpsMonadTpe = myCpsMonad.tpe
       val myF = TypeRepr.of[F]
@@ -50,7 +50,7 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
            case implSuccess: ImplicitSearchSuccess =>
              //val convertedArg = Apply(Select.unique(implSuccess.tree, "apply"),List(arg))
              val convertedArg = Apply(TypeApply(Select.unique(implSuccess.tree, "apply"),List(Inferred(tTpe))),List(arg))
-             runMyAwait(awaitTerm, convertedArg, myMonadContext)
+             runMyAwait(awaitTerm, convertedArg, myMonadContext)(owner)
            case implFailure: ImplicitSearchFailure =>
              val taConversionPrinted = try {
                taConversion.show
