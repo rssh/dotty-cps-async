@@ -20,7 +20,7 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
   def runRoot(term: qctx.reflect.Term, muted: Boolean = false)(owner: Symbol): CpsTree =
      if (cpsCtx.flags.debugLevel >= 15)
         cpsCtx.log(s"runRoot: term=$safeShow(term)")
-     val r = term.tpe.widen match {
+     val r: CpsTree = term.tpe.widen match {
        case _ : MethodType =>
                //  in such case, we can't transform tree to expr
                //  without eta-expansion.
@@ -37,25 +37,27 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                             B2.inNestedContext(lambdaTerm, owner, muted, scope =>
                                  scope.runLambda(lambdaTerm.asInstanceOf[scope.qctx.reflect.Term],
                                                  params.asInstanceOf[List[scope.qctx.reflect.ValDef]],
-                                                 body.asInstanceOf[scope.qctx.reflect.Term]).inCake(thisTransform)
+                                                 body.asInstanceOf[scope.qctx.reflect.Term])
+                                                 (owner.asInstanceOf[scope.qctx.reflect.Symbol]).inCake(thisTransform)
                             )
                   case applyTerm@Apply(fun,args)  =>
                             val tree = B2.inNestedContext(applyTerm, owner, muted, scope =>
                                scope.runApply(applyTerm.asInstanceOf[scope.qctx.reflect.Apply],
                                               fun.asInstanceOf[scope.qctx.reflect.Term],
                                               args.asInstanceOf[List[scope.qctx.reflect.Term]],
-                                              Nil).inCake(thisTransform)
+                                              Nil)(owner.asInstanceOf[scope.qctx.reflect.Symbol]).inCake(thisTransform)
                             )
                             tree.inCake(thisTransform)
                   case inlined@Inlined(call,bindings,body) =>
                             val tree = B2.inNestedContext(inlined, owner,  muted, scope =>
                                scope.runInlined(inlined.asInstanceOf[scope.qctx.reflect.Inlined])
+                                               (owner.asInstanceOf[scope.qctx.reflect.Symbol])
                                     .inCake(thisTransform)
                             )
                             tree          
                   // special case, until we not enabled total blcok          
                   case minBlock@Block(Nil, last) =>
-                             val cpsLast = runRoot(last, muted = muted)
+                             val cpsLast = runRoot(last, muted = muted)(owner)
                              cpsLast
                   // should be enabled after owner-in-cps-tree           
                   //case block@Block(stats,last) =>
@@ -92,7 +94,7 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                                 else
                                   throw e
                         }
-                        val r = exprToTree(rCpsExpr, term)
+                        val r: CpsTree = exprToTree(rCpsExpr, term)(owner)
                         if cpsCtx.flags.debugLevel >= 10 then
                            cpsCtx.log(s"runRoot: rCpsExpr=${rCpsExpr.show}, async=${rCpsExpr.isAsync}")
                            if cpsCtx.flags.debugLevel >= 15 then
@@ -114,10 +116,10 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
      val monad = cpsCtx.monad
      val r = term match {
        case Select(qual, name) =>
-             val cpsQual = runRoot(qual, muted)
+             val cpsQual = runRoot(qual, muted)(owner)
              cpsQual.select(term, term.symbol, term.tpe.widen)
        case Ident(name) =>
-             CpsTree.pure(term)
+             CpsTree.pure(owner,term)
        case applyTerm@Apply(x, args) =>
              val thisScope = this
              val nestContext = cpsCtx.nestSame(muted)

@@ -14,11 +14,11 @@ trait SelectOuterTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
   import quotes.reflect._
 
   // case selectOuterTerm @ SelectOuter(qualifier,name,level) 
-  def runSelectOuter( term: SelectOuter ): CpsTree =
-     val qual = runRoot(term.qualifier)
+  def runSelectOuter( term: SelectOuter )(owner: Symbol): CpsTree =
+     val qual = runRoot(term.qualifier)(owner)
      if (!qual.isChanged)
         // TODO: mb not use pure ?
-        CpsTree.pure(term)
+        CpsTree.pure(owner,term)
      else
         SelectTypeApplyCpsTree.create(Some(term), qual,List(),
            List(SelectTypeApplyRecord(term.qualifier.tpe, term.symbol,List(),term.level)),term.tpe)
@@ -43,7 +43,8 @@ object SelectOuterTreeTransform:
           
          def bridge(): CpsExpr[F,T] =
             val origin = selectOuterTerm.asInstanceOf[quotes.reflect.SelectOuter]
-            runSelectOuter(origin).toResult[T]
+            val owner = quotes.reflect.Symbol.spliceOwner
+            runSelectOuter(origin)(owner).toResult[T]
                         
 
      } 

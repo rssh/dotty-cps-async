@@ -44,13 +44,13 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
 
   object O {  // fix arround https://github.com/lampepfl/dotty/issues/9074
 
-    def buildApplyArgsRecords(paramsDescriptor: MethodParamsDescriptor, args: List[qctx.reflect.Term], cpsCtx:TransformationContext[F,?,?]): List[ApplyArgRecord] = {
-     buildApplyArgsRecordsAcc(paramsDescriptor, args, cpsCtx, BuildApplyArgsAcc()).records.toList
+    def buildApplyArgsRecords(paramsDescriptor: MethodParamsDescriptor, args: List[qctx.reflect.Term], cpsCtx:TransformationContext[F,?,?])(owner:Symbol): List[ApplyArgRecord] = {
+     buildApplyArgsRecordsAcc(paramsDescriptor, args, cpsCtx, owner, BuildApplyArgsAcc()).records.toList
     }
 
-    def buildApplyArgsRecordsAcc(paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?,?], acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
+    def buildApplyArgsRecordsAcc(paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?,?], owner: Symbol, acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
        args.foldLeft(acc){ (s,e) =>
-         buildApplyArgRecord(paramsDescriptor, e, cpsCtx, s)
+         buildApplyArgRecord(paramsDescriptor, e, cpsCtx, s)(owner)
        }
 
     }
@@ -64,13 +64,13 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) =>
             val accRepeated = O.buildApplyArgsRecordsAcc(paramsDescriptor,
-                               rargs, cpsCtx.nestSame(),
+                               rargs, cpsCtx.nestSame(), owner,
                                acc.copy(inRepeat=true,records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt1)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case r@Repeated(rargs, tpt) =>
             val accRepeated = O.buildApplyArgsRecordsAcc(paramsDescriptor,
-                               rargs, cpsCtx.nestSame(),
+                               rargs, cpsCtx.nestSame(), owner,
                                acc.copy(inRepeat=true, records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
@@ -81,14 +81,14 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
             val nextRecord = if (paramsDescriptor.isByName(acc.paramIndex)) {
                                throw MacroError("passing lamda as byName params is not supported yet",posExpr(t))
                              } else {
-                               ApplyArgLambdaRecord(lambda,acc.posIndex,cpsBody, None, isInMonad(body.tpe))
+                               ApplyArgLambdaRecord(lambda,acc.posIndex,cpsBody, None, isInMonad(body.tpe),owner)
                              }
             acc.advance(nextRecord)
          case namedArg@NamedArg(name, arg) =>
             paramsDescriptor.paramIndex(name) match
               case Some(realIndex) =>
                 val namedAcc = acc.copy(inNamed=true,paramIndex = realIndex, records=IndexedSeq.empty)
-                val nested = buildApplyArgRecord(paramsDescriptor,arg,cpsCtx,namedAcc).records.head
+                val nested = buildApplyArgRecord(paramsDescriptor,arg,cpsCtx,namedAcc)(owner).records.head
                 if (realIndex == acc.paramIndex && !acc.wasNamed)
                   acc.advance(nested)
                 else
@@ -96,11 +96,11 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
               case None =>
                  throw MacroError(s"Can't find parameter with name $name", posExpr(t))
          case Block(Nil,last) =>
-            buildApplyArgRecord(paramsDescriptor,last,cpsCtx,acc)
+            buildApplyArgRecord(paramsDescriptor,last,cpsCtx,acc)(owner)
          case inlined@Inlined(call,bindings,body) =>
             if (bindings.isEmpty) 
-               val nested = buildApplyArgRecord(paramsDescriptor, body, cpsCtx,
-                                                acc.copy(records=IndexedSeq.empty)).records.head
+               val nested = buildApplyArgRecord(paramsDescriptor, body, cpsCtx, 
+                                                acc.copy(records=IndexedSeq.empty))(owner).records.head
                acc.advance(nested)
             else
                runInlined(inlined)(owner) match
@@ -114,7 +114,7 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
             if cpsCtx.flags.debugLevel >= 15 then
                cpsCtx.log(s"paramType=${paramsDescriptor.paramType(acc.paramIndex)}")
                cpsCtx.log(s"byName=${paramsDescriptor.isByName(acc.paramIndex)}")
-            val termCpsTree = runRoot(t)
+            val termCpsTree = runRoot(t)(owner)
             buildCpsTreeApplyArgRecord(paramsDescriptor, t, termCpsTree, cpsCtx, acc)(owner)
 
        }
@@ -138,10 +138,10 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
           else
              if (termCpsTree.isLambda) 
                termCpsTree match
-                  case AsyncLambdaCpsTree(originLambda,params,cpsBody,otpe) =>
-                     val nextRecord = ApplyArgLambdaRecord(originLambda,acc.posIndex,cpsBody,None,isInMonad(otpe))
+                  case AsyncLambdaCpsTree(owner, originLambda,params,cpsBody,otpe) =>
+                     val nextRecord = ApplyArgLambdaRecord(originLambda,acc.posIndex,cpsBody,None,isInMonad(otpe),owner)
                      acc.advance(nextRecord)
-                  case BlockCpsTree(prevs, last) => 
+                  case BlockCpsTree(blockOowner, prevs, last) => 
                      // TODO: create instance of ApplyArgLambdaBlockRecord   
                      throw MacroError(s"Lambda inside blocks is not supported in arguments yet", posExpr(t))
                   case _ =>

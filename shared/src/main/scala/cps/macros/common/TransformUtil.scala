@@ -278,3 +278,10 @@ object TransformUtil:
         Block(statements, term)     
   }
 
+  def lambdaBodyOwner(using Quotes)(lambda: quotes.reflect.Term): quotes.reflect.Symbol = {
+    import quotes.reflect.*
+    lambda match
+      case Block((d:DefDef)::Nil, Closure(_,_)) => d.symbol
+      case Inlined(call,binding,body) => lambdaBodyOwner(body)
+      case _ => Symbol.noSymbol
+  }

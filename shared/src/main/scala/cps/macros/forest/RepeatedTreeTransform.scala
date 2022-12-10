@@ -63,7 +63,7 @@ object RepeatedTreeTransform:
             runRepeated(repeatedTerm.asInstanceOf[quotes.reflect.Term],
                          elements.asInstanceOf[List[quotes.reflect.Term]],
                          tpt.asInstanceOf[quotes.reflect.TypeTree]
-                        ).toResult[T].asInstanceOf[CpsExpr[F,T]]
+                        )(quotes.reflect.Symbol.spliceOwner).toResult[T].asInstanceOf[CpsExpr[F,T]]
 
      } 
      (new Bridge(cpsCtx1)).bridge()

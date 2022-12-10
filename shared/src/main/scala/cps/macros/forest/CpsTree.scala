@@ -885,7 +885,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     def prunned: CpsTree =
       val term = Select.unique(shifted,"_finishChain")
-      shiftedResultCpsTree(origin, term)
+      shiftedResultCpsTree(origin, term)(owner)
 
     override def isAsync = true
 
@@ -1024,7 +1024,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                    // TODO: add overloaded case
                    val select = Select.unique(shifted,head.symbol.name)
                    val selectTypeApply = if (head.targs.isEmpty) select else TypeApply(select,targs)
-                   val nextNested = shiftedResultCpsTree(nestOrigin, selectTypeApply)
+                   val nextNested = shiftedResultCpsTree(nestOrigin, selectTypeApply)(owner)
                    SelectTypeApplyCpsTree.create(origin,nextNested,targs,revSelects.tail.reverse,otpe,true).transformed
                case None =>
                    nested.transformed
