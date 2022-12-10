@@ -215,7 +215,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
      def shift(shiftType: ApplicationShiftType): ApplyArgRecord = this
      override def append(tree: CpsTree): CpsTree =
-        ValCpsTree(valDef, termCpsTree, tree)
+        ValCpsTree(termCpsTree.owner, valDef, termCpsTree, tree)
   }
 
 
@@ -224,7 +224,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
        index: Int,
        cpsBody: CpsTree,
        optShiftType: Option[ApplicationShiftType],
-       existsLambdaUnshift: Boolean
+       existsLambdaUnshift: Boolean,
+       owner: Symbol
   ) extends ApplyArgRecord {
 
        def hasShiftedLambda: Boolean = cpsBody.isAsync && !existsLambdaUnshift
@@ -250,7 +251,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
             cpsBody.syncOrigin match
               case Some(changedBody) => 
                  val mt = MethodType(paramNames)(_ => paramTypes, _ => changedBody.tpe.widen)
-                 Lambda(Symbol.spliceOwner, mt,
+                 Lambda(owner, mt,
                        (owner,args) => changeArgs(params,args,changedBody,owner).changeOwner(owner))
               case None =>
                  if (existsLambdaUnshift) then
@@ -259,7 +260,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
                          val nBody = '{ ${cpsCtx.monad}.flatMap(
                                              ${cpsBody.transformed.asExprOf[F[F[r]]]})((x:F[r])=>x) }.asTerm
                          val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
-                         Lambda(Symbol.spliceOwner, mt, 
+                         Lambda(owner, mt, 
                               (owner,args) => changeArgs(params,args,nBody,owner).changeOwner(owner))
                       case _ =>
                          throw MacroError(s"F[?] expected, we have ${body.tpe.widen.show}",term.asExpr)
@@ -319,7 +320,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
        def append(a: CpsTree): CpsTree = 
         report.warning("lambda in statement position",term.pos)
-        BlockCpsTree(Queue(term), a)
+        BlockCpsTree(owner, Queue(term), a.changeOwner(owner))
 
 
 
@@ -513,7 +514,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
              if (na eq a)
                 a
              else
-                InlinedCpsTree(tree.origin, tree.bindings, na)
+                InlinedCpsTree(tree.owner, tree.origin, tree.bindings, na)
   }
 
 

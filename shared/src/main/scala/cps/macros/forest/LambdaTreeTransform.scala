@@ -1,10 +1,11 @@
 package cps.macros.forest
 
-import scala.quoted._
+import scala.quoted.*
 
-import cps._
-import cps.macros._
-import cps.macros.misc._
+import cps.*
+import cps.macros.*
+import cps.macros.common.*
+import cps.macros.misc.*
 import cps.macros.forest.application.ApplicationShiftType
 
 
@@ -15,20 +16,24 @@ trait LambdaTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
   import quotes.reflect._
 
   // case lambdaTree @ Lambda(params,body)
-  def runLambda(lambdaTerm: Term, params: List[ValDef], expr: Term ): CpsTree =
+  def runLambda(lambdaTerm: Term, params: List[ValDef], body: Term )(owner: Symbol): CpsTree =
      if (cpsCtx.flags.debugLevel >= 10)
        cpsCtx.log(s"runLambda, lambda=${safeShow(lambdaTerm)}")
-       cpsCtx.log(s"runLambda, expr=${safeShow(expr)}")
+       cpsCtx.log(s"runLambda, body=${safeShow(body)}")
      // TODO:  push cpsCtx is this is context function.  
-     val cpsBody = runRoot(expr)
+     val bodyOwner = TransformUtil.lambdaBodyOwner(lambdaTerm)
+     if (bodyOwner == Symbol.noSymbol) {
+        throw MacroError("Can't determinate body owner", lambdaTerm.asExpr)
+     }
+     val cpsBody = runRoot(body)(bodyOwner)
      val retval = if (cpsBody.isAsync) {
         // in general, shifted lambda
         if (cpsCtx.flags.allowShiftedLambda) then
-            AsyncLambdaCpsTree(lambdaTerm, params, cpsBody, lambdaTerm.tpe)
+            AsyncLambdaCpsTree(owner, lambdaTerm, params, cpsBody, lambdaTerm.tpe)
         else
             throw MacroError("await inside lambda functions without enclosing async block", lambdaTerm.asExpr)
      } else {
-        CpsTree.pure(lambdaTerm)
+        CpsTree.pure(owner,lambdaTerm)
      }
      retval
 
@@ -66,7 +71,7 @@ object LambdaTreeTransform:
             val origin = lambdaTerm.asInstanceOf[quotes.reflect.Term]
             val xparams = params.asInstanceOf[List[quotes.reflect.ValDef]]
             val xexpr   = expr.asInstanceOf[quotes.reflect.Term]
-            runLambda(origin, xparams, xexpr).toResult[T]
+            runLambda(origin, xparams, xexpr)(quotes.reflect.Symbol.spliceOwner).toResult[T]
 
 
      }

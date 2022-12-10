@@ -19,6 +19,8 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
   sealed abstract class CpsTree:
 
+     def owner: Symbol
+
      def isAsync: Boolean
 
      def isChanged: Boolean
@@ -121,18 +123,25 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
      def inCake[F1[_],T1, C1<:CpsMonadContext[F1]](otherScope: TreeTransformScope[F1,T1,C1]): otherScope.CpsTree
 
+     def changeOwner(newOwner: Symbol): CpsTree
+
+
+
 
   object CpsTree:
 
-    def pure(origin:Term, isChanged: Boolean = false): CpsTree = PureCpsTree(origin, isChanged)
+    def pure(owner: Symbol, origin:Term, isChanged: Boolean = false): CpsTree = 
+      PureCpsTree(owner, origin, isChanged)
 
-    def impure(transformed:Term, tpe: TypeRepr): CpsTree =
-                   AwaitSyncCpsTree(transformed, tpe.widen)
+    def impure(owner: Symbol, transformed:Term, tpe: TypeRepr): CpsTree =
+      AwaitSyncCpsTree(owner,transformed, tpe.widen)
 
     def empty: CpsTree = EmptyCpsTree
 
 
-  case class PureCpsTree(origin: qctx.reflect.Statement, isChanged: Boolean = false) extends CpsTree:
+  case class PureCpsTree(override val owner: Symbol,
+                         origin: qctx.reflect.Statement, 
+                         isChanged: Boolean = false) extends CpsTree:
 
     def isAsync = false
 
@@ -148,14 +157,16 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     def appendFinal(next: CpsTree): CpsTree =
       next match
-        case BlockCpsTree(statements,last) =>  //dott warn here.  TODO: research
-             BlockCpsTree(statements.prepended(origin), last)
+        case BlockCpsTree(nextOwner, statements, last) =>  //dott warn here.  TODO: research
+             BlockCpsTree(nextOwner, statements.prepended(origin.changeOwner(nextOwner)), last)
         case x: AsyncCpsTree =>
-             BlockCpsTree(Queue(origin), x)
+             BlockCpsTree(owner, Queue(origin), x.changeOwner(owner))
         case y: PureCpsTree =>
-             BlockCpsTree(Queue(origin), y)
+             BlockCpsTree(owner, Queue(origin), y.changeOwner(owner))
+        case EmptyCpsTree =>
+             this     
         case _ =>
-             BlockCpsTree(Queue(origin), next)
+             BlockCpsTree(owner,Queue(origin), next.changeOwner(owner))
 
 
     def otpe: TypeRepr = 
@@ -169,9 +180,9 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
          else
             origin match
               case t: Term =>
-                PureCpsTree(Typed(t, Inferred(newOtpe)), true)
+                PureCpsTree(owner, Typed(t, Inferred(newOtpe)), true)
               case _ =>
-                BlockCpsTree(Queue(origin), PureCpsTree(Typed(unitTerm,Inferred(newOtpe)),true))
+                BlockCpsTree(owner, Queue(origin), PureCpsTree(owner, Typed(unitTerm,Inferred(newOtpe)),true))
 
     def syncOrigin: Option[Term] = 
       origin match
@@ -181,24 +192,31 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
     def transformed: Term =
       origin match
         case t: Term =>    
+          //given quotes = owner.asQuote
           val untpureTerm = cpsCtx.monad.asTerm.select(pureSymbol)
           val tpureTerm = untpureTerm.appliedToType(otpe.widen)
           val r = tpureTerm.appliedTo(t)
           r
-        case s: Statement => BlockCpsTree(Queue(s),CpsTree.empty).transformed
+        case s: Statement => BlockCpsTree(owner, Queue(s),CpsTree.empty).transformed
 
     def applyAwait(newOtpe: TypeRepr): CpsTree =
       origin match
         case t: Term =>
-          AwaitSyncCpsTree(t, newOtpe.widen)
+          AwaitSyncCpsTree(owner, t, newOtpe.widen)
         case s =>
-          BlockCpsTree(Queue(s),CpsTree.empty.applyAwait(newOtpe))
+          BlockCpsTree(owner, Queue(s),CpsTree.empty.applyAwait(newOtpe))
 
     override def inCake[F1[_],T1, C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.PureCpsTree =
-          otherCake.PureCpsTree(otherCake.adoptStatement(origin), isChanged)
+          otherCake.PureCpsTree(
+            otherCake.adoptSymbol(owner),
+            otherCake.adoptStatement(origin), 
+            isChanged)
 
     override def toString(): String =
          s"PureCpsTree[$cpsTreeScope](${safeShow(origin)},${isChanged})"
+
+    override def changeOwner(newOwner: Symbol): PureCpsTree =
+        PureCpsTree(newOwner, origin.changeOwner(newOwner), isChanged)
 
 
   case object EmptyCpsTree extends CpsTree:
@@ -209,8 +227,10 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     def isChanged = true
   
+    def owner = Symbol.spliceOwner
+
     def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
-      PureCpsTree(f(unitTerm), isChanged)
+      PureCpsTree(owner,f(unitTerm), isChanged)
 
     def monadFlatMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
       FlatMappedCpsTree(this,f, ntpe)
@@ -222,7 +242,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
     def otpe: TypeRepr = TypeRepr.of[Unit]
 
     def castOtpe(newOtpe: TypeRepr): CpsTree =
-      PureCpsTree(Typed(unitTerm, Inferred(newOtpe)), true)
+      PureCpsTree(owner, Typed(unitTerm, Inferred(newOtpe)), true)
 
     def syncOrigin: Option[Term] = Some(unitTerm)
     
@@ -230,11 +250,14 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     def applyAwait(newOtpe: TypeRepr): CpsTree =
       // impossible
-      AwaitSyncCpsTree(unitTerm, newOtpe.widen)
+      AwaitSyncCpsTree(owner,unitTerm, newOtpe.widen)
 
     def inCake[F1[_],T1, C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.EmptyCpsTree.type =
       otherCake.EmptyCpsTree
 
+    // . non-important: will desappear 
+    override def changeOwner(newOwner: Symbol): EmptyCpsTree.type = this
+ 
 
 
   abstract sealed class AsyncCpsTree extends CpsTree:
@@ -272,7 +295,10 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
 
 
-  case class AwaitSyncCpsTree(val origin: Term, val otpe: TypeRepr) extends AsyncCpsTree:
+  case class AwaitSyncCpsTree(
+    val owner: Symbol,
+    val origin: Term, 
+    val otpe: TypeRepr) extends AsyncCpsTree:
 
     def isLambda = false
 
@@ -286,16 +312,22 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
               monadMap(x => Typed(x,Inferred(newOtpe)), newOtpe)
 
     override def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.AwaitSyncCpsTree =
-          otherCake.AwaitSyncCpsTree(otherCake.adopt(origin),
+          otherCake.AwaitSyncCpsTree(otherCake.adoptSymbol(owner),
+                                     otherCake.adopt(origin),
                                      otherCake.adoptType(otpe))
 
+    override def changeOwner(newOwner: Symbol): AwaitSyncCpsTree =
+          AwaitSyncCpsTree(newOwner, origin.changeOwner(newOwner), otpe)
+
+
   case class AwaitAsyncCpsTree(val nested: CpsTree, val otpe: TypeRepr) extends AsyncCpsTree:
+
+    def owner: Symbol = nested.owner
 
     def isLambda: Boolean = false
 
     def transformed: Term =
       FlatMappedCpsTree(nested, (t:Term)=>t, otpe).transformed
-
 
     def castOtpe(ntpe: TypeRepr): CpsTree =
           if (otpe =:= ntpe)
@@ -307,13 +339,15 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
     def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.CpsTree =
            otherCake.AwaitAsyncCpsTree(nested.inCake(otherCake), otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr])
 
-
+    def changeOwner(newOwner: Symbol): AwaitAsyncCpsTree =
+          AwaitAsyncCpsTree(nested.changeOwner(newOwner), otpe)
 
 
   case class MappedCpsTree(prev: CpsTree, op: Term => Term, otpe: TypeRepr) extends AsyncCpsTree:
 
     def isLambda: Boolean = false
 
+    def owner: Symbol = prev.owner
 
     override def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
           // this.map(f) = prev.map(op).map(f) = prev.map(op*f)
@@ -336,7 +370,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                      List(List(prev.transformed.changeOwner(Symbol.spliceOwner)),
                           List(
                             Lambda(
-                              Symbol.spliceOwner,
+                              owner,
                               MethodType(List("x"))(mt => List(wPrevOtpe), mt => otpe),
                               (owner, opArgs) => op(opArgs.head.asInstanceOf[Term]).changeOwner(owner)
                             )
@@ -363,6 +397,9 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                                op.asInstanceOf[otherCake.qctx.reflect.Term => otherCake.qctx.reflect.Term],
                                otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr])
 
+    override def changeOwner(newOwner: Symbol): MappedCpsTree =
+      MappedCpsTree(prev.changeOwner(newOwner), op, otpe)
+
 
 
   case class FlatMappedCpsTree(
@@ -372,7 +409,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     def isLambda: Boolean = false
 
-
+    def owner: Symbol = prev.owner
 
     override def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
           // this.map(f) = prev.flatMap(opm).map(f) = prev.flr(opm*f)
@@ -399,7 +436,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
               List(prev.castOtpe(wPrevOtpe).transformed.changeOwner(Symbol.spliceOwner)),
               List(
                 Lambda(
-                  Symbol.spliceOwner,
+                  this.owner,
                   MethodType(List("x"))(mt => List(wPrevOtpe),
                                         mt => TypeRepr.of[F].appliedTo(wOtpe)),
                   (owner,opArgs) => opm(opArgs.head.asInstanceOf[Term]).changeOwner(owner)
@@ -417,11 +454,17 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
           otherCake.adoptType(otpe)
         )
 
+    override def changeOwner(newOwner: Symbol): FlatMappedCpsTree =
+      FlatMappedCpsTree(prev.changeOwner(newOwner), opm, otpe)
+
   end FlatMappedCpsTree
 
   // TODO: refactor
   //   add origin block
-  case class BlockCpsTree(prevs:Queue[Statement], last: CpsTree) extends CpsTree:
+  case class BlockCpsTree(
+    override val owner: Symbol,
+    prevs:Queue[Statement], 
+    last: CpsTree) extends CpsTree:
 
     override def isAsync = last.isAsync
 
@@ -433,19 +476,20 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
       if (prevs.isEmpty)
         f(last)
       else
-        BlockCpsTree(prevs,f(last))
+        BlockCpsTree(owner, prevs, f(last).changeOwner(owner))
 
     override def transformed: Term =
       if (prevs.isEmpty)
-        last.transformed
+        last.transformed.changeOwner(owner)
       else
-        Block(prevs.toList, last.transformed).changeOwner(Symbol.spliceOwner)
-
+        Block(prevs.toList.map(_.changeOwner(owner)), last.transformed.changeOwner(owner))
+            
+        
     override def syncOrigin: Option[Term] =
       if prevs.isEmpty then
         last.syncOrigin
       else
-        last.syncOrigin map (l => Block(prevs.toList,l).changeOwner(Symbol.spliceOwner))
+        last.syncOrigin map (l => Block(prevs.toList,l).changeOwner(owner))
 
 
      // TODO: pass other cake ?
@@ -457,21 +501,26 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     def appendFinal(next: CpsTree): CpsTree =
        last.syncOrigin match
-         case Some(syncLast) => BlockCpsTree(prevs.appended(syncLast),next)
-         case None => BlockCpsTree(prevs, last.appendFinal(next))
+         case Some(syncLast) => BlockCpsTree(owner, prevs.appended(syncLast), next)
+         case None => BlockCpsTree(owner, prevs, last.appendFinal(next))
 
     def otpe: TypeRepr = last.otpe
 
     override def rtpe: TypeRepr = last.rtpe
 
     override def castOtpe(ntpe: TypeRepr): CpsTree =
-        BlockCpsTree(prevs, last.castOtpe(ntpe))
+        BlockCpsTree(owner, prevs, last.castOtpe(ntpe))
 
     override def applyAwait(newOtpe: TypeRepr): CpsTree =
-        BlockCpsTree(prevs, last.applyAwait(newOtpe))
+        BlockCpsTree(owner, prevs, last.applyAwait(newOtpe))
 
     override def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.BlockCpsTree =
-        otherCake.BlockCpsTree(prevs.asInstanceOf[Queue[otherCake.qctx.reflect.Term]], last.inCake(otherCake))
+        otherCake.BlockCpsTree(owner.asInstanceOf[otherCake.qctx.reflect.Symbol], 
+                               prevs.asInstanceOf[Queue[otherCake.qctx.reflect.Term]], 
+                               last.inCake(otherCake))
+
+    override def changeOwner(newOwner: Symbol): BlockCpsTree = 
+        BlockCpsTree(newOwner,prevs.map(_.changeOwner(newOwner)),last.changeOwner(newOwner))
 
   end BlockCpsTree
 
@@ -493,7 +542,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
   end BlockCpsTree
 
 
-  case class InlinedCpsTree(origin: Inlined, bindings: List[Definition],  nested: CpsTree) extends CpsTree:
+  case class InlinedCpsTree(owner: Symbol, origin: Inlined, bindings: List[Definition],  nested: CpsTree) extends CpsTree:
 
     override def isAsync = nested.isAsync
 
@@ -509,33 +558,41 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
 
     def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
-         InlinedCpsTree(origin, bindings, nested.monadMap(f, ntpe))
+         InlinedCpsTree(owner, origin, bindings, nested.monadMap(f, ntpe))
 
     def monadFlatMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
-         InlinedCpsTree(origin, bindings, nested.monadFlatMap(f, ntpe))
+         InlinedCpsTree(owner, origin, bindings, nested.monadFlatMap(f, ntpe))
 
     def appendFinal(next: CpsTree): CpsTree =
-         InlinedCpsTree(origin, bindings, nested.appendFinal(next))
+         InlinedCpsTree(owner, origin, bindings, nested.appendFinal(next))
 
     def otpe: TypeRepr = nested.otpe
 
     override def rtpe: TypeRepr = nested.rtpe
 
     override def castOtpe(ntpe: TypeRepr): CpsTree =
-         InlinedCpsTree(origin, bindings, nested.castOtpe(ntpe))
+         InlinedCpsTree(owner, origin, bindings, nested.castOtpe(ntpe))
 
     override def applyAwait(newOtpe:TypeRepr): CpsTree =
-         InlinedCpsTree(origin, bindings, nested.applyAwait(newOtpe))
+         InlinedCpsTree(owner, origin, bindings, nested.applyAwait(newOtpe))
 
     override def inCake[F1[_],T1, C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.InlinedCpsTree =
-         otherCake.InlinedCpsTree(origin.asInstanceOf[otherCake.qctx.reflect.Inlined], 
+         otherCake.InlinedCpsTree(owner.asInstanceOf[otherCake.qctx.reflect.Symbol],
+                                  origin.asInstanceOf[otherCake.qctx.reflect.Inlined], 
                                   bindings.map(_.asInstanceOf[otherCake.qctx.reflect.Definition]),
                                   nested.inCake(otherCake))
+
+    override def changeOwner(newOwner: Symbol): InlinedCpsTree ={
+      if (newOwner eq owner) then
+        this
+      else
+        InlinedCpsTree(newOwner, origin, bindings.map(_.changeOwner(newOwner)),nested.changeOwner(newOwner))
+    }
 
 
   end InlinedCpsTree
 
-  case class ValCpsTree(valDef: ValDef, rightPart: CpsTree, nested: CpsTree, canBeLambda: Boolean = false) extends CpsTree:
+  case class ValCpsTree(owner: Symbol, valDef: ValDef, rightPart: CpsTree, nested: CpsTree, canBeLambda: Boolean = false) extends CpsTree:
 
     if (rightPart.isLambda)
        if (cpsCtx.flags.debugLevel > 10) then
@@ -550,6 +607,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                          )
            throw new MacroError("Creating ValDef with lambda in right-part",posExprs(posTerm))
        
+       
 
     override def isAsync = rightPart.isAsync || nested.isAsync
 
@@ -563,9 +621,9 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
            appendValDef(rhs)
          case None =>
            if (nested.isAsync)
-              rightPart.monadFlatMap(v => appendValDef(v) , nested.otpe).transformed
+              rightPart.changeOwner(owner).monadFlatMap(v => appendValDef(v) , nested.otpe).transformed
            else 
-              rightPart.monadMap(v => appendValDef(v) , nested.otpe).transformed
+              rightPart.changeOwner(owner).monadMap(v => appendValDef(v) , nested.otpe).transformed
 
     override def syncOrigin: Option[Term] =
        for{
@@ -576,47 +634,54 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
 
     override def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
-        ValCpsTree(valDef, rightPart, nested.monadMap(f,ntpe))
+        ValCpsTree(owner, valDef, rightPart, nested.monadMap(f,ntpe))
 
     override def monadFlatMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
-        ValCpsTree(valDef, rightPart, nested.monadFlatMap(f,ntpe))
+        ValCpsTree(owner, valDef, rightPart, nested.monadFlatMap(f,ntpe))
 
     def appendFinal(next: CpsTree): CpsTree = 
-        ValCpsTree(valDef, rightPart, nested.appendFinal(next))
+        ValCpsTree(owner, valDef, rightPart, nested.appendFinal(next))
 
     override def otpe: TypeRepr = nested.otpe
 
     override def rtpe: TypeRepr = nested.rtpe
 
     override def castOtpe(ntpe: TypeRepr): CpsTree =
-        ValCpsTree(valDef, rightPart, nested.castOtpe(ntpe))
+        ValCpsTree(owner, valDef, rightPart, nested.castOtpe(ntpe))
 
     override def applyAwait(newOtpe: TypeRepr): CpsTree =
-        ValCpsTree(valDef, rightPart, nested.applyAwait(newOtpe))
+        ValCpsTree(owner, valDef, rightPart, nested.applyAwait(newOtpe))
 
     def appendValDef(right: Term):Term =
-       val nValDef = ValDef.copy(valDef)(name = valDef.name, 
+       val nValDef = ValDef.copy(valDef)(name=valDef.name, 
                                          tpt=valDef.tpt, 
                                          rhs=Some(right.changeOwner(valDef.symbol)))
        val result = nested match
          case BlockCpsTree.Matcher(prevs,last) =>
            val lastTerm = last.syncOrigin.getOrElse(last.transformed)
-           Block(nValDef +: prevs.toList, lastTerm.asInstanceOf[Term]).changeOwner(Symbol.spliceOwner)
+           Block(nValDef +: prevs.toList, lastTerm.asInstanceOf[Term]).changeOwner(owner)
          case _ =>
            val next = nested.syncOrigin.getOrElse(nested.transformed)
            appendValDefToNextTerm(nValDef, next.asInstanceOf[Term])
        result
 
     def appendValDefToNextTerm(valDef: ValDef, next:Term): Term =
-       next.changeOwner(valDef.symbol.owner) match
+       next.changeOwner(owner) match
          case x@Lambda(params,term) => Block(List(valDef), x)
          case block@Block(stats, last) => TransformUtil.prependStatementToBlock(valDef,block)
          case other => Block(List(valDef), other)
 
     def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherScope: TreeTransformScope[F1,T1,C1]): otherScope.ValCpsTree =
-       otherScope.ValCpsTree(valDef.asInstanceOf[otherScope.qctx.reflect.ValDef],
-                             rightPart.inCake(otherScope),
-                             nested.inCake(otherScope))
+       otherScope.ValCpsTree( owner.asInstanceOf[otherScope.qctx.reflect.Symbol],
+                              valDef.asInstanceOf[otherScope.qctx.reflect.ValDef],
+                              rightPart.inCake(otherScope),
+                              nested.inCake(otherScope))
+
+    def changeOwner(newOwner: Symbol): ValCpsTree =
+      if (newOwner eq owner) then
+        this
+      else
+        ValCpsTree(newOwner, valDef.changeOwner(newOwner), rightPart, nested.changeOwner(owner), canBeLambda)
 
   end ValCpsTree
 
@@ -634,6 +699,8 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     def isLambda = false
 
+    def owner = frs.owner
+
     assert(!frs.isLambda)
     assert(!snd.isLambda)
 
@@ -649,16 +716,16 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
               case Block(xStats, xLast) =>
                 y match
                   case yBlock@Block(yStats, yLast) =>
-                    TransformUtil.prependStatementsToBlock(xStats :+ xLast, yBlock)
+                    TransformUtil.prependStatementsToBlock(xStats :+ xLast, yBlock.changeOwner(frs.owner))
                   case yOther =>
-                    Block(xStats :+ xLast, yOther)
+                    Block(xStats :+ xLast, yOther.changeOwner(frs.owner))
               case xOther =>
                 y match
                   case yBlock@Block(yStats, yLast) =>
-                    TransformUtil.prependStatementToBlock(xOther, yBlock)
+                    TransformUtil.prependStatementToBlock(xOther, yBlock.changeOwner(frs.owner))
                   case yOther =>
-                    Block(xOther::Nil, yOther)
-            r.changeOwner(Symbol.spliceOwner)
+                    Block(xOther::Nil, yOther.changeOwner(frs.owner))
+            r
           }
     }
 
@@ -685,10 +752,17 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     override def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherScope: TreeTransformScope[F1,T1,C1]): otherScope.AppendCpsTree =
          otherScope.AppendCpsTree(frs.inCake(otherScope), snd.inCake(otherScope))
+
+    override def changeOwner(newOwner: Symbol): AppendCpsTree =
+        if (newOwner eq owner) then
+          this
+        else
+          AppendCpsTree(frs.changeOwner(newOwner), snd)
  
   end AppendCpsTree
 
-  case class AsyncLambdaCpsTree(originLambda: Term,
+  case class AsyncLambdaCpsTree(owner: Symbol,
+                                originLambda: Term,
                                 params: List[ValDef],
                                 body: CpsTree,
                                 otpe: TypeRepr) extends CpsTree:
@@ -701,6 +775,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     override def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.AsyncLambdaCpsTree =
       otherCake.AsyncLambdaCpsTree(
+        owner.asInstanceOf[otherCake.qctx.reflect.Symbol],
         originLambda.asInstanceOf[otherCake.qctx.reflect.Term],
         params.asInstanceOf[List[otherCake.qctx.reflect.ValDef]],
         body.inCake(otherCake),
@@ -733,7 +808,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
        //       because otherwise it's quite strange why we have such interface in compiler
 
        //  r: (X1 .. XN) => F[R] = (x1 .. xN) => cps(f(x1,... xN)).
-      Lambda(Symbol.spliceOwner, shiftedType, (owner: Symbol, args: List[Tree]) => {
+      Lambda(owner, shiftedType, (owner: Symbol, args: List[Tree]) => {
          // here we need to change owner of ValDefs which was in lambda.
          //  TODO: always pass mapping between new symbols as parameters to transformed
          if (cpsCtx.flags.debugLevel >= 15)
@@ -773,21 +848,28 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
        throw MacroError("async lambda can't be an await argument", posExprs(originLambda) )
 
     override def castOtpe(ntpe: TypeRepr): CpsTree =
-       AsyncLambdaCpsTree(originLambda, params, body.castOtpe(ntpe), ntpe)
+       AsyncLambdaCpsTree(owner, originLambda, params, body.castOtpe(ntpe), ntpe)
 
     // here value is discarded.
     def appendFinal(next: CpsTree): CpsTree =
       next match
-        case BlockCpsTree(statements,last) =>  //dott warn here.  TODO: research
-             BlockCpsTree(statements.prepended(rLambda), last)
+        case BlockCpsTree(nextOwner, statements,last) =>  //dott warn here.  TODO: research
+             BlockCpsTree(nextOwner, statements.prepended(rLambda.changeOwner(nextOwner)), last)
         case _ =>
-             BlockCpsTree(Queue(rLambda), next)
+             BlockCpsTree(owner, Queue(rLambda), next)
 
     override def toResult[T: quoted.Type] : CpsExpr[F,T] =
        throw MacroError("async lambda can't be result of expression", posExprs(originLambda) )
 
     override def toString():String =
       s"AsyncLambdaCpsTree(_,$params,$body,${otpe.show})"
+
+    override def changeOwner(newOwner: Symbol): AsyncLambdaCpsTree = {
+      if (newOwner eq owner) then
+        this
+      else
+        AsyncLambdaCpsTree(newOwner,originLambda,params,body,otpe)
+    }
 
 
   end AsyncLambdaCpsTree
@@ -799,11 +881,11 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
    * we will catch in ApplyTree such methods and substitute to appropriative calls of
    * shifted.  
    **/
-  case class CallChainSubstCpsTree(origin: Term, shifted:Term, override val otpe: TypeRepr) extends CpsTree:
+  case class CallChainSubstCpsTree(owner: Symbol, origin: Term, shifted:Term, override val otpe: TypeRepr) extends CpsTree:
 
     def prunned: CpsTree =
       val term = Select.unique(shifted,"_finishChain")
-      shiftedResultCpsTree(origin, term)
+      shiftedResultCpsTree(origin, term)(owner)
 
     override def isAsync = true
 
@@ -813,10 +895,17 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     override def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.CallChainSubstCpsTree =
       otherCake.CallChainSubstCpsTree(
+        owner.asInstanceOf[otherCake.qctx.reflect.Symbol],
         origin.asInstanceOf[otherCake.qctx.reflect.Term],
         shifted.asInstanceOf[otherCake.qctx.reflect.Term],
         otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr]
       )
+
+    override def changeOwner(newOwner: Symbol): CallChainSubstCpsTree =
+      if (newOwner eq owner) then
+        this
+      else
+        CallChainSubstCpsTree(newOwner,origin.changeOwner(newOwner),shifted.changeOwner(newOwner),otpe)   
 
     override def transformed: Term =
       prunned.transformed
@@ -838,6 +927,8 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     override def castOtpe(newOtpe: TypeRepr): CpsTree =
        prunned.castOtpe(newOtpe)
+
+   
 
   end CallChainSubstCpsTree
 
@@ -869,6 +960,8 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     override def isLambda = nested.isLambda
 
+    override def owner = nested.owner
+
     override def inCake[F1[_],T1,C1<:CpsMonadContext[F1]](otherCake: TreeTransformScope[F1,T1,C1]): otherCake.SelectTypeApplyCpsTree =
        otherCake.SelectTypeApplyCpsTree(
                                origin.map(_.asInstanceOf[otherCake.qctx.reflect.Term]),
@@ -878,42 +971,50 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                                otpe.asInstanceOf[otherCake.qctx.reflect.TypeRepr],
                                changed)
 
+    override def changeOwner(newOwner: Symbol): SelectTypeApplyCpsTree = {
+      if (newOwner eq owner) then
+        this
+      else
+        SelectTypeApplyCpsTree(origin, nested.changeOwner(newOwner), targs, selects, otpe, true)
+    }
+
     def apply(term:Term):Term =
          val t1 = if (targs.isEmpty) term else term.appliedToTypeTrees(targs)
-         selects.foldRight(t1){ (e,s) =>
+         val r = selects.foldRight(t1){ (e,s) =>
             val t2 = if (e.level == 0) then Select(s, e.symbol) else SelectOuter(s, e.symbol.name, e.level)
             if e.targs.isEmpty then t2 else TypeApply(t2, e.targs)
          }
+         r.changeOwner(owner)
          
-
+    
     override def transformed: Term =
          nested match
-           case PureCpsTree(nestOrigin, nestChanged) =>
+           case PureCpsTree(nestOwner, nestOrigin, nestChanged) =>
                 origin match
                   case Some(t) if (!isChanged) => t
                   case None => 
                     nestOrigin match
-                      case nestTerm: Term => PureCpsTree(apply(nestTerm), isChanged).transformed
-                      case s => Block(List(s), PureCpsTree(apply(unitTerm), isChanged).transformed )
-           case AwaitSyncCpsTree(nestOrigin,nestOtpe) =>
+                      case nestTerm: Term => PureCpsTree(owner, apply(nestTerm), isChanged).transformed
+                      case s => Block(List(s), PureCpsTree(owner, apply(unitTerm), isChanged).transformed )
+           case AwaitSyncCpsTree(nestOwner, nestOrigin,nestOtpe) =>
              nested.monadMap(t => apply(t), otpe).transformed
            case AwaitAsyncCpsTree(nNested, nOtpe) =>
-             AwaitSyncCpsTree(apply(nested.transformed), otpe).transformed
+             AwaitSyncCpsTree(owner, apply(nested.transformed), otpe).transformed
            case MappedCpsTree(prev, op, nOtpe: TypeRepr) =>
              MappedCpsTree(prev, t => apply(op(t)), otpe).transformed
            case FlatMappedCpsTree(prev, opm, nOtpe) =>
              FlatMappedCpsTree(prev, t => apply(opm(t)), otpe).transformed
            case AppendCpsTree(frs, snd) =>
              AppendCpsTree(frs, SelectTypeApplyCpsTree.create(None,snd,targs,selects, otpe)).transformed
-           case BlockCpsTree(stats, last) =>
-             BlockCpsTree(stats, SelectTypeApplyCpsTree.create(None,last,targs, selects, otpe)).transformed
-           case InlinedCpsTree(origin, bindings,  nested) =>
-             InlinedCpsTree(origin, bindings, SelectTypeApplyCpsTree.create(None, nested,targs, selects, otpe)).transformed
-           case ValCpsTree(valDef, rightPart, nested, canBeLambda) =>
-             ValCpsTree(valDef, rightPart, SelectTypeApplyCpsTree.create(None, nested, targs, selects, otpe)).transformed
-           case AsyncLambdaCpsTree(orig, params, body, nOtpe) =>
+           case BlockCpsTree(blockOwner, stats, last) =>
+             BlockCpsTree(blockOwner, stats, SelectTypeApplyCpsTree.create(None,last,targs, selects, otpe)).transformed
+           case InlinedCpsTree(owner, origin, bindings,  nested) =>
+             InlinedCpsTree(owner, origin, bindings, SelectTypeApplyCpsTree.create(None, nested,targs, selects, otpe)).transformed
+           case ValCpsTree(owner, valDef, rightPart, nested, canBeLambda) =>
+             ValCpsTree(owner, valDef, rightPart, SelectTypeApplyCpsTree.create(None, nested, targs, selects, otpe)).transformed
+           case AsyncLambdaCpsTree(owner, orig, params, body, nOtpe) =>
              throw MacroError(s"AsyncLambda can't be transformed", posExprs(Seq()++origin++Some(orig):_*) )
-           case CallChainSubstCpsTree(nestOrigin, shifted, nOtpe) =>
+           case CallChainSubstCpsTree(owner, nestOrigin, shifted, nOtpe) =>
              if (!targs.isEmpty) then
                 // targs is already should be here
                 throw MacroError("CallChainSubstCpsTree already contains applied targs", posExprs(origin.toSeq: _*))
@@ -923,7 +1024,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                    // TODO: add overloaded case
                    val select = Select.unique(shifted,head.symbol.name)
                    val selectTypeApply = if (head.targs.isEmpty) select else TypeApply(select,targs)
-                   val nextNested = shiftedResultCpsTree(nestOrigin, selectTypeApply)
+                   val nextNested = shiftedResultCpsTree(nestOrigin, selectTypeApply)(owner)
                    SelectTypeApplyCpsTree.create(origin,nextNested,targs,revSelects.tail.reverse,otpe,true).transformed
                case None =>
                    nested.transformed
@@ -961,7 +1062,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     override def monadMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
          nested.syncOrigin match
-           case Some(t) => PureCpsTree(f(apply(t)), true)
+           case Some(t) => PureCpsTree(owner, f(apply(t)), true)
            case None => 
                   nested match
                     case MappedCpsTree(prevNested, prevF, prevNtpe) =>
@@ -975,7 +1076,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     override def monadFlatMap(f: Term => Term, ntpe: TypeRepr): CpsTree =
          nested.syncOrigin match
-           case Some(t) => CpsTree.impure(f(apply(t)), ntpe)
+           case Some(t) => CpsTree.impure(owner, f(apply(t)), ntpe)
            case None => 
                   nested match
                     case MappedCpsTree(prevNested, prevF, prevNtpe) =>
@@ -989,20 +1090,20 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
     override def appendFinal(next: CpsTree): CpsTree =
          nested.syncOrigin match
            case Some(t) =>
-              PureCpsTree(apply(t),isChanged).appendFinal(next)
+              PureCpsTree(owner, apply(t),isChanged).appendFinal(next)
            case None =>
-              AwaitSyncCpsTree(transformed, otpe).appendFinal(next)
+              AwaitSyncCpsTree(owner, transformed, otpe).appendFinal(next)
              
     override def applyAwait(newOtpe: TypeRepr): CpsTree =
          nested.syncOrigin match
            case Some(t) =>
-              AwaitSyncCpsTree(apply(t), newOtpe)
+              AwaitSyncCpsTree(owner, apply(t), newOtpe)
            case None =>
-              AwaitSyncCpsTree(transformed, otpe).applyAwait(newOtpe)
+              AwaitSyncCpsTree(owner, transformed, otpe).applyAwait(newOtpe)
               
     override def castOtpe(newOtpe: TypeRepr): CpsTree =
          nested.syncOrigin match
-           case Some(t) => PureCpsTree(Typed(apply(t),Inferred(newOtpe)),true)
+           case Some(t) => PureCpsTree(owner, Typed(apply(t),Inferred(newOtpe)),true)
            case None => MappedCpsTree(this, x => Typed(x,Inferred(newOtpe)),newOtpe)
 
 
@@ -1036,6 +1137,6 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
 
     def adoptStatement(t: qctx.reflect.Statement): otherCake.qctx.reflect.Statement = t.asInstanceOf[otherCake.qctx.reflect.Statement]
     
-
+    def adoptSymbol(t: qctx.reflect.Symbol): otherCake.qctx.reflect.Symbol = t.asInstanceOf[otherCake.qctx.reflect.Symbol]
 
 }

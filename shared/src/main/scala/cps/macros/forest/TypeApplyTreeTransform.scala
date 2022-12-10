@@ -16,8 +16,8 @@ trait TypeApplyTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
   // case TypeApply(fun,targs) 
   def runTypeApply( applyTerm: qctx.reflect.Term, 
                     fun: qctx.reflect.Term, 
-                    targs: List[qctx.reflect.TypeTree]): CpsTree =
-     runRoot(fun).typeApply(applyTerm, targs, applyTerm.tpe)
+                    targs: List[qctx.reflect.TypeTree])(owner:Symbol): CpsTree =
+     runRoot(fun)(owner).typeApply(applyTerm, targs, applyTerm.tpe)
 
 
 object TypeApplyTreeTransform:
@@ -42,7 +42,7 @@ object TypeApplyTreeTransform:
             runTypeApply(applyTerm.asInstanceOf[quotes.reflect.Term],
                          fun.asInstanceOf[quotes.reflect.Term],
                          targs.asInstanceOf[List[quotes.reflect.TypeTree]]
-                        ).toResult[T].asInstanceOf[CpsExpr[F,T]]
+                        )(quotes.reflect.Symbol.spliceOwner).toResult[T].asInstanceOf[CpsExpr[F,T]]
 
      } 
      (new Bridge(cpsCtx1)).bridge()

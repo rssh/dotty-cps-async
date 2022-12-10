@@ -17,7 +17,7 @@ trait MatchTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
   import qctx.reflect._
 
   // case selectTerm @ Select(qualifier,name) 
-  def runMatch( matchTerm: Match ): CpsTree =
+  def runMatch( matchTerm: Match )(owner: Symbol): CpsTree =
      if (cpsCtx.flags.debugLevel >= 15) then
          cpsCtx.log(s"matchTransform: matchTerm.tpe=${matchTerm.tpe}")
          cpsCtx.log(s"matchTransform: matchTerm.tpe.widen=${matchTerm.tpe.widen}")
@@ -26,8 +26,8 @@ trait MatchTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
      //val otpe = widenOtpe
      val otpe = matchTerm.tpe
      val scrutinee = matchTerm.scrutinee
-     val cpsScrutinee = runRoot(scrutinee)
-     val cpsCases = matchTerm.cases.map( caseDef => runRoot(caseDef.rhs) )
+     val cpsScrutinee = runRoot(scrutinee)(owner)
+     val cpsCases = matchTerm.cases.map( caseDef => runRoot(caseDef.rhs)(owner) )
      val asyncCases = cpsCases.exists( _.isAsync )
      val changedCases = cpsCases.exists( _.isChanged )
      if (cpsCtx.flags.debugLevel >= 15) then
@@ -46,12 +46,12 @@ trait MatchTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
      if (!cpsScrutinee.isAsync) then 
         if (!asyncCases) then
            if (!changedCases) then
-             CpsTree.pure(matchTerm)
+             CpsTree.pure(owner,matchTerm)
            else
-             CpsTree.pure(Match.copy(matchTerm)(scrutinee, nCases))
+             CpsTree.pure(owner,Match.copy(matchTerm)(scrutinee, nCases))
         else 
            val nTree = Match.copy(matchTerm)(scrutinee, nCases)
-           CpsTree.impure(nTree, otpe)
+           CpsTree.impure(owner,nTree, otpe)
      else
         if (!asyncCases) 
            cpsScrutinee.monadMap( x => Match.copy(matchTerm)(x, nCases), otpe )
@@ -80,7 +80,8 @@ object MatchTreeTransform:
           
          def bridge(): CpsExpr[F,T] =
             val origin = matchTerm.asInstanceOf[quotes.reflect.Match]
-            runMatch(origin).toResult[T]
+            val owner = quotes.reflect.Symbol.spliceOwner
+            runMatch(origin)(owner).toResult[T]
                         
 
      } 
