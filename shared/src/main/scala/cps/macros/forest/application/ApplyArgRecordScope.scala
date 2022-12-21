@@ -3,13 +3,14 @@ package cps.macros.forest.application
 import scala.annotation.tailrec
 import scala.quoted._
 import scala.collection.immutable.Queue
-
+import scala.util.control.NonFatal
 
 import cps._
 import cps.macros._
 import cps.macros.common._
 import cps.macros.forest._
 import cps.macros.misc._
+
 
 
 trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
@@ -256,14 +257,14 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
               case None =>
                  if (existsLambdaUnshift) then
                     body.tpe.widen.asType match
-                      case '[F[r]] =>
-                         val nBody = '{ ${cpsCtx.monad}.flatMap(
+                      case '[F[r]] if body.tpe.widen <:< TypeRepr.of[F[r]] =>
+                        val nBody = '{ ${cpsCtx.monad}.flatMap(
                                              ${cpsBody.transformed.asExprOf[F[F[r]]]})((x:F[r])=>x) }.asTerm
-                         val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
-                         Lambda(owner, mt, 
+                        val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
+                        Lambda(owner, mt, 
                               (owner,args) => changeArgs(params,args,nBody,owner).changeOwner(owner))
                       case _ =>
-                         throw MacroError(s"F[?] expected, we have ${body.tpe.widen.show}",term.asExpr)
+                        throw MacroError(s"F[?] expected, we have ${body.tpe.widen.show}",term.asExpr)
                  else
                     throw MacroError(s"Internal error: unshift is called when it not exists",term.asExpr)
          else
