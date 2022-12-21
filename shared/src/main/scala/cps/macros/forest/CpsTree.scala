@@ -1027,7 +1027,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                    val nextNested = shiftedResultCpsTree(nestOrigin, selectTypeApply)(owner)
                    SelectTypeApplyCpsTree.create(origin,nextNested,targs,revSelects.tail.reverse,otpe,true).transformed
                case None =>
-                   nested.transformed
+                   nested.transformed 
            case n@SelectTypeApplyCpsTree(nOrigin, nNested, nTargs, nSelects, nOtpe, nChanged) =>
              SelectTypeApplyCpsTree(origin, nNested,targs ++ nTargs, selects ++ nSelects, otpe, changed||nChanged).transformed
            case EmptyCpsTree =>

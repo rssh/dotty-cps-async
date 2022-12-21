@@ -38,10 +38,7 @@ sealed trait CpsTree {
   def transformedType(using Context): Type =
     CpsTransformHelper.cpsTransformedType(originType, tctx.monadType)
   
-  /**
-   * is  (can't be reprsesented as pure(x))
-   **/
-  def isAsync: Boolean 
+  def asyncKind: AsyncKind
 
   def isOriginEqSync(using Context): Boolean =
     unpure match
@@ -73,6 +70,11 @@ sealed trait CpsTree {
    **/
   def withOrigin(term:Tree):CpsTree 
 
+  /**
+   * apply runt
+   **/
+  def applyRuntimeAwait(mode: RuntiemAwaitMode): CpsTree
+
   
 }
 
@@ -95,7 +97,7 @@ object CpsTree {
 
 sealed trait SyncCpsTree extends CpsTree {
 
-  def isAsync: Boolean = false
+  def asyncKind: AsyncKind = AsyncKind.Sync
 
   def getUnpure(using Context): Tree
 
@@ -151,10 +153,11 @@ case class SeqCpsTree(
   last: CpsTree
 ) extends CpsTree {
 
-  override def isAsync = last.isAsync
+  override def asyncKind = last.asyncKind
+
 
   override def unpure(using Context) = {
-    if last.isAsync then
+    if last.asyncKind !== AsyncKind.Async then
       None
     else
       val stats = prevs.map{ t =>

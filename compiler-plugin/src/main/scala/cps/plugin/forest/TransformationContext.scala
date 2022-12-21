@@ -8,6 +8,7 @@ import ast.tpd.*
 
 
 case class TransformationContext(
+  //val shiftedSymbols: ShiftedSymbols,
   val monadType: Type,  // F[_]
   val cpsMonadRef: Tree  // summon[CpsTryMonad[F]]
-)
+)  
