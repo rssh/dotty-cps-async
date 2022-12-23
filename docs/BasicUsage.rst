@@ -4,17 +4,17 @@ Dependency
 Sbt Example
 -----------
 
-The current prerelease is |0.9.12| for using with Scala |3.2.1|_.
+The current prerelease is |0.9.13| for using with Scala |3.2.1|_.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.12"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.13"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.12"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.13"
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
@@ -91,7 +91,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.12"
+  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.13"
 
 
 **Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_ and streaming frameworks like |Akka Streams|_ and |fs2|_. 
@@ -168,8 +168,8 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
 
-.. |0.9.12| replace:: ``0.9.12``
-.. _0.9.12: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.12/
+.. |0.9.13| replace:: ``0.9.13``
+.. _0.9.13: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.13/
 
 .. /*to update*/ 
 
