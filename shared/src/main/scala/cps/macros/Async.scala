@@ -318,7 +318,7 @@ object Async {
       def transformNotInlined(t: Term): Term =
          val (oldParams, body, nestFun) = extractLambda(t)
          val oldValDef = oldParams.head
-         val transformed = transformImpl[F,T,C](body.asExprOf[T], Ref(oldValDef.symbol).asExprOf[C])
+         val transformed = transformImpl[F,T,C](body.changeOwner(Symbol.spliceOwner).asExprOf[T], Ref(oldValDef.symbol).asExprOf[C])
          val mt = MethodType(List(oldValDef.name))( _ => List(oldValDef.tpt.tpe), _ => TypeRepr.of[F[T]])
          val nLambda = Lambda(Symbol.spliceOwner, mt, (owner, params) => {
             TransformUtil.substituteLambdaParams( oldParams, params, transformed.asTerm, owner ).changeOwner(owner)
