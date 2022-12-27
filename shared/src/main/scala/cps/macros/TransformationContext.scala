@@ -26,7 +26,8 @@ case class TransformationContext[F[_],T,C <: CpsMonadContext[F]](
                                          muted: Boolean = flags.muted):   TransformationContext[F,S,C] =
       TransformationContext(newPatternCode, newPatternType, monad, monadContext, memoization, runtimeAwait,
                              flags.copy(muted=muted), 
-                             observatory, nesting + 1, parent=Some(this) )
+                             observatory, 
+                             nesting + 1, parent=Some(this) )
 
   def log(message:String): Unit =
        if !flags.muted then

@@ -22,6 +22,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type, CC<:CpsMonadContext[F]:Type]
                   with SelectOuterTreeTransform[F,CT, CC]
                   with BlockTreeTransform[F,CT,CC]
                   with ValDefTreeTransform[F,CT,CC]
+                  with NonLocalReturnsTreeTransform[F,CT,CC]
 {
 
    val cpsCtx: TransformationContext[F,CT, CC]
