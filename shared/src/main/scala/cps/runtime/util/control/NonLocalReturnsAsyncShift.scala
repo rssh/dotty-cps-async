@@ -25,7 +25,7 @@ object NonLocalReturnsAsyncShift extends AsyncShift[NonLocalReturns.type] {
               m.error(ex)
         }
       catch
-        case w: ControlThrowableAsyncWrapper if w.ce eq rt  =>
+        case w: ControlThrowableAsyncWrapper if w.ce eq rt =>
           m.pure(rt.result)  
         case NonFatal(ex) =>
           m.error(ex)
