@@ -133,7 +133,7 @@ Example:
 
 
 As we have seen, shifted functions have an additional type parameter: ``F[_]`` and a parameter |CpsMonad[F]|_ (or a more specific type, if needed).  Async transformer will substitute the call of ``modify`` into ``modify_async`` during compilation.
-   Sometimes, we already have ``F[_]`` as the type parameter of the enclosing class. We can omit those additional parameters in the async variant in such a case.
+   Sometimes, we already have ``F[_]`` as the type parameter of the enclosing class. In such a case, we can omit those additional parameters in the async variant.
 
 Note that you should carefully decide whether you need async function support and how to deal with concurrent modifications.  For example, in the code snippet below, different changes will interleave with each other.
  Usually, low-level constructs do not need async counterparts.
