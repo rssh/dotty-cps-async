@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>High-order functions. &#8212; dotty-cps-async 0.9.12 documentation</title>
+    <title>High-order functions. &#8212; dotty-cps-async 0.9.14 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -18,7 +18,7 @@
     <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Monads interoperability." href="MonadsInteroperability.html" />
+    <link rel="next" title="Non-local returns" href="ReturningClause.html" />
     <link rel="prev" title="Dependency" href="BasicUsage.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -28,12 +28,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="MonadsInteroperability.html" title="Monads interoperability."
+          <a href="ReturningClause.html" title="Non-local returns"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.14 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>  
@@ -136,7 +136,7 @@ Such a ‘shifted’ version has an additional type parameter <code class="docut
 </pre></div>
 </div>
 <dl class="simple">
-<dt>As we have seen, shifted functions have an additional type parameter: <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> and a parameter <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad[F]</span></code></a> (or a more specific type, if needed).  Async transformer will substitute the call of <code class="docutils literal notranslate"><span class="pre">modify</span></code> into <code class="docutils literal notranslate"><span class="pre">modify_async</span></code> during compilation.</dt><dd><p>Sometimes, we already have <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> as the type parameter of the enclosing class. We can omit those additional parameters in the async variant in such a case.</p>
+<dt>As we have seen, shifted functions have an additional type parameter: <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> and a parameter <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad[F]</span></code></a> (or a more specific type, if needed).  Async transformer will substitute the call of <code class="docutils literal notranslate"><span class="pre">modify</span></code> into <code class="docutils literal notranslate"><span class="pre">modify_async</span></code> during compilation.</dt><dd><p>Sometimes, we already have <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> as the type parameter of the enclosing class. In such a case, we can omit those additional parameters in the async variant.</p>
 </dd>
 <dt>Note that you should carefully decide whether you need async function support and how to deal with concurrent modifications.  For example, in the code snippet below, different changes will interleave with each other.</dt><dd><p>Usually, low-level constructs do not need async counterparts.</p>
 </dd>
@@ -247,8 +247,8 @@ Also, we have the method <a class="reference external" href="https://github.com/
   </div>
   <div>
     <h4>Next topic</h4>
-    <p class="topless"><a href="MonadsInteroperability.html"
-                          title="next chapter">Monads interoperability.</a></p>
+    <p class="topless"><a href="ReturningClause.html"
+                          title="next chapter">Non-local returns</a></p>
   </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
@@ -278,12 +278,12 @@ Also, we have the method <a class="reference external" href="https://github.com/
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="MonadsInteroperability.html" title="Monads interoperability."
+          <a href="ReturningClause.html" title="Non-local returns"
              >next</a> |</li>
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.12 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.14 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>
