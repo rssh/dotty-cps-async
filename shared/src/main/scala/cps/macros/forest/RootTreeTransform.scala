@@ -133,7 +133,7 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
              nestScope.runApply(applyTerm.asInstanceOf[nestScope.qctx.reflect.Apply],
                                 x.asInstanceOf[nestScope.qctx.reflect.Term],
                                 args.asInstanceOf[List[nestScope.qctx.reflect.Term]],
-                                Nil)(owner.asInstanceOf[nestScope.qctx.reflect.Symbol]).asInstanceOf[CpsTree]
+                                Nil)(owner.asInstanceOf[nestScope.qctx.reflect.Symbol]).inCake(thisTransform)
        case _ =>
              throw MacroError(s"cps tree transform is not supported yet to ${term}",cpsCtx.patternCode)
      }
