@@ -62,7 +62,7 @@ as in plain scala:</p>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
-<p>Also, as in plain Scala, <cite>throwReturn</cite> use ControlThrowable which does not intersect with <cite>NonFatal</cite> throwables:</p>
+<p>Also, as in plain Scala, <cite>throwReturn</cite> does not intersect with handling <cite>NonFatal</cite> throwables:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="n">item</span><span class="p">:</span><span class="nc">Item</span><span class="p">):</span><span class="nc">Future</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">   </span><span class="n">returning</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">        </span><span class="k">try</span><span class="w"></span>

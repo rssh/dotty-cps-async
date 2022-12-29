@@ -4,6 +4,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"root","t":"root","d":"","k":"s
 {"l":"cps.html#asyncStream-67c","e":false,"i":"","n":"asyncStream","t":"asyncStream[R](using a: CpsAsyncEmitAbsorber[R]): AsyncStreamHelper[R, Monad, Context, Element]","d":"cps","k":"def"},
 {"l":"cps.html#await-199","e":false,"i":"","n":"await","t":"await[F[_], T, G[_]](f: F[T])(using am: CpsAwaitable[F], ctx: CpsMonadContext[G]): T","d":"cps","k":"def"},
 {"l":"cps.html#customValueDiscard-0","e":false,"i":"","n":"customValueDiscard","t":"customValueDiscard: customValueDiscard.type","d":"cps","k":"given"},
+{"l":"cps.html#reflect-199","e":false,"i":"","n":"reflect","t":"reflect[F[_], T, G[_]](f: F[T])(using inline am: CpsAwaitable[F], inline ctx: CpsMonadContext[G]): T","d":"cps","k":"def"},
 {"l":"cps.html#reify-fffffaff","e":false,"i":"","n":"reify","t":"reify[F[_]](using am: CpsMonad[F]): InferAsyncArg[F, Context]","d":"cps","k":"def"},
 {"l":"cps.html#warnValueDiscard-0","e":false,"i":"","n":"warnValueDiscard","t":"warnValueDiscard: warnValueDiscard.type","d":"cps","k":"given"},
 {"l":"cps/AsyncShift.html#","e":false,"i":"","n":"AsyncShift","t":"AsyncShift[T]","d":"cps","k":"trait"},

@@ -21,7 +21,7 @@ as in plain scala:
     } 
 
 
-Also, as in plain Scala, `throwReturn` use ControlThrowable which does not intersect with `NonFatal` throwables:
+Also, as in plain Scala, `throwReturn` does not intersect with handling `NonFatal` throwables:
 
 .. code-block:: scala
 
