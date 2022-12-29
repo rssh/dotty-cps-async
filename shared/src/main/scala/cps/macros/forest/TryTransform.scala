@@ -6,11 +6,17 @@ import cps._
 import cps.macros._
 import cps.macros.misc._
 
+import scala.util.control.NonFatal
+
+
 
 class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: TransformationContext[F,T,C]):
 
   import cpsCtx._
 
+
+
+  // TODO: create TreeTransform
   // case Try(body, cases, finalizer)
   def run(using Quotes)(origin: quotes.reflect.Try,
                         body: quotes.reflect.Term,
@@ -31,6 +37,12 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
      val isAsync = cpsBody.isAsync || isCaseDefsAsync || isFinalizerAsync
      val isChanged = cpsBody.isChanged || isCaseDefsChanged || isFinalizerChanged
 
+     val errorMonad = if (monad.asTerm.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
+                          monad.asExprOf[CpsTryMonad[F]]
+                      } else {
+                          throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)
+                      }
+
      def makeAsyncCaseDefs(): List[CaseDef] =
         ((cases lazyZip cpsCaseDefs) map { (frs,snd) =>
            CaseDef(frs.pattern, frs.guard, snd.transformed.asTerm)
@@ -43,7 +55,12 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
 
      def makeRestoreExpr(): Expr[Throwable => F[T]]  =
         val nCaseDefs = makeAsyncCaseDefs()
-        val restoreExpr = '{ (ex: Throwable) => ${Match('ex.asTerm, nCaseDefs).changeOwner(Symbol.spliceOwner).asExprOf[F[T]]} }
+        //val otherSym = Symbol.newBind(Symbol.spliceOwner,"other",Flags.Empty,TypeRepr.of[Throwable])
+        val rethrowOther = (x: Expr[Throwable]) => CaseDef(Wildcard(), None, { val r = '{throw $x}.asTerm; println(s"!!throw=$r"); r } )
+        val restoreExpr = '{ (ex: Throwable) => ${
+          Match('ex.asTerm, 
+                nCaseDefs.appended(CaseDef(Wildcard(),None, '{ $errorMonad.error[T](ex) }.asTerm ))
+          ).changeOwner(Symbol.spliceOwner).asExprOf[F[T]]} }
         restoreExpr.asExprOf[Throwable => F[T]]
 
 
@@ -59,11 +76,6 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
                          CpsExpr.sync(monad, expr, true)
                       }
                    } else {
-                      val errorMonad = if (monad.asTerm.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
-                                          monad.asExprOf[CpsTryMonad[F]]
-                                      } else {
-                                          throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)
-                                      }
                       optCpsFinalizer match
                         case None =>
                            if (cpsCaseDefs.isEmpty)

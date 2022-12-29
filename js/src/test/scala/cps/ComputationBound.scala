@@ -203,7 +203,8 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
          val r = try {
                    thunk() 
                  } catch {
-                   case NonFatal(e) => Error(e)
+                   case NonFatal(e) =>
+                      Error(e)
                  }
          r match 
            case Done(t) => r
@@ -228,11 +229,16 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
 
   def flatMapTry[S](f: Try[T]=>ComputationBound[S]): ComputationBound[S] =
     Thunk[S]{ () =>
-       thunk() match
-        case Done(t) => f(Success(t))
-        case Error(e) => f(Failure(e))
-        case Thunk(f1) => f1().flatMapTry(f)
-        case Wait(ref, f1) => Wait(ref, x => f1(x).flatMapTry(f))
+        val r = try
+          thunk()
+        catch
+          //TODO: NonFatalObly instrean nonFatal
+          case NonFatal(e) => Error(e) 
+        r match
+          case Done(t) => f(Success(t))
+          case Error(e) => f(Failure(e))
+          case Thunk(f1) => f1().flatMapTry(f)
+          case Wait(ref, f1) => Wait(ref, x => f1(x).flatMapTry(f))
     }
      
 }

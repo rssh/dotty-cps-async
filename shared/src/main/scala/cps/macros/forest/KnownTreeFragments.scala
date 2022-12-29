@@ -30,3 +30,21 @@ trait KnownTreeFragments[F[_], CT, CC <: CpsMonadContext[F]]:
 
   lazy val partialFunctionType = TypeIdent(Symbol.classSymbol("scala.PartialFunction")).tpe
 
+
+  lazy val nonLocalReturnsSym = Symbol.classSymbol("scala.util.control.NonLocalReturns$")
+
+  lazy val nonLocalReturnsReturningSym = nonLocalReturnsSym.declaredMethod("returning").head
+
+  lazy val nonLocalReturnsThrowReturnSym = nonLocalReturnsSym.declaredMethod("throwReturn").head
+
+  lazy val shiftedNonLocalReturnsThrowReturnSym = Symbol.classSymbol("cps.runtime.util.control.NonLocalReturnsAsyncShift$").declaredMethod("throwReturn").head
+
+  lazy val shiftedNonLocalReturnsReturningSym = Symbol.classSymbol("cps.runtime.util.control.NonLocalReturnsAsyncShift$").declaredMethod("returning").head
+
+  lazy val shiftedNonLocalReturnsSyncReturningSym = Symbol.classSymbol("cps.runtime.util.control.NonLocalReturnsAsyncShift$").declaredMethod("syncReturning").head
+
+  lazy val nonFatalUnapplySym = Symbol.classSymbol("scala.util.control.NonFatal$").declaredMethod("unapply").head
+
+  lazy val nonFatalAndNotControlThrowableAsyncWrapperClassSym = Symbol.classSymbol("cps.runtime.util.control.NonFatalAndNotControlThrowableAsyncWrapper$")
+   
+  lazy val nonFatalAndNotControlThrowableAsyncWrapperCompanion = Ref.term(nonFatalAndNotControlThrowableAsyncWrapperClassSym.companionModule.termRef)

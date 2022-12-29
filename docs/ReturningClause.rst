@@ -1,0 +1,57 @@
+Non-local returns
+=================
+
+You can use `returning <https://scala-lang.org/api/3.x/scala/util/control/NonLocalReturns$.html>`_ clause inside async block as the same way  
+as in plain scala:
+
+.. code-block:: scala
+
+    def sourceWeights(item:Item, dataApi:DataApi):Future[A] = async[Future] {
+       returning {
+            val sources = await(dataApi.fetchSources(item))
+            val weight = sources.foldLeft(0.0){ (weight,s) =>
+                val si = await(dataApi.sourceInfo(s,item))
+                if (si.isBlacklisted) {
+                    throwReturn 0.0
+                }
+                weight + si.weight
+            }
+            weight
+       }
+    } 
+
+
+Also, as in plain Scala, `throwReturn` does not intersect with handling `NonFatal` throwables:
+
+.. code-block:: scala
+
+
+    def validate(item:Item):Future[A] = async[Future] {
+       returning {
+            try
+               if (!localCheck(item)) then
+                   throwReturn false
+               await(remoteCheck(item))
+            catch
+               case NonFatal(ex) =>
+                 false
+       }
+    } 
+
+
+
+
+Now dotty-cps-async uses compile-time translation to avoid runtime overhead when this future is not used, so when using return 
+you should not hide catching `NonFatal` exceptions and `throwReturn` clauses from the `async` macro.
+
+If you want to change the function name for `throwReturn`, be sure that your version is `transparent inline`:
+
+.. code-block:: scala
+
+  transparent inline def earlyReturn[T](t:T)(using ReturnThrowable[T]):Nothing =
+    throwReturn(t)
+
+
+
+
+

@@ -3,13 +3,14 @@ package cps.macros.forest.application
 import scala.annotation.tailrec
 import scala.quoted._
 import scala.collection.immutable.Queue
-
+import scala.util.control.NonFatal
 
 import cps._
 import cps.macros._
 import cps.macros.common._
 import cps.macros.forest._
 import cps.macros.misc._
+
 
 
 trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
@@ -237,6 +238,9 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
        def shouldBeChangedSync:Boolean = cpsBody.isChanged || (cpsBody.isAsync && existsLambdaUnshift )
 
        def identArg(existsAsync:Boolean): Term =
+         generateLambda(existsAsync, false)
+
+       def generateLambda(existsAsync: Boolean, allowUncontext: Boolean): Term =   
          if (cpsCtx.flags.debugLevel >= 15) then
             cpsCtx.log(s"ApplyArgLambdaRecord::identArg, cpsBody=${cpsBody}")
             cpsCtx.log(s"ApplyArgLambdaRecord::identArg, hasShiftedLambda=${hasShiftedLambda}")
@@ -249,21 +253,26 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
             val paramNames = params.map(_.name)
             val paramTypes = params.map(_.tpt.tpe)
             cpsBody.syncOrigin match
-              case Some(changedBody) => 
-                 val mt = MethodType(paramNames)(_ => paramTypes, _ => changedBody.tpe.widen)
-                 Lambda(owner, mt,
-                       (owner,args) => changeArgs(params,args,changedBody,owner).changeOwner(owner))
+              case Some(syncBody) =>
+                 if (cpsBody.isChanged) then 
+                    if (term.tpe.isContextFunctionType && !allowUncontext) then
+                      throw MacroError("Can't transform context function: TastyAPI don;t support this yet",posExpr(term))
+                    val mt = MethodType(paramNames)(_ => paramTypes, _ => syncBody.tpe.widen)
+                    Lambda(owner, mt,
+                       (owner,args) => changeArgs(params,args,syncBody,owner).changeOwner(owner))
+                 else
+                    term
               case None =>
                  if (existsLambdaUnshift) then
                     body.tpe.widen.asType match
-                      case '[F[r]] =>
-                         val nBody = '{ ${cpsCtx.monad}.flatMap(
+                      case '[F[r]] if body.tpe.widen <:< TypeRepr.of[F[r]] =>
+                        val nBody = '{ ${cpsCtx.monad}.flatMap(
                                              ${cpsBody.transformed.asExprOf[F[F[r]]]})((x:F[r])=>x) }.asTerm
-                         val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
-                         Lambda(owner, mt, 
+                        val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
+                        Lambda(owner, mt, 
                               (owner,args) => changeArgs(params,args,nBody,owner).changeOwner(owner))
                       case _ =>
-                         throw MacroError(s"F[?] expected, we have ${body.tpe.widen.show}",term.asExpr)
+                        throw MacroError(s"F[?] expected, we have ${body.tpe.widen.show}",term.asExpr)
                  else
                     throw MacroError(s"Internal error: unshift is called when it not exists",term.asExpr)
          else
@@ -309,11 +318,14 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
             case at@AnnotatedType(underlying,anon) =>
                   shiftedArgExpr(existsAsync, shiftType, underlying, params, body)
             case other =>
-                  // TODO: logging compiler interface instead println
-                  println(s"MethodType expected, we have ${term.tpe}")
-                  println(s"term.show = ${term.show}")
-                  println(s"term.body = ${term}")
-                  println(s"mt = ${other}")
+                  report.error(
+                    s"""
+                      MethodType expected, we have ${term.tpe}
+                      term.show = ${term.show}
+                      term.body = ${term}
+                      mt = ${other}
+                    """
+                  )
                   throw MacroError(s"methodType expected for ${term.asExpr.show}, we have $other",term.asExpr)
 
        def shift(shiftType: ApplicationShiftType): ApplyArgRecord = copy(optShiftType = Some(shiftType))
@@ -330,10 +342,9 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
          val matchVar = body.scrutinee
          val paramNames = params.map(_.name)
 
-         if (cpsCtx.flags.debugLevel >= 15)
-             println(s"createAsyncPartialFunction: from = $from, to=$to")
-             println(s"toInF=$toInF")
-
+         if (cpsCtx.flags.debugLevel >= 15) then
+             cpsCtx.log(s"createAsyncPartialFunction: from = $from, to=$to")
+ 
          def newCheckBody(inputVal:Term):Term =
 
             val casePattern = '{

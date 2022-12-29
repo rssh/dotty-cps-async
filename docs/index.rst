@@ -13,6 +13,7 @@ User Manual
 
    BasicUsage
    HighOrderFunctions
+   ReturningClause
    MonadsInteroperability
    AutomaticColoring
    AsyncStreams

@@ -3,7 +3,7 @@
 val dottyVersion = "3.2.1"
 //val dottyVersion = "3.1.3"
 
-ThisBuild/version := "0.9.12"
+ThisBuild/version := "0.9.15-SNAPSHPOT"
 ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers += Opts.resolver.sonatypeSnapshots
 
@@ -41,7 +41,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         scalacOptions ++= Seq( "-Yexplicit-nulls",
                             "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types", 
                             "-Ydebug", "-uniqid", "-Xcheck-macros", "-Ycheck:macro", "-Yprint-syms", 
-                            "-Ysafe-init"
+                            "-Ysafe-init",
                              ),
                              // -explain
                              // -Ydebug-error

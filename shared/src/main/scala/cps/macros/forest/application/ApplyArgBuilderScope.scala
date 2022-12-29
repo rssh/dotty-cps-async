@@ -44,18 +44,18 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
 
   object O {  // fix arround https://github.com/lampepfl/dotty/issues/9074
 
-    def buildApplyArgsRecords(paramsDescriptor: MethodParamsDescriptor, args: List[qctx.reflect.Term], cpsCtx:TransformationContext[F,?,?])(owner:Symbol): List[ApplyArgRecord] = {
-     buildApplyArgsRecordsAcc(paramsDescriptor, args, cpsCtx, owner, BuildApplyArgsAcc()).records.toList
+    def buildApplyArgsRecords(paramsDescriptor: MethodParamsDescriptor, args: List[qctx.reflect.Term])(owner:Symbol): List[ApplyArgRecord] = {
+     buildApplyArgsRecordsAcc(paramsDescriptor, args, owner, BuildApplyArgsAcc()).records.toList
     }
 
-    def buildApplyArgsRecordsAcc(paramsDescriptor: MethodParamsDescriptor, args: List[Term], cpsCtx:TransformationContext[F,?,?], owner: Symbol, acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
+    def buildApplyArgsRecordsAcc(paramsDescriptor: MethodParamsDescriptor, args: List[Term], owner: Symbol, acc: BuildApplyArgsAcc): BuildApplyArgsAcc = {
        args.foldLeft(acc){ (s,e) =>
-         buildApplyArgRecord(paramsDescriptor, e, cpsCtx, s)(owner)
+         buildApplyArgRecord(paramsDescriptor, e, s)(owner)
        }
 
     }
 
-    def buildApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, cpsCtx: TransformationContext[F,?,?], acc:BuildApplyArgsAcc)(owner: Symbol): BuildApplyArgsAcc = {
+    def buildApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, acc:BuildApplyArgsAcc)(owner: Symbol): BuildApplyArgsAcc = {
        import scala.quoted.Quotes
        import scala.quoted.Expr
 
@@ -63,14 +63,16 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
           cpsCtx.log(s"buildApplyArgRecord: pos=${acc.posIndex}, t=${safeShow(t)} ")
        t match {
          case tr@Typed(r@Repeated(rargs, tpt),tpt1) =>
+            //TODO: in nested context 
             val accRepeated = O.buildApplyArgsRecordsAcc(paramsDescriptor,
-                               rargs, cpsCtx.nestSame(), owner,
+                               rargs, owner,
                                acc.copy(inRepeat=true,records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt1)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case r@Repeated(rargs, tpt) =>
+            // TODO: in nested context
             val accRepeated = O.buildApplyArgsRecordsAcc(paramsDescriptor,
-                               rargs, cpsCtx.nestSame(), owner,
+                               rargs, owner,
                                acc.copy(inRepeat=true, records=IndexedSeq.empty))
             val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
@@ -88,7 +90,7 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
             paramsDescriptor.paramIndex(name) match
               case Some(realIndex) =>
                 val namedAcc = acc.copy(inNamed=true,paramIndex = realIndex, records=IndexedSeq.empty)
-                val nested = buildApplyArgRecord(paramsDescriptor,arg,cpsCtx,namedAcc)(owner).records.head
+                val nested = buildApplyArgRecord(paramsDescriptor,arg,namedAcc)(owner).records.head
                 if (realIndex == acc.paramIndex && !acc.wasNamed)
                   acc.advance(nested)
                 else
@@ -96,32 +98,31 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
               case None =>
                  throw MacroError(s"Can't find parameter with name $name", posExpr(t))
          case Block(Nil,last) =>
-            buildApplyArgRecord(paramsDescriptor,last,cpsCtx,acc)(owner)
+            buildApplyArgRecord(paramsDescriptor,last,acc)(owner)
          case inlined@Inlined(call,bindings,body) =>
             if (bindings.isEmpty) 
-               val nested = buildApplyArgRecord(paramsDescriptor, body, cpsCtx, 
+               val nested = buildApplyArgRecord(paramsDescriptor, body, 
                                                 acc.copy(records=IndexedSeq.empty))(owner).records.head
                acc.advance(nested)
             else
                runInlined(inlined)(owner) match
                  case inlined@InlinedCpsTree(inlineOwner, origin, binding, cpsNested) =>
-                   val nested = buildCpsTreeApplyArgRecord(paramsDescriptor, body, cpsNested, cpsCtx,
+                   val nested = buildCpsTreeApplyArgRecord(paramsDescriptor, body, cpsNested, 
                                                 acc.copy(records=IndexedSeq.empty))(owner).records.head
                    acc.advance(ApplyArgInlinedRecord(inlined, nested))
                  case nonInlined =>
-                   buildCpsTreeApplyArgRecord(paramsDescriptor, body, nonInlined, cpsCtx, acc)(owner)
+                   buildCpsTreeApplyArgRecord(paramsDescriptor, body, nonInlined, acc)(owner)
          case _ =>
             if cpsCtx.flags.debugLevel >= 15 then
                cpsCtx.log(s"paramType=${paramsDescriptor.paramType(acc.paramIndex)}")
                cpsCtx.log(s"byName=${paramsDescriptor.isByName(acc.paramIndex)}")
             val termCpsTree = runRoot(t)(owner)
-            buildCpsTreeApplyArgRecord(paramsDescriptor, t, termCpsTree, cpsCtx, acc)(owner)
+            buildCpsTreeApplyArgRecord(paramsDescriptor, t, termCpsTree, acc)(owner)
 
        }
     }
 
     def buildCpsTreeApplyArgRecord(paramsDescriptor: MethodParamsDescriptor, t: Term, termCpsTree: CpsTree, 
-                                   cpsCtx: TransformationContext[F,?,?], 
                                    acc:BuildApplyArgsAcc)(owner: Symbol): BuildApplyArgsAcc = {
        if cpsCtx.flags.debugLevel >= 15 then
           cpsCtx.log(s"termCpsTree = ${termCpsTree}")

@@ -32,6 +32,16 @@ trait LambdaTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
             AsyncLambdaCpsTree(owner, lambdaTerm, params, cpsBody, lambdaTerm.tpe)
         else
             throw MacroError("await inside lambda functions without enclosing async block", lambdaTerm.asExpr)
+     } else if (cpsBody.isChanged) {
+        val paramNames = params.map(_.name)
+        val paramTypes = params.map(_.tpt.tpe)
+        val changedBody = cpsBody.syncOrigin.get
+        val mt = MethodType(paramNames)(_ => paramTypes, _ => changedBody.tpe.widen)
+        val newLambda = Lambda(owner, mt,
+                              (owner,args) => 
+                                 TransformUtil.substituteLambdaParams(params, args, changedBody, owner).changeOwner(owner)
+                        )
+        CpsTree.pure(owner,newLambda,true)                
      } else {
         CpsTree.pure(owner,lambdaTerm)
      }

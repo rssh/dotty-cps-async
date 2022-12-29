@@ -228,7 +228,7 @@ object TransformUtil:
 
   def prependStatementToBlock(using Quotes)(st: quotes.reflect.Statement, block: quotes.reflect.Block ): quotes.reflect.Block = {
     import quotes.reflect.*
-    block match
+    val retval = block match
       case lambda@Lambda(params,body) =>
         Block(st::Nil, lambda)
       case _ =>  
@@ -237,21 +237,29 @@ object TransformUtil:
             Block(st::Nil, block)
           case _ =>
             Block(st::block.statements, block.expr)
+    //if (false) {   TODO: pass debug-level
+    //  dummyMapper(retval,Symbol.spliceOwner)
+    //}
+    retval
   }
 
   def prependStatementsToBlock(using Quotes)(sts: List[quotes.reflect.Statement], block: quotes.reflect.Block ): quotes.reflect.Block = {
     import quotes.reflect.*
-    block.expr match
+    val retval = block.expr match
       case Closure(_,_) => 
          Block(sts, block)
       case _ =>
          Block(sts ++: block.statements, block.expr)
+    //if (true) {  TODO: pass debug-level
+    //  dummyMapper(retval,Symbol.spliceOwner)
+    //}
+    retval
   }
      
   def inMonadOrChild[F[_]:Type](using Quotes)(te: quotes.reflect.TypeRepr): Option[quotes.reflect.TypeRepr] = {
       import quotes.reflect.*
       te.widen.asType match
-        case '[ F[r] ] =>
+        case '[ F[r] ] if te.widen <:< TypeRepr.of[F[r]]   =>
           Some(TypeRepr.of[r])
         case _ =>
           val bc = te.baseClasses

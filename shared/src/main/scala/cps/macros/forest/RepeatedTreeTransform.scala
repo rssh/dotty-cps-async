@@ -22,7 +22,7 @@ trait RepeatedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
        override def  paramName(index: Int): Option[String] = Some(index.toString)
        override def  paramType(index: Int): Option[TypeRepr] = Some(tpt.tpe)
     }
-    val args = O.buildApplyArgsRecords(paramsDescriptor, elements, cpsCtx)(owner)
+    val args = O.buildApplyArgsRecords(paramsDescriptor, elements)(owner)
     // TODO: pass allowShiftedLambda = false ?
     args.find(_.hasShiftedLambda).foreach(a =>
        throw MacroError("shifted lambda is not supported in SeqLiteral", posExprs(a.term))

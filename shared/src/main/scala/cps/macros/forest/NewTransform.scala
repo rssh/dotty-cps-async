@@ -1,5 +1,5 @@
 // transform for new
-//  (C) Ruslan Shevchenko, 2019-2021, Kiev, Ukraine
+//  (C) Ruslan Shevchenko, 2019-2022, Kiev, Ukraine
 package cps.macros.forest
 
 import scala.quoted._
