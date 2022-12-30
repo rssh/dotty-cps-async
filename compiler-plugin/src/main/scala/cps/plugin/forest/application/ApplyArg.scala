@@ -20,7 +20,7 @@ sealed trait ApplyArg {
     def isAsync: Boolean
 
     def optFlatMapsBeforCall: Seq[(CpsTree,Symbol)]
-    def exprInCall(shifted: Boolean): Tree
+    def exprInCall(shifted: Boolean, optRuntimeAwait:Option[Tree]): Tree
 }
 
 object ApplyArg {

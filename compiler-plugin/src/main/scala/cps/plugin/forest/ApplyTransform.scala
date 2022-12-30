@@ -7,6 +7,7 @@ import core.Contexts.*
 import core.Types.*
 import core.Decorators.*
 import core.Symbols.*
+import core.SymDenotations.*
 import util.Spans.Span
 
 import cps.plugin.*
@@ -53,7 +54,7 @@ object ApplyTransform {
       if (containsAsyncLambda) {
         findRuntimeAwait(tctx, origin.span) match
           case Some(runtimeAwait) =>
-            genApplication(origin,owner,tctx,fun,args, arg =>arg.identWithRuntimeAwait(runtimeAwait))
+            genApplication(origin,owner,tctx,fun,args, arg => arg.exprInCall(false,Some(runtimeAwait)))
           case None =>
             if (fun.denot != NoDenotation) {
                   // check -- can we add shifted version of fun
