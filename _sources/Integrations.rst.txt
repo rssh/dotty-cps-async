@@ -103,6 +103,14 @@ Add dependency |cps-async-connect-fs2|_ to your ``build.sbt`` to integrate Typel
 
 |FS2|_ GitHub : |typelevel/fs2|_, Maven : |co.fs2|_.
 
+
+Probability Monad
+^^^^^^^^^^^^^^^^^
+
+Add dependency |cps-async-connect-probabity-monad|_ to your ``build.sbt``.
+
+
+
 typelevel/cats-effect-cps
 -------------------------
 
