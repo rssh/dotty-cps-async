@@ -68,17 +68,17 @@ object ApplyTransform {
                   //                      we need to recompile origin
                   //  now we encapsulate this in shiftedFunction cache
                   val changedFun = retrieveShiftedFun(fun,tctx,owner)
-                  genApplication(origin, owner, tctx, changedFun, args, arg => arg.identWithShift)
+                  genApplication(origin, owner, tctx, changedFun, args, arg => arg.exprInCall(true, None))
             } else {
               fun match
-                case QuoteLikeApi.CheckLambda(params,body,bodyOwner) =>
+                case QuoteLikeAPI.CheckLambda(params,body,bodyOwner) =>
                   // Lambda transdorm
                   ???
                 case _ =>  
                   throw CpsTransformException(s"Can't transform function ${fun}",fun.srcPos)
             }
       } else {
-        genApplication(origin, owner, tctx, fun, args, arg > arg.ident)
+        genApplication(origin, owner, tctx, fun, args, arg -> arg.exprInCall(false, None))
       }
   }
 
@@ -125,6 +125,7 @@ object ApplyTransform {
     ApplyTypeArgList(term,term.args.map(_.tpe))
   }
 
+  // TODO:  return either.
   def findRuntimeAwait(tctx: TransformationContext, span: Span)(using ctx:Context): Option[Tree] = {
     val runtimeAwait = TypeRef(RequiredClass("cps.RuntimeAwait"))
     val tpe = AppliedType(runtimeAwait, List(tctx.monadType))
@@ -134,5 +135,70 @@ object ApplyTransform {
       case _  => Some(searchResult)
   }
 
+
+  def retrieveShiftedFun(fun:Tree, tctx: TransformationContext, owner:Symbol)(using Context): Tree = {
+
+    def matchInplaceArgTypes(originSym:Symbol, candidateSym: Symbol): Either[String,ShiftedArgumentsShape] = {
+      val originParamSymms = origin.paramSymss
+      val candidateParamSymms = candidateSym.paramSymss
+      if (candidateParamSymms.isEmpty) then
+        Left(s"${candidateSym.name} have no arguments")
+      else if (originParamSymms.length == candidateParamSymms.length) then
+        val originTpArgs = originParamSymms.head.filter(_.isType)
+        val candidateTpArgs = candidateParamSymms.head.filter(_.isType)
+        if (!originTpArgs.isEmpty) then
+            if (candidateTpArgs.length == originTpArgs.length+1) then
+              Right(ShiftedArgumentsShape.EXTRA_TYPEPARAM)   //  with F[_]  in type-args
+            else if (candidateTpArgs.length == originTpArgs.length) then
+              Right(ShiftedArgumentsShape.SAME_PARAMS)
+            else
+              Left(s"Can't match parameters in ${originSymbol} and ${candidateSymbol}")
+        else if (candidateTpArgs.isEmpty) then
+          Right(ShiftedArgumentsShape.SAME_PARAMS)
+        else
+          Left(s"Can't match parameters in ${originSymbol} and ${candidateSymbol} - first have type args when second - not")
+      else if (originParamSymms.length + 1 == candidateParamSymms.length) {
+        val candidateTpArgs = candidateParamSymms.head.filter(_.isType)
+        if (candindateTpArgs.isEmpty) then
+          Left(s"Can't match parameters in ${originSymbol} and ${candidateSymbol} - added arglis shoule be type")
+        else
+          Right(ShiftedArgumentsShape.EXTRA_TYPEPARAM_LIST)
+      }
+    }
+
+    def tryFindInplaceAsyncShiftedMethods(objSym: Symbol, name:Name, suffixes: Set[String]): Either[String,Map[Symbol,ShiftedArgumentsShape]]  = {
+      val shapes = (for{ m <-lookupPrefix.allMembers
+                suffix <- suffixes if m.isMethod && m.symbol.name == name+suffix  
+                matchShape = matchInplaceArgTypes(fun.symbol, objSym)
+      } yield (m, matchShape)).toMap
+      val (pos, neg) = shapes.partition(_.isRight)
+      if (pos.isEmpty) then
+        Left( neg.values.map(_.left).mkString("\n") )
+      else
+        Right( pos.mapValues(_.right) )
+    }
+
+    def resolveAsyncShiftedObject(obj: Tree): Either[String,Tree] = {
+      val asyncShift = TypeRef(RequiredClass("cps.AsyncShift"))
+      val tpe = AppliedType(asyncShift, List(obj.tpe.widen))
+      val searchResult = ctx.types.inferImplicits(tpe,span)
+      searchResult match
+        case failure : dotc.typer.Implicits.SearchFailureType => Left(failure.explanation)
+        case success => Right(success)
+
+    }
+
+    def retrieveShiftedMethod(obj: Tree, methodName: Name, targs:List[Type] ): Tree = {
+      ???
+    }
+
+    fun match
+      case TypeApply(Select(obj,methodName),targs) =>
+        retrieveShiftedMethod(obj,methodName,targs)
+      case Select(obj,methodName) =>
+        retrieveShiftedMethod(obj,methodName,Nil)
+      case _ =>
+        ???  
+  }
 
 }

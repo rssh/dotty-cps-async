@@ -29,7 +29,12 @@ object QuoteLikeAPI:
   }
 
   
-  
+  extension (self:Symbol)(using Context)
+      def lookupPrefix: Type =
+        if (self.isType) then
+          self.thisType
+        else
+          self.namedType  
 
 
 end QuoteLikeAPI
