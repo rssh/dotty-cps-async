@@ -6,6 +6,7 @@
 Embedding generic monadic transformers into scala.
 
 * TFP2022 slides: <https://www.slideshare.net/rssh1/embedding-generic-monadic-transformer-into-scala-tfp2022> (May 2022)
+    * article: <https://link.springer.com/chapter/10.1007/978-3-031-21314-4_1> 
     * preprint: <https://arxiv.org/abs/2209.10941>
 
 Can we free concurrent programming from the monadic style:
