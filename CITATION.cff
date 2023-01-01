@@ -13,4 +13,27 @@ license: "Apache-2.0"
 message: "If you use this software, please cite it using these metadata."
 repository-code: "https://github.com/rssh/dotty-cps-async"
 title: "dotty-cps-async"
+preferred-citation:
+  type: article
+  authors:
+     -
+       family-names: Shevchenko
+       given-names: Ruslan
+       orcid: "https://orcid.org/0000-0002-1554-2019"
+  doi: "10.1007/978-3-031-21314-4_1"
+  title: "Project Paper: Embedding Generic Monadic Transformer into Scala"
+  journal: "Lecture Notes in Computer Science"
+  volume: "3401"
+  volume-title: "Trends in Functional Programming. TFP 2022."
+  conference:
+    name: "Trends in Functional Programming 2022"
+  editor-series:
+    - family-names: Swierstra
+      given-names: Wouter
+    - family-names: Wu
+      given-names: Nicolas
+  publisher: 
+      name: "Springer, Cham"
+  isbn: "978-3-031-21313-7"
+  year: "2022" 
 ...
