@@ -13,4 +13,12 @@ license: "Apache-2.0"
 message: "If you use this software, please cite it using these metadata."
 repository-code: "https://github.com/rssh/dotty-cps-async"
 title: "dotty-cps-async"
+identifiers:
+  - type: doi
+    value: 10.1007/978-3-031-21314-4_1
+    description: >-
+      Project Paper: Embedding Generic Monadic
+      Transformer into Scala
+url: >-
+  https://link.springer.com/chapter/10.1007/978-3-031-21314-4_1
 ...
