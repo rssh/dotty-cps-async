@@ -13,7 +13,7 @@ import cps.plugin.*
 sealed trait ApplyArgList {
   def isAsync: Boolean
   def containsAsyncLambda: Boolean
-}
+} 
 
 
 case class ApplyTermArgList(
@@ -26,7 +26,7 @@ case class ApplyTermArgList(
 
 case class ApplyTypeArgList(
   originApplyTerm:  TypeApply,
-  args: List[Type]
+  args: List[TypeTree]
 ) extends ApplyArgList {
   override def isAsync = false
   override def containsAsyncLambda = false

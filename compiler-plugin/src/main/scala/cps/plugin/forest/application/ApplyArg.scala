@@ -12,15 +12,21 @@ import ast.tpd.*
 import cps.plugin.*
 import cps.plugin.forest.*
 
+enum ApplyArgCallMode {
+  case SYNC, ASYNC, ASYNC_SHIFT
+}
 
 sealed trait ApplyArg {
     def name: TermName
     def tpe:  Type
 
     def isAsync: Boolean
+    def isLambda: Boolean
 
-    def optFlatMapsBeforCall: Seq[(CpsTree,Symbol)]
-    def exprInCall(shifted: Boolean, optRuntimeAwait:Option[Tree]): Tree
+    def optFlatMapsBeforCall: Seq[(CpsTree,ValDef)]
+    def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree]): Tree
+
+    def dependencyFromLeft: Boolean
 }
 
 object ApplyArg {
@@ -40,6 +46,7 @@ object ApplyArg {
             case AnnotatedType(tp, an) if an.symbol == defn.ErasedParamAnnot =>
                 ErasedApplyArg(paramName,tp,cpsExpr)
             case _ =>
+                // TODO: create val
                 PlainApplyArg(paramName,paramType,cpsExpr)    
   }
 
@@ -50,6 +57,10 @@ sealed trait ExprApplyArg extends ApplyArg {
   def expr: CpsTree
 
   override def isAsync = expr.isAsync
+
+  override def isLambda = expr.asyncKind match
+                            case AsyncLambda(internal) => true
+                            case _ => false
 
 }
 
@@ -62,7 +73,7 @@ case class PlainApplyArg(
   override val name: TermName,
   override val tpe: Type,
   override val expr: CpsTree,  
-  val optIdentSym: Option[Symbol],
+  val optIdentValDef: Option[ValDef],
 ) extends ExprApplyArg  {
 
   override def flatMapsBeforeCall: Seq[(CpsTree,Symbol)] = {
@@ -92,8 +103,7 @@ case class PlainApplyArg(
             case Some(runtimeAwait) =>
               val withRuntimeAwait = expr.applyRuntimeAwait(RuntiemAwaitMode)
             case None => 
-              throw CpsTransformException("Can;t transform unshifted dunction without runtime-await", expr.origin.span)
-
+              throw CpsTransformException(s"Can't transform function (both shioft and runtime-awaif for ${fType} are not found)", expr.origin.span)
 
 
 }
@@ -122,7 +132,13 @@ case class ByNameApplyArg(
   override val name: TermName,
   override val tpe: Type,
   override val expr: CpsTree
-) extends ExprApplyArg
+) extends ExprApplyArg  {
+
+  override def isLambda = true
+
+  override def exprInCall(shifted: Boolean, optRuntimeAwait:Option[Tree]): Tree = ???
+
+}
 
 
 
