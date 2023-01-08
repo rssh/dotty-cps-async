@@ -6,14 +6,17 @@ import dotty.tools.dotc.*
 import ast.tpd.*
 import core.*
 import core.Contexts.*
-import core.Types.*
 import core.Decorators.*
+import core.Names.*
 import core.Symbols.*
 import core.SymDenotations.*
 import util.Spans.Span
+import core.Types.*
+
 
 import cps.plugin.*
 import cps.plugin.forest.application.*
+import QuoteLikeAPI.*
 
 
 object ApplyTransform {
@@ -146,14 +149,10 @@ object ApplyTransform {
 
 
   def makeArgList(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, tctx: TransformationContext)(using Context): ApplyTermArgList = {
-    ApplyTermArgList(term, term.args.zipWithIndex.map((a,i) => ApplyArg(a, i, 
-                mt.paramName(i, a.srcPos).toTermName,  
-                mt.paramType(i, a.srcPos),
-                mt.isByName(i, a.srcPos),
-                owner,
-                tctx
-    ) ))
+    // need to calculate dependency between arguments.
+    ApplyTermArgList.make(term, mt, owner, tctx)
   }
+
 
   def makeTypeArgList(term: TypeApply)(using Context): ApplyTypeArgList = {
     ApplyTypeArgList(term,term.args.map(tt => TypeTree(tt.tpe)))
@@ -165,7 +164,7 @@ object ApplyTransform {
     val tpe = AppliedType(runtimeAwait, List(tctx.monadType))
     val searchResult = ctx.typer.inferImplicitArg(tpe,span)
     searchResult.tpe match
-      case _ : dotc.typer.Implicits.SearchFailureType => None
+      case _ : typer.Implicits.SearchFailureType => None
       case _  => Some(searchResult)
   }
 
@@ -173,7 +172,7 @@ object ApplyTransform {
   def retrieveShiftedFun(fun:Tree, tctx: TransformationContext, owner:Symbol)(using Context): Tree = {
 
     def matchInplaceArgTypes(originSym:Symbol, candidateSym: Symbol): Either[String,ShiftedArgumentsShape] = {
-      val originParamSymms = origin.paramSymss
+      val originParamSymms = originSym.paramSymss
       val candidateParamSymms = candidateSym.paramSymss
       if (candidateParamSymms.isEmpty) then
         Left(s"${candidateSym.name} have no arguments")
@@ -186,43 +185,44 @@ object ApplyTransform {
             else if (candidateTpArgs.length == originTpArgs.length) then
               Right(ShiftedArgumentsShape.SAME_PARAMS)
             else
-              Left(s"Can't match parameters in ${originSymbol} and ${candidateSymbol}")
+              Left(s"Can't match parameters in ${originSym} and ${candidateSym}")
         else if (candidateTpArgs.isEmpty) then
           Right(ShiftedArgumentsShape.SAME_PARAMS)
         else
-          Left(s"Can't match parameters in ${originSymbol} and ${candidateSymbol} - first have type args when second - not")
-      else if (originParamSymms.length + 1 == candidateParamSymms.length) {
+          Left(s"Can't match parameters in ${originSym} and ${candidateSym} - first have type args when second - not")  
+      else if (originParamSymms.length + 1 == candidateParamSymms.length) then
         val candidateTpArgs = candidateParamSymms.head.filter(_.isType)
-        if (candindateTpArgs.isEmpty) then
-          Left(s"Can't match parameters in ${originSymbol} and ${candidateSymbol} - added arglis shoule be type")
+        if (candidateTpArgs.isEmpty) then
+          Left(s"Can't match parameters in ${originSym} and ${candidateSym} - added arglis shoule be type")
         else
           Right(ShiftedArgumentsShape.EXTRA_TYPEPARAM_LIST)
-      }
+      else
+        Left(s"Can't handle difference in number of parameters between ${originSym} and ${candidateSym}")
     }
 
-    def tryFindInplaceAsyncShiftedMethods(objSym: Symbol, name:Name, suffixes: Set[String]): Either[String,Map[Symbol,ShiftedArgumentsShape]]  = {
-      val shapes = (for{ m <-lookupPrefix.allMembers
-                suffix <- suffixes if m.isMethod && m.symbol.name == name+suffix  
+    def tryFindInplaceAsyncShiftedMethods(objSym: Symbol, name: Name, suffixes: Set[String]): Either[String,Map[Symbol,ShiftedArgumentsShape]]  = {
+      val shapes = (for{ m <- objSym.lookupPrefix.allMembers
+                suffix <- suffixes if m.symbol.isMethod && m.symbol.name.toString == name.toString + suffix   
                 matchShape = matchInplaceArgTypes(fun.symbol, objSym)
-      } yield (m, matchShape)).toMap
-      val (pos, neg) = shapes.partition(_.isRight)
+      } yield (m.symbol, matchShape)).toMap
+      val (pos, neg) = shapes.partition(_._2.isRight)
       if (pos.isEmpty) then
         Left( neg.values.map(_.left).mkString("\n") )
       else
-        Right( pos.mapValues(_.right) )
+        Right( pos.mapValues(_.right.get).toMap )
     }
 
     def resolveAsyncShiftedObject(obj: Tree): Either[String,Tree] = {
-      val asyncShift = TypeRef(RequiredClass("cps.AsyncShift"))
+      val asyncShift = ref(requiredClass("cps.AsyncShift")).tpe
       val tpe = AppliedType(asyncShift, List(obj.tpe.widen))
-      val searchResult = ctx.types.inferImplicits(tpe,span)
+      val searchResult = ctx.typer.inferImplicitArg(tpe, fun.span)
       searchResult match
-        case failure : dotc.typer.Implicits.SearchFailureType => Left(failure.explanation)
+        case failure : typer.Implicits.SearchFailureType => Left(failure.explanation)
         case success => Right(success)
 
     }
 
-    def retrieveShiftedMethod(obj: Tree, methodName: Name, targs:List[Type] ): Tree = {
+    def retrieveShiftedMethod(obj: Tree, methodName: Name, targs:List[Tree] ): Tree = {
       ???
     }
 

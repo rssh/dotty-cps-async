@@ -23,18 +23,21 @@ sealed trait ApplyArg {
     def isAsync: Boolean
     def isLambda: Boolean
 
-    def optFlatMapsBeforCall: Seq[(CpsTree,ValDef)]
-    def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree]): Tree
+    def optFlatMapsBeforCall(using Context): Seq[(CpsTree,ValDef)]
+    def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context): Tree
 
     def dependencyFromLeft: Boolean
 }
 
 object ApplyArg {
 
-  def apply(expr: Tree, index: Int, paramName: TermName, paramType: Type, isByName: Boolean, owner: Symbol, tctx: TransformationContext)(using Context): ApplyArg = {
+  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, owner: Symbol, dependFromLeft: Boolean, tctx: TransformationContext)(using Context): ApplyArg = {
     expr match
       case SeqLiteral(elems, elementtp) =>
-        RepeatApplyArg(paramName, paramType, elems.map(p => RootTransform(p,owner,tctx) ))
+        RepeatApplyArg(paramName, paramType, elems.zipWithIndex.map{ (p,i) =>
+          val newName = (paramName.toString + i.toString).toTermName
+          ApplyArg(p,newName,elementtp.tpe,isByName,owner, dependFromLeft, tctx)
+        })
       case _ =>
         val cpsExpr = RootTransform(expr, owner, tctx)
         if (isByName) then
@@ -46,8 +49,16 @@ object ApplyArg {
             case AnnotatedType(tp, an) if an.symbol == defn.ErasedParamAnnot =>
                 ErasedApplyArg(paramName,tp,cpsExpr)
             case _ =>
-                // TODO: create val
-                PlainApplyArg(paramName,paramType,cpsExpr)    
+                cpsExpr.asyncKind match
+                  case AsyncKind.Sync if !dependFromLeft =>
+                    PlainApplyArg(paramName,paramType,cpsExpr,None)
+                  case AsyncKind.AsyncLambda(_) =>
+                    PlainApplyArg(paramName,paramType,cpsExpr,None)
+                  case _ =>
+                    val sym = newSymbol(owner,paramName,Flags.EmptyFlags,paramType,NoSymbol)
+                    val optRhs =  cpsExpr.unpure
+                    val valDef =  ValDef(sym.asTerm, optRhs.getOrElse(EmptyTree))
+                    PlainApplyArg(paramName,paramType,cpsExpr,Some(valDef))
   }
 
 }
@@ -56,19 +67,16 @@ sealed trait ExprApplyArg extends ApplyArg {
 
   def expr: CpsTree
 
-  override def isAsync = expr.isAsync
+  override def isAsync = expr.asyncKind match
+                            case AsyncKind.Async(_) => true
+                            case _ =>false
 
   override def isLambda = expr.asyncKind match
-                            case AsyncLambda(internal) => true
+                            case AsyncKind.AsyncLambda(internal) => true
                             case _ => false
 
 }
 
-/**
- * Note, that sym is created only if expr is async
- * (i.e. unpure is empty)
- * Also AsyncLambda-s are 
- **/
 case class PlainApplyArg(  
   override val name: TermName,
   override val tpe: Type,
@@ -76,8 +84,8 @@ case class PlainApplyArg(
   val optIdentValDef: Option[ValDef],
 ) extends ExprApplyArg  {
 
-  override def flatMapsBeforeCall: Seq[(CpsTree,Symbol)] = {
-    optIdentSym.map(sym => (expr,sym)).toSeq
+  override def flatMapsBeforeCall(using Context): Seq[(CpsTree,Symbol)] = {
+    optIdentValDef.map(valDef => (expr,valDef.symbol)).toSeq
   }
 
   /**
@@ -88,12 +96,14 @@ case class PlainApplyArg(
    *  If yes, we should be extremally careful with different refs to
    *  optIdentSym.  Maybe better do expr function from sym ?
    **/
-   override def exprInCall(shifted: Boolean, optRuntimeAwait:Option[Tree]): Tree =
+   override def exprInCall(shifted: Boolean, optRuntimeAwait:Option[Tree])(using Context): Tree =
     import AsyncKind.*
     expr.asyncKind match
       case Sync => expr.unpure match
-        case Some(tree) => tree
-        case None => throw CpsTransformException("Impossibke: syn expression without unpure",expr.origin.span)
+        case Some(tree) => 
+          // TODO:
+          tree
+        case None => throw CpsTransformException("Impossibke: syn expression without unpure",expr.origin.srcPos)
       case Async(_) => Ref(optIdentSym.get)
       case AsyncLambda(internal) =>
         if (shifted) then
@@ -116,12 +126,12 @@ case class RepeatApplyArg(
 
   override def isAsync = exprs.exists(_.isAsync)
 
-  override def flatMapsBeforeCall = 
+  override def flatMapsBeforeCall(using Context) = 
     elements.foldLeft(IndexedSeq.empty[(CpsTree,Symbol)]){ (s,e) =>
        s ++ e.flatMapsBeforeCall
     }
 
-  override def exprInCall =
+  override def exprInCall(using Context) =
     val trees = elements.foldLeft(IndexedSeq.empty[Tree]){ (s,e) =>
       s.appended(e.exprInCall)
     }
@@ -136,7 +146,7 @@ case class ByNameApplyArg(
 
   override def isLambda = true
 
-  override def exprInCall(shifted: Boolean, optRuntimeAwait:Option[Tree]): Tree = ???
+  override def exprInCall(shifted: Boolean, optRuntimeAwait:Option[Tree])(using Context): Tree = ???
 
 }
 

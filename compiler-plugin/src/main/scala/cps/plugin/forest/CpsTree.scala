@@ -52,17 +52,22 @@ sealed trait CpsTree {
    * cps({A;B}) = cps(A).appendInBlock(cps(B))
    **/
   def appendInBlock(next: CpsTree): CpsTree = {
-    if (isAsync) then
-      if (next.isAsync) then
-        FlatMapCpsTree(tctx,EmptyTree,originOwner, this,
-              FlatMapCpsTreeArgument(None,next)
-        )
-      else
-        MapCpsTree(tctx,EmptyTree,originOwner, this,
-              MapCpsTreeArgument(None,next)
-        )
-    else
-      SeqCpsTree(tctx,EmptyTree,originOwner,IndexedSeq(this),next)
+    asyncKind match
+      case AsyncKind.Sync =>
+        SeqCpsTree(tctx,EmptyTree,originOwner,IndexedSeq(this),next)
+      case AsyncKind.Async(_) =>
+        next.asyncKind match
+          case AsyncKind.Sync | _ : AsyncKind.AsyncLambda =>
+            MapCpsTree(tctx,EmptyTree,originOwner, this,
+                MapCpsTreeArgument(None,next)
+            )
+          case AsyncKind.Async(_) =>
+            FlatMapCpsTree(tctx,EmptyTree,originOwner,this,
+                FlatMapCpsTreeArgument(None,next)
+            )
+      case AsyncKind.AsyncLambda(_) =>
+        // TODO: warning about unused lambda function
+        SeqCpsTree(tctx,EmptyTree,originOwner,IndexedSeq(this),next)
   }
 
   /**
@@ -73,7 +78,7 @@ sealed trait CpsTree {
   /**
    * apply runt
    **/
-  def applyRuntimeAwait(mode: RuntiemAwaitMode): CpsTree
+  def applyRuntimeAwait(mode: RuntimeAwaitMode): CpsTree
 
   
 }
@@ -87,8 +92,8 @@ object CpsTree {
   def pure(tctx: TransformationContext, origin: Tree, owner: Symbol, changed: Tree): PureCpsTree =
      PureCpsTree(tctx, origin, owner, changed)
 
-  def impure(tctx: TransformationContext, origin: Tree, owner: Symbol, impure: Tree): CpsTree =
-     AsyncTermCpsTree(tctx, origin, owner, impure)
+  def impure(tctx: TransformationContext, origin: Tree, owner: Symbol, impure: Tree, internalKind:AsyncKind = AsyncKind.Sync): CpsTree =
+     AsyncTermCpsTree(tctx, origin, owner, impure, internalKind)
 
   def unit(tctx: TransformationContext, owner: Symbol)(using Context): SyncCpsTree =
      UnitCpsTree(tctx, Literal(Constant(())), owner)
@@ -157,13 +162,14 @@ case class SeqCpsTree(
 
 
   override def unpure(using Context) = {
-    if last.asyncKind !== AsyncKind.Async then
-      None
-    else
-      val stats = prevs.map{ t =>
-        t.unpure.get.changeOwner(t.originOwner,originOwner)
-      }.toList
-      Some(Block( stats, last.unpure.get.changeOwner(last.originOwner,originOwner) ))
+    last.asyncKind match
+      case AsyncKind.Sync =>
+        val stats = prevs.map{ t =>
+          t.unpure.get.changeOwner(t.originOwner,originOwner)
+        }.toList
+        Some(Block( stats, last.unpure.get.changeOwner(last.originOwner,originOwner) ))
+      case _ =>
+        None
   }
 
   override def transformed(using Context): Tree = {
@@ -175,11 +181,15 @@ case class SeqCpsTree(
       Block(tstats.toList,tlast)
   }
   
+  // TODO: add span for error reporing
   override def appendInBlock(next: CpsTree): CpsTree = {
-    if (last.isAsync) then
-       SeqCpsTree(tctx,origin,originOwner,prevs,last.appendInBlock(next))
-    else 
-       SeqCpsTree(tctx,origin,originOwner,prevs.appended(last),next)
+    last.asyncKind match
+      case AsyncKind.Sync =>
+        SeqCpsTree(tctx,origin,originOwner,prevs.appended(last),next)
+      case AsyncKind.Async(_) =>
+        SeqCpsTree(tctx,origin,originOwner,prevs,last.appendInBlock(next))
+      case AsyncKind.AsyncLambda(_) =>
+        throw CpsTransformException("Unused AsyncLambda ",origin.srcPos)
   }
 
   override def withOrigin(term:Tree): SeqCpsTree =
@@ -201,7 +211,8 @@ case class AsyncTermCpsTree(
   tctx: TransformationContext,
   override val origin: Tree,
   override val originOwner: Symbol,
-  val transformedTree: Tree
+  val transformedTree: Tree,
+  val internalAsyncKind: AsyncKind
 ) extends AsyncCpsTree {
 
 
@@ -209,10 +220,11 @@ case class AsyncTermCpsTree(
     transformedTree
 
   override def appendInBlock(next: CpsTree): CpsTree = {
-    if next.isAsync then
-      FlatMapCpsTree(tctx,origin,originOwner,this,FlatMapCpsTreeArgument(None,next))
-    else
-      MapCpsTree(tctx,origin,originOwner,this,MapCpsTreeArgument(None,next))
+    next.asyncKind match
+      case AsyncKind.Async(_) =>
+        FlatMapCpsTree(tctx,origin,originOwner,this,FlatMapCpsTreeArgument(None,next))
+      case _ =>
+        MapCpsTree(tctx,origin,originOwner,this,MapCpsTreeArgument(None,next))
   }
 
   override def withOrigin(term:Tree): AsyncTermCpsTree =
@@ -255,12 +267,13 @@ case class MapCpsTree(
   }
 
   override def appendInBlock(next: CpsTree): CpsTree = {
-    if (next.isAsync) then
-      FlatMapCpsTree(tctx,origin,originOwner,mapSource,
-                        FlatMapCpsTreeArgument(mapFun.optParam,mapFun.body.appendInBlock(next)))  
-    else
-      MapCpsTree(tctx,origin,originOwner,mapSource,
-                        MapCpsTreeArgument(mapFun.optParam,mapFun.body.appendInBlock(next)))
+    next.asyncKind match
+      case AsyncKind.Async(_) =>
+        FlatMapCpsTree(tctx,origin,originOwner,mapSource,
+          FlatMapCpsTreeArgument(mapFun.optParam,mapFun.body.appendInBlock(next)))  
+      case _ =>
+        MapCpsTree(tctx,origin,originOwner,mapSource,
+          MapCpsTreeArgument(mapFun.optParam,mapFun.body.appendInBlock(next)))
   }
 
   override def withOrigin(term:Tree): MapCpsTree =
@@ -358,7 +371,6 @@ case class LambdaCpsTree(
     throw new  CpsTransformException("Lambda function can have only one parameter list",origin.srcPos)
   }
 
-  def isAsync: Boolean = cpsBody.isAsync
 
   override def unpure(using Context): Option[Tree] = {
     cpsBody.unpure match
@@ -442,7 +454,6 @@ case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
     override def origin = internal.origin
     override def originOwner = internal.originOwner
 
-    override def isAsync = internal.isAsync
     override def unpure(using Context) = internal.unpure
 
     override def transformed(using Context) = internal.transformed
@@ -461,7 +472,6 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
 
     override def tctx = nested.tctx
 
-    override def isAsync = nested.isAsync
 
     override def transformed(using Context): Tree = {
       nested.unpure match

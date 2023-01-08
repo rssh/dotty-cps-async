@@ -30,11 +30,15 @@ object QuoteLikeAPI:
 
   
   extension (self:Symbol)(using Context)
+
       def lookupPrefix: Type =
         if (self.isType) then
           self.thisType
         else
           self.namedType  
+
+      def isMethod: Boolean =
+        self.isTerm && self.is(Flags.Method) && !self.isConstructor
 
 
 end QuoteLikeAPI
