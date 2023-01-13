@@ -77,6 +77,7 @@ sealed trait ExprApplyArg extends ApplyArg {
 
 }
 
+
 case class PlainApplyArg(  
   override val name: TermName,
   override val tpe: Type,
@@ -95,8 +96,10 @@ case class PlainApplyArg(
    *  //Are we change symbol when do changeOwner to tree ?
    *  If yes, we should be extremally careful with different refs to
    *  optIdentSym.  Maybe better do expr function from sym ?
+   *
+   *  TODO:  dependFromLeft
    **/
-   override def exprInCall(shifted: Boolean, optRuntimeAwait:Option[Tree])(using Context): Tree =
+   override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context): Tree =
     import AsyncKind.*
     expr.asyncKind match
       case Sync => expr.unpure match
@@ -104,7 +107,7 @@ case class PlainApplyArg(
           // TODO:
           tree
         case None => throw CpsTransformException("Impossibke: syn expression without unpure",expr.origin.srcPos)
-      case Async(_) => Ref(optIdentSym.get)
+      case Async(_) => ref(optIdentValDef.get.symbol)
       case AsyncLambda(internal) =>
         if (shifted) then
           expr.transformed
