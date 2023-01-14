@@ -259,7 +259,7 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
 
       def next: F[Option[S]] = {
         if (sRef.compareAndSet(null,s0)) {
-           summon[CpsConcurrentMonad[F]].pure(Some(s0))
+          summon[CpsConcurrentMonad[F]].pure(Some(s0))
         } else {
           summon[CpsConcurrentMonad[F]].map(thisAsyncIterator.next)( ot =>
             ot.map(t => advance(t))

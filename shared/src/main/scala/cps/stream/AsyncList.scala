@@ -307,9 +307,10 @@ object AsyncList {
 
   def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]]): AsyncList[F,T] =
       Wait(
-        summon[CpsConcurrentMonad[F]].map(f(s0)){
-          case Some(a,s1) => Cons(a, () => unfold(s1)(f))
-          case None => empty[F]
+        summon[CpsConcurrentMonad[F]].map(f(s0)){ r =>
+          r match
+               case Some(a,s1) => Cons(a, () => unfold(s1)(f))
+               case None => empty[F]
         }
       )
       

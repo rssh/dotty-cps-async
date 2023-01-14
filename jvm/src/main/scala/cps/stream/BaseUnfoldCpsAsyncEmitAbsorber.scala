@@ -179,7 +179,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C<:CpsMonadContext[F],T](using val e
                      // impossible.
                      asyncMonad.error(new RuntimeException(s"impossible: unexpected event $other")) 
 
-         def nextEvent(): F[SupplyEventRecord] =    
+         def nextEvent(): F[SupplyEventRecord] =   
             if (state.emitStart.compareAndSet(false,true)) then
                asyncMonad.pure(SpawnEmitter)
             else 

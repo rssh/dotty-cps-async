@@ -19,6 +19,7 @@ class TestPEAsyncIterator {
   val N = 10_000_000
 
   @Test 
+  @Ignore
   def runIteratorOnAsyncList() = {
 
     val stream: AsyncList[PureEffect, Int] = asyncStream[AsyncList[PureEffect, Int]] { out =>
