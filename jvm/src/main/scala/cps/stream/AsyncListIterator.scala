@@ -1,57 +1,80 @@
 package cps.stream
 
+import scala.concurrent.*
 import scala.util.*
 import java.util.concurrent.atomic.AtomicReference
 import cps.*
 
 
 
-class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T]) extends AsyncIterator[F,T]:
-   val  ref = new AtomicReference[AsyncList[F,T]](l)
+class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T])(using ExecutionContext) extends AsyncIterator[F,T]:
+   
+
+   case class State(
+      current: AsyncList[F,T],
+      nAdvances: Int,
+      cachedNext: Promise[Option[(T,AsyncList[F,T])]]
+   )
+   val refState:  AtomicReference[State] = new AtomicReference(State(l,0,Promise()))
+
+   
+   def next: F[Option[T]] = {
+      val m = summon[CpsAsyncMonad[F]]
+      var retval: F[Option[T]]|Null = null
+      while(retval == null) {  
+         var state = refState.get.nn
+         val p=Promise[Option[(T,AsyncList[F,T])]]
+         val nState = State(state.current,state.nAdvances+1,p)
+         if (refState.compareAndSet(state,nState)) {
+             val nNext: F[Option[(T,AsyncList[F,T])]] = {
+               if state.nAdvances == 0 then
+                  state.current.next
+               else 
+                  m.adoptCallbackStyle{ cb =>
+                     state.cachedNext.future.onComplete(cb)
+                  }
+             }
+             retval = m.flatMapTry(nNext)(n => finishNext(p,n))
+         }
+      }
+      retval
+   }
+
+   private def finishNext(p:Promise[Option[(T,AsyncList[F,T])]],r:Try[Option[(T,AsyncList[F,T])]]):F[Option[T]] = {
+      var retval: F[Option[T]]| Null = null
+      r match
+         case Success(v) =>
+            val state = refState.get.nn
+            v match
+               case Some((e,l)) =>
+                  while(retval == null) {
+                     val nState = {
+                        if state.nAdvances == 1 then 
+                           State(l,0,p) 
+                        else 
+                           state.copy(nAdvances = state.nAdvances - 1)
+                     }
+                     if (refState.compareAndSet(state,nState)) then
+                        retval = summon[CpsMonad[F]].pure(Some(e))
+                  }
+               case None =>
+                  val nState = state.copy(current=AsyncList.empty)
+                  while(retval == null) {
+                     if (refState.compareAndSet(state,nState)) {
+                        retval = summon[CpsMonad[F]].pure(None)
+                     }
+                  }
+         case Failure(ex) =>
+            retval = summon[CpsTryMonad[F]].error(ex)
+      p.complete(r)
+      retval.nn
+   }
 
 
 
    /*
-   def next: F[Option[T]] = {
-      var retval: F[Option[T]]|Null = null
-      var prevL = ref.get.nn
-      var done = false
-      while(!done) {
-         prevL match 
-            case AsyncList.Wait(fl) =>
-               val nextPair = 
-               val p = Promise[Option[T]]
-               retval = m.adoptCallbackStyle{ listener => 
-                  p.future.onComplete(listener)
-               }
-               val nextL = AsyncList.Wait(
-                  m.flatMap(fl){ l =>   
-                     m.flatMapTry(l.next){ 
-                        case Success(Some((e,nl))) =>
-                           p.success(Some(e))
-                           nl
-                        case Success(None) =>
-                           p.success(None)
-                           AsyncList.empty
-                        case Failure(ex) =>
-                           p.failure(ex)
-                           // TODO:   AsyncList.failure ?
-                           AsyncList.empty
-                     }
-                  }
-               )
-               done = ref.compareAndSet()
-         
-      }
-   }
-   */
-   
-
-   def  next: F[Option[T]] =
-     
+   def  next1: F[Option[T]] =
      val m = summon[CpsAsyncMonad[F]]
-
-
      //m.apply{ ctx =>
       m.adoptCallbackStyle[Option[T]]{ elementCallback =>
          ref.updateAndGet{ lStartMaybeNull =>
@@ -74,8 +97,7 @@ class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T]) extends A
             AsyncList.Wait(delayedList)
          }
       }   
-     //}
+   */
+     
         
-
-
-
+end AsyncListIterator
