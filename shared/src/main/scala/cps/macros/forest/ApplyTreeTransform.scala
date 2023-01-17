@@ -29,6 +29,9 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
      if (cpsCtx.flags.debugLevel >= 10)
        cpsCtx.log(s"runApply, appyTerm=${safeShow(applyTerm)}")
      val monad = cpsCtx.monad
+     //if (fun.symbol == logicalAndSym || fun.symbol == logicalOrSym) {
+     //   handleBooleanAndOr(fun,args)
+     //} 
      // try to omit things, which should be eta-expanded,
      val r = fun match
        case TypeApply(obj,targs) if obj.symbol == nonLocalReturnsReturningSym =>
@@ -36,7 +39,10 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
        case TypeApply(obj,targs) =>
             handleFunTypeApply(applyTerm,fun,args,obj,targs, tails)(owner)
        case Select(obj,method) =>
-            handleFunSelect(applyTerm, fun, args, obj, method, tails)(owner)
+            if (fun.symbol == logicalAndSym || fun.symbol == logicalOrSym) then
+               handleBooleanAndOr(applyTerm, fun, obj, args)(owner)
+            else
+               handleFunSelect(applyTerm, fun, args, obj, method, tails)(owner)
        case Ident(name) =>
             handleFunIdent(applyTerm, fun, args, name, tails)(owner)
        case Apply(fun1@TypeApply(obj2,targs2), args1) if obj2.symbol == awaitSymbol =>
@@ -75,6 +81,58 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
               case other =>
                 throw MacroError("expected that Select.overloaded should match apply", posExprs(other,funTerm))
 
+  
+  def handleBooleanAndOr(applyTerm: Apply, fun: Term, x: Term, args: List[Term])(owner: Symbol): CpsTree = {
+
+    def shortcutOpConst(x:Term): (Term, Boolean) = {
+      if (fun.symbol == logicalOrSym) {
+          (x, true)
+      } else {
+          ('{ !${x.asExprOf[Boolean]} }.asTerm,  false)
+          //(Apply(Select(x,logicalNotSym),List()), false)
+      }
+    }
+
+    def genShortcutIf(xCond:Expr[Boolean], xShort: Boolean, y: Expr[F[Boolean]]): Expr[F[Boolean]] = {
+      '{  if (${xCond}) {
+              ${cpsCtx.monad}.pure(${Expr(xShort)})
+          } else {
+               ${y} 
+          }
+      }
+    }
+
+    args match
+      case List(y) => 
+         val xCpsTree = runRoot(x)(owner)
+         val yCpsTree = runRoot(y)(owner)
+         (xCpsTree.syncOrigin, yCpsTree.syncOrigin) match
+            case (Some(xx), Some(yy)) =>
+               if (!xCpsTree.isChanged  && !yCpsTree.isChanged) then
+                  CpsTree.pure(owner, applyTerm, false)
+               else
+                  CpsTree.pure(owner,
+                               Apply( 
+                                 Select(xx,fun.symbol),
+                                 List(yy)
+                               )
+                  )
+            case (Some(xx), None) =>
+               val (xOp, xCnt) = shortcutOpConst(x)
+               val expr = genShortcutIf(xOp.asExprOf[Boolean], xCnt, yCpsTree.transformed.asExprOf[F[Boolean]])
+               CpsTree.impure(owner, expr.asTerm, TypeRepr.of[Boolean])
+            case (None, Some(yy)) =>
+               xCpsTree.monadMap(t => Apply.copy(applyTerm)(Select(t,fun.symbol),List(yy)), TypeRepr.of[Boolean])
+            case (None, None) =>
+               xCpsTree.monadFlatMap({ t =>
+                  val (tOp, tCnt) = shortcutOpConst(t)
+                  genShortcutIf(tOp.asExprOf[Boolean], tCnt,
+                                 yCpsTree.transformed.asExprOf[F[Boolean]]
+                  ).asTerm
+               }, TypeRepr.of[Boolean] )
+      case _ =>   
+         throw MacroError("expected that boolean operator should have one arguments", posExprs(applyTerm))
+  }              
 
   /**
    *applyTerm = Apply(fun, args)
