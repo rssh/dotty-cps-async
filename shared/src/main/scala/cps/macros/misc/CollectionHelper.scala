@@ -14,7 +14,6 @@ object CollectionHelper {
     def retrieveIterableFactoryImpl[CC[x]<:Iterable[x]:Type](using Quotes): Expr[IterableFactory[CC]] = {
       import quotes.reflect.*
       val ccTpe = TypeRepr.of[CC]
-      println(s"ccTpe=$ccTpe,  typeSymbol=${ccTpe.typeSymbol}")
       val companion = Ref(ccTpe.typeSymbol.companionModule)
       if (companion.tpe <:< TypeRepr.of[IterableFactory[CC]]) then
         companion.asExprOf[IterableFactory[CC]]
