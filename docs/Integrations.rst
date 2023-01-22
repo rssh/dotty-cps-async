@@ -64,14 +64,14 @@ For 1.0.x series:
 
  .. code-block:: scala
 
-  libraryDependencies += "dev.zio" %% "zio" % "1.0.17"
+  libraryDependencies += "dev.zio" %% "zio" % zio1Version
   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % cpsAsyncConnectVersion
 
 For 2.0.x series:
 
  .. code-block:: scala
 
-  libraryDependencies += "dev.zio" %% "zio" % "2.0.4"
+  libraryDependencies += "dev.zio" %% "zio" % zio2Version
   libraryDependencies += "com.github.rssh" %% "cps-async-connect-zio2" % cpsAsyncConnectVersion
 
 
@@ -107,7 +107,7 @@ Add dependency |cps-async-connect-fs2|_ to your ``build.sbt`` to integrate Typel
 Probability Monad
 ^^^^^^^^^^^^^^^^^
 
-Add dependency |cps-async-connect-probabity-monad|_ to your ``build.sbt``.
+Add dependency |cps-async-connect-probability-monad|_ to your ``build.sbt``.
 
 
 
@@ -166,6 +166,10 @@ If you have implemented |CpsMonad|_ support for some effect stack and want to me
 
 .. |cps-async-connect-zio| replace:: ``cps-async-connect-zio``
 .. _cps-async-connect-zio: https://github.com/rssh/cps-async-connect#zio
+
+.. |cps-async-connect-probability-monad| replace:: ``cps-async-connect-probability-monad``
+.. _cps-async-connect-probability-monad: https://github.com/rssh/cps-async-connect#probability-monad
+
 
 .. |CpsMonad| replace:: ``CpsMonad``
 .. _CpsMonad: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20
