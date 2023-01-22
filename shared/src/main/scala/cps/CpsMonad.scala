@@ -73,10 +73,28 @@ trait CpsAwaitable[F[_]]
 
 
 /**
+ * Monad, where we can throw error but can catch one only
+ * outside of a monad context.
+ *
+ * An example as monad which interpret in sync context,
+ * such as Option or collections.
+ **/
+trait CpsThrowMonad[F[_]] extends CpsMonad[F] {
+
+   /**
+    * represent error `e` in monadic context.
+    **/
+    def error[A](e: Throwable): F[A]
+
+
+}
+
+
+/**
  * If you monad supports this typeclass, than
  * you can use try/catch/finally inside await.
  **/
-trait CpsTryMonad[F[_]] extends CpsMonad[F] {
+trait CpsTryMonad[F[_]] extends CpsThrowMonad[F] {
 
    /**
     * represent error `e` in monadic context.
