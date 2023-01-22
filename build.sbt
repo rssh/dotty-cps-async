@@ -1,9 +1,9 @@
 //val dottyVersion = "3.0.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.1.2-RC1-bin-SNAPSHOT"
-val dottyVersion = "3.2.1"
+val dottyVersion = "3.2.2"
 //val dottyVersion = "3.1.3"
 
-ThisBuild/version := "0.9.15-SNAPSHPOT"
+ThisBuild/version := "0.9.16-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers += Opts.resolver.sonatypeSnapshots
 

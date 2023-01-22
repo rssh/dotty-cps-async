@@ -259,7 +259,7 @@ trait AsyncIterator[F[_]:CpsConcurrentMonad, T]:
 
       def next: F[Option[S]] = {
         if (sRef.compareAndSet(null,s0)) {
-           summon[CpsConcurrentMonad[F]].pure(Some(s0))
+          summon[CpsConcurrentMonad[F]].pure(Some(s0))
         } else {
           summon[CpsConcurrentMonad[F]].map(thisAsyncIterator.next)( ot =>
             ot.map(t => advance(t))
@@ -345,7 +345,7 @@ end AsyncIterator
 
 object AsyncIterator:
 
-   def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]]): AsyncIterator[F,T] =
+   def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]])(using ExecutionContext): AsyncIterator[F,T] =
      AsyncListIterator(AsyncList.unfold(s0)(f))
 
    given absorber[F[_],C<:CpsMonadContext[F],T](using ExecutionContext, CpsConcurrentMonad.Aux[F,C]): CpsAsyncEmitAbsorber4[AsyncIterator[F,T],F,C,T] =

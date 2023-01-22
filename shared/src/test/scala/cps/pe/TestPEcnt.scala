@@ -51,7 +51,7 @@ class TestPECnt:
      FutureCompleter(future)
 
 
-  @Test def peCnt_automatic_coloring10(): Unit = 
+  @Test def peCnt_automatic_coloring10() = 
      val counter = new PEIntRef(10)
      val c = cntAutomaticColoring(counter)
      val future = c.unsafeRunFuture().map{ log =>

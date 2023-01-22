@@ -4,17 +4,17 @@ Dependency
 Sbt Example
 -----------
 
-The current prerelease is |0.9.14| for using with Scala |3.2.1|_.
+The current prerelease is |0.9.15| for using with Scala |3.2.2|_.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.14"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.15"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.14"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.15"
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
@@ -22,6 +22,10 @@ JavaScript and Native targets are also supported.
 
 Basic Usage
 ===========
+
+Traditional async/await interface
+---------------------------------
+
 
 The usage is similar to working with async/await frameworks in Scala 2 (e.g. |scala-async|_) and in other languages.
 
@@ -91,7 +95,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.14"
+  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.15"
 
 
 **Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_ and streaming frameworks like |Akka Streams|_ and |fs2|_. 
@@ -159,6 +163,58 @@ As transformation technique we use optimized monadic transform, the number of mo
 same as the number of |await|_ s in the source code.  
 You can read the :ref:`notes about implementation details <random-notes>`.
 
+Alternative names
+-----------------
+
+`async/await` names appropriative for Future-s and effect monads. There are other monads for which direct style can be helpful 
+in such applications as probabilistic programming or navigation over search space or collections and many other.  
+We define alternative names for macroses: `reify/reflect`, which can be more appropriative in the general case:
+
+
+.. code-block:: scala
+
+ def bayesianCoin(nFlips: Int): Distribution[Trial] = reify[Distribution] {
+       val haveFairCoin = reflect(tf())
+       val myCoin = if (haveFairCoin) coin else biasedCoin(0.9)
+       val flips = reflect(myCoin.repeat(nFlips))
+       Trial(haveFairCoin, flips)
+  }
+
+
+.. code-block:: scala
+
+ import cps.*
+ import cps.monads.{*,given}
+
+ def allPairs[T](l: List[T]): List[(T,T)] = reify[List] {
+       (reflect(l),reflect(l))
+  }
+
+
+
+Yet one pair of names 'lift/unlift' used in monadless library by Flavio W. Brasill and can be enabled by importing `cps.syntax.monadless.*`.
+
+
+.. code-block:: scala
+
+ import cps.*
+ import cps.syntax.monadless.* 
+
+ class TestMonadlessSyntax { 
+
+  import cps.monads.FutureAsyncMonad
+
+  val responseString: Future[String] = lift {
+    try {
+      responseToString(unlift(badRequest.get))
+    } catch {
+      case e: Exception => s"received an exceptional result: $e"
+    }
+  }
+
+ }
+ 
+
 
 .. rubric:: Footnotes
 
@@ -168,8 +224,8 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
 
-.. |0.9.14| replace:: ``0.9.14``
-.. _0.9.14: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.14/
+.. |0.9.15| replace:: ``0.9.15``
+.. _0.9.15: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.15/
 
 .. /*to update*/ 
 
@@ -185,8 +241,8 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 .. |3.2.0| replace:: ``3.2.0``
 .. _3.2.0: https://github.com/lampepfl/dotty/releases/tag/3.2.0
 
-.. |3.2.1| replace:: ``3.2.1``
-.. _3.2.1: https://github.com/lampepfl/dotty/releases/tag/3.2.1
+.. |3.2.2| replace:: ``3.2.2``
+.. _3.2.2: https://github.com/lampepfl/dotty/releases/tag/3.2.1
 
 
 .. |Akka Streams| replace:: **Akka Streams**

@@ -48,3 +48,9 @@ trait KnownTreeFragments[F[_], CT, CC <: CpsMonadContext[F]]:
   lazy val nonFatalAndNotControlThrowableAsyncWrapperClassSym = Symbol.classSymbol("cps.runtime.util.control.NonFatalAndNotControlThrowableAsyncWrapper$")
    
   lazy val nonFatalAndNotControlThrowableAsyncWrapperCompanion = Ref.term(nonFatalAndNotControlThrowableAsyncWrapperClassSym.companionModule.termRef)
+
+
+  lazy val logicalAndSym = defn.BooleanClass.declaredMethod("&&").head
+  lazy val logicalOrSym = defn.BooleanClass.declaredMethod("||").head
+  lazy val logicalNotSym = defn.BooleanClass.declaredMethod("unary_!").head
+  
