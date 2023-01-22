@@ -10,6 +10,7 @@ import core.Definitions.*
 import core.StdNames
 import ast.tpd.*
 
+import cps.plugin.*
 
 object IfTransform {
 
@@ -37,11 +38,14 @@ object IfTransform {
                     ifTerm
                   )
               case _ =>
+                  if (cpsIfTrue.asyncKind != cpsIfFalse.asyncKind) then
+                    throw CpsTransformException("Different async kind in if branch",ifTerm.srcPos)
                   AsyncTermCpsTree(
                     ctx,
                     ifTerm,
                     owner,
-                    cpy.If(ifTerm)(condSync, cpsIfTrue.transformed, cpsIfFalse.transformed)
+                    cpy.If(ifTerm)(condSync, cpsIfTrue.transformed, cpsIfFalse.transformed),
+                    cpsIfTrue.asyncKind
                   )
           case None =>
             val sym = newSymbol(owner, "c".toTermName , Flags.EmptyFlags, defn.BooleanType)
@@ -57,14 +61,17 @@ object IfTransform {
                   MapCpsTreeArgument(Some(valDef), CpsTree.pure(ctx,ifTerm,owner,newIf))
                 )
               case _ =>
+                if (cpsIfTrue.asyncKind != cpsIfFalse.asyncKind) then
+                   throw CpsTransformException("Different async kind in if branches",ifTerm.srcPos) 
                 val newIf = If(ref(sym),cpsIfTrue.transformed,cpsIfFalse.transformed)
-                              .withSpan(ifTerm.span)
+                              .withSpan(ifTerm.span)        
+                val cpsNewIf = AsyncTermCpsTree(ctx,ifTerm, owner, newIf, cpsIfTrue.asyncKind)              
                 FlatMapCpsTree(
                   ctx,
                   ifTerm,
                   owner,
                   cpsCond,
-                  FlatMapCpsTreeArgument(Some(valDef), AsyncTermCpsTree(ctx,ifTerm,owner,newIf) )
+                  FlatMapCpsTreeArgument(Some(valDef), cpsNewIf)
                 )
      }
 

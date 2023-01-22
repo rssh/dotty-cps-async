@@ -109,12 +109,12 @@ case class PlainApplyArg(
         case None => throw CpsTransformException("Impossibke: syn expression without unpure",expr.origin.srcPos)
       case Async(_) => ref(optIdentValDef.get.symbol)
       case AsyncLambda(internal) =>
-        if (shifted) then
+        if (callMode == ApplyArgCallMode.ASYNC_SHIFT) then
           expr.transformed
         else
           optRuntimeAwait match
             case Some(runtimeAwait) =>
-              val withRuntimeAwait = expr.applyRuntimeAwait(RuntiemAwaitMode)
+              val withRuntimeAwait = expr.applyRuntimeAwait(RuntimeAwaitMode)
             case None => 
               throw CpsTransformException(s"Can't transform function (both shioft and runtime-awaif for ${fType} are not found)", expr.origin.span)
 
