@@ -1,6 +1,6 @@
 ## CPS-Async transformations
 
-### Overview
+### CPS Overview
 
 CPS stands for [continuation-passing style][cps].
 

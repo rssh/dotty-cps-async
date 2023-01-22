@@ -23,6 +23,10 @@ JavaScript and Native targets are also supported.
 Basic Usage
 ===========
 
+Traditional async/await interface
+---------------------------------
+
+
 The usage is similar to working with async/await frameworks in Scala 2 (e.g. |scala-async|_) and in other languages.
 
 We define two 'pseudo-functions' |async|_ and |await|_ [#f1]_ : 
@@ -158,6 +162,58 @@ The |async|_ macro will transform the code block into something like
 As transformation technique we use optimized monadic transform, the number of monadic brackets is the 
 same as the number of |await|_ s in the source code.  
 You can read the :ref:`notes about implementation details <random-notes>`.
+
+Alternative names
+-----------------
+
+`async/await` names appropriative for Future-s and effect monads. There are other monads for which direct style can be helpful 
+in such applications as probabilistic programming or navigation over search space or collections and many other.  
+We define alternative names for macroses: `reify/reflect`, which can be more appropriative in the general case:
+
+
+.. code-block:: scala
+
+ def bayesianCoin(nFlips: Int): Distribution[Trial] = reify[Distribution] {
+       val haveFairCoin = reflect(tf())
+       val myCoin = if (haveFairCoin) coin else biasedCoin(0.9)
+       val flips = reflect(myCoin.repeat(nFlips))
+       Trial(haveFairCoin, flips)
+  }
+
+
+.. code-block:: scala
+
+ import cps.*
+ import cps.monads.{*,given}
+
+ def allPairs[T](l: List[T]): List[(T,T)] = reify[List] {
+       (reflect(l),reflect(l))
+  }
+
+
+
+Yet one pair of names 'lift/unlift' used in monadless library by Flavio W. Brasill and can be enabled by importing `cps.syntax.monadless.*`.
+
+
+.. code-block:: scala
+
+ import cps.*
+ import cps.syntax.monadless.* 
+
+ class TestMonadlessSyntax { 
+
+  import cps.monads.FutureAsyncMonad
+
+  val responseString: Future[String] = lift {
+    try {
+      responseToString(unlift(badRequest.get))
+    } catch {
+      case e: Exception => s"received an exceptional result: $e"
+    }
+  }
+
+ }
+ 
 
 
 .. rubric:: Footnotes
