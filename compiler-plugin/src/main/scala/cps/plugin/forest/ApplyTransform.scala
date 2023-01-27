@@ -59,7 +59,7 @@ object ApplyTransform {
       if (containsAsyncLambda) {
         findRuntimeAwait(tctx, origin.span) match
           case Some(runtimeAwait) =>
-            genApplication(origin,owner,tctx,fun,argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait)))
+            genApplication(origin,owner,tctx,fun,argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait),tctx))
           case None =>
             if (fun.denot != NoDenotation) {
                   // check -- can we add shifted version of fun
@@ -73,7 +73,7 @@ object ApplyTransform {
                   //                      we need to recompile origin
                   //  now we encapsulate this in shiftedFunction cache
                   val changedFun = retrieveShiftedFun(fun,tctx,owner)
-                  genApplication(origin, owner, tctx, changedFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None))
+                  genApplication(origin, owner, tctx, changedFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None, tctx))
             } else {
               fun match
                 case QuoteLikeAPI.CheckLambda(params,body,bodyOwner) =>
@@ -83,7 +83,7 @@ object ApplyTransform {
                   throw CpsTransformException(s"Can't transform function ${fun}",fun.srcPos)
             }
       } else {
-        genApplication(origin, owner, tctx, fun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None))
+        genApplication(origin, owner, tctx, fun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None, tctx))
       }
   }
 
@@ -94,7 +94,7 @@ object ApplyTransform {
           case ApplyTypeArgList(orig,args) =>
             TypeApply(s,args).withSpan(orig.span)
           case ApplyTermArgList(orig,args) =>
-            Apply(s,args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))).withSpan(orig.span)
+            Apply(s,args.map(_.exprInCall(ApplyArgCallMode.SYNC,None,tctx))).withSpan(orig.span)
      }
      CpsTree.pure(tctx, origin, owner, plainTree)
   }
@@ -116,7 +116,7 @@ object ApplyTransform {
 
     def genOneApplyPrefix(origin: Tree, args:List[ApplyArg], tailCpsTree:CpsTree): CpsTree =
         args.foldRight(tailCpsTree) { (e,s) =>
-          e.optFlatMapsBeforCall.foldRight(s){ (pre,tail) =>
+          e.flatMapsBeforeCall.foldRight(s){ (pre,tail) =>
             val (prefixCpsTree, prefixVal) = pre
             // TODO: optimise.
             //  (mb - introduce flaMap as operations, which automatically do optimizations) 

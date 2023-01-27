@@ -21,15 +21,15 @@ object DependencyCheck {
 
    case class Result(canBeDependent: Boolean, syms: Set[Symbol])
 
-   case class CheckState(prevs:Set[Symbol], next:Set[Symbols], depFound:Boolean, inPossibleRhs:Boolean)
+   case class CheckState(prevs:Set[Symbol], next:Set[Symbol], depFound:Boolean, inPossibleRhs:Boolean)
 
    def run(tree: Tree, syms: Set[Symbol])(using Context): Result = {
       val acc = new TreeAccumulator[CheckState] {
          def apply(state: CheckState,tree: Tree)(using Context): CheckState = {
              tree match
                 case x: Assign =>
-                  val next = state.next + sym  
-                  foldOver(state.copy(next = state.next :+ sym),x.rhs)
+                  val next = state.next + x.lhs.symbol  
+                  foldOver(state.copy(next = state.next + x.lhs.symbol),x.rhs)
                 case x: Apply =>
                   //  dependendy is possible since all arguments
                   val oldPossibleInRhs = state.inPossibleRhs

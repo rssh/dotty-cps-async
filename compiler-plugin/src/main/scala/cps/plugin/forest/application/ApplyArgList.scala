@@ -45,13 +45,13 @@ object ApplyTermArgList {
   def make(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, tctx: TransformationContext)(using Context): ApplyTermArgList = {
      val s0 = BuildState(List.empty,Set.empty,0)
      val s = term.args.foldLeft(s0){ (s,a) =>
-        val depResult = DependencyCheck.run(s.symbols,a)
+        val depResult = DependencyCheck.run(a,s.symbols)
         val nApplyArg = ApplyArg( a,
           mt.paramName(s.index, a.srcPos).toTermName,  
           mt.paramType(s.index, a.srcPos),
           mt.isByName(s.index, a.srcPos),
           owner,
-          depResult.
+          depResult.canBeDependent,
           tctx
         )
         s.copy(revApplyArgs = nApplyArg::s.revApplyArgs, symbols = s.symbols ++ depResult.syms)

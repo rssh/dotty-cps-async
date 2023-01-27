@@ -23,8 +23,8 @@ sealed trait ApplyArg {
     def isAsync: Boolean
     def isLambda: Boolean
 
-    def optFlatMapsBeforCall(using Context): Seq[(CpsTree,ValDef)]
-    def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context): Tree
+    def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)]
+    def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree], tctx:TransformationContext)(using Context): Tree
 
     def dependencyFromLeft: Boolean
 }
@@ -99,7 +99,7 @@ case class PlainApplyArg(
    *
    *  TODO:  dependFromLeft
    **/
-   override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context): Tree =
+   override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree], tctx: TransformationContext)(using Context): Tree =
     import AsyncKind.*
     expr.asyncKind match
       case Sync => expr.unpure match
@@ -114,9 +114,13 @@ case class PlainApplyArg(
         else
           optRuntimeAwait match
             case Some(runtimeAwait) =>
-              val withRuntimeAwait = expr.applyRuntimeAwait(RuntimeAwaitMode)
+              val withRuntimeAwait = expr.applyRuntimeAwait(RuntimeAwaitMode.LambdaOnly)
+              withRuntimeAwait.unpure match
+                case Some(tree) => tree
+                case None =>
+                  throw CpsTransformException(s"Can't transform function via RuntimeAwait",expr.origin.srcPos)
             case None => 
-              throw CpsTransformException(s"Can't transform function (both shioft and runtime-awaif for ${fType} are not found)", expr.origin.span)
+              throw CpsTransformException(s"Can't transform function (both shioft and runtime-awaif for ${tctx.monadType} are not found)", expr.origin.srcPos)
 
 
 }
@@ -127,18 +131,22 @@ case class RepeatApplyArg(
   elements: Seq[ApplyArg]
 ) extends ApplyArg {
 
-  override def isAsync = exprs.exists(_.isAsync)
+  override def isAsync = elements.exists(_.isAsync)
 
   override def flatMapsBeforeCall(using Context) = 
-    elements.foldLeft(IndexedSeq.empty[(CpsTree,Symbol)]){ (s,e) =>
+    elements.foldLeft(IndexedSeq.empty[(CpsTree,ValDef)]){ (s,e) =>
        s ++ e.flatMapsBeforeCall
     }
 
-  override def exprInCall(using Context) =
+  override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree], tctx: TransformationContext)(using Context) =
     val trees = elements.foldLeft(IndexedSeq.empty[Tree]){ (s,e) =>
-      s.appended(e.exprInCall)
+      s.appended(e.exprInCall(callMode,optRuntimeAwait,tctx))
     }
-    SeqLiteral(trees.toList)
+    val nTpe = callMode match
+      case ApplyArgCallMode.ASYNC_SHIFT if elements.exists(_.isLambda) => 
+        CpsTransformHelper.cpsTransformedType(tpe, tctx.monadType)
+      case _ => tpe
+    SeqLiteral(trees.toList, TypeTree(nTpe))
 }
 
 case class ByNameApplyArg(
