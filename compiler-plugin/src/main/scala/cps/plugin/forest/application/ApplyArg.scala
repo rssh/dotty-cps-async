@@ -114,7 +114,7 @@ case class PlainApplyArg(
         else
           optRuntimeAwait match
             case Some(runtimeAwait) =>
-              val withRuntimeAwait = expr.applyRuntimeAwait(runtimeAwait, RuntimeAwaitMode.LambdaOnly)
+              val withRuntimeAwait = expr.applyRuntimeAwait(runtimeAwait)
               withRuntimeAwait.unpure match
                 case Some(tree) => tree
                 case None =>
@@ -180,7 +180,7 @@ case class ByNameApplyArg(
           case None => 
             optRuntimeAwait match
               case Some(runtimeAwait) => 
-                expr.applyRuntimeAwait(runtimeAwait, RuntimeAwaitMode.LambdaOnly).unpure match
+                expr.applyRuntimeAwait(runtimeAwait).unpure match
                   case Some(tree) => tree
                   case None =>
                     throw CpsTransformException("Invalid result of RuntimeAwait",expr.origin.srcPos)
