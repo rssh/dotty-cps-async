@@ -26,7 +26,7 @@ sealed trait ApplyArg {
     def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)]
     def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree], tctx:TransformationContext)(using Context): Tree
 
-    def dependencyFromLeft: Boolean
+    //def dependencyFromLeft: Boolean
 }
 
 object ApplyArg {
@@ -47,7 +47,7 @@ object ApplyArg {
             case AnnotatedType(tp, an) if an.symbol == defn.InlineParamAnnot =>
                 InlineApplyArg(paramName,tp,cpsExpr)
             case AnnotatedType(tp, an) if an.symbol == defn.ErasedParamAnnot =>
-                ErasedApplyArg(paramName,tp,cpsExpr)
+                ErasedApplyArg(paramName,tp,expr)
             case _ =>
                 cpsExpr.asyncKind match
                   case AsyncKind.Sync if !dependFromLeft =>
@@ -85,8 +85,8 @@ case class PlainApplyArg(
   val optIdentValDef: Option[ValDef],
 ) extends ExprApplyArg  {
 
-  override def flatMapsBeforeCall(using Context): Seq[(CpsTree,Symbol)] = {
-    optIdentValDef.map(valDef => (expr,valDef.symbol)).toSeq
+  override def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] = {
+    optIdentValDef.map(valDef => (expr,valDef)).toSeq
   }
 
   /**
@@ -114,7 +114,7 @@ case class PlainApplyArg(
         else
           optRuntimeAwait match
             case Some(runtimeAwait) =>
-              val withRuntimeAwait = expr.applyRuntimeAwait(RuntimeAwaitMode.LambdaOnly)
+              val withRuntimeAwait = expr.applyRuntimeAwait(runtimeAwait, RuntimeAwaitMode.LambdaOnly)
               withRuntimeAwait.unpure match
                 case Some(tree) => tree
                 case None =>
@@ -132,6 +132,8 @@ case class RepeatApplyArg(
 ) extends ApplyArg {
 
   override def isAsync = elements.exists(_.isAsync)
+
+  override def isLambda = elements.exists(_.isLambda)
 
   override def flatMapsBeforeCall(using Context) = 
     elements.foldLeft(IndexedSeq.empty[(CpsTree,ValDef)]){ (s,e) =>
@@ -157,7 +159,35 @@ case class ByNameApplyArg(
 
   override def isLambda = true
 
-  override def exprInCall(shifted: Boolean, optRuntimeAwait:Option[Tree])(using Context): Tree = ???
+  override def flatMapsBeforeCall(using Context) = Seq.empty
+
+  override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree], tctx: TransformationContext)(using Context): Tree = {
+    callMode match
+      case ApplyArgCallMode.ASYNC_SHIFT =>
+        // make lambda
+        val mt = MethodType(List())(
+          x => List(),
+          x => CpsTransformHelper.cpsTransformedType(expr.originType.widen, tctx.monadType)
+        )    
+        val meth = Symbols.newAnonFun(expr.originOwner,mt)
+        val nArg = Closure(meth,tss => {
+          expr.transformed.changeOwner(expr.originOwner,meth).withSpan(expr.origin.span)
+        })
+        nArg
+      case _ =>
+        expr.unpure match
+          case Some(tree) => tree
+          case None => 
+            optRuntimeAwait match
+              case Some(runtimeAwait) => 
+                expr.applyRuntimeAwait(runtimeAwait, RuntimeAwaitMode.LambdaOnly).unpure match
+                  case Some(tree) => tree
+                  case None =>
+                    throw CpsTransformException("Invalid result of RuntimeAwait",expr.origin.srcPos)
+              case None =>
+                throw CpsTransformException("Can't trandform arg call to sync form without runtimeAwait",expr.origin.srcPos)   
+  }
+
 
 }
 
@@ -169,10 +199,44 @@ case class InlineApplyArg(
   override val name: TermName,
   override val tpe: Type,
   override val expr: CpsTree
-) extends ExprApplyArg
+) extends ExprApplyArg {
 
+
+  override def isAsync: Boolean =
+    throwNotHere
+     
+  override def isLambda: Boolean =
+    throwNotHere
+
+  def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] =
+    throwNotHere
+
+  def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree], tctx:TransformationContext)(using Context): Tree =
+    throwNotHere
+
+  def throwNotHere: Nothing =
+    throw new CpsTransformException("Inlined parameter should be erased on previous phase",expr.origin.srcPos)
+
+
+}
+
+// erased 
 case class ErasedApplyArg(
   override val name: TermName,
   override val tpe: Type,
-  override val expr: CpsTree
-) extends ExprApplyArg
+           val exprTree: Tree
+) extends ApplyArg {
+
+  def isAsync: Boolean =
+    false
+   
+  def isLambda: Boolean =
+    false
+
+  def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] =
+    Seq.empty
+
+  def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree], tctx:TransformationContext)(using Context): Tree =
+    exprTree
+
+}

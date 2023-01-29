@@ -75,10 +75,16 @@ sealed trait CpsTree {
    **/
   def withOrigin(term:Tree):CpsTree 
 
-  /**
-   * apply runt
+   /**
+   * apply runtime await.
+   *  If this CpsTree is adync lambda f: x1...xn => F[y] transform
+   *  one to f' = summon[RuntiemAwait[F].await(f(x1..xN))(monad,monad-context)]
+   *  and return CpsTree with f' in unpure
+   *  otherwise - unchanged or throw error
+   *
+   *  precondition:  kind  <: AsyncLambda(*)
    **/
-  def applyRuntimeAwait(mode: RuntimeAwaitMode): CpsTree
+  def applyRuntimeAwait(runtimeAwait: Tree, mode: RuntimeAwaitMode)(using Context): CpsTree
 
   
 }
@@ -99,6 +105,7 @@ object CpsTree {
      UnitCpsTree(tctx, Literal(Constant(())), owner)
 
 }
+
 
 sealed trait SyncCpsTree extends CpsTree {
 
@@ -122,6 +129,9 @@ sealed trait SyncCpsTree extends CpsTree {
      .withType(transformedType)
   }
 
+  override def applyRuntimeAwait(runtimeAwait: Tree, mode: RuntimeAwaitMode)(using Context): CpsTree =
+    //not needed
+    this
 
 }
 
@@ -195,14 +205,35 @@ case class SeqCpsTree(
   override def withOrigin(term:Tree): SeqCpsTree =
     copy(origin=term) 
 
+  override def applyRuntimeAwait(runtimeAwait: Tree, mode: RuntimeAwaitMode)(using Context): CpsTree =
+    copy(last = last.applyRuntimeAwait(runtimeAwait,mode))
+  
+
 
 }
 
 sealed trait AsyncCpsTree extends CpsTree {
 
-  override def isAsync: Boolean = true
+  def internalAsyncKind: AsyncKind
+
+  override def asyncKind = AsyncKind.Async(internalAsyncKind)
 
   override def unpure(using Context) = None
+
+  override def applyRuntimeAwait(runtimeAwait: Tree, mode: RuntimeAwaitMode)(using Context): CpsTree =
+    val awaitMethod = Select(runtimeAwait,"await".toTermName)
+    val tree = Apply(
+      Apply(
+        TypeApply(awaitMethod, List(TypeTree(originType.widen))),
+        List(transformed)
+      ),
+      List(
+        tctx.cpsMonadRef,
+        tctx.cpsMonadContextRef
+      )
+    )
+    CpsTree.pure(tctx,origin,originOwner,tree)
+
 
 }
 
@@ -212,9 +243,12 @@ case class AsyncTermCpsTree(
   override val origin: Tree,
   override val originOwner: Symbol,
   val transformedTree: Tree,
-  val internalAsyncKind: AsyncKind
+  override val internalAsyncKind: AsyncKind
 ) extends AsyncCpsTree {
 
+
+  override def asyncKind: AsyncKind =
+    AsyncKind.Async(internalAsyncKind) 
 
   override def transformed(using Context): Tree =
     transformedTree
@@ -230,6 +264,9 @@ case class AsyncTermCpsTree(
   override def withOrigin(term:Tree): AsyncTermCpsTree =
     copy(origin=term) 
 
+  override def applyRuntimeAwait(runtimeAwait: Tree, mode: RuntimeAwaitMode)(using Context): CpsTree =
+    throw CpsTransformException("can;t apply runtime await to non-lambda",origin.srcPos)
+  
 
 }
 
@@ -242,6 +279,8 @@ case class MapCpsTree(
   val mapFun: MapCpsTreeArgument  //  lambda function
 ) extends AsyncCpsTree {
    
+  override def internalAsyncKind = 
+    mapFun.body.asyncKind
 
   override def transformed(using Context): Tree = {
     mapSource.unpure match 
@@ -312,6 +351,13 @@ case class FlatMapCpsTree(
   val flatMapFun: FlatMapCpsTreeArgument
 ) extends AsyncCpsTree {
 
+  override def internalAsyncKind: AsyncKind =
+    flatMapFun.body.asyncKind match
+      case AsyncKind.Sync => AsyncKind.Sync
+      case AsyncKind.Async(ak) => ak
+      case AsyncKind.AsyncLambda(x) =>
+        throw CpsTransformException("Invalid flatMap - result of function body should not be lambda",origin.srcPos)
+
   override def transformed(using Context): Tree = {
     val flatMapName = "flatMap".toTermName
     Apply(
@@ -371,6 +417,7 @@ case class LambdaCpsTree(
     throw new  CpsTransformException("Lambda function can have only one parameter list",origin.srcPos)
   }
 
+  override def asyncKind = AsyncKind.AsyncLambda(cpsBody.asyncKind)
 
   override def unpure(using Context): Option[Tree] = {
     cpsBody.unpure match
@@ -403,6 +450,30 @@ case class LambdaCpsTree(
 
   override def withOrigin(term:Tree): LambdaCpsTree =
     copy(origin=term) 
+
+
+  override def applyRuntimeAwait(runtimeAwait:Tree, mode: RuntimeAwaitMode)(using Context): CpsTree =
+    cpsBody.asyncKind match
+      case AsyncKind.Sync => 
+        // if we can restore origin fun, don't need apply awakt
+        this
+      case AsyncKind.Async(internal) =>
+        val awaitMethod = Select(runtimeAwait,"await".toTermName)
+        val tree = Apply(
+          Apply(
+            TypeApply(awaitMethod, List(TypeTree(cpsBody.originType.widen))),
+            List(cpsBody.transformed)
+          ),
+          List(
+            tctx.cpsMonadRef,
+            tctx.cpsMonadContextRef
+          )
+        )
+        CpsTree.pure(tctx,origin,originOwner,tree)
+      case AsyncKind.AsyncLambda(internalAsync) =>
+        ???
+        
+        
 
 
   private def originParams(using Context) = originDefDef.termParamss.head
@@ -458,8 +529,15 @@ case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
 
     override def transformed(using Context) = internal.transformed
 
+    override def asyncKind = internal.asyncKind
+
+
+
     override def withOrigin(term:Tree): CpsTree =
       BlockBoundsCpsTree(internal.withOrigin(term))
+
+    override def applyRuntimeAwait(runtimeAwait:Tree, mode: RuntimeAwaitMode)(using Context): CpsTree =
+      BlockBoundsCpsTree(internal.applyRuntimeAwait(runtimeAwait,mode))
 
   
 }
@@ -472,6 +550,7 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
 
     override def tctx = nested.tctx
 
+    override def asyncKind: AsyncKind = nested.asyncKind
 
     override def transformed(using Context): Tree = {
       nested.unpure match
@@ -495,6 +574,9 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
     override def withOrigin(newOrigin: Tree) =
       copy(origin = newOrigin)
 
+    override def applyRuntimeAwait(runtimeAwait:Tree, mode: RuntimeAwaitMode)(using Context): CpsTree =
+      copy(nested = nested.applyRuntimeAwait(runtimeAwait, mode))
+  
 
     private def prefixTerm(nestedTerm: Tree)(using Context): Tree =
       records.foldLeft(nestedTerm){(s,e) => 

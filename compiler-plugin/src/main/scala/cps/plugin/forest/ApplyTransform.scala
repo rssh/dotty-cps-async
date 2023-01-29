@@ -216,9 +216,9 @@ object ApplyTransform {
       val asyncShift = ref(requiredClass("cps.AsyncShift")).tpe
       val tpe = AppliedType(asyncShift, List(obj.tpe.widen))
       val searchResult = ctx.typer.inferImplicitArg(tpe, fun.span)
-      searchResult match
+      searchResult.tpe match
         case failure : typer.Implicits.SearchFailureType => Left(failure.explanation)
-        case success => Right(success)
+        case success => Right(searchResult)
 
     }
 

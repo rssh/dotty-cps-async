@@ -10,5 +10,6 @@ import ast.tpd.*
 case class TransformationContext(
   //val shiftedSymbols: ShiftedSymbols,
   val monadType: Type,  // F[_]
-  val cpsMonadRef: Tree  // summon[CpsTryMonad[F]]
+  val cpsMonadRef: Tree,  // summon[CpsTryMonad[F]]
+  val cpsMonadContextRef: Tree // TODO: many contexts, if we have context per effect ?
 )  

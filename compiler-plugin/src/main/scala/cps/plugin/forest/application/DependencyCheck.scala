@@ -3,6 +3,7 @@ package cps.plugin.forest.application
 import dotty.tools.dotc.*
 import ast.tpd.*
 import core.*
+import core.Constants.*
 import core.Contexts.*
 import core.Decorators.*
 import core.Names.*
@@ -33,20 +34,20 @@ object DependencyCheck {
                 case x: Apply =>
                   //  dependendy is possible since all arguments
                   val oldPossibleInRhs = state.inPossibleRhs
-                  val tmpState = foldOver(state.copy(withDep = true,inPossibleRhs = true),tree)
+                  val tmpState = foldOver(state.copy(depFound = true, inPossibleRhs = true), tree)
                   tmpState.copy(inPossibleRhs = oldPossibleInRhs)
-                case x: Constant =>
+                case x: Literal =>
                   state
-                case other if other.symbol !== NoSymbol =>
+                case other if other.symbol != NoSymbol =>
                   val depFound = state.depFound || syms.contains(other.symbol)
-                  val nextSyms = if (inPossibleRhs) then
-                    state.next :+ other.symbol
+                  val nextSyms = if (state.inPossibleRhs) then
+                    state.next + other.symbol
                   else
                     state.next
                   foldOver(state.copy(depFound=depFound,next = nextSyms),tree)  
          }
       }
-      val res = acc.apply(State(syms,Set.empty,false,false))
+      val res = acc.apply(CheckState(syms,Set.empty,false,false),tree)
       Result(res.depFound, res.prevs ++ res.next)
    }
 

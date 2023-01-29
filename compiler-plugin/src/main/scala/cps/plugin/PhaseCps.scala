@@ -54,7 +54,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                           val mt = CpsTransformHelper.transformContextualLambdaType(tree.rhs,params,body,monadType)
                           val meth = Symbols.newAnonFun(summon[Context].owner,mt)
                           val nRhs = Closure(meth,tss => {
-                              val tc = TransformationContext(monadType,monad)
+                              val tc = TransformationContext(monadType,monad,cpsTransformParam)
                               val cpsTree = RootTransform(body, bodyOwner, tc)
                               val transformedBody = cpsTree.transformed
                               TransformUtil.substParams(transformedBody,params,tss.head).changeOwner(bodyOwner,meth).withSpan(body.span)
@@ -75,6 +75,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                         println(s"returning context function with quotre but not a lambda")
                         super.transformDefDef(tree)
                   case head::tail =>
+                    // TODO: find monad and implements compound algebraic effect
                     report.error(s"more than one CpsTransform argument:  ${head._1.show} and ${tail.head._1.show}", tree.srcPos)
                     tree
               case _  =>
@@ -109,7 +110,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                     val am = Select(infernAsyncArgCn,"am".toTermName)
                     val meth = Symbols.newAnonFun(summon[Context].owner,mt)
                     val ctxFun = Closure(meth, tss => {
-                      val tc = TransformationContext(monadType,am)
+                      val tc = TransformationContext(monadType,am,params(0))
                       val cpsTree = RootTransform(body,bodyOwner,tc)
                       val transformedBody = cpsTree.transformed
                       TransformUtil.substParams(transformedBody,List(params(1)),tss.head)
