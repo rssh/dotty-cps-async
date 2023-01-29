@@ -22,7 +22,7 @@ case class ApplyTermArgList(
   args: List[ApplyArg]
 ) extends ApplyArgList {
   override def isAsync = args.exists(_.isAsync)
-  override def containsAsyncLambda = ??? //args.exists(_.isAsyncLambda)
+  override def containsAsyncLambda = args.exists(_.isLambda)
 } 
 
 case class ApplyTypeArgList(
