@@ -53,13 +53,18 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                           //  case _  => throw CpsTransformException(s"type of context function is not MethodType but ${tree.rhs.tpe}",tree.srcPos)
                           val mt = CpsTransformHelper.transformContextualLambdaType(tree.rhs,params,body,monadType)
                           val meth = Symbols.newAnonFun(summon[Context].owner,mt)
+                          println(s"creating new closure, type=${mt.show}")
                           val nRhs = Closure(meth,tss => {
                               val tc = TransformationContext(monadType,monad,cpsTransformParam)
+                              println(s"before body transform")
                               val cpsTree = RootTransform(body, bodyOwner, tc)
+                              println(s"after body transform")
                               val transformedBody = cpsTree.transformed
+                              println(s"after calling transfirmed, transformedBody=${transformedBody}")
                               TransformUtil.substParams(transformedBody,params,tss.head).changeOwner(bodyOwner,meth).withSpan(body.span)
                            }
                           )
+                          println(s"creation of nTpt")
                           val nTpt = AppliedType(tycon,CpsTransformHelper.adoptResultTypeParam(targs,monadType))
                           val defDef = cpy.DefDef(tree)(rhs=nRhs,tpt=TypeTree(nTpt))
                           println(s"result: ${defDef.show}")

@@ -28,17 +28,22 @@ object ApplyTransform {
 
   def applyMArgs(term: Apply, owner: Symbol, tctx: TransformationContext, tail:List[ApplyArgList] )(using Context): CpsTree = {
     val argList = makeArgList(term, MethodParamsDescriptor(term.fun), owner, tctx)
-    term.fun match
+    println(s"applyMArgs begin,term=${term.show}")
+    val retval = term.fun match
       case tfa@Apply(fun1,args1) => 
         applyMArgs(tfa, owner, tctx, argList::tail)
       case tpfa@TypeApply(tapp:Apply, targs1) =>
         val targs = makeTypeArgList(tpfa)
         applyMArgs(tapp, owner, tctx, targs::argList::tail)  
       case _ => parseApplication(term,owner,tctx,tail)
+    println(s"applyMArgs end, retval=${retval}")
+    retval
   }
 
   def parseApplication(appTerm: Apply, owner: Symbol, tctx: TransformationContext, argss: List[ApplyArgList])(using Context): CpsTree = {
+      println(s"paese Applucation for ${appTerm.show}")
       val cpsApplicant = RootTransform(appTerm.fun ,owner, tctx)
+      println(s"received cpsApplicant")
       cpsApplicant.unpure match
         case Some(syncFun) => parseSyncApplication(appTerm, owner, tctx, syncFun, argss)
         case None =>
@@ -55,6 +60,7 @@ object ApplyTransform {
   }
 
   def parseSyncApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, argss:List[ApplyArgList])(using Context): CpsTree = {
+      println(s"parseSyncApplucation for ${origin.show}")
       val containsAsyncLambda = argss.exists(_.containsAsyncLambda)
       if (containsAsyncLambda) {
         findRuntimeAwait(tctx, origin.span) match
@@ -100,16 +106,21 @@ object ApplyTransform {
   }
 
   def genApplication(origin:Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, argss: List[ApplyArgList], f: ApplyArg => Tree)(using Context): CpsTree = {
-    
+
+
     def genOneLastPureApply(fun: Tree, argList: ApplyArgList): Tree =
       argList match
-        case ApplyTypeArgList(oriing, targs) =>
+        case ApplyTypeArgList(origing, targs) =>
           TypeApply(fun,targs).withSpan(origin.span)
         case ApplyTermArgList(origin, args) =>
-          Apply(fun, args.map(f)).withSpan(origin.span)
+          println(s"genOneLastPureReply:2, fun=${fun.show}, args=${args.map(_.name)}")
+          val l = Apply(fun, args.map(f)).withSpan(origin.span)
+          println(s"genOneLastPureReply:3, l=${l.show}")
+          l
   
     @tailrec      
     def genPureReply(fun:Tree, revArgss: List[ApplyArgList]): Tree =
+      println(s"genPureReply ${fun.show} argsLen=${revArgss.length}")
       revArgss match
         case Nil => fun
         case head::tail => genPureReply(genOneLastPureApply(fun, head),tail)
@@ -134,14 +145,20 @@ object ApplyTransform {
         }
         
     def genPrefixes(origin: Tree, argss:List[ApplyArgList], tailCpsTree: CpsTree): CpsTree =
+      println("gen prefixes:")
       argss.foldRight(tailCpsTree) { (e,s) =>
+         println(s"genPrefix, s.origin=${s.origin}, e=${e}")
          e match
           case ApplyTermArgList(origin,args) =>
             genOneApplyPrefix(origin,args,s)
           case _ => s
       }
+
+    println(s"gen application: ${origin.show}")  
+    val pureReply = genPureReply(fun,argss.reverse)
+    println(s"pureReply: ${pureReply}")
     
-    genPrefixes(origin,argss, CpsTree.pure(tctx,origin,owner, genPureReply(fun,argss.reverse)) )
+    genPrefixes(origin,argss, CpsTree.pure(tctx,origin,owner, pureReply) )
 
   }
 
