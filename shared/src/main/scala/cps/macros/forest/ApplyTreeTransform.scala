@@ -404,40 +404,8 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                                  }, applyTerm.tpe.widen)
            }
            if (cpsCtx.flags.debugLevel >= 15) then
-               cpsCtx.log(s"handleArgs: runFold result = ${retval}")
+               cpsCtx.log(s"handleArgs1: result = ${retval}")
            retval
-           /*
-           var runFold = true
-           val lastCpsTree: CpsTree = if (!existsPrependArg && cpsFun.isSync) {
-                                    runFold = false
-                                    if (!existsShiftedLambda && !cpsFun.isChanged && 
-                                        !unpure && !shouldBeChangedSync)
-                                       CpsTree.pure(owner,applyTerm)
-                                    else
-                                       buildApply(cpsFun, fun, applyRecords, applyTerm, argsProperties, unpure, tails)(owner)
-                                 } else {
-                                    buildApply(cpsFun, fun, applyRecords, applyTerm, argsProperties, unpure, tails)(owner)
-                                 }
-           if cpsCtx.flags.debugLevel >= 15 then
-               cpsCtx.log(s"handleArgs: runFold=$runFold")
-               cpsCtx.log(s"handleArgs: lastCpsTree=$lastCpsTree")
-           val callWithArgs = 
-               if (runFold) then 
-                  val retval = (applyRecords::tails).foldRight(lastCpsTree){(pa,sa) =>
-                     pa.foldRight(sa){ (p,s) =>
-                        if (p.usePrepend(existsAsyncArg))
-                           p.append(s)
-                        else
-                           s
-                     }
-                  }
-                  if (cpsCtx.flags.debugLevel >= 15)
-                     cpsCtx.log(s"handleArgs: runFold result = ${retval}")
-                  retval
-               else
-                  lastCpsTree
-           callWithArgs
-           */
         }
   }
 
@@ -811,19 +779,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
              case _ =>
                     cpsFun.syncOrigin match
                        case Some(fun) =>
-                          // lamba arguments represented as Block(Nil, expr)
-                          //  we can return lambda as lambda
-                          val fixFun = fun match
-                              case Lambda(params,body) => Block(Nil, fun)
-                              case _  => fun
-                          val applied = try {
-                           fixFun.appliedToArgss(argss)
-                          }catch{
-                           case ex:Throwable =>
-                              println(s"exception during appliedToArgss, fun=$fun, fixFun=$fixFun")
-                              cpsCtx.log(s"exception during appliedToArgss, fun=$fun, fixFun=$fixFun")
-                              throw ex
-                          }
+                          val applied = fun.appliedToArgss(argss)
                           if (inShiftedCallChain)
                              shiftedResultCpsTree(applyTerm, applied)(owner)
                           else
