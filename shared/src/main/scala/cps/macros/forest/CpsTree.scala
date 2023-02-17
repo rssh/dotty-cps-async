@@ -997,7 +997,12 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                       case nestTerm: Term => PureCpsTree(owner, apply(nestTerm), isChanged).transformed
                       case s => Block(List(s), PureCpsTree(owner, apply(unitTerm), isChanged).transformed )
            case AwaitSyncCpsTree(nestOwner, nestOrigin,nestOtpe) =>
-             nested.monadMap(t => apply(t), otpe).transformed
+              try
+                nested.monadMap(t => apply(t), otpe).transformed
+              catch 
+                case ex:Throwable =>
+                  println(s"Catched exception in monadMap,  otpe=$otpe, origin=$origin")
+                  throw ex
            case AwaitAsyncCpsTree(nNested, nOtpe) =>
              AwaitSyncCpsTree(owner, apply(nested.transformed), otpe).transformed
            case MappedCpsTree(prev, op, nOtpe: TypeRepr) =>

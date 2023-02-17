@@ -366,36 +366,83 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                          case _ =>
                             cpsFun.monadMap(x => x.appliedToArgss(args::tailArgss), applyTerm.tpe)
         } else {
-           var runFold = true
-           val lastCpsTree: CpsTree = if (!existsPrependArg && cpsFun.isSync) {
-                                    runFold = false
-                                    if (!existsShiftedLambda && !cpsFun.isChanged && 
-                                        !unpure && !shouldBeChangedSync)
-                                       CpsTree.pure(owner,applyTerm)
-                                    else
-                                       buildApply(cpsFun, fun, applyRecords, applyTerm, argsProperties, unpure, tails)(owner)
-                                 } else {
-                                    buildApply(cpsFun, fun, applyRecords, applyTerm, argsProperties, unpure, tails)(owner)
-                                 }
-           if cpsCtx.flags.debugLevel >= 15 then
-               cpsCtx.log(s"handleArgs: runFold=$runFold")
-               cpsCtx.log(s"handleArgs: lastCpsTree=$lastCpsTree")
-           if (runFold)
-              val retval = (applyRecords::tails).foldRight(lastCpsTree){(pa,sa) =>
-                 pa.foldRight(sa){ (p,s) =>
-                   if (p.usePrepend(existsAsyncArg))
-                      p.append(s)
-                   else
-                      s
-                 }
-              }
-              if (cpsCtx.flags.debugLevel >= 15)
-                  cpsCtx.log(s"handleArgs: runFold result = ${retval}")
-              retval
-           else
-              lastCpsTree
+           val retval = cpsFun match {
+               case lt: AsyncLambdaCpsTree  =>
+                  buildApplyPrependArgsFlatMaps(cpsFun, fun, applyRecords, applyTerm, argsProperties, true, tails)(owner)        
+               case _ =>
+                  if (!cpsFun.isAsync) then
+                     buildApplyPrependArgsFlatMaps(cpsFun, fun, applyRecords, applyTerm, argsProperties, unpure, tails)(owner)
+                  else
+                     //note,that if cpsFun is async, it should be caclulated before arguments
+                     // (see https://github.com/rssh/dotty-cps-async/issues/67)
+                     cpsFun match
+                        case  sel: SelectTypeApplyCpsTree =>
+                           //  if this is select[typeapply](obj) then at first cps-transform object
+                           sel.nested.syncOrigin match
+                              case Some(nested) =>
+                                 buildApplyPrependArgsFlatMaps(cpsFun, fun, applyRecords, applyTerm, argsProperties, unpure, tails)(owner)
+                              case None =>
+                                 //  TODO:  optimize as with cpsFun branch above.
+                                 sel.nested.monadFlatMap({ x =>
+                                    val nFun = sel.apply(x)
+                                    val nCpsFun = CpsTree.pure(owner,nFun,true)
+                                    val cpsCall = buildApplyPrependArgsFlatMaps(nCpsFun, nFun, applyRecords, applyTerm, argsProperties, unpure, tails)(owner)
+                                    cpsCall.transformed
+                                 }, applyTerm.tpe.widen)
+                        case _ =>
+                           val tmpSym = Symbol.newVal(owner,"tmp_x",cpsFun.otpe.widen,Flags.EmptyFlags, Symbol.noSymbol)
+                           val symRef = Ref(tmpSym)
+                           val nCpsFun = CpsTree.pure(owner,symRef,true)
+                           val cpsCallWithArgs = buildApplyPrependArgsFlatMaps(nCpsFun,fun,applyRecords, applyTerm, argsProperties, unpure, tails)(owner)      
+                           cpsCallWithArgs.syncOrigin match
+                              case Some(syncCall) =>
+                                 cpsFun.monadMap({x => TransformUtil.changeSymsInTerm(Map(tmpSym -> x),syncCall,owner)},applyTerm.tpe.widen)
+                              case None =>
+                                 val callWithArgs = cpsCallWithArgs.transformed
+                                 cpsFun.monadFlatMap({ x =>
+                                    TransformUtil.changeSymsInTerm(Map(tmpSym -> x),callWithArgs,owner)
+                                 }, applyTerm.tpe.widen)
+           }
+           if (cpsCtx.flags.debugLevel >= 15) then
+               cpsCtx.log(s"handleArgs1: result = ${retval}")
+           retval
         }
   }
+
+ 
+   def buildApplyPrependArgsFlatMaps(cpsFun: CpsTree, fun: Term,
+                 argsRecords: Seq[ApplyArgRecord],
+                 applyTerm: Apply,
+                 argsProperties: ApplyArgsSummaryProperties,
+                 unpure: Boolean,
+                 tails: List[Seq[ApplyArgRecord]]
+                 )(owner: Symbol): CpsTree =  {
+
+      var runFold = true           
+      val lastCpsTree: CpsTree = if (!argsProperties.usePrepend && cpsFun.isSync) {
+                  runFold = false
+                  if (!argsProperties.hasShiftedLambda && !cpsFun.isChanged && 
+                      !unpure && !argsProperties.shouldBeChangedSync)
+                     CpsTree.pure(owner,applyTerm)
+                  else
+                     buildApply(cpsFun, fun, argsRecords, applyTerm, argsProperties, unpure, tails)(owner)
+               } else {
+                  buildApply(cpsFun, fun, argsRecords, applyTerm, argsProperties, unpure, tails)(owner)
+               } 
+               
+      val retval = if (runFold) {
+            (argsRecords::tails).foldRight(lastCpsTree){(pa,sa) =>
+               pa.foldRight(sa){ (p,s) =>
+                  if (p.usePrepend(argsProperties.hasAsync))
+                     p.append(s)
+                  else
+                     s
+               }
+            }
+         } else lastCpsTree
+
+      retval
+   }
 
 
   def findAsyncShiftTerm(e:Term):(ImplicitSearchResult, TypeRepr) =
@@ -722,6 +769,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
           val argss = args::tailArgss
           val retval = cpsFun match
              case lt:AsyncLambdaCpsTree =>
+                    //TODO: select.uniqe("apply") ?   weite test-case
                     CpsTree.impure(owner,lt.rLambda.appliedToArgss(argss), applyTpe)
              case cs:CallChainSubstCpsTree =>
                     if (cpsCtx.flags.debugLevel >= 15) {
