@@ -14,7 +14,8 @@ import cps.plugin.forest.*
 sealed trait ApplyArgList {
   def isAsync: Boolean
   def containsAsyncLambda: Boolean
-} 
+  def show(using Context):String
+}
 
 
 case class ApplyTermArgList(
@@ -23,6 +24,11 @@ case class ApplyTermArgList(
 ) extends ApplyArgList {
   override def isAsync = args.exists(_.isAsync)
   override def containsAsyncLambda = args.exists(_.isLambda)
+
+  override def show(using Context): String = {
+    s"ApplyTermArgList(${args.map(_.show)})"
+  }
+
 } 
 
 case class ApplyTypeArgList(
@@ -31,6 +37,9 @@ case class ApplyTypeArgList(
 ) extends ApplyArgList {
   override def isAsync = false
   override def containsAsyncLambda = false
+  override def show(using Context): String = {
+    s"ApplyTypeArgList(${args})"
+  }
 }
 
 

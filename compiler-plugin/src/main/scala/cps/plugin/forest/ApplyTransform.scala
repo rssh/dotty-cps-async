@@ -35,13 +35,15 @@ object ApplyTransform {
       case tpfa@TypeApply(tapp:Apply, targs1) =>
         val targs = makeTypeArgList(tpfa)
         applyMArgs(tapp, owner, tctx, targs::argList::tail)  
-      case _ => parseApplication(term,owner,tctx,tail)
+      case _ => 
+        println(s"appylyMArgs: break for ${term.fun} ")
+        parseApplication(term,owner,tctx,argList::tail)
     println(s"applyMArgs end, retval=${retval}")
     retval
   }
 
   def parseApplication(appTerm: Apply, owner: Symbol, tctx: TransformationContext, argss: List[ApplyArgList])(using Context): CpsTree = {
-      println(s"paese Applucation for ${appTerm.show}")
+      println(s"paese Applucation for ${appTerm.show}, argss=${argss.map(_.show)}")
       val cpsApplicant = RootTransform(appTerm.fun ,owner, tctx)
       println(s"received cpsApplicant")
       cpsApplicant.unpure match
@@ -60,7 +62,7 @@ object ApplyTransform {
   }
 
   def parseSyncApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, argss:List[ApplyArgList])(using Context): CpsTree = {
-      println(s"parseSyncApplucation for ${origin.show}")
+      println(s"parseSyncApplucation for ${origin.show}, fun=${fun.show}, argss=${argss.map(_.show)}")
       val containsAsyncLambda = argss.exists(_.containsAsyncLambda)
       if (containsAsyncLambda) {
         findRuntimeAwait(tctx, origin.span) match
@@ -119,9 +121,9 @@ object ApplyTransform {
           l
   
     @tailrec      
-    def genPureReply(fun:Tree, revArgss: List[ApplyArgList]): Tree =
-      println(s"genPureReply ${fun.show} argsLen=${revArgss.length}")
-      revArgss match
+    def genPureReply(fun:Tree, argss: List[ApplyArgList]): Tree =
+      println(s"genPureReply ${fun.show} argsLen=${argss.length},  argss=${argss.map(_.show)}")
+      argss match
         case Nil => fun
         case head::tail => genPureReply(genOneLastPureApply(fun, head),tail)
 
@@ -155,7 +157,7 @@ object ApplyTransform {
       }
 
     println(s"gen application: ${origin.show}")  
-    val pureReply = genPureReply(fun,argss.reverse)
+    val pureReply = genPureReply(fun,argss)
     println(s"pureReply: ${pureReply}")
     
     genPrefixes(origin,argss, CpsTree.pure(tctx,origin,owner, pureReply) )

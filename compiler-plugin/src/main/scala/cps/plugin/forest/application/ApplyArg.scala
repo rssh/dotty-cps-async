@@ -27,6 +27,7 @@ sealed trait ApplyArg {
     def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree], tctx:TransformationContext)(using Context): Tree
 
     //def dependencyFromLeft: Boolean
+    def show(using Context): String
 }
 
 object ApplyArg {
@@ -123,6 +124,10 @@ case class PlainApplyArg(
               throw CpsTransformException(s"Can't transform function (both shioft and runtime-awaif for ${tctx.monadType} are not found)", expr.origin.srcPos)
 
 
+ override def show(using Context): String = {
+    s"Plain(${expr.origin.show})"
+ }  
+
 }
 
 case class RepeatApplyArg(
@@ -149,6 +154,11 @@ case class RepeatApplyArg(
         CpsTransformHelper.cpsTransformedType(tpe, tctx.monadType)
       case _ => tpe
     SeqLiteral(trees.toList, TypeTree(nTpe))
+
+ override def show(using Context): String = {
+    s"Repeated(${elements.map(_.show)})"
+ }  
+
 }
 
 case class ByNameApplyArg(
@@ -188,6 +198,9 @@ case class ByNameApplyArg(
                 throw CpsTransformException("Can't trandform arg call to sync form without runtimeAwait",expr.origin.srcPos)   
   }
 
+  override def show(using Context): String = {
+    s"ByName(${expr.origin.show})"
+  }
 
 }
 
@@ -217,6 +230,10 @@ case class InlineApplyArg(
   def throwNotHere: Nothing =
     throw new CpsTransformException("Inlined parameter should be erased on previous phase",expr.origin.srcPos)
 
+  override def show(using Context): String = {
+    s"Inline(${expr.origin.show})"
+  }
+
 
 }
 
@@ -238,5 +255,10 @@ case class ErasedApplyArg(
 
   def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree], tctx:TransformationContext)(using Context): Tree =
     exprTree
+
+  override def show(using Context): String = {
+    s"Erased(${exprTree.show})"
+  }
+  
 
 }
