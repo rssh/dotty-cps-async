@@ -15,7 +15,7 @@ object TypeApplyTransform {
 
       def apply(taTerm: TypeApply, owner: Symbol, tctx: TransformationContext)(using Context): CpsTree = {
           val funCps = RootTransform(taTerm.fun,owner,tctx)
-          val newOp = SelectTypeApplyCpsTree.OpTypeApply(taTerm.args, taTerm)
+          val newOp = SelectTypeApplyCpsTree.OpTypeApply(taTerm)
           funCps match
             case SelectTypeApplyCpsTree(records,nested,fcpsOrigin,fcpsOriginOwner) =>
                 SelectTypeApplyCpsTree(records.appended(newOp),nested,taTerm,owner)

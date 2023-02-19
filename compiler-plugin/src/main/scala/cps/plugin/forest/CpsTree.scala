@@ -7,6 +7,7 @@ import core.Contexts.*
 import core.Types.*
 import core.Decorators.*
 import core.Symbols.*
+import core.Names.*
 import ast.tpd.*
 
 import cps.plugin.*
@@ -86,6 +87,13 @@ sealed trait CpsTree {
    **/
   def applyRuntimeAwait(runtimeAwait: Tree)(using Context): CpsTree
 
+  def select(name: Name, origin: Select, otpe: Type): CpsTree =
+    SelectTypeApplyCpsTree(
+      List(SelectTypeApplyCpsTree.OpSelect(origin)),
+      this,
+      origin,
+      originOwner
+    )
   
 }
 
@@ -575,6 +583,11 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
       copy(nested = nested.applyRuntimeAwait(runtimeAwait))
   
 
+    override def select(name: Name, origin: Select, otpe: Type): CpsTree =
+      copy(records = records.appended(SelectTypeApplyCpsTree.OpSelect(origin)))
+      
+         
+
     private def prefixTerm(nestedTerm: Tree)(using Context): Tree =
       records.foldLeft(nestedTerm){(s,e) => 
         e.prefixTerm(s)
@@ -590,17 +603,19 @@ object SelectTypeApplyCpsTree {
       def prefixTerm(term:Tree)(using Context): Tree
    }
 
-   case class OpSelect(sym:Symbol, origin:Tree) extends Operation {
+   case class OpSelect(origin:Select) extends Operation {
       override def prefixTerm(term:Tree)(using Context): Tree =
-        Select(term,Types.TermRef(term.tpe,sym)).withSpan(origin.span)
+        val sym = origin.symbol
+        val ntpe = TermRef(term.tpe, origin.name.toTermName, sym.denot.asSeenFrom(term.tpe))
+        Select(term,Types.TermRef(term.tpe,sym)).withType(ntpe).withSpan(origin.span)
    }
 
-   case class OpTypeApply(args:List[Tree], origin:Tree) extends Operation {
+   case class OpTypeApply(origin:TypeApply) extends Operation {
       override def prefixTerm(term:Tree)(using Context): Tree =
-        if (args.isEmpty) then
+        if (origin.args.isEmpty) then
           term
         else
-          TypeApply(term,args).withSpan(origin.span)
+          TypeApply(term,origin.args).withSpan(origin.span)
    }
 
 

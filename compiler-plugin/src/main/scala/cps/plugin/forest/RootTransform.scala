@@ -6,6 +6,7 @@ import core.Contexts.*
 import core.Types.*
 import core.Decorators.*
 import core.Symbols.*
+import core.Names.*
 import ast.tpd.*
 
 import cps.plugin.*
@@ -18,6 +19,7 @@ object RootTransform {
           case applyTerm: Apply => ApplyTransform(applyTerm, owner, tctx)
           case block: Block => BlockTransform(block, owner, tctx)
           case id: Ident => IdentTransform(id, owner, tctx)
+          case s: Select => SelectTransform(s, owner, tctx)
           case tIf@If(_,_,_) => IfTransform(tIf, owner, tctx)
           case t: TypeApply => TypeApplyTransform(t,owner,tctx)
           case vd:ValDef => ValDefTransform(vd,owner,tctx)
