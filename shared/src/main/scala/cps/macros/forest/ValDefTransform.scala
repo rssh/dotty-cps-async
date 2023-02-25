@@ -178,6 +178,8 @@ object ValDefTransform:
          val valDef: Statement = oldValDef.asInstanceOf[quotes.reflect.ValDef]
          val prevStats: List[Statement] = prev.map(_.extract.changeOwner(valDef.symbol.owner)).toList
          val outputTerm = n.asTerm.changeOwner(valDef.symbol.owner) match
+            case lambda@Lambda(params,body) =>
+                   Block( prevStats ++: List(valDef), lambda)
             case block@Block(statements, last) =>
                    TransformUtil.prependStatementsToBlock(prevStats ++: List(valDef), block )
             case other =>
