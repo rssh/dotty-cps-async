@@ -1,5 +1,5 @@
 // CPS Transform for tasty block
-// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021
+// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019 - 2023
 package cps.macros.forest
 
 import scala.quoted._

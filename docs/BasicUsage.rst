@@ -4,17 +4,17 @@ Dependency
 Sbt Example
 -----------
 
-The current prerelease is |0.9.15| for using with Scala |3.2.2|_.
+The current prerelease is |0.9.16| for using with Scala |3.2.2|_.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.15"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.16"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.15"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.16"
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
@@ -224,8 +224,8 @@ Yet one pair of names 'lift/unlift' used in monadless library by Flavio W. Brasi
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
 
-.. |0.9.15| replace:: ``0.9.15``
-.. _0.9.15: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.15/
+.. |0.9.16| replace:: ``0.9.16``
+.. _0.9.16: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.16/
 
 .. /*to update*/ 
 
