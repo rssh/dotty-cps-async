@@ -25,9 +25,11 @@ sealed trait CpsTree {
   def origin: Tree
 
   /**
-  * owner of origin
+  * owner of term.
+  *  At first this is the owner at origin, than can be changed 
+  *  via changeOwner
   **/
-  def originOwner: Symbol
+  def owner: Symbol
 
   /**
    * is this is a sync-tree ?
@@ -52,29 +54,32 @@ sealed trait CpsTree {
    * let we have block {A; B}
    * cps({A;B}) = cps(A).appendInBlock(cps(B))
    **/
-  def appendInBlock(next: CpsTree): CpsTree = {
+  def appendInBlock(next: CpsTree)(using Context): CpsTree = {
     asyncKind match
       case AsyncKind.Sync =>
-        SeqCpsTree(tctx,EmptyTree,originOwner,IndexedSeq(this),next)
+        SeqCpsTree(tctx,EmptyTree,owner,IndexedSeq(this),next.changeOwner(owner))
       case AsyncKind.Async(_) =>
         next.asyncKind match
           case AsyncKind.Sync | _ : AsyncKind.AsyncLambda =>
-            MapCpsTree(tctx,EmptyTree,originOwner, this,
+            MapCpsTree(tctx,EmptyTree,owner, this,
                 MapCpsTreeArgument(None,next)
             )
           case AsyncKind.Async(_) =>
-            FlatMapCpsTree(tctx,EmptyTree,originOwner,this,
+            FlatMapCpsTree(tctx,EmptyTree,owner,this,
                 FlatMapCpsTreeArgument(None,next)
             )
       case AsyncKind.AsyncLambda(_) =>
         // TODO: warning about unused lambda function
-        SeqCpsTree(tctx,EmptyTree,originOwner,IndexedSeq(this),next)
+        SeqCpsTree(tctx,EmptyTree,owner,IndexedSeq(this),next.changeOwner(owner))
   }
 
   /**
    *@returns a copy of cpstree with origin set to origin.
+   *TODO: remove
    **/
   def withOrigin(term:Tree):CpsTree 
+
+  def changeOwner(newOwner: Symbol)(using Context): CpsTree
 
    /**
    * apply runtime await.
@@ -91,8 +96,7 @@ sealed trait CpsTree {
     SelectTypeApplyCpsTree(
       List(SelectTypeApplyCpsTree.OpSelect(origin)),
       this,
-      origin,
-      originOwner
+      origin
     )
   
 }
@@ -147,7 +151,7 @@ sealed trait SyncCpsTree extends CpsTree {
 case class PureCpsTree(
   override val tctx: TransformationContext,
   override val origin: Tree,
-  override val originOwner: Symbol,
+  override val owner: Symbol,
   val term: Tree
 ) extends SyncCpsTree {
 
@@ -155,11 +159,18 @@ case class PureCpsTree(
 
   override def getUnpure(using Context) = term 
 
-  override def appendInBlock(next: CpsTree): CpsTree = 
-    SeqCpsTree(tctx,origin,originOwner,IndexedSeq(this),next)
+  override def appendInBlock(next: CpsTree)(using Context): CpsTree = 
+    SeqCpsTree(tctx,origin,owner,IndexedSeq(this),next.changeOwner(owner))
 
   override def withOrigin(term:Tree): PureCpsTree =
     copy(origin=term) 
+
+  override def changeOwner(newOwner: Symbol)(using Context) =
+    if (origin eq term) then
+      val nTerm = term.changeOwner(owner,newOwner)
+      PureCpsTree(tctx,nTerm,newOwner,nTerm)
+    else
+      PureCpsTree(tctx,origin.changeOwner(owner,newOwner),newOwner,term.changeOwner(owner,newOwner))
 
 }
 
@@ -171,7 +182,7 @@ case class PureCpsTree(
 case class SeqCpsTree(
   override val tctx: TransformationContext,
   override val origin: Tree,
-  override val originOwner: Symbol,
+  override val owner: Symbol,
   prevs: IndexedSeq[CpsTree],
   last: CpsTree
 ) extends CpsTree {
@@ -183,9 +194,9 @@ case class SeqCpsTree(
     last.asyncKind match
       case AsyncKind.Sync =>
         val stats = prevs.map{ t =>
-          t.unpure.get.changeOwner(t.originOwner,originOwner)
+          t.unpure.get.changeOwner(t.owner,owner)
         }.toList
-        Some(Block( stats, last.unpure.get.changeOwner(last.originOwner,originOwner) ))
+        Some(Block( stats, last.unpure.get.changeOwner(last.owner,owner) ))
       case _ =>
         None
   }
@@ -194,24 +205,28 @@ case class SeqCpsTree(
     if (prevs.length == 0) then
       last.transformed
     else
-      val tstats = prevs.map(t => t.transformed.changeOwner(t.originOwner,originOwner))
-      val tlast = last.transformed.changeOwner(last.originOwner,originOwner)
+      val tstats = prevs.map(t => t.transformed.changeOwner(t.owner,owner))
+      val tlast = last.transformed.changeOwner(last.owner,owner)
       Block(tstats.toList,tlast)
   }
   
   // TODO: add span for error reporing
-  override def appendInBlock(next: CpsTree): CpsTree = {
+  override def appendInBlock(next: CpsTree)(using Context): CpsTree = {
     last.asyncKind match
       case AsyncKind.Sync =>
-        SeqCpsTree(tctx,origin,originOwner,prevs.appended(last),next)
+        SeqCpsTree(tctx,origin,owner,prevs.appended(last),next)
       case AsyncKind.Async(_) =>
-        SeqCpsTree(tctx,origin,originOwner,prevs,last.appendInBlock(next))
+        SeqCpsTree(tctx,origin,owner,prevs,last.appendInBlock(next))
       case AsyncKind.AsyncLambda(_) =>
         throw CpsTransformException("Unused AsyncLambda ",origin.srcPos)
   }
 
   override def withOrigin(term:Tree): SeqCpsTree =
     copy(origin=term) 
+
+  override def changeOwner(newOwner: Symbol)(using Context) =  {
+    copy(owner=newOwner, prevs = prevs.map(_.changeOwner(newOwner)), last=last.changeOwner(newOwner))
+  }
 
   override def applyRuntimeAwait(runtimeAwait: Tree)(using Context): CpsTree =
     copy(last = last.applyRuntimeAwait(runtimeAwait))
@@ -240,7 +255,7 @@ sealed trait AsyncCpsTree extends CpsTree {
         tctx.cpsMonadContextRef
       )
     )
-    CpsTree.pure(tctx,origin,originOwner,tree)
+    CpsTree.pure(tctx,origin,owner,tree)
 
 
 }
@@ -249,7 +264,7 @@ sealed trait AsyncCpsTree extends CpsTree {
 case class AsyncTermCpsTree(
   tctx: TransformationContext,
   override val origin: Tree,
-  override val originOwner: Symbol,
+  override val owner: Symbol,
   val transformedTree: Tree,
   override val internalAsyncKind: AsyncKind
 ) extends AsyncCpsTree {
@@ -261,17 +276,20 @@ case class AsyncTermCpsTree(
   override def transformed(using Context): Tree =
     transformedTree
 
-  override def appendInBlock(next: CpsTree): CpsTree = {
+  override def appendInBlock(next: CpsTree)(using Context): CpsTree = {
     next.asyncKind match
       case AsyncKind.Async(_) =>
-        FlatMapCpsTree(tctx,origin,originOwner,this,FlatMapCpsTreeArgument(None,next))
+        FlatMapCpsTree(tctx,origin,owner,this,FlatMapCpsTreeArgument(None,next))
       case _ =>
-        MapCpsTree(tctx,origin,originOwner,this,MapCpsTreeArgument(None,next))
+        MapCpsTree(tctx,origin,owner,this,MapCpsTreeArgument(None,next))
   }
 
   override def withOrigin(term:Tree): AsyncTermCpsTree =
     copy(origin=term) 
   
+  override def changeOwner(newOwner: Symbol)(using Context) = {
+    copy(owner=newOwner,transformedTree = transformedTree.changeOwner(owner,newOwner))
+  }  
 
 }
 
@@ -279,7 +297,7 @@ case class AsyncTermCpsTree(
 case class MapCpsTree(
   override val tctx: TransformationContext,
   override val origin: Tree,
-  override val originOwner: Symbol,
+  override val owner: Symbol,
   val mapSource: CpsTree,
   val mapFun: MapCpsTreeArgument  //  lambda function
 ) extends AsyncCpsTree {
@@ -310,19 +328,22 @@ case class MapCpsTree(
         }
   }
 
-  override def appendInBlock(next: CpsTree): CpsTree = {
+  override def appendInBlock(next: CpsTree)(using Context): CpsTree = {
     next.asyncKind match
       case AsyncKind.Async(_) =>
-        FlatMapCpsTree(tctx,origin,originOwner,mapSource,
+        FlatMapCpsTree(tctx,origin,owner,mapSource,
           FlatMapCpsTreeArgument(mapFun.optParam,mapFun.body.appendInBlock(next)))  
       case _ =>
-        MapCpsTree(tctx,origin,originOwner,mapSource,
+        MapCpsTree(tctx,origin,owner,mapSource,
           MapCpsTreeArgument(mapFun.optParam,mapFun.body.appendInBlock(next)))
   }
 
   override def withOrigin(term:Tree): MapCpsTree =
     copy(origin=term) 
 
+  override def changeOwner(newOwner: Symbol)(using Context) =
+    // TODO: think about mapFun
+    copy(owner=newOwner,mapSource = mapSource.changeOwner(newOwner))  
 
 }
 
@@ -337,13 +358,14 @@ case class MapCpsTreeArgument(
       case None =>
         throw CpsTransformException("attempt use MapCpsTree with async argumemt. use FlatMapCpsTree instead",body.origin.srcPos)
       case Some(syncBody) =>
-        val owner = mapCpsTree.originOwner
-        val param = optParam.getOrElse{
-          val sym = newSymbol(owner, "_unused".toTermName, Flags.EmptyFlags, 
+        val owner = mapCpsTree.owner
+        val param = optParam match
+          case Some(p) => p.changeOwner(p.symbol.owner, owner)
+          case None =>
+            val sym = newSymbol(owner, "_unused".toTermName, Flags.EmptyFlags, 
                               mapCpsTree.mapSource.originType.widen, Symbols.NoSymbol)
-          ValDef(sym,EmptyTree)
-        }
-        TransformUtil.makeLambda(List(param), body.originType.widen, owner, syncBody, body.originOwner)
+            ValDef(sym,EmptyTree)
+        TransformUtil.makeLambda(List(param), body.originType.widen, owner, syncBody, body.owner)
   }  
   
 }
@@ -351,7 +373,7 @@ case class MapCpsTreeArgument(
 case class FlatMapCpsTree(
   override val tctx: TransformationContext,
   override val origin: Tree,
-  override val originOwner: Symbol,
+  override val owner: Symbol,
   val flatMapSource: CpsTree,
   val flatMapFun: FlatMapCpsTreeArgument
 ) extends AsyncCpsTree {
@@ -377,13 +399,16 @@ case class FlatMapCpsTree(
     ).withSpan(origin.span)
   }
 
-  override def appendInBlock(next: CpsTree): CpsTree = {
-    FlatMapCpsTree(tctx, origin, originOwner, flatMapSource, 
+  override def appendInBlock(next: CpsTree)(using Context): CpsTree = {
+    FlatMapCpsTree(tctx, origin, owner, flatMapSource, 
                         FlatMapCpsTreeArgument(flatMapFun.optParam, flatMapFun.body.appendInBlock(next)))
   }
 
   override def withOrigin(term:Tree): FlatMapCpsTree =
     copy(origin=term) 
+
+  override def changeOwner(newOwner: Symbol)(using Context) =
+    copy(owner = newOwner, flatMapSource = flatMapSource.changeOwner(newOwner))
 
 
 }
@@ -394,14 +419,14 @@ case class FlatMapCpsTreeArgument(
 ) {
 
    def makeLambda(cpsTree: FlatMapCpsTree)(using Context): Block = {
-    val owner = cpsTree.originOwner
+    val owner = cpsTree.owner
     val param = optParam.getOrElse{
       val sym = newSymbol(owner, "_unused".toTermName, Flags.EmptyFlags, 
                           cpsTree.flatMapSource.originType.widen, Symbols.NoSymbol)
       ValDef(sym,EmptyTree)
     }
-    val transformedBody = body.transformed(using summon[Context].withOwner(body.originOwner))
-    TransformUtil.makeLambda(List(param),body.transformedType,owner,transformedBody, body.originOwner)
+    val transformedBody = body.transformed(using summon[Context].withOwner(body.owner))
+    TransformUtil.makeLambda(List(param),body.transformedType,owner,transformedBody, body.owner)
   }
 
 }
@@ -413,7 +438,7 @@ case class FlatMapCpsTreeArgument(
 case class LambdaCpsTree(
   override val tctx: TransformationContext,
   override val origin: Tree,
-  override val originOwner: Symbol,
+  override val owner: Symbol,
   val originDefDef: DefDef,
   val cpsBody: CpsTree
 )  extends CpsTree {
@@ -433,9 +458,9 @@ case class LambdaCpsTree(
             Some(origin)
           case _ =>
             val tpe = createUnshiftedType()
-            val meth = Symbols.newAnonFun(originOwner,tpe)
+            val meth = Symbols.newAnonFun(owner,tpe)
             val closure = Closure(meth, tss => TransformUtil.substParams(unpureBody, originParams, tss.head)
-                                                            .changeOwner(cpsBody.originOwner, meth)
+                                                            .changeOwner(cpsBody.owner, meth)
                           )
             Some(closure)
   }
@@ -443,19 +468,21 @@ case class LambdaCpsTree(
 
   override def transformed(using Context): Tree = {
     val tpe = createShiftedType()
-    val meth = Symbols.newAnonFun(originOwner,tpe)
+    val meth = Symbols.newAnonFun(owner,tpe)
     // here cpsBody is received in other context
     // .  TODO:  check ownitu in cpsBody.transformed
-    Closure(meth, tss => TransformUtil.substParams(cpsBody.transformed, originParams, tss.head).changeOwner(cpsBody.originOwner, meth))
+    Closure(meth, tss => TransformUtil.substParams(cpsBody.transformed, originParams, tss.head).changeOwner(cpsBody.owner, meth))
   }
 
-  override def appendInBlock(next: CpsTree): CpsTree = {
-    SeqCpsTree(tctx,EmptyTree,originOwner,IndexedSeq(this),next)
+  override def appendInBlock(next: CpsTree)(using Context): CpsTree = {
+    SeqCpsTree(tctx,EmptyTree,owner,IndexedSeq(this),next.changeOwner(owner))
   }
 
   override def withOrigin(term:Tree): LambdaCpsTree =
     copy(origin=term) 
 
+  override def changeOwner(newOwner: Symbol)(using Context) =
+    copy(owner = newOwner)
 
   override def applyRuntimeAwait(runtimeAwait:Tree)(using Context): CpsTree =
     cpsBody.asyncKind match
@@ -464,7 +491,7 @@ case class LambdaCpsTree(
         this
       case AsyncKind.Async(internal) =>
         val awaitMethod = Select(runtimeAwait,"await".toTermName)
-        val tree = Apply(
+        val nBody = Apply(
           Apply(
             TypeApply(awaitMethod, List(TypeTree(cpsBody.originType.widen))),
             List(cpsBody.transformed)
@@ -474,7 +501,9 @@ case class LambdaCpsTree(
             tctx.cpsMonadContextRef
           )
         )
-        CpsTree.pure(tctx,origin,originOwner,tree)
+        val nDefDef =  ???
+        val nLambda: Tree = ???
+        CpsTree.pure(tctx,origin,owner,nLambda)
       case AsyncKind.AsyncLambda(internalAsync) =>
         ???
         
@@ -511,15 +540,17 @@ case class LambdaCpsTree(
  **/
 case class UnitCpsTree(override val tctx: TransformationContext, 
                        override val origin: Tree, 
-                       override val originOwner: Symbol) extends SyncCpsTree {
+                       override val owner: Symbol) extends SyncCpsTree {
 
     override def getUnpure(using Context): Tree = origin
 
-    override def appendInBlock(next: CpsTree): CpsTree = next
+    override def appendInBlock(next: CpsTree)(using Context): CpsTree = next
 
     override def withOrigin(term:Tree): CpsTree =
       copy(origin = term)
   
+    override def changeOwner(newOwner: Symbol)(using Context) =
+      copy(owner=newOwner)  
 
 }
 
@@ -528,7 +559,7 @@ case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
 
     override def tctx = internal.tctx
     override def origin = internal.origin
-    override def originOwner = internal.originOwner
+    override def owner = internal.owner
 
     override def unpure(using Context) = internal.unpure
 
@@ -544,27 +575,30 @@ case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
     override def applyRuntimeAwait(runtimeAwait:Tree)(using Context): CpsTree =
       BlockBoundsCpsTree(internal.applyRuntimeAwait(runtimeAwait))
 
+    override def changeOwner(newOwner: Symbol)(using Context) =
+      BlockBoundsCpsTree(internal.changeOwner(newOwner))  
   
 }
 
 case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation], 
                                   nested: CpsTree,  
                                   override val origin:Tree,
-                                  override val originOwner: Symbol
                                 ) extends CpsTree {
 
     override def tctx = nested.tctx
+
+    override def owner = nested.owner
 
     override def asyncKind: AsyncKind = nested.asyncKind
 
     override def transformed(using Context): Tree = {
       nested.unpure match
         case None =>
-          val paramSym = newSymbol(originOwner, "x".toTermName, Flags.EmptyFlags, 
+          val paramSym = newSymbol(owner, "x".toTermName, Flags.EmptyFlags, 
                                    nested.originType.widen, Symbols.NoSymbol)
           val param = ValDef(paramSym, EmptyTree)
           //TODO:  we can not change owner in bodu,
-          TransformUtil.makeLambda(List(param),originType.widen, originOwner,  prefixTerm(ref(paramSym)), ctx.owner)
+          TransformUtil.makeLambda(List(param),originType.widen, owner,  prefixTerm(ref(paramSym)), ctx.owner)
         case Some(nestedTerm) =>
           if (nested.isOriginEqSync) then
             origin
@@ -586,6 +620,8 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
     override def select(name: Name, origin: Select, otpe: Type): CpsTree =
       copy(records = records.appended(SelectTypeApplyCpsTree.OpSelect(origin)))
       
+    override def changeOwner(newOwner:Symbol)(using Context) =
+      copy(nested = nested.changeOwner(newOwner))  
          
 
     private def prefixTerm(nestedTerm: Tree)(using Context): Tree =

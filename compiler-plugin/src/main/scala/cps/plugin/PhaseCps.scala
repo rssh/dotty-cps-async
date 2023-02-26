@@ -48,6 +48,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                           val cpsTransformParam = params(argIndex)
                           val monadFieldName = "m".toTermName
                           val monad = Select(cpsTransformParam, monadFieldName).withSpan(tree.span)
+                          val optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(monadType,tree.span)
                           //val oldMt = tree.rhs.tpe match
                           //  case v:MethodType => v
                           //  case _  => throw CpsTransformException(s"type of context function is not MethodType but ${tree.rhs.tpe}",tree.srcPos)
@@ -55,7 +56,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                           val meth = Symbols.newAnonFun(summon[Context].owner,mt)
                           println(s"creating new closure, type=${mt.show}")
                           val nRhs = Closure(meth,tss => {
-                              val tc = TransformationContext(monadType,monad,cpsTransformParam)
+                              val tc = TransformationContext(monadType,monad,cpsTransformParam,optRuntimeAwait)
                               println(s"before body transform")
                               val cpsTree = RootTransform(body, bodyOwner, tc)
                               println(s"after body transform")
@@ -107,6 +108,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                   try
                     val cpsTransformType = params(0).tpt.tpe
                     val monadType = CpsTransformHelper.extractMonadType(cpsTransformType,tree.srcPos)
+                    val optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(monadType, tree.span)
                     val mt = MethodType(List(params(1).name))(
                       x => List(params(1).tpt.tpe),
                       x => tree.tpe.widen  //decorateTypeApplications(monadType).appliedTo(body.tpe)
@@ -115,7 +117,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                     val am = Select(infernAsyncArgCn,"am".toTermName)
                     val meth = Symbols.newAnonFun(summon[Context].owner,mt)
                     val ctxFun = Closure(meth, tss => {
-                      val tc = TransformationContext(monadType,am,params(0))
+                      val tc = TransformationContext(monadType,am,params(0),optRuntimeAwait)
                       val cpsTree = RootTransform(body,bodyOwner,tc)
                       val transformedBody = cpsTree.transformed
                       TransformUtil.substParams(transformedBody,List(params(1)),tss.head)

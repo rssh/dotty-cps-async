@@ -65,7 +65,7 @@ object ApplyTransform {
       println(s"parseSyncApplucation for ${origin.show}, fun=${fun.show}, argss=${argss.map(_.show)}")
       val containsAsyncLambda = argss.exists(_.containsAsyncLambda)
       if (containsAsyncLambda) {
-        findRuntimeAwait(tctx, origin.span) match
+        tctx.optRuntimeAwait match
           case Some(runtimeAwait) =>
             genApplication(origin,owner,tctx,fun,argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait),tctx))
           case None =>
@@ -175,16 +175,6 @@ object ApplyTransform {
 
   def makeTypeArgList(term: TypeApply)(using Context): ApplyTypeArgList = {
     ApplyTypeArgList(term,term.args.map(tt => TypeTree(tt.tpe)))
-  }
-
-  // TODO:  return either.
-  def findRuntimeAwait(tctx: TransformationContext, span: Span)(using ctx:Context): Option[Tree] = {
-    val runtimeAwait = requiredClassRef("cps.RuntimeAwait")
-    val tpe = AppliedType(runtimeAwait, List(tctx.monadType))
-    val searchResult = ctx.typer.inferImplicitArg(tpe,span)
-    searchResult.tpe match
-      case _ : typer.Implicits.SearchFailureType => None
-      case _  => Some(searchResult)
   }
 
 

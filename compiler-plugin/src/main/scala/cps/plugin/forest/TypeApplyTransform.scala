@@ -17,11 +17,11 @@ object TypeApplyTransform {
           val funCps = RootTransform(taTerm.fun,owner,tctx)
           val newOp = SelectTypeApplyCpsTree.OpTypeApply(taTerm)
           funCps match
-            case SelectTypeApplyCpsTree(records,nested,fcpsOrigin,fcpsOriginOwner) =>
-                SelectTypeApplyCpsTree(records.appended(newOp),nested,taTerm,owner)
+            case SelectTypeApplyCpsTree(records,nested,fcpsOrigin) =>
+                SelectTypeApplyCpsTree(records.appended(newOp),nested,taTerm)
             case _ =>
                 val records = IndexedSeq(newOp)
-                SelectTypeApplyCpsTree(records,funCps,taTerm,owner)
+                SelectTypeApplyCpsTree(records,funCps,taTerm)
       }
 
 

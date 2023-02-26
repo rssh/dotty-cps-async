@@ -9,6 +9,7 @@ import core.Contexts.*
 import core.Symbols.*
 import core.Types.*
 import util.SrcPos
+import util.Spans.Span
 
 
 object CpsTransformHelper {
@@ -74,5 +75,18 @@ object CpsTransformHelper {
       case _  =>
         decorateTypeApplications(fType).appliedTo(t)
   }
+
+
+  //  Problem here  --  we can't search implicit after typer.
+  //  
+  def findRuntimeAwait(monadType: Type, span: Span)(using ctx:Context): Option[Tree] = {
+      val runtimeAwait = requiredClassRef("cps.RuntimeAwait")
+      val tpe = AppliedType(runtimeAwait, List(monadType))
+      val searchResult = ctx.typer.inferImplicitArg(tpe,span)
+      searchResult.tpe match
+        case _ : typer.Implicits.SearchFailureType => None
+        case _  => Some(searchResult)
+  }
+  
 
 }

@@ -179,9 +179,9 @@ case class ByNameApplyArg(
           x => List(),
           x => CpsTransformHelper.cpsTransformedType(expr.originType.widen, tctx.monadType)
         )    
-        val meth = Symbols.newAnonFun(expr.originOwner,mt)
+        val meth = Symbols.newAnonFun(expr.owner,mt)
         val nArg = Closure(meth,tss => {
-          expr.transformed.changeOwner(expr.originOwner,meth).withSpan(expr.origin.span)
+          expr.transformed.changeOwner(expr.owner,meth).withSpan(expr.origin.span)
         })
         nArg
       case _ =>
