@@ -17,11 +17,11 @@ import cps.plugin.forest.*
 
 class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
-  val phaseName = "cps"
+  val phaseName = "rssh.cps"
 
   override def allowsImplicitSearch = true
   override val runsAfter = Set("cc")
-  override val runsBefore = Set("cpsAsyncShift")
+  override val runsBefore = Set("rssh.cpsAsyncShift")
 
   val debug = true
 
