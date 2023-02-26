@@ -13,6 +13,8 @@ class PhaseCpsAsyncShift(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
   val phaseName = "cpsAsyncShift"
 
+  // strange -
+  override def allowsImplicitSearch = true
   override val runsAfter  = Set("cps")
   override val runsBefore = Set(PruneErasedDefs.name)
 
