@@ -81,7 +81,7 @@ object CpsTransformHelper {
   def findRuntimeAwait(monadType: Type, span: Span)(using ctx:Context): Option[Tree] = {
       //TODO:  Problem: shows incorrect phase.
       println(s"!!findRuntimeAwait, ctx.phase=${ctx.phase}, allowsImplicitSearch=${ctx.phase.allowsImplicitSearch}")
-      val runtimeAwait = requiredClassRef("cps.RuntimeAwait")
+      val runtimeAwait = requiredClassRef("cps.CpsRuntimeAwait")
       val tpe = AppliedType(runtimeAwait, List(monadType))
       val searchResult = ctx.typer.inferImplicitArg(tpe,span)
       searchResult.tpe match

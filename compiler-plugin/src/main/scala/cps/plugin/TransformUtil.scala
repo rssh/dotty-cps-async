@@ -55,4 +55,6 @@ object TransformUtil {
       retval
    }
 
+   final val COMMA = ","
+
 }

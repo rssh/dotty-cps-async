@@ -98,6 +98,8 @@ sealed trait CpsTree {
       this,
       origin
     )
+
+  def show(using Context): String
   
 }
 
@@ -145,6 +147,7 @@ sealed trait SyncCpsTree extends CpsTree {
     //not needed
     this
 
+
 }
 
 
@@ -171,6 +174,12 @@ case class PureCpsTree(
       PureCpsTree(tctx,nTerm,newOwner,nTerm)
     else
       PureCpsTree(tctx,origin.changeOwner(owner,newOwner),newOwner,term.changeOwner(owner,newOwner))
+
+  
+  override def show(using Context): String = {
+      s"PureCpsTree(t=${term.show})"
+  }    
+
 
 }
 
@@ -231,7 +240,10 @@ case class SeqCpsTree(
   override def applyRuntimeAwait(runtimeAwait: Tree)(using Context): CpsTree =
     copy(last = last.applyRuntimeAwait(runtimeAwait))
   
-
+  override def show(using Context): String = {
+    val COMMA=","
+    s"SeqCpsTree(${prevs.map(_.show).mkString(COMMA)},${last.show})"
+  }
 
 }
 
@@ -291,6 +303,10 @@ case class AsyncTermCpsTree(
     copy(owner=newOwner,transformedTree = transformedTree.changeOwner(owner,newOwner))
   }  
 
+  override def show(using Context): String = {
+    s"AsyncTermCpsTree(t=${transformedTree.show})"
+  }
+
 }
 
 
@@ -345,6 +361,10 @@ case class MapCpsTree(
     // TODO: think about mapFun
     copy(owner=newOwner,mapSource = mapSource.changeOwner(newOwner))  
 
+  override def show(using Context): String = {
+    s"MapCpsTree(${mapSource.show},${mapFun.show})"
+  }
+
 }
 
 
@@ -368,6 +388,10 @@ case class MapCpsTreeArgument(
         TransformUtil.makeLambda(List(param), body.originType.widen, owner, syncBody, body.owner)
   }  
   
+  def show(using Context): String = {
+    s"[${optParam.map(_.name).getOrElse("_unused")}=>${body.show}]"
+  }
+
 }
 
 case class FlatMapCpsTree(
@@ -410,6 +434,9 @@ case class FlatMapCpsTree(
   override def changeOwner(newOwner: Symbol)(using Context) =
     copy(owner = newOwner, flatMapSource = flatMapSource.changeOwner(newOwner))
 
+  override def show(using Context): String = {
+    s"FlatMapCpsTree(${flatMapSource.show},${flatMapFun.show})"
+  }  
 
 }
 
@@ -418,7 +445,7 @@ case class FlatMapCpsTreeArgument(
    body: CpsTree
 ) {
 
-   def makeLambda(cpsTree: FlatMapCpsTree)(using Context): Block = {
+  def makeLambda(cpsTree: FlatMapCpsTree)(using Context): Block = {
     val owner = cpsTree.owner
     val param = optParam.getOrElse{
       val sym = newSymbol(owner, "_unused".toTermName, Flags.EmptyFlags, 
@@ -428,6 +455,9 @@ case class FlatMapCpsTreeArgument(
     val transformedBody = body.transformed(using summon[Context].withOwner(body.owner))
     TransformUtil.makeLambda(List(param),body.transformedType,owner,transformedBody, body.owner)
   }
+
+  def show(using Context):String =
+    s"[${optParam.map(_.name).getOrElse("_unused")}] => ${body.show}"
 
 }
 
@@ -506,10 +536,17 @@ case class LambdaCpsTree(
         CpsTree.pure(tctx,origin,owner,nLambda)
       case AsyncKind.AsyncLambda(internalAsync) =>
         ???
-        
-        
 
 
+  override def show(using Context): String = {
+    def showParamClause(params:ParamClause):String = {
+       val ub = params.map(_.show).mkString(",")
+       s"($ub)"
+    }
+    val originParams = originDefDef.paramss.map(showParamClause(_)).mkString("")
+    s"LambdaCpsTree(${originParams},${cpsBody.show})"
+  }
+        
   private def originParams(using Context) = originDefDef.termParamss.head
 
   private def createShiftedType()(using Context): Type = {
@@ -552,6 +589,10 @@ case class UnitCpsTree(override val tctx: TransformationContext,
     override def changeOwner(newOwner: Symbol)(using Context) =
       copy(owner=newOwner)  
 
+    override def show(using Context): String = {
+      "UnitCpsTree"
+    }  
+
 }
 
 
@@ -578,6 +619,10 @@ case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
     override def changeOwner(newOwner: Symbol)(using Context) =
       BlockBoundsCpsTree(internal.changeOwner(newOwner))  
   
+    override def show(using Context):String = {
+      s"BlockBoundsCpsTree(${internal.show})"
+    }  
+
 }
 
 case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation], 
@@ -594,11 +639,22 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
     override def transformed(using Context): Tree = {
       nested.unpure match
         case None =>
-          val paramSym = newSymbol(owner, "x".toTermName, Flags.EmptyFlags, 
+          val paramSym = newSymbol(owner, "xSelectTypeApplyCpsTree".toTermName, Flags.EmptyFlags, 
                                    nested.originType.widen, Symbols.NoSymbol)
           val param = ValDef(paramSym, EmptyTree)
           //TODO:  we can not change owner in bodu,
-          TransformUtil.makeLambda(List(param),originType.widen, owner,  prefixTerm(ref(paramSym)), ctx.owner)
+          val lambda = TransformUtil.makeLambda(List(param),originType.widen, owner,  prefixTerm(ref(paramSym)), ctx.owner)
+          val mapName = "map".toTermName
+          Apply(
+            Apply(
+              TypeApply(
+                Select(tctx.cpsMonadRef, mapName),
+                List(TypeTree(nested.originType.widen), TypeTree(originType.widen))
+              ),
+              List(nested.transformed)
+            ),
+            List(lambda)
+          ).withSpan(origin.span)
         case Some(nestedTerm) =>
           if (nested.isOriginEqSync) then
             origin
@@ -629,6 +685,10 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
         e.prefixTerm(s)
       }
 
+    override def show(using Context): String = {
+      val sRecords = records.map(_.show).mkString(".")
+      s"SelectTypeApplyCpsTree(${nested.show},${sRecords})"
+    }  
   
 
 }
@@ -637,21 +697,35 @@ object SelectTypeApplyCpsTree {
 
    sealed trait Operation {
       def prefixTerm(term:Tree)(using Context): Tree
+      def show(using Context): String
    }
 
    case class OpSelect(origin:Select) extends Operation {
+
       override def prefixTerm(term:Tree)(using Context): Tree =
         val sym = origin.symbol
         val ntpe = TermRef(term.tpe, origin.name.toTermName, sym.denot.asSeenFrom(term.tpe))
         Select(term,Types.TermRef(term.tpe,sym)).withType(ntpe).withSpan(origin.span)
+
+      override def show(using Context) = {
+        origin.symbol.name.toString
+      }
    }
 
    case class OpTypeApply(origin:TypeApply) extends Operation {
-      override def prefixTerm(term:Tree)(using Context): Tree =
+
+      override def prefixTerm(term:Tree)(using Context): Tree = {
         if (origin.args.isEmpty) then
           term
         else
           TypeApply(term,origin.args).withSpan(origin.span)
+      }
+
+      override def show(using Context) = {
+        val targs = origin.args.map(_.show).mkString(",")
+        s"[$targs]"
+      }
+
    }
 
 

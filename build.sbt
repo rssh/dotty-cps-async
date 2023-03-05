@@ -110,7 +110,8 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
                               // TODO: split test into subdirectories.
                               Test/scalacOptions ++= {
                                  val jar = (Compile / packageBin).value
-                                 Seq(s"-Xplugin:${jar.getAbsolutePath}","-Ycc", s"-Jdummy=${jar.lastModified}",
+                                 Seq(s"-Xplugin:${jar.getAbsolutePath}", s"-Jdummy=${jar.lastModified}",
+                                      "-color:never",
                                       "-explain"
                                     ) 
                               },

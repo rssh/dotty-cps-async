@@ -22,13 +22,16 @@ import QuoteLikeAPI.*
 object ApplyTransform {
 
   def apply(term: Apply, owner: Symbol, tctx: TransformationContext)(using Context): CpsTree = {
-        applyMArgs(term,owner,tctx, Nil)
+      val cpsTree = applyMArgs(term,owner,tctx, Nil)
+      println(s"applyTransform: origin=${term.show}, type=${term.tpe.widen.show}")
+      println(s"applyTransform: result=${cpsTree.show}")
+      println(s"applyTransform: transformed=${cpsTree.transformed.show}")
+      cpsTree
   }
 
 
   def applyMArgs(term: Apply, owner: Symbol, tctx: TransformationContext, tail:List[ApplyArgList] )(using Context): CpsTree = {
     val argList = makeArgList(term, MethodParamsDescriptor(term.fun), owner, tctx)
-    println(s"applyMArgs begin,term=${term.show}")
     val retval = term.fun match
       case tfa@Apply(fun1,args1) => 
         applyMArgs(tfa, owner, tctx, argList::tail)
@@ -36,34 +39,33 @@ object ApplyTransform {
         val targs = makeTypeArgList(tpfa)
         applyMArgs(tapp, owner, tctx, targs::argList::tail)  
       case _ => 
-        println(s"appylyMArgs: break for ${term.fun} ")
         parseApplication(term,owner,tctx,argList::tail)
-    println(s"applyMArgs end, retval=${retval}")
     retval
   }
 
   def parseApplication(appTerm: Apply, owner: Symbol, tctx: TransformationContext, argss: List[ApplyArgList])(using Context): CpsTree = {
-      println(s"paese Applucation for ${appTerm.show}, argss=${argss.map(_.show)}")
-      val cpsApplicant = RootTransform(appTerm.fun ,owner, tctx)
-      println(s"received cpsApplicant")
-      cpsApplicant.unpure match
-        case Some(syncFun) => parseSyncApplication(appTerm, owner, tctx, syncFun, argss)
-        case None =>
-          val haveAsyncOrShifted = argss.exists(a => a.isAsync||a.containsAsyncLambda)
-          val valDefSym = newSymbol(owner, "x".toTermName, Flags.EmptyFlags, 
-                          cpsApplicant.originType.widen, Symbols.NoSymbol)
-          val valDef = ValDef(valDefSym, EmptyTree).withSpan(appTerm.span)
-          val valRef = ref(valDefSym)
-          if (haveAsyncOrShifted) {
-            FlatMapCpsTree(tctx,appTerm,owner,cpsApplicant,FlatMapCpsTreeArgument(Some(valDef),parseSyncApplication(appTerm,owner,tctx,valRef,argss)))
-          } else {
-            MapCpsTree(tctx,appTerm,owner,cpsApplicant,MapCpsTreeArgument(Some(valDef), parseSyncPureApplication(appTerm,owner,tctx,valRef,argss)))
-          }
+    val cpsApplicant = RootTransform(appTerm.fun ,owner, tctx)
+    cpsApplicant.unpure match
+      case Some(syncFun) => 
+        parseSyncFunApplication(appTerm, owner, tctx, syncFun, argss)
+      case None =>
+        val valDefSym = newSymbol(owner, "xApplyFun".toTermName, Flags.EmptyFlags, 
+                        cpsApplicant.originType.widen, Symbols.NoSymbol)
+        val valDef = ValDef(valDefSym, EmptyTree).withSpan(appTerm.span)
+        val valRef = ref(valDefSym)
+        val appCpsTree = parseSyncFunApplication(appTerm, owner, tctx, valRef, argss)
+        appCpsTree.unpure match
+          case Some(syncAppCps) =>
+            MapCpsTree(tctx,appTerm,owner,cpsApplicant,MapCpsTreeArgument(Some(valDef), appCpsTree))
+          case None =>
+            FlatMapCpsTree(tctx,appTerm,owner,cpsApplicant,FlatMapCpsTreeArgument(Some(valDef), appCpsTree))
   }
 
-  def parseSyncApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, argss:List[ApplyArgList])(using Context): CpsTree = {
-      println(s"parseSyncApplucation for ${origin.show}, fun=${fun.show}, argss=${argss.map(_.show)}")
+
+
+  def parseSyncFunApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, argss:List[ApplyArgList])(using Context): CpsTree = {
       val containsAsyncLambda = argss.exists(_.containsAsyncLambda)
+      val containsAsync = argss.exists(_.isAsync)
       if (containsAsyncLambda) {
         tctx.optRuntimeAwait match
           case Some(runtimeAwait) =>
@@ -90,13 +92,15 @@ object ApplyTransform {
                 case _ =>  
                   throw CpsTransformException(s"Can't transform function ${fun}",fun.srcPos)
             }
-      } else {
+      } else if (containsAsync) {
         genApplication(origin, owner, tctx, fun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None, tctx))
+      } else {
+        parseSyncFunPureApplication(origin,owner,tctx, fun, argss)
       }
   }
 
   //  just unchanged
-  def parseSyncPureApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, args:List[ApplyArgList])(using Context): CpsTree = {
+  def parseSyncFunPureApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, args:List[ApplyArgList])(using Context): CpsTree = {
      val plainTree = args.foldLeft(fun){ (s,e) =>
         e match
           case ApplyTypeArgList(orig,args) =>
@@ -108,28 +112,25 @@ object ApplyTransform {
   }
 
   def genApplication(origin:Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, argss: List[ApplyArgList], f: ApplyArg => Tree)(using Context): CpsTree = {
-
-
+    println(s"genApplication origin: ${origin.show}")
+    
     def genOneLastPureApply(fun: Tree, argList: ApplyArgList): Tree =
       argList match
         case ApplyTypeArgList(origing, targs) =>
           TypeApply(fun,targs).withSpan(origin.span)
         case ApplyTermArgList(origin, args) =>
-          println(s"genOneLastPureReply:2, fun=${fun.show}, args=${args.map(_.name)}")
           val l = Apply(fun, args.map(f)).withSpan(origin.span)
-          println(s"genOneLastPureReply:3, l=${l.show}")
-          l
+          l 
   
     @tailrec      
     def genPureReply(fun:Tree, argss: List[ApplyArgList]): Tree =
-      println(s"genPureReply ${fun.show} argsLen=${argss.length},  argss=${argss.map(_.show)}")
       argss match
         case Nil => fun
         case head::tail => genPureReply(genOneLastPureApply(fun, head),tail)
 
     def genOneApplyPrefix(origin: Tree, args:List[ApplyArg], tailCpsTree:CpsTree): CpsTree =
         args.foldRight(tailCpsTree) { (e,s) =>
-          e.flatMapsBeforeCall.foldRight(s){ (pre,tail) =>
+          e.flatMapsBeforeCall.foldRight(s){ (pre ,tail) =>
             val (prefixCpsTree, prefixVal) = pre
             // TODO: optimise.
             //  (mb - introduce flaMap as operations, which automatically do optimizations) 
@@ -146,21 +147,18 @@ object ApplyTransform {
           }
         }
         
-    def genPrefixes(origin: Tree, argss:List[ApplyArgList], tailCpsTree: CpsTree): CpsTree =
-      println("gen prefixes:")
+    def genPrefixes(argss:List[ApplyArgList], tailCpsTree:CpsTree): CpsTree =
       argss.foldRight(tailCpsTree) { (e,s) =>
-         println(s"genPrefix, s.origin=${s.origin}, e=${e}")
          e match
           case ApplyTermArgList(origin,args) =>
             genOneApplyPrefix(origin,args,s)
           case _ => s
       }
 
-    println(s"gen application: ${origin.show}")  
-    val pureReply = genPureReply(fun,argss)
-    println(s"pureReply: ${pureReply}")
-    
-    genPrefixes(origin,argss, CpsTree.pure(tctx,origin,owner, pureReply) )
+    val pureReply = genPureReply(fun,argss)    
+    val retval = genPrefixes(argss, CpsTree.pure(tctx,origin,owner,pureReply))
+    println(s"genApplication result: ${retval.show}")
+    retval
 
   }
 

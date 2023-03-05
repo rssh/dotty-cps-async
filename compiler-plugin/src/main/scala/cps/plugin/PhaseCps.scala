@@ -44,7 +44,10 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                     tree.rhs match
                       case CheckLambda(params, body, bodyOwner) =>
                         try 
-                          println(s"lambda found as resulting expression, params=$params")
+                          if (true) {
+                            val sparams = params.map(_.show).mkString(",")
+                            println(s"transformDefDef:lambda found as resulting expression, params=${sparams}},  rhs.tpe=${tree.rhs.tpe}")
+                          }
                           val monadType = CpsTransformHelper.extractMonadType(cpsTransformType,tree.srcPos)
                           val cpsTransformParam = params(argIndex)
                           val monadFieldName = "m".toTermName
@@ -55,21 +58,18 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                           //  case _  => throw CpsTransformException(s"type of context function is not MethodType but ${tree.rhs.tpe}",tree.srcPos)
                           val mt = CpsTransformHelper.transformContextualLambdaType(tree.rhs,params,body,monadType)
                           val meth = Symbols.newAnonFun(summon[Context].owner,mt)
-                          println(s"creating new closure, type=${mt.show}")
+                          println(s"transformDefDef:creating new closure, type=${mt.show}")
                           val nRhs = Closure(meth,tss => {
                               val tc = TransformationContext(monadType,monad,cpsTransformParam,optRuntimeAwait)
-                              println(s"before body transform")
                               val cpsTree = RootTransform(body, bodyOwner, tc)
-                              println(s"after body transform")
                               val transformedBody = cpsTree.transformed
-                              println(s"after calling transfirmed, transformedBody=${transformedBody}")
                               TransformUtil.substParams(transformedBody,params,tss.head).changeOwner(bodyOwner,meth).withSpan(body.span)
                            }
                           )
-                          println(s"creation of nTpt")
+                          println(s"trasformDefDef: creation of nTpt")
                           val nTpt = AppliedType(tycon,CpsTransformHelper.adoptResultTypeParam(targs,monadType))
                           val defDef = cpy.DefDef(tree)(rhs=nRhs,tpt=TypeTree(nTpt))
-                          println(s"result: ${defDef.show}")
+                          println(s"transformDefDef result: ${defDef.show}")
                           defDef
                         catch
                           case ex:CpsTransformException =>
@@ -106,18 +106,24 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
               case AppliedType(tycon, tpargs) 
                 if tycon.typeSymbol == Symbols.requiredClass("cps.E.CpsTransform.InfernAsyncArg") =>
                   println(s"found CpsAsync candidate, tycon.typeSymbol=:  ${tycon.typeSymbol} ")
+                  println(s"CpsAsync.body=:  ${body.show} ")
+                  println(s"CpsAsync.bodyType=:  ${body.tpe.show} ")
                   try
                     val cpsTransformType = params(0).tpt.tpe
                     val monadType = CpsTransformHelper.extractMonadType(cpsTransformType,tree.srcPos)
                     val optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(monadType, tree.span)
                     val mt = MethodType(List(params(1).name))(
                       x => List(params(1).tpt.tpe),
-                      x => tree.tpe.widen  //decorateTypeApplications(monadType).appliedTo(body.tpe)
+                      //x => tree.tpe.widen  //decorateTypeApplications(monadType).appliedTo(body.tpe)
+                      x => decorateTypeApplications(monadType).appliedTo(body.tpe)
                     )
                     // TODO:  pass am to apply 
-                    val am = Select(infernAsyncArgCn,"am".toTermName)
+                    val amInit = Select(infernAsyncArgCn,"am".toTermName)
+                    val amValDef = SyntheticValDef("m".toTermName,amInit)
+                    val am = ref(amValDef.symbol)
                     val meth = Symbols.newAnonFun(summon[Context].owner,mt)
                     val ctxFun = Closure(meth, tss => {
+                                          // here = check that valDef constructire chaned amOwner
                       val tc = TransformationContext(monadType,am,params(0),optRuntimeAwait)
                       val cpsTree = RootTransform(body,bodyOwner,tc)
                       val transformedBody = cpsTree.transformed
@@ -129,7 +135,14 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                                 TypeApply(Select(am,"apply".toTermName),List(TypeTree(body.tpe.widen))),
                                 List(ctxFun)
                     ).withSpan(tree.span)
-                    apply
+                    val retval = Block(
+                      List(amValDef),
+                      apply
+                    )
+                    println(s"origin cpsAwait tree: ${tree.show}")
+                    println(s"transformed cpsAwait tree: ${retval.show}")
+                    println(s"ctxFun=${ctxFun.show}")
+                    retval
                   catch
                     case ex:CpsTransformException =>
                       report.error(ex.message,ex.pos)

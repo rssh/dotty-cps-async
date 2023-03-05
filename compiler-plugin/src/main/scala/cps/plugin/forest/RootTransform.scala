@@ -15,7 +15,7 @@ object RootTransform {
 
 
       def apply(term: Tree, owner: Symbol, tctx: TransformationContext)(using Context): CpsTree = {
-        term match
+        val retval = term match
           case applyTerm: Apply => ApplyTransform(applyTerm, owner, tctx)
           case block: Block => BlockTransform(block, owner, tctx)
           case id: Ident => IdentTransform(id, owner, tctx)
@@ -23,11 +23,14 @@ object RootTransform {
           case tIf@If(_,_,_) => IfTransform(tIf, owner, tctx)
           case t: TypeApply => TypeApplyTransform(t,owner,tctx)
           case vd:ValDef => ValDefTransform(vd,owner,tctx)
+          case lt:Literal => LiteralTransform(lt,owner,tctx)
           case _ =>
             throw CpsTransformException(s"Unsupported tree in cps: $term",term.srcPos)
             //report.error(s"Unsupported tree in cps: $term",term.srcPos)
-
-
+        println(s"rootTransform: origin=${term.show}")
+        println(s"rootTransform: result=${retval.show}")
+        println(s"rootTransform: result.transformed=${retval.transformed.show }")
+        retval
       }
 
 }
