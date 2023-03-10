@@ -5,7 +5,7 @@ Runtime Await.
 Starting from JDK-19,  the JVM provides lightweight concurrency constructions for representing non-blocking computations in 
 synchronous form. 
 
-We can use those constructions for some monads to escape the need to write shifted variants of high-order functions and,
+We can use those constructions for some monads, to escape the need to write shifted variants of high-order functions and,
 in some cases, work without the cps transformation of the code inside the `async` macro.
 
 To utilize these possibilities for your monad,  you should implement 
@@ -18,7 +18,7 @@ Also,  declare  `given cps.macro.flags.UseLoom.type`  value to enable this featu
 Note that for most effect systems, the cps transformation is still beneficial because of performance reasons. 
 When processing runtime awaits,  an effect interpreter should start all code thunks, including synchronous API usage,  
 in the new virtual thread. 
-Therefore, a hybrid mode, when effect interpretation is based on non-blocking code, and the system starts a virtual thread 
-only for arguments of hight-order functions, can be more performant.
+Therefore, an hybrid mode, where effect interpretation is based on non-blocking code, and the system starts a virtual thread
+only for arguments of high-order functions, can be more performant.
 
 

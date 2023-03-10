@@ -32,7 +32,7 @@ Example:
 
 I recommend you try |AsyncList|_.
 
-Here |AsyncList|_ is a minimal implementation of async stream supplied with |dotty-cps-async|_.
+Here, |AsyncList|_ is a minimal implementation of async stream supplied with |dotty-cps-async|_.
 There exist integration modules for well-known async streaming libraries (see section :ref:`Integrations`).
 
 The input of |asyncStream|_ is a code block which should be a lambda expression that accepts an emitter argument; i.e., the simplified definition looks as follows :
@@ -55,7 +55,7 @@ Writing generator adapters for custom streams
 To allow generator syntax for your stream, you need to implement trait
  |CpsAsyncEmitAbsorber[R]|_ where |eval|_ accepts a cps-transformed function and outputs the result stream.
  
-|dotty-cps-async|_ provides a platform-specific trait |BaseUnfoldCpsAsyncEmitAbsorber|_ which can simplicify generator implementations for streams which has something like ``unfoldAsync[S, E](s: S)(f: S => F[Option[(S, E)]]): R``.
+|dotty-cps-async|_ provides a platform-specific trait |BaseUnfoldCpsAsyncEmitAbsorber|_ which can simplify generator implementations for streams having something like ``unfoldAsync[S, E](s: S)(f: S => F[Option[(S, E)]]): R``.
 
 For example, look at the implementation of |CpsAsyncEmitAbsorber[R]|_ for |Akka Streams|_ source:
 

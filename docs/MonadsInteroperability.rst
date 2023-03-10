@@ -3,7 +3,7 @@ Monads interoperability.
 
 Monads in |async|_ and |await|_ can have different types, i.e. ``await[F]`` can be applied inside ``async[G]``.
 
-So we define the trait |CpsMonadConversion[F, G]|_ to support the conversion from ``F[_]`` to ``G[_]``.
+We define the trait |CpsMonadConversion[F, G]|_ to support the conversion from ``F[_]`` to ``G[_]``.
 
 ``Future`` Examples
 -------------------
@@ -25,7 +25,7 @@ Here is an example of implementation of ``Conversion`` from |Future|_ to any asy
                                          listener => ft.onComplete(listener) )
 
 
-Here 'async monad' for ``G[_]`` means it is possible to receive ``G[T]`` from a callback, which returns ``T``.
+Here, 'async monad' for ``G[_]`` means it is possible to receive ``G[T]`` from a callback, which returns ``T``.
 
 
 .. code-block:: scala
@@ -34,7 +34,7 @@ Here 'async monad' for ``G[_]`` means it is possible to receive ``G[T]`` from a 
 
    /**
     * called by the source, which accept callback.
-    * source is called immediatly in adoptCallbackStyle
+    * source is called immediately in adoptCallbackStyle
     **/
    def adoptCallbackStyle[A](source: (Try[A] => Unit) => Unit): F[A]
 
@@ -62,7 +62,7 @@ After making this definition available, we can await |Future|_ inside any async 
 
 And how about inserting ``await[F]`` into a ``async[Future]`` block ?
 
-For this it should mean, that our ``F`` should be able to schedule operation:
+For this, it means that our ``F`` should be able to schedule operation:
 
 .. code-block:: scala
 
@@ -70,14 +70,14 @@ For this it should mean, that our ``F`` should be able to schedule operation:
 
    /**
     * schedule execution of op somewhere.
-    * Note, that characteristics of scheduler can vary.
+    * Note, that characteristics of scheduler may vary.
     **/
    def spawn[A](op: => F[A]): F[A]
 
  }
 
 
-This can be immediatly evaluated for imperative monads, or for monads with delayed evaluation, 
+This can be immediately evaluated for imperative monads, or for monads with delayed evaluation,
 like Haskell-like IO -- submitting the ``op`` argument to a pull, which should be evaluated during ``unsafePerformIO`` at the end of the world.
 
 You can read implementation of conversion of scheduled monad to |Future|_ in the source file |FutureAsyncMonad.scala|_.
@@ -87,7 +87,8 @@ Of course, it is possible to create other conversions between your monads, based
 js.Promise
 -----------
 
-Not only monads can be subject to await. For example, it is impossible to attach monad structure to |Promise|_ in |Scala.js|_, because the map operation is unimplementable: all |Promise|_ operations flatten their arguments.  But we can await |Promise|_ from Scala ``async[Future]`` blocks, because |CpsMonadConversion[Future, Promise]|_ is defined.
+Not only monads can be subject to await. For example, it is impossible to attach the  monadic structure to |Promise|_ in |Scala.js|_, because the map operation is unimplementable: all |Promise|_ operations flatten their arguments.
+But we can still await |Promise|_ from Scala ``async[Future]`` blocks, because |CpsMonadConversion[Future, Promise]|_ is defined.
 
 Also, for a fluent implementation of JS facades, |dotty-cps-async|_ provides the |JSFuture|_ trait, which has monadic operations in Scala and visible from JavaScript as |Promise|_.  
 i.e. with the following definitions:

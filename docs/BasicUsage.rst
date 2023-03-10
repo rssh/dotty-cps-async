@@ -59,7 +59,7 @@ Inside the async block, we can use the |await|_ pseudo-function.
  .. index:: CpsMonad
  .. index:: CpsTryMonad
 
-In the above code type ``MyMonad`` must implement one of the two type classes |CpsMonad|_ or |CpsTryMonad|_ (which supports try/catch).
+In the above code, the type ``MyMonad`` must implement one of the two type classes |CpsMonad|_ or |CpsTryMonad|_ (which supports try/catch).
 
 The minimal complete snippet looks as follows:
 
@@ -101,7 +101,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
 **Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_ and streaming frameworks like |Akka Streams|_ and |fs2|_. 
 
 
-Also a monad can be abstracted out as in the following example:
+A monad  can also be abstracted out as in the following example:
 
 
  .. code-block:: scala
@@ -159,16 +159,16 @@ The |async|_ macro will transform the code block into something like
 
   </details>
 
-As transformation technique we use optimized monadic transform, the number of monadic brackets is the 
+Since we use optimized monadic transform as the transformation technique, the number of monadic brackets will be  the
 same as the number of |await|_ s in the source code.  
 You can read the :ref:`notes about implementation details <random-notes>`.
 
 Alternative names
 -----------------
 
-`async/await` names appropriative for Future-s and effect monads. There are other monads for which direct style can be helpful 
-in such applications as probabilistic programming or navigation over search space or collections and many other.  
-We define alternative names for macroses: `reify/reflect`, which can be more appropriative in the general case:
+`async/await` names is appropriate for Future-s and effect monads. There are other monads where a  direct style can be helpful
+in applications such as probabilistic programming, navigation over search space, collections, and many other.
+We define alternative names for macros: `reify/reflect`, which can be more appropriate in the general case:
 
 
 .. code-block:: scala
@@ -192,7 +192,7 @@ We define alternative names for macroses: `reify/reflect`, which can be more app
 
 
 
-Yet one pair of names 'lift/unlift' used in monadless library by Flavio W. Brasill and can be enabled by importing `cps.syntax.monadless.*`.
+Yet one pair of names 'lift/unlift', used for example in the |monadless|_ library by Flavio W. Brasill,  can be enabled by importing `cps.syntax.monadless.*`.
 
 
 .. code-block:: scala
@@ -281,6 +281,8 @@ Yet one pair of names 'lift/unlift' used in monadless library by Flavio W. Brasi
 .. |Monix| replace:: **Monix**
 .. _Monix: https://monix.io/
 
+.. |monadless| replace:: ``monadless``
+.. _monadless: https://github.com/monadless/monadless
 .. |Scala 3| replace:: **Scala 3**
 .. _Scala 3: https://dotty.epfl.ch/
 
