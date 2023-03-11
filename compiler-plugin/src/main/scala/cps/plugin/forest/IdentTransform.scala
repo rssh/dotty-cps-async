@@ -15,7 +15,7 @@ import cps.plugin.*
 object IdentTransform {
 
 
-      def apply(identTerm: Ident, owner: Symbol, tctx: TransformationContext)(using Context): CpsTree = {
+      def apply(identTerm: Ident, owner: Symbol, tctx: TransformationContext, nesting: Int)(using Context): CpsTree = {
           CpsTree.unchangedPure(tctx,identTerm,owner)
       }
 

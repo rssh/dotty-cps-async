@@ -21,8 +21,8 @@ import QuoteLikeAPI.*
 
 object ApplyTransform {
 
-  def apply(term: Apply, owner: Symbol, tctx: TransformationContext)(using Context): CpsTree = {
-      val cpsTree = applyMArgs(term,owner,tctx, Nil)
+  def apply(term: Apply, owner: Symbol, tctx: TransformationContext, nesting:Int)(using Context): CpsTree = {
+      val cpsTree = applyMArgs(term,owner,tctx, nesting, Nil)
       println(s"applyTransform: origin=${term.show}, type=${term.tpe.widen.show}")
       println(s"applyTransform: result=${cpsTree.show}")
       println(s"applyTransform: transformed=${cpsTree.transformed.show}")
@@ -30,30 +30,30 @@ object ApplyTransform {
   }
 
 
-  def applyMArgs(term: Apply, owner: Symbol, tctx: TransformationContext, tail:List[ApplyArgList] )(using Context): CpsTree = {
-    val argList = makeArgList(term, MethodParamsDescriptor(term.fun), owner, tctx)
+  def applyMArgs(term: Apply, owner: Symbol, tctx: TransformationContext, nesting:Int, tail:List[ApplyArgList] )(using Context): CpsTree = {
+    val argList = makeArgList(term, MethodParamsDescriptor(term.fun), owner, tctx, nesting)
     val retval = term.fun match
       case tfa@Apply(fun1,args1) => 
-        applyMArgs(tfa, owner, tctx, argList::tail)
+        applyMArgs(tfa, owner, tctx, nesting, argList::tail)
       case tpfa@TypeApply(tapp:Apply, targs1) =>
         val targs = makeTypeArgList(tpfa)
-        applyMArgs(tapp, owner, tctx, targs::argList::tail)  
+        applyMArgs(tapp, owner, tctx, nesting, targs::argList::tail)  
       case _ => 
-        parseApplication(term,owner,tctx,argList::tail)
+        parseApplication(term,owner,tctx, nesting, argList::tail)
     retval
   }
 
-  def parseApplication(appTerm: Apply, owner: Symbol, tctx: TransformationContext, argss: List[ApplyArgList])(using Context): CpsTree = {
-    val cpsApplicant = RootTransform(appTerm.fun ,owner, tctx)
+  def parseApplication(appTerm: Apply, owner: Symbol, tctx: TransformationContext, nesting:Int, argss: List[ApplyArgList])(using Context): CpsTree = {
+    val cpsApplicant = RootTransform(appTerm.fun ,owner, tctx, nesting+1 )
     cpsApplicant.unpure match
       case Some(syncFun) => 
-        parseSyncFunApplication(appTerm, owner, tctx, syncFun, argss)
+        parseSyncFunApplication(appTerm, owner, tctx, nesting, syncFun, argss)
       case None =>
         val valDefSym = newSymbol(owner, "xApplyFun".toTermName, Flags.EmptyFlags, 
                         cpsApplicant.originType.widen, Symbols.NoSymbol)
         val valDef = ValDef(valDefSym, EmptyTree).withSpan(appTerm.span)
         val valRef = ref(valDefSym)
-        val appCpsTree = parseSyncFunApplication(appTerm, owner, tctx, valRef, argss)
+        val appCpsTree = parseSyncFunApplication(appTerm, owner, tctx, nesting, valRef, argss)
         appCpsTree.unpure match
           case Some(syncAppCps) =>
             MapCpsTree(tctx,appTerm,owner,cpsApplicant,MapCpsTreeArgument(Some(valDef), appCpsTree))
@@ -63,7 +63,7 @@ object ApplyTransform {
 
 
 
-  def parseSyncFunApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, argss:List[ApplyArgList])(using Context): CpsTree = {
+  def parseSyncFunApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, nesting: Int, fun: Tree, argss:List[ApplyArgList])(using Context): CpsTree = {
       val containsAsyncLambda = argss.exists(_.containsAsyncLambda)
       val containsAsync = argss.exists(_.isAsync)
       if (containsAsyncLambda) {
@@ -165,9 +165,9 @@ object ApplyTransform {
   
 
 
-  def makeArgList(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, tctx: TransformationContext)(using Context): ApplyTermArgList = {
+  def makeArgList(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, tctx: TransformationContext, nesting: Int)(using Context): ApplyTermArgList = {
     // need to calculate dependency between arguments.
-    ApplyTermArgList.make(term, mt, owner, tctx)
+    ApplyTermArgList.make(term, mt, owner, tctx, nesting: Int)
   }
 
 

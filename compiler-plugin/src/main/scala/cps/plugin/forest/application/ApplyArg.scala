@@ -32,15 +32,15 @@ sealed trait ApplyArg {
 
 object ApplyArg {
 
-  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, owner: Symbol, dependFromLeft: Boolean, tctx: TransformationContext)(using Context): ApplyArg = {
+  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, owner: Symbol, dependFromLeft: Boolean, tctx: TransformationContext, nesting: Int)(using Context): ApplyArg = {
     expr match
       case SeqLiteral(elems, elementtp) =>
         RepeatApplyArg(paramName, paramType, elems.zipWithIndex.map{ (p,i) =>
           val newName = (paramName.toString + i.toString).toTermName
-          ApplyArg(p,newName,elementtp.tpe,isByName,owner, dependFromLeft, tctx)
+          ApplyArg(p,newName,elementtp.tpe,isByName,owner, dependFromLeft, tctx, nesting)
         })
       case _ =>
-        val cpsExpr = RootTransform(expr, owner, tctx)
+        val cpsExpr = RootTransform(expr, owner, tctx, nesting+1)
         if (isByName) then
           ByNameApplyArg(paramName, paramType, cpsExpr)
         else

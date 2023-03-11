@@ -12,18 +12,18 @@ import cps.plugin.*
 
 object BlockTransform {
 
-  def apply(term: Block, owner: Symbol, tctx: TransformationContext)(using Context): CpsTree = {
+  def apply(term: Block, owner: Symbol, tctx: TransformationContext, nesting: Int)(using Context): CpsTree = {
     term match
       case Block((ddef: DefDef)::Nil, closure: Closure)  =>
         // TODO:
         //   if we here, this is not an argument of function.
         val cpsBody = {
           val ddefCtx = summon[Context].withOwner(ddef.symbol)
-          RootTransform(ddef.rhs(using ddefCtx), ddef.symbol, tctx)(using ddefCtx)
+          RootTransform(ddef.rhs(using ddefCtx), ddef.symbol, tctx, nesting+1)(using ddefCtx)
         }
         LambdaCpsTree(tctx, term, owner, ddef, cpsBody)
       case Block(Nil, last) =>
-        val lastCps = RootTransform(last, owner, tctx)
+        val lastCps = RootTransform(last, owner, tctx, nesting+1)
         val inBlock = lastCps.unpure match
           case None =>
             lastCps
@@ -37,10 +37,10 @@ object BlockTransform {
       case Block(statements, last) =>
         val s0: CpsTree = CpsTree.unit(tctx, owner)
         val statsCps = statements.foldLeft(s0){ (s,e) =>
-           val cpsE = RootTransform(e, owner, tctx)
+           val cpsE = RootTransform(e, owner, tctx, nesting+1)
            s.appendInBlock(cpsE)
         }  
-        val lastCps = RootTransform(last,owner,tctx)
+        val lastCps = RootTransform(last,owner,tctx, nesting+1)
         val blockCps = statsCps.appendInBlock(lastCps).withOrigin(term)
         BlockBoundsCpsTree(blockCps)
   }

@@ -67,7 +67,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                               val monadValDef = SyntheticValDef("m".toTermName,monadInit)
                               val monad = ref(monadValDef.symbol)
                               val tc = TransformationContext(monadType,monad,cpsContextParam,optRuntimeAwait)
-                              val cpsTree = RootTransform(body, bodyOwner, tc)
+                              val cpsTree = RootTransform(body, bodyOwner, tc, 0)
                               val transformedBody = Block(List(monadValDef),cpsTree.transformed)
                               TransformUtil.substParams(transformedBody,params,tss.head).changeOwner(bodyOwner,meth).withSpan(body.span)
                            }
@@ -132,7 +132,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                     val ctxFun = Closure(meth, tss => {
                                           // here = check that valDef constructire chaned amOwner
                       val tc = TransformationContext(monadType,am,params(0),optRuntimeAwait)
-                      val cpsTree = RootTransform(body,bodyOwner,tc)
+                      val cpsTree = RootTransform(body,bodyOwner,tc, 0)
                       val transformedBody = Block(amValDef::Nil, cpsTree.transformed)
                       TransformUtil.substParams(transformedBody,List(params(0)),tss.head)
                                     .changeOwner(bodyOwner,meth)

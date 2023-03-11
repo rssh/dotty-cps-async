@@ -14,16 +14,16 @@ import cps.plugin.*
 object RootTransform {
 
 
-      def apply(term: Tree, owner: Symbol, tctx: TransformationContext)(using Context): CpsTree = {
+      def apply(term: Tree, owner: Symbol, tctx: TransformationContext, nesting: Int)(using Context): CpsTree = {
         val retval = term match
-          case applyTerm: Apply => ApplyTransform(applyTerm, owner, tctx)
-          case block: Block => BlockTransform(block, owner, tctx)
-          case id: Ident => IdentTransform(id, owner, tctx)
-          case s: Select => SelectTransform(s, owner, tctx)
-          case tIf@If(_,_,_) => IfTransform(tIf, owner, tctx)
-          case t: TypeApply => TypeApplyTransform(t,owner,tctx)
-          case vd:ValDef => ValDefTransform(vd,owner,tctx)
-          case lt:Literal => LiteralTransform(lt,owner,tctx)
+          case applyTerm: Apply => ApplyTransform(applyTerm, owner, tctx, nesting)
+          case block: Block => BlockTransform(block, owner, tctx, nesting)
+          case id: Ident => IdentTransform(id, owner, tctx, nesting)
+          case s: Select => SelectTransform(s, owner, tctx, nesting)
+          case tIf@If(_,_,_) => IfTransform(tIf, owner, tctx, nesting)
+          case t: TypeApply => TypeApplyTransform(t,owner,tctx, nesting)
+          case vd:ValDef => ValDefTransform(vd,owner,tctx, nesting)
+          case lt:Literal => LiteralTransform(lt,owner,tctx, nesting)
           case _ =>
             throw CpsTransformException(s"Unsupported tree in cps: $term",term.srcPos)
             //report.error(s"Unsupported tree in cps: $term",term.srcPos)

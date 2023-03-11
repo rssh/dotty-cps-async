@@ -15,10 +15,10 @@ import cps.plugin.*
 object IfTransform {
 
 
-      def apply(ifTerm: If, owner: Symbol, ctx: TransformationContext)(using Context): CpsTree = {
-        val cpsCond = RootTransform(ifTerm.cond, owner, ctx)
-        val cpsIfTrue = RootTransform(ifTerm.thenp, owner, ctx)
-        val cpsIfFalse = RootTransform(ifTerm.elsep, owner, ctx)
+      def apply(ifTerm: If, owner: Symbol, ctx: TransformationContext, nesting:Int)(using Context): CpsTree = {
+        val cpsCond = RootTransform(ifTerm.cond, owner, ctx, nesting+1)
+        val cpsIfTrue = RootTransform(ifTerm.thenp, owner, ctx, nesting+1)
+        val cpsIfFalse = RootTransform(ifTerm.elsep, owner, ctx, nesting+1)
         cpsCond.unpure match
           case Some(condSync) =>
             (cpsIfTrue.unpure,  cpsIfFalse.unpure) match

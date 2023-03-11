@@ -13,11 +13,11 @@ import cps.plugin.*
 object ValDefTransform {
 
 
-      def apply(term: ValDef, owner: Symbol, tctx: TransformationContext)(using Context): CpsTree = {
+      def apply(term: ValDef, owner: Symbol, tctx: TransformationContext, nesting:Int)(using Context): CpsTree = {
 
             if (term.rhs.isEmpty) then
                   throw CpsTransformException("ValDef without right part", term.srcPos)
-            val cpsRhs = RootTransform(term.rhs,term.symbol,tctx)
+            val cpsRhs = RootTransform(term.rhs,term.symbol,tctx,nesting+1)
             cpsRhs.asyncKind match
                   case AsyncKind.Sync =>
                         if (cpsRhs.isOriginEqSync) then

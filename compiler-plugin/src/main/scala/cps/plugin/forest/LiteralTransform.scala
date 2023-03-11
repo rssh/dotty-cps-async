@@ -13,7 +13,7 @@ import cps.plugin.*
 object LiteralTransform {
 
 
-  def apply(literalTerm: Literal, owner: Symbol, tctx: TransformationContext)(using Context): CpsTree = {
+  def apply(literalTerm: Literal, owner: Symbol, tctx: TransformationContext, nesting:Int)(using Context): CpsTree = {
     CpsTree.unchangedPure(tctx,literalTerm,owner)
   }
 
