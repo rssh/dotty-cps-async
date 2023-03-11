@@ -1,4 +1,4 @@
-package cps.plugin.forest
+package cps.plugin
 
 import dotty.tools.dotc.*
 import core.*
@@ -14,3 +14,4 @@ case class TransformationContext(
   val cpsMonadContextRef: Tree, // TODO: many contexts, if we have context per effect ?
   val optRuntimeAwait: Option[Tree]  
 )  
+

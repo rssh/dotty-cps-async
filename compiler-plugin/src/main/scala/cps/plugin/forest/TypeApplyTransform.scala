@@ -10,6 +10,8 @@ import core.Definitions.*
 import core.StdNames
 import ast.tpd.*
 
+import cps.plugin.*
+
 object TypeApplyTransform {
 
 
