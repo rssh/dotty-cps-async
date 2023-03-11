@@ -1,8 +1,7 @@
 Non-local returns
 =================
 
-You can use `returning <https://scala-lang.org/api/3.x/scala/util/control/NonLocalReturns$.html>`_ clause inside async block as the same way  
-as in plain scala:
+You can use `returning <https://scala-lang.org/api/3.x/scala/util/control/NonLocalReturns$.html>`_ clause inside async block just like in plain Scala:
 
 .. code-block:: scala
 
@@ -41,7 +40,7 @@ Also, as in plain Scala, `throwReturn` does not intersect with handling `NonFata
 
 
 
-Now dotty-cps-async uses compile-time translation to avoid runtime overhead when this future is not used, so when using return 
+Dotty-cps-async uses compile-time translation to avoid runtime overhead when this future is not used, so when using return
 you should not hide catching `NonFatal` exceptions and `throwReturn` clauses from the `async` macro.
 
 If you want to change the function name for `throwReturn`, be sure that your version is `transparent inline`:
