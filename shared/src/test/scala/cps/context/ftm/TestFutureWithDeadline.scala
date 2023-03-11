@@ -47,7 +47,7 @@ given cpsMonadConversion(using DeadlineContext): CpsMonadConversion[Future,Futur
 }
 
 
-class DeadlineContext(initDeadline: Long) extends CpsMonadContext[FutureWithDeadline] {
+class DeadlineContext(m: CpsMonad[FutureWithDeadline], initDeadline: Long) extends CpsMonadContext[FutureWithDeadline] {
 
     private[this] var deadline: Long = initDeadline;
     private[this] val timeoutPromise: Promise[Nothing] = Promise()
@@ -88,6 +88,8 @@ class DeadlineContext(initDeadline: Long) extends CpsMonadContext[FutureWithDead
         p.tryCompleteWith(timeoutFuture)
         p.tryCompleteWith(x)
         FutureWithDeadline.Computation(p, this)
+
+    override def monad = m
 
     override def adoptAwait[A](fa:FutureWithDeadline[A]):FutureWithDeadline[A] =
         addComputation(fa.future)    
@@ -130,7 +132,7 @@ class FutureWithDeadlineCpsMonad(using ExecutionContext) extends CpsAsyncMonad[F
                         failure(ex)
 
     override def applyContext[T](op: DeadlineContext => FutureWithDeadline[T]): FutureWithDeadline[T] =
-        val context  = new DeadlineContext(-1)
+        val context  = new DeadlineContext(this, -1)
         op(context)
                                   
     def error[A](e: Throwable): FutureWithDeadline[A] =

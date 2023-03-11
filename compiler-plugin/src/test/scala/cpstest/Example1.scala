@@ -5,11 +5,13 @@ import cps.*
 
 @experimental
 object Example1 {
-  import cps.E.*
 
-  def asyncPlus[F[_]](a:Int, b:F[Int]): CpsTransform[F] ?=> Int =
+  def asyncPlus[F[_]](a:Int, b:F[Int]): CpsMonadContext[F] ?=> Int =
     a + cpsAwait(b)
-  
+
+  def contextPlus[F[_]](a: Int, b: CpsMonadContext[F] ?=> Int): CpsMonadContext[F] ?=> Int =
+    a + b
+
 
 }
   

@@ -192,7 +192,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
     def transformed: Term =
       origin match
         case t: Term =>    
-          //given quotes = owner.asQuote
+          //given quotes = owner.asQuote  //  pure[Type](originTerm)(t)
           val untpureTerm = cpsCtx.monad.asTerm.select(pureSymbol)
           val tpureTerm = untpureTerm.appliedToType(otpe.widen)
           val r = tpureTerm.appliedTo(t)

@@ -12,6 +12,8 @@ class ProcessContext extends CpsMonadContext[Process] {
   def spawnAsync[A](op: ProcessContext => Process[A]): Process[A] =
      ???
 
+  override def monad: CpsMonad[Process] = ???   
+
   override def adoptAwait[T](ft:Process[T]):Process[T] = ???
 
 }

@@ -14,19 +14,29 @@ import util.Spans.Span
 
 object CpsTransformHelper {
 
-  def cpsTransformClassSymbol(using Context) =
-    Symbols.requiredClass("cps.E.CpsTransform")
+  //def cpsTransformClassSymbol(using Context) =
+  //  Symbols.requiredClass("cps.E.CpsTransform")
+
+  def cpsMonadContextClassSymbol(using Context) =
+      Symbols.requiredClass("cps.CpsMonadContext")
 
   /**
    *@param contextFunctionArgType is CpsTransform[F]
    *@return F
    **/
   def extractMonadType(contextFunctionArgType: Type, pos: SrcPos)(using Context): Type =
-    contextFunctionArgType match
-      case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsTransformClassSymbol) => 
+    contextFunctionArgType.dealias match
+      case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsMonadContextClassSymbol) => 
              targ
-      case _ =>
-             throw CpsTransformException("assument that contect function type is CpsTransform[T]", pos)
+      case other =>
+             val cntBase = other.baseType(cpsMonadContextClassSymbol)
+             if (cntBase != NoType) 
+                cntBase match
+                  case AppliedType(tycon, List(targ)) => targ
+                  case _ =>
+                    throw CpsTransformException(s"Can't extract monad from context-type: ${cntBase.show}", pos)
+             else
+                throw CpsTransformException("assument that contect function type is CpsMonadContext[T]", pos)
 
 
   /**
@@ -77,16 +87,19 @@ object CpsTransformHelper {
   }
 
 
+  def findImplicitInstance(tpe: Type, span: Span)(using ctx:Context): Option[Tree] = {
+    val searchResult = ctx.typer.inferImplicitArg(tpe,span)
+    searchResult.tpe match
+      case _ : typer.Implicits.SearchFailureType => None
+      case _  => Some(searchResult)
+  }
   
   def findRuntimeAwait(monadType: Type, span: Span)(using ctx:Context): Option[Tree] = {
       //TODO:  Problem: shows incorrect phase.
       println(s"!!findRuntimeAwait, ctx.phase=${ctx.phase}, allowsImplicitSearch=${ctx.phase.allowsImplicitSearch}")
       val runtimeAwait = requiredClassRef("cps.CpsRuntimeAwait")
       val tpe = AppliedType(runtimeAwait, List(monadType))
-      val searchResult = ctx.typer.inferImplicitArg(tpe,span)
-      searchResult.tpe match
-        case _ : typer.Implicits.SearchFailureType => None
-        case _  => Some(searchResult)
+      findImplicitInstance(tpe, span)
   }
   
 

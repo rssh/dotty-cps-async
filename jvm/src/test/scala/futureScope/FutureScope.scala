@@ -20,8 +20,8 @@ class FutureScope(ec: ExecutionContext) extends CpsMonadContextProvider[Future] 
   
    override type Context = FutureScopeContext
 
-   override def  contextualize[A](fa: Context => Future[A]): Future[A] = {
-      val fsc = new FutureScopeContext(ec)
+   override def  contextualize[A](m: CpsMonad[Future], fa: Context => Future[A]): Future[A] = {
+      val fsc = new FutureScopeContext(m, ec)
       fsc.run(fa)
    }
 
@@ -29,7 +29,7 @@ class FutureScope(ec: ExecutionContext) extends CpsMonadContextProvider[Future] 
  
       override type Context = FutureScopeContext
       
-      override def  contextualize[A](fa: Context => Future[A]): Future[A] = {
+      override def  contextualize[A](m:CpsMonad[Future], fa: Context => Future[A]): Future[A] = {
          ctx.spawn_async(fa)
       }
 

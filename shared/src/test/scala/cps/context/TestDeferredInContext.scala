@@ -55,6 +55,8 @@ class DeferredDestructorsContext extends CpsMonadContext[ComputationBound] {
                 m.error(ex)                      
     } 
 
+  override def monad = summon[CpsMonad[ComputationBound]]  
+
   // not intercept awaits.  
   override def adoptAwait[A](fa: ComputationBound[A]):ComputationBound[A] = fa
 
@@ -64,7 +66,8 @@ object DeferredProvider extends CpsMonadContextProvider[ComputationBound] {
 
    type Context = DeferredDestructorsContext
 
-   def contextualize[T](f: Context => ComputationBound[T] ): ComputationBound[T] =
+
+   def contextualize[T](m: CpsMonad[ComputationBound], f: Context => ComputationBound[T] ): ComputationBound[T] =
       val ctx = new DeferredDestructorsContext()
       ctx.withContext(f(ctx), summon[CpsTryMonad[ComputationBound]])
 

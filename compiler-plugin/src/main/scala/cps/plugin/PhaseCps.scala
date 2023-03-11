@@ -28,7 +28,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
   override def transformDefDef(tree:DefDef)(using Context): Tree = {
     // TODO:
-    //  find parameter with outer value CpsTransform[F] ?=> T
+    //  find parameter with outer value CpsMonadContext[F] ?=> T
     //  Translate to function which return M[T] instead T which body is cps-transformed
     if (Symbols.defn.isContextFunctionType(tree.tpt.tpe)) then
        println(s"defDef: name=${tree.name}, tpt=${tree.tpt}")
@@ -40,7 +40,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                 revListCpsTransformInContextFunctionArgTypes(targs) match
                   case Nil =>
                     super.transformDefDef(tree)
-                  case (cpsTransformType, argIndex)::Nil =>
+                  case (cpsMonadContextType, argIndex)::Nil =>
                     tree.rhs match
                       case CheckLambda(params, body, bodyOwner) =>
                         try 
@@ -48,10 +48,14 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                             val sparams = params.map(_.show).mkString(",")
                             println(s"transformDefDef:lambda found as resulting expression, params=${sparams}},  rhs.tpe=${tree.rhs.tpe}")
                           }
-                          val monadType = CpsTransformHelper.extractMonadType(cpsTransformType,tree.srcPos)
-                          val cpsTransformParam = params(argIndex)
-                          val monadFieldName = "m".toTermName
-                          val monad = Select(cpsTransformParam, monadFieldName).withSpan(tree.span)
+                          val monadType = CpsTransformHelper.extractMonadType(cpsMonadContextType,tree.srcPos)
+                          val cpsContextParam = params(argIndex)
+                          //val monadInit = CpsTransformHelper.findImplicitInstance(monadType,tree.span).getOrElse(
+                          //  throw CpsTransformException(s"Can't find an implicit instance of monad ${monadType.show}", tree.srcPos)
+                          //)
+                          val monadInit = Select(cpsContextParam,"monad".toTermName).withSpan(tree.span)
+                          //val monadFieldName = "m".toTermName
+                          //val monad = Select(cpsTransformParam, monadFieldName).withSpan(tree.span)
                           val optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(monadType,tree.span)
                           //val oldMt = tree.rhs.tpe match
                           //  case v:MethodType => v
@@ -60,9 +64,11 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                           val meth = Symbols.newAnonFun(summon[Context].owner,mt)
                           println(s"transformDefDef:creating new closure, type=${mt.show}")
                           val nRhs = Closure(meth,tss => {
-                              val tc = TransformationContext(monadType,monad,cpsTransformParam,optRuntimeAwait)
+                              val monadValDef = SyntheticValDef("m".toTermName,monadInit)
+                              val monad = ref(monadValDef.symbol)
+                              val tc = TransformationContext(monadType,monad,cpsContextParam,optRuntimeAwait)
                               val cpsTree = RootTransform(body, bodyOwner, tc)
-                              val transformedBody = cpsTree.transformed
+                              val transformedBody = Block(List(monadValDef),cpsTree.transformed)
                               TransformUtil.substParams(transformedBody,params,tss.head).changeOwner(bodyOwner,meth).withSpan(body.span)
                            }
                           )
@@ -104,7 +110,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
            =>
             infernAsyncArgCn.tpe match
               case AppliedType(tycon, tpargs) 
-                if tycon.typeSymbol == Symbols.requiredClass("cps.E.CpsTransform.InfernAsyncArg") =>
+                if tycon.typeSymbol == Symbols.requiredClass("cps.CpsTransform.InfernAsyncArg") =>
                   println(s"found CpsAsync candidate, tycon.typeSymbol=:  ${tycon.typeSymbol} ")
                   println(s"CpsAsync.body=:  ${body.show} ")
                   println(s"CpsAsync.bodyType=:  ${body.tpe.show} ")
@@ -112,13 +118,14 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                     val cpsTransformType = params(0).tpt.tpe
                     val monadType = CpsTransformHelper.extractMonadType(cpsTransformType,tree.srcPos)
                     val optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(monadType, tree.span)
-                    val mt = MethodType(List(params(1).name))(
-                      x => List(params(1).tpt.tpe),
+                    val mt = MethodType(List(params(0).name))(
+                      x => List(params(0).tpt.tpe),
                       //x => tree.tpe.widen  //decorateTypeApplications(monadType).appliedTo(body.tpe)
                       x => decorateTypeApplications(monadType).appliedTo(body.tpe)
                     )
                     // TODO:  pass am to apply 
                     val amInit = Select(infernAsyncArgCn,"am".toTermName)
+                    // TODO: changeOwnwe ?
                     val amValDef = SyntheticValDef("m".toTermName,amInit)
                     val am = ref(amValDef.symbol)
                     val meth = Symbols.newAnonFun(summon[Context].owner,mt)
@@ -126,8 +133,8 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                                           // here = check that valDef constructire chaned amOwner
                       val tc = TransformationContext(monadType,am,params(0),optRuntimeAwait)
                       val cpsTree = RootTransform(body,bodyOwner,tc)
-                      val transformedBody = cpsTree.transformed
-                      TransformUtil.substParams(transformedBody,List(params(1)),tss.head)
+                      val transformedBody = Block(amValDef::Nil, cpsTree.transformed)
+                      TransformUtil.substParams(transformedBody,List(params(0)),tss.head)
                                     .changeOwner(bodyOwner,meth)
                                     .withSpan(body.span)
                     }) 
@@ -159,23 +166,30 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
 
   private def revListCpsTransformInContextFunctionArgTypes(args:List[Type])(using Context):List[(Type,Int)] = {
-      val classSym = Symbols.requiredClass("cps.E.CpsTransform")
-      revListCpsTransformInContextFunctionArgsTypesAcc(args,Nil,0,classSym)
+      val cpsMonadContextSym = Symbols.requiredClass("cps.CpsMonadContext")
+      revListCpsTransformInContextFunctionArgsTypesAcc(args,Nil,0,cpsMonadContextSym)
   }
 
 
   @tailrec
-  private def revListCpsTransformInContextFunctionArgsTypesAcc(args:List[Type],acc:List[(Type,Int)],index:Int,classSym:ClassSymbol)(using Context):List[(Type,Int)] = {
+  private def revListCpsTransformInContextFunctionArgsTypesAcc(args:List[Type],acc:List[(Type,Int)],index:Int,cpsMonadContextSym:ClassSymbol)(using Context):List[(Type,Int)] = {
     args match
       case last::Nil => acc
       case Nil => acc
       case h::t =>
         h match
-          case AppliedType(tycon, targs) if (tycon.typeSymbol == classSym) => 
-            revListCpsTransformInContextFunctionArgsTypesAcc(t, (h,index)::acc, index+1, classSym)
+          case AppliedType(tycon, targs) if (tycon.typeSymbol == cpsMonadContextSym) => 
+            // short way
+            revListCpsTransformInContextFunctionArgsTypesAcc(t, (h,index)::acc, index+1, cpsMonadContextSym)
           case _ =>
-            revListCpsTransformInContextFunctionArgsTypesAcc(t, acc, index+1, classSym)
+            if (h <:< cpsMonadContextSym.typeRef.appliedTo(TypeBounds.empty)) {
+              println("h <:< CpsMonadContext[_]")
+              revListCpsTransformInContextFunctionArgsTypesAcc(t, (h,index)::acc, index+1, cpsMonadContextSym)
+            } else {
+              revListCpsTransformInContextFunctionArgsTypesAcc(t, acc, index+1, cpsMonadContextSym)
+            }
   }
+
 
 
 }

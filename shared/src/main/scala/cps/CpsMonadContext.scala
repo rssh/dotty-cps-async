@@ -13,6 +13,12 @@ trait CpsMonadContext[F[_]] {
   type Monad[X] = F[X]
 
   /**
+   *@return instance of cps-monad.
+   */ 
+   def monad: CpsMonad[F]
+
+
+  /**
    * adopt external monadic value to the current context.
    **/
   def adoptAwait[A](fa:F[A]):F[A]
@@ -24,6 +30,7 @@ trait CpsMonadContext[F[_]] {
  * marker trait for context with NOOP intercaprAwait operation 
  **/
 trait CpsMonadNoAdoptContext[F[_]] extends CpsMonadContext[F] {
+
 
   /**
    * If is it statically known, that monad is evaluated in this context, then

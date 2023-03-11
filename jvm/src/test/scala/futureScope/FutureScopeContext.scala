@@ -21,7 +21,7 @@ import cps.testconfig.given
 /**
  * ScopedContext - bring structured concurrency primitives for futures.
  **/
-class FutureScopeContext(ec: ExecutionContext, parentScope: Option[FutureScopeContext] = None) extends CpsMonadContext[Future] 
+class FutureScopeContext(m: CpsMonad[Future], ec: ExecutionContext, parentScope: Option[FutureScopeContext] = None) extends CpsMonadContext[Future] 
                                                                                                   with ExecutionContextProvider  
                                                                                                   with Cancellable {
 
@@ -36,6 +36,8 @@ class FutureScopeContext(ec: ExecutionContext, parentScope: Option[FutureScopeCo
   
   def executionContext: ExecutionContext = ec
 
+  override def monad: CpsMonad[Future] = m
+  
   override def adoptAwait[A](fa: Future[A]):Future[A] = {
     given ExecutionContext = ec
     stateRef.get match
@@ -143,7 +145,7 @@ class FutureScopeContext(ec: ExecutionContext, parentScope: Option[FutureScopeCo
     given ExecutionContext = executionContext
     stateRef.get() match
       case FutureScopeContext.State.Active =>
-        val c = new FutureScopeContext(executionContext, Some(this))
+        val c = new FutureScopeContext(m, executionContext, Some(this))
         val p = Promise[A]()
         p.completeWith(c.run(f))
         val childRecord = DelegatedCancellableFuture(p.future,

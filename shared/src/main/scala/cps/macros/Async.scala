@@ -33,7 +33,7 @@ object Async {
 
        
        transparent inline def in[T](mc: CpsMonadContextProvider[F] )(inline expr: mc.Context ?=> T ): F[T]  = 
-            mc.contextualize(transformContextLambda(expr))
+            mc.contextualize(am, transformContextLambda(expr))
        
   }
 
