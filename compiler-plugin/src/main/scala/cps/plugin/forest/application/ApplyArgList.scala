@@ -51,7 +51,7 @@ object ApplyTermArgList {
     index: Int
   )
 
-  def make(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, tctx: TransformationContext, nesting: Int)(using Context): ApplyTermArgList = {
+  def make(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): ApplyTermArgList = {
      val s0 = BuildState(List.empty,Set.empty,0)
      val s = term.args.foldLeft(s0){ (s,a) =>
         val depResult = DependencyCheck.run(a,s.symbols)
@@ -61,7 +61,6 @@ object ApplyTermArgList {
           mt.isByName(s.index, a.srcPos),
           owner,
           depResult.canBeDependent,
-          tctx,
           nesting
         )
         s.copy(revApplyArgs = nApplyArg::s.revApplyArgs, symbols = s.symbols ++ depResult.syms)

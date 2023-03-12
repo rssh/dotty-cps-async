@@ -20,7 +20,7 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
   val phaseName = "rssh.cps"
 
   override def allowsImplicitSearch = true
-  override val runsAfter = Set("cc")
+  override val runsAfter = Set("inlining")
   override val runsBefore = Set("rssh.cpsAsyncShift")
 
   val debug = true
@@ -66,8 +66,9 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                           val nRhs = Closure(meth,tss => {
                               val monadValDef = SyntheticValDef("m".toTermName,monadInit)
                               val monad = ref(monadValDef.symbol)
-                              val tc = TransformationContext(monadType,monad,cpsContextParam,optRuntimeAwait)
-                              val cpsTree = RootTransform(body, bodyOwner, tc, 0)
+                              val tc = CpsTopLevelContext(monadType,monad,cpsContextParam,optRuntimeAwait, DebugSettings.make(body))
+                              given CpsTopLevelContext = tc
+                              val cpsTree = RootTransform(body, bodyOwner, 0)
                               val transformedBody = Block(List(monadValDef),cpsTree.transformed)
                               TransformUtil.substParams(transformedBody,params,tss.head).changeOwner(bodyOwner,meth).withSpan(body.span)
                            }
@@ -131,8 +132,10 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                     val meth = Symbols.newAnonFun(summon[Context].owner,mt)
                     val ctxFun = Closure(meth, tss => {
                                           // here = check that valDef constructire chaned amOwner
-                      val tc = TransformationContext(monadType,am,params(0),optRuntimeAwait)
-                      val cpsTree = RootTransform(body,bodyOwner,tc, 0)
+                      val tc = CpsTopLevelContext(monadType,am,params(0),optRuntimeAwait,DebugSettings.make(tree))
+                      given CpsTopLevelContext = tc
+                      println(s"cpsAsync:tc, debugLevel=${tc.settings.debugLevel}")
+                      val cpsTree = RootTransform(body,bodyOwner, 0)
                       val transformedBody = Block(amValDef::Nil, cpsTree.transformed)
                       TransformUtil.substParams(transformedBody,List(params(0)),tss.head)
                                     .changeOwner(bodyOwner,meth)
@@ -146,9 +149,10 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
                       List(amValDef),
                       apply
                     )
-                    println(s"origin cpsAwait tree: ${tree.show}")
+                    println(s"origin cpsAsync tree: ${tree.show}")
                     println(s"transformed cpsAwait tree: ${retval.show}")
                     println(s"ctxFun=${ctxFun.show}")
+
                     retval
                   catch
                     case ex:CpsTransformException =>

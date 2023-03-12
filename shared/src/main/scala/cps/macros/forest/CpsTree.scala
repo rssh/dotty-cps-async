@@ -992,7 +992,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
            case PureCpsTree(nestOwner, nestOrigin, nestChanged) =>
                 origin match
                   case Some(t) if (!isChanged) => t
-                  case None => 
+                  case _ => 
                     nestOrigin match
                       case nestTerm: Term => PureCpsTree(owner, apply(nestTerm), isChanged).transformed
                       case s => Block(List(s), PureCpsTree(owner, apply(unitTerm), isChanged).transformed )

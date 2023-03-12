@@ -12,11 +12,13 @@ import org.junit.Assert._
 import cps.*
 
 import cps.monads.{*,given}
+import cps.plugin.annotation.CpsDebugLevel
 
 @experimental
 class TestExample1:
-  
 
+  
+  @CpsDebugLevel(4) 
   @Test def testExample1Future(): Unit = 
      import scala.concurrent.ExecutionContext.Implicits.global
      

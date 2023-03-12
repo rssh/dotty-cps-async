@@ -21,8 +21,8 @@ import QuoteLikeAPI.*
 
 object ApplyTransform {
 
-  def apply(term: Apply, owner: Symbol, tctx: TransformationContext, nesting:Int)(using Context): CpsTree = {
-      val cpsTree = applyMArgs(term,owner,tctx, nesting, Nil)
+  def apply(term: Apply, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
+      val cpsTree = applyMArgs(term,owner, nesting, Nil)
       println(s"applyTransform: origin=${term.show}, type=${term.tpe.widen.show}")
       println(s"applyTransform: result=${cpsTree.show}")
       println(s"applyTransform: transformed=${cpsTree.transformed.show}")
@@ -30,46 +30,47 @@ object ApplyTransform {
   }
 
 
-  def applyMArgs(term: Apply, owner: Symbol, tctx: TransformationContext, nesting:Int, tail:List[ApplyArgList] )(using Context): CpsTree = {
-    val argList = makeArgList(term, MethodParamsDescriptor(term.fun), owner, tctx, nesting)
+  def applyMArgs(term: Apply, owner: Symbol, nesting:Int, tail:List[ApplyArgList] )(using Context, CpsTopLevelContext): CpsTree = {
+    val argList = makeArgList(term, MethodParamsDescriptor(term.fun), owner, nesting)
     val retval = term.fun match
       case tfa@Apply(fun1,args1) => 
-        applyMArgs(tfa, owner, tctx, nesting, argList::tail)
+        applyMArgs(tfa, owner, nesting, argList::tail)
       case tpfa@TypeApply(tapp:Apply, targs1) =>
         val targs = makeTypeArgList(tpfa)
-        applyMArgs(tapp, owner, tctx, nesting, targs::argList::tail)  
+        applyMArgs(tapp, owner, nesting, targs::argList::tail)
       case _ => 
-        parseApplication(term,owner,tctx, nesting, argList::tail)
+        parseApplication(term,owner, nesting, argList::tail)
     retval
   }
 
-  def parseApplication(appTerm: Apply, owner: Symbol, tctx: TransformationContext, nesting:Int, argss: List[ApplyArgList])(using Context): CpsTree = {
-    val cpsApplicant = RootTransform(appTerm.fun ,owner, tctx, nesting+1 )
+  def parseApplication(appTerm: Apply, owner: Symbol, nesting:Int, argss: List[ApplyArgList])(using Context, CpsTopLevelContext): CpsTree = {
+    val cpsApplicant = RootTransform(appTerm.fun ,owner, nesting+1 )
     cpsApplicant.unpure match
       case Some(syncFun) => 
-        parseSyncFunApplication(appTerm, owner, tctx, nesting, syncFun, argss)
+        parseSyncFunApplication(appTerm, owner, nesting, syncFun, argss)
       case None =>
         val valDefSym = newSymbol(owner, "xApplyFun".toTermName, Flags.EmptyFlags, 
                         cpsApplicant.originType.widen, Symbols.NoSymbol)
         val valDef = ValDef(valDefSym, EmptyTree).withSpan(appTerm.span)
         val valRef = ref(valDefSym)
-        val appCpsTree = parseSyncFunApplication(appTerm, owner, tctx, nesting, valRef, argss)
+        val appCpsTree = parseSyncFunApplication(appTerm, owner, nesting, valRef, argss)
         appCpsTree.unpure match
           case Some(syncAppCps) =>
-            MapCpsTree(tctx,appTerm,owner,cpsApplicant,MapCpsTreeArgument(Some(valDef), appCpsTree))
+            MapCpsTree(appTerm,owner,cpsApplicant,MapCpsTreeArgument(Some(valDef), appCpsTree))
           case None =>
-            FlatMapCpsTree(tctx,appTerm,owner,cpsApplicant,FlatMapCpsTreeArgument(Some(valDef), appCpsTree))
+            FlatMapCpsTree(appTerm,owner,cpsApplicant,FlatMapCpsTreeArgument(Some(valDef), appCpsTree))
   }
 
 
 
-  def parseSyncFunApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, nesting: Int, fun: Tree, argss:List[ApplyArgList])(using Context): CpsTree = {
+  def parseSyncFunApplication(origin: Apply, owner: Symbol, nesting: Int, fun: Tree, argss:List[ApplyArgList])(using Context, CpsTopLevelContext): CpsTree = {
+      val tctx = summon[CpsTopLevelContext]
       val containsAsyncLambda = argss.exists(_.containsAsyncLambda)
       val containsAsync = argss.exists(_.isAsync)
       if (containsAsyncLambda) {
         tctx.optRuntimeAwait match
           case Some(runtimeAwait) =>
-            genApplication(origin,owner,tctx,fun,argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait),tctx))
+            genApplication(origin,owner,tctx,fun,argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait)))
           case None =>
             if (fun.denot != NoDenotation) {
                   // check -- can we add shifted version of fun
@@ -83,7 +84,7 @@ object ApplyTransform {
                   //                      we need to recompile origin
                   //  now we encapsulate this in shiftedFunction cache
                   val changedFun = retrieveShiftedFun(fun,tctx,owner)
-                  genApplication(origin, owner, tctx, changedFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None, tctx))
+                  genApplication(origin, owner, tctx, changedFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None))
             } else {
               fun match
                 case QuoteLikeAPI.CheckLambda(params,body,bodyOwner) =>
@@ -93,25 +94,25 @@ object ApplyTransform {
                   throw CpsTransformException(s"Can't transform function ${fun}",fun.srcPos)
             }
       } else if (containsAsync) {
-        genApplication(origin, owner, tctx, fun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None, tctx))
+        genApplication(origin, owner, tctx, fun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None))
       } else {
-        parseSyncFunPureApplication(origin,owner,tctx, fun, argss)
+        parseSyncFunPureApplication(origin,owner, fun, argss)
       }
   }
 
   //  just unchanged
-  def parseSyncFunPureApplication(origin: Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, args:List[ApplyArgList])(using Context): CpsTree = {
+  def parseSyncFunPureApplication(origin: Apply, owner: Symbol, fun: Tree, args:List[ApplyArgList])(using Context, CpsTopLevelContext): CpsTree = {
      val plainTree = args.foldLeft(fun){ (s,e) =>
         e match
           case ApplyTypeArgList(orig,args) =>
             TypeApply(s,args).withSpan(orig.span)
           case ApplyTermArgList(orig,args) =>
-            Apply(s,args.map(_.exprInCall(ApplyArgCallMode.SYNC,None,tctx))).withSpan(orig.span)
+            Apply(s,args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))).withSpan(orig.span)
      }
-     CpsTree.pure(tctx, origin, owner, plainTree)
+     CpsTree.pure(origin, owner, plainTree)
   }
 
-  def genApplication(origin:Apply, owner: Symbol, tctx: TransformationContext, fun: Tree, argss: List[ApplyArgList], f: ApplyArg => Tree)(using Context): CpsTree = {
+  def genApplication(origin:Apply, owner: Symbol, tctx: CpsTopLevelContext, fun: Tree, argss: List[ApplyArgList], f: ApplyArg => Tree)(using Context): CpsTree = {
     println(s"genApplication origin: ${origin.show}")
     
     def genOneLastPureApply(fun: Tree, argList: ApplyArgList): Tree =
@@ -135,7 +136,6 @@ object ApplyTransform {
             // TODO: optimise.
             //  (mb - introduce flaMap as operations, which automatically do optimizations) 
             FlatMapCpsTree(
-              tctx,
               origin,
               owner,
               prefixCpsTree,
@@ -156,7 +156,7 @@ object ApplyTransform {
       }
 
     val pureReply = genPureReply(fun,argss)    
-    val retval = genPrefixes(argss, CpsTree.pure(tctx,origin,owner,pureReply))
+    val retval = genPrefixes(argss, CpsTree.pure(origin,owner,pureReply))
     println(s"genApplication result: ${retval.show}")
     retval
 
@@ -165,9 +165,9 @@ object ApplyTransform {
   
 
 
-  def makeArgList(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, tctx: TransformationContext, nesting: Int)(using Context): ApplyTermArgList = {
+  def makeArgList(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): ApplyTermArgList = {
     // need to calculate dependency between arguments.
-    ApplyTermArgList.make(term, mt, owner, tctx, nesting: Int)
+    ApplyTermArgList.make(term, mt, owner, nesting: Int)
   }
 
 
@@ -176,7 +176,7 @@ object ApplyTransform {
   }
 
 
-  def retrieveShiftedFun(fun:Tree, tctx: TransformationContext, owner:Symbol)(using Context): Tree = {
+  def retrieveShiftedFun(fun:Tree, tctx: CpsTopLevelContext, owner:Symbol)(using Context): Tree = {
 
     def matchInplaceArgTypes(originSym:Symbol, candidateSym: Symbol): Either[String,ShiftedArgumentsShape] = {
       val originParamSymms = originSym.paramSymss
