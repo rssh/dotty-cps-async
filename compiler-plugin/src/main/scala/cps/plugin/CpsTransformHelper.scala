@@ -20,6 +20,14 @@ object CpsTransformHelper {
   def cpsMonadContextClassSymbol(using Context) =
       Symbols.requiredClass("cps.CpsMonadContext")
 
+  def isCpsMonadContextType(tpe:Type)(using Context): Boolean = {
+     tpe.dealias match
+       case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsMonadContextClassSymbol) =>
+         true
+       case other =>
+         (other <:< cpsMonadContextClassSymbol.typeRef.appliedTo(TypeBounds.empty))
+  }
+
   /**
    *@param contextFunctionArgType is CpsTransform[F]
    *@return F

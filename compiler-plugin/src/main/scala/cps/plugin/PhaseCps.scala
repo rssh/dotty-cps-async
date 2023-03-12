@@ -1,7 +1,6 @@
 package cps.plugin
 
 import scala.annotation.*
-
 import dotty.tools.dotc.*
 import core.*
 import core.Decorators.*
@@ -11,9 +10,10 @@ import core.Symbols.*
 import core.Types.*
 import ast.tpd.*
 import plugins.*
-
 import cps.plugin.QuoteLikeAPI.*
 import cps.plugin.forest.*
+import dotty.tools.dotc.ast.Trees
+import dotty.tools.dotc.util.SrcPos
 
 class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
@@ -25,83 +25,61 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
   val debug = true
 
-
-  override def transformDefDef(tree:DefDef)(using Context): Tree = {
-    // TODO:
-    //  find parameter with outer value CpsMonadContext[F] ?=> T
-    //  Translate to function which return M[T] instead T which body is cps-transformed
-    if (Symbols.defn.isContextFunctionType(tree.tpt.tpe)) then
-       println(s"defDef: name=${tree.name}, tpt=${tree.tpt}")
-       tree.tpt match
-          case tt: TypeTree =>
-            tt.typeOpt match
-              case AppliedType(tycon, targs) =>
-                println(s"AppliedType, args=$targs")
-                revListCpsTransformInContextFunctionArgTypes(targs) match
-                  case Nil =>
-                    super.transformDefDef(tree)
-                  case (cpsMonadContextType, argIndex)::Nil =>
-                    tree.rhs match
-                      case CheckLambda(params, body, bodyOwner) =>
-                        try 
-                          if (true) {
-                            val sparams = params.map(_.show).mkString(",")
-                            println(s"transformDefDef:lambda found as resulting expression, params=${sparams}},  rhs.tpe=${tree.rhs.tpe}")
-                          }
-                          val monadType = CpsTransformHelper.extractMonadType(cpsMonadContextType,tree.srcPos)
-                          val cpsContextParam = params(argIndex)
-                          //val monadInit = CpsTransformHelper.findImplicitInstance(monadType,tree.span).getOrElse(
-                          //  throw CpsTransformException(s"Can't find an implicit instance of monad ${monadType.show}", tree.srcPos)
-                          //)
-                          val monadInit = Select(cpsContextParam,"monad".toTermName).withSpan(tree.span)
-                          //val monadFieldName = "m".toTermName
-                          //val monad = Select(cpsTransformParam, monadFieldName).withSpan(tree.span)
-                          val optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(monadType,tree.span)
-                          //val oldMt = tree.rhs.tpe match
-                          //  case v:MethodType => v
-                          //  case _  => throw CpsTransformException(s"type of context function is not MethodType but ${tree.rhs.tpe}",tree.srcPos)
-                          val mt = CpsTransformHelper.transformContextualLambdaType(tree.rhs,params,body,monadType)
-                          val meth = Symbols.newAnonFun(summon[Context].owner,mt)
-                          println(s"transformDefDef:creating new closure, type=${mt.show}")
-                          val nRhs = Closure(meth,tss => {
-                              val monadValDef = SyntheticValDef("m".toTermName,monadInit)
-                              val monad = ref(monadValDef.symbol)
-                              val tc = CpsTopLevelContext(monadType,monad,cpsContextParam,optRuntimeAwait, DebugSettings.make(body))
-                              given CpsTopLevelContext = tc
-                              val cpsTree = RootTransform(body, bodyOwner, 0)
-                              val transformedBody = Block(List(monadValDef),cpsTree.transformed)
-                              TransformUtil.substParams(transformedBody,params,tss.head).changeOwner(bodyOwner,meth).withSpan(body.span)
-                           }
-                          )
-                          println(s"trasformDefDef: creation of nTpt")
-                          val nTpt = AppliedType(tycon,CpsTransformHelper.adoptResultTypeParam(targs,monadType))
-                          val defDef = cpy.DefDef(tree)(rhs=nRhs,tpt=TypeTree(nTpt))
-                          println(s"transformDefDef result: ${defDef.show}")
-                          defDef
-                        catch
-                          case ex:CpsTransformException =>
-                            report.error(ex.message,ex.pos)
-                            if (debug) {
-                               ex.printStackTrace()
-                            }
-                            tree
-                      case _ =>
-                        println(s"returning context function with quotre but not a lambda")
-                        super.transformDefDef(tree)
-                  case head::tail =>
-                    // TODO: find monad and implements compound algebraic effect
-                    report.error(s"more than one CpsTransform argument:  ${head._1.show} and ${tail.head._1.show}", tree.srcPos)
-                    tree
-              case _  =>
-                //println(s"not AppliedType")
-                super.transformDefDef(tree)
-          case _ =>
-            println(s"is not applied-type=tree but ${tree.tpt} ")
-            super.transformDefDef(tree)
-    else
-      super.transformDefDef(tree)    
+  override def transformDefDef(tree: DefDef)(using Context): Tree = {
+    // we should transform any def-def which accept CpsMonadContext as context parameter.
+    // This is both DefDef-s in lambda functions and fucntions with return valie
+    // CpsMonadContext[F] ?=> T.
+    //
+    // Note, that lambda-function can be catched before this in transformBlock
+    // if current transformation will be incorrect, because we need to change the
+    // type of function.
+    //
+    //  But we can change function type only inside cps transformation, which will be handled
+    //   via recursive parsing.
+    //
+    //  TODO: Think about cc=analysis, direct call of functions with using parameters
+    findCpsMonadContextParam(tree.paramss, tree.srcPos) match
+      case Some(cpsMonadContext) =>
+        val (monadValDef, tc) = makeMonadValAndCpsTopLevelContext(cpsMonadContext,tree)
+        val nTpt = CpsTransformHelper.cpsTransformedType(tree.tpt.tpe, tc.monadType)
+        given CpsTopLevelContext = tc
+        val transformedRhs = RootTransform(tree.rhs,tree.symbol,0).transformed
+        val nRhs = Block(monadValDef::Nil,transformedRhs)
+        cpy.DefDef(tree)(tree.name, tree.paramss, TypeTree(nTpt), nRhs)
+      case None =>
+        // check return type to catch function wich return params
+        if (Symbols.defn.isContextFunctionType(tree.tpt.tpe)) then
+          tree.rhs match
+            case CheckLambda(params,body,bodyOwner) =>
+              findCpsMonadContextParam(List(params), tree.rhs.srcPos) match
+                case Some(cpsMonadContext) =>
+                  if (true) {
+                    val sparams = params.map(_.show).mkString(",")
+                    println(s"transformDefDef:lambda found as resulting expression, params=${sparams}},  rhs.tpe=${tree.rhs.tpe}")
+                  }
+                  val (monadValDef, tc) = makeMonadValAndCpsTopLevelContext(cpsMonadContext, tree)
+                  val mt = CpsTransformHelper.transformContextualLambdaType(tree.rhs,params,body,tc.monadType)
+                  val meth = Symbols.newAnonFun(tree.symbol,mt)
+                  val nRhs = Closure(meth, tss => {
+                    given CpsTopLevelContext = tc
+                    val cpsTree = RootTransform(body, bodyOwner, 0)
+                    val transformedBody = Block(List(monadValDef.changeOwner(summon[Context].owner,bodyOwner)), cpsTree.transformed)
+                    TransformUtil.substParams(transformedBody, params, tss.head).changeOwner(bodyOwner, meth).withSpan(body.span)
+                  })
+                  val nTpt = tree.tpt.tpe.widen match
+                    case AppliedType(tycon,targs) =>
+                       AppliedType(tycon,CpsTransformHelper.adoptResultTypeParam(targs,tc.monadType))
+                    case _ =>
+                       throw CpsTransformException("Expected context function type as applied type",tree.srcPos)
+                  val retval = cpy.DefDef(tree)(rhs=nRhs,tpt=TypeTree(nTpt))
+                  println(s"transformDefDef result: ${retval.show}")
+                  retval
+        else
+          super.transformDefDef(tree)
   }
 
+
+ 
   override def transformApply(tree: Apply)(using Context):Tree = {
     tree match
       case Apply(
@@ -169,32 +147,46 @@ class PhaseCps(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
   }
 
 
-  private def revListCpsTransformInContextFunctionArgTypes(args:List[Type])(using Context):List[(Type,Int)] = {
-      val cpsMonadContextSym = Symbols.requiredClass("cps.CpsMonadContext")
-      revListCpsTransformInContextFunctionArgsTypesAcc(args,Nil,0,cpsMonadContextSym)
-  }
 
+  private def findCpsMonadContextParam(value: List[Trees.ParamClause[Types.Type]], srcPos: SrcPos)(using Context): Option[Tree] = {
+    findAllCpsMonadContextParam(value,List.empty) match
+      case head::Nil => Some(head)
+      case head::tail =>
+        // later we can combine many contexts ar one using effect stacks or monad transformeds.
+        throw CpsTransformException("Few monadcontexts in one function is not supported yet",srcPos)
+      case Nil => None
+  }
 
   @tailrec
-  private def revListCpsTransformInContextFunctionArgsTypesAcc(args:List[Type],acc:List[(Type,Int)],index:Int,cpsMonadContextSym:ClassSymbol)(using Context):List[(Type,Int)] = {
-    args match
-      case last::Nil => acc
-      case Nil => acc
-      case h::t =>
-        h match
-          case AppliedType(tycon, targs) if (tycon.typeSymbol == cpsMonadContextSym) => 
-            // short way
-            revListCpsTransformInContextFunctionArgsTypesAcc(t, (h,index)::acc, index+1, cpsMonadContextSym)
-          case _ =>
-            if (h <:< cpsMonadContextSym.typeRef.appliedTo(TypeBounds.empty)) {
-              println("h <:< CpsMonadContext[_]")
-              revListCpsTransformInContextFunctionArgsTypesAcc(t, (h,index)::acc, index+1, cpsMonadContextSym)
-            } else {
-              revListCpsTransformInContextFunctionArgsTypesAcc(t, acc, index+1, cpsMonadContextSym)
-            }
+  private def findAllCpsMonadContextParam(paramss: List[Trees.ParamClause[Types.Type]],
+                                          acc: List[ValDef])(using Context): List[Tree] = {
+    paramss match
+      case paramssHead::paramssTail =>
+        paramssHead match
+          case paramsHead::paramTail =>
+            paramsHead match
+              case vd: ValDef =>
+                val filtered = paramssHead.asInstanceOf[List[ValDef]].filter((p: ValDef) => CpsTransformHelper.isCpsMonadContextType(p.tpt.tpe))
+                findAllCpsMonadContextParam(paramssTail, filtered ++ acc)
+              case _ =>
+                findAllCpsMonadContextParam(paramssTail, acc)
+          case Nil =>
+            findAllCpsMonadContextParam(paramssTail, acc)
+      case Nil =>
+        acc
   }
 
-
+  private def makeMonadValAndCpsTopLevelContext(cpsMonadContext: Tree, tree: Tree)(using Context): (Tree, CpsTopLevelContext) =  {
+    val monadInit = Select(cpsMonadContext, "monad".toTermName).withSpan(tree.span)
+    val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, tree.srcPos)
+    val optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(monadType, tree.span)
+    //val insideContext =
+    val monadValDef = SyntheticValDef("m".toTermName, monadInit).changeOwner(summon[Context].owner, tree.symbol)
+    val monadRef = ref(monadValDef.symbol)
+    val tc = CpsTopLevelContext(monadType, monadRef, cpsMonadContext, optRuntimeAwait, DebugSettings.make(tree))
+    (monadValDef, tc)
+  }
+  
 
 }
 
