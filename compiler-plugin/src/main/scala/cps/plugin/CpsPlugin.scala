@@ -13,6 +13,7 @@ class CpsPlugin extends StandardPlugin {
 
   def init(options: List[String]): List[PluginPhase] = {
      val shiftedSymbols = new ShiftedSymbols()
+     //val selectedNodes = new SelectedNodes()
      (new PhaseCps(shiftedSymbols)) :: (new PhaseCpsAsyncShift(shiftedSymbols)) :: Nil
   }
 }

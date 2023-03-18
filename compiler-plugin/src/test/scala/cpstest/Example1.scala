@@ -6,18 +6,18 @@ import cps.*
 
 
 @experimental
-@cps.plugin.annotation.CpsDebugLevel(5)
+@cps.plugin.annotation.CpsDebugLevel(15)
 object Example1 {
 
 
-  def asyncPlus[F[_]](a:Int, b:F[Int]): CpsMonadContext[F] ?=> Int =
-    a + cpsAwait(b)
+  def asyncPlus[F[_]](a0:Int, b0:F[Int]): CpsMonadContext[F] ?=> Int =
+    a0 + cpsAwait(b0)
 
-  def contextPlus[F[_]](a: Int, b: CpsMonadContext[F] ?=> Int): CpsMonadContext[F] ?=> Int =
-    a + b
+  def contextPlus[F[_]](a1: Int, b1: CpsMonadContext[F] ?=> Int): CpsMonadContext[F] ?=> Int =
+    a1 + b1
 
-  def contextPlus2[F[_]](a: Int, b: CpsMonadContext[F] ?=> Int)(using CpsMonadContext[F]): Int =
-    a + b
+  def contextPlus2[F[_]](a2: Int, b2: CpsMonadContext[F] ?=> Int)(using CpsMonadContext[F]): Int =
+    a2 + b2
   
 
 }

@@ -22,9 +22,9 @@ import QuoteLikeAPI.*
 object ApplyTransform {
 
   def apply(term: Apply, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
-      Log.trace(s"Apply: origin=${term.show}", nesting)
+      //Log.trace(s"Apply: origin=${term.show}", nesting)
       val cpsTree = applyMArgs(term,owner, nesting, Nil)
-      Log.trace(s"Apply result: ${cpsTree}", nesting)
+      //Log.trace(s"Apply result: ${cpsTree}", nesting)
       cpsTree
   }
 

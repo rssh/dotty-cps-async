@@ -16,7 +16,7 @@ object ValDefTransform {
       def apply(term: ValDef, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
             val tctx = summon[CpsTopLevelContext]
             if (term.rhs.isEmpty) then
-                  throw CpsTransformException("ValDef without right part", term.srcPos)
+                  throw CpsTransformException(s"ValDef without right part: $term", term.srcPos)
             val cpsRhs = RootTransform(term.rhs,term.symbol,nesting+1)
             cpsRhs.asyncKind match
                   case AsyncKind.Sync =>
