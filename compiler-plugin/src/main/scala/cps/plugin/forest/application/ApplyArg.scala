@@ -155,9 +155,9 @@ case class RepeatApplyArg(
       case _ => tpe
     SeqLiteral(trees.toList, TypeTree(nTpe))
 
- override def show(using Context): String = {
+  override def show(using Context): String = {
     s"Repeated(${elements.map(_.show)})"
- }  
+  }
 
 }
 
