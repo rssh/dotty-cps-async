@@ -67,7 +67,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
       if (cpsCtx.flags.debugLevel >= 15 && name=="apply")
           println(s"sameSelect: funTerm=${funTerm}")
           println(s"sameSelect: funTerm.tpe.typeSymbol=${funTerm.tpe.typeSymbol}")
-      funTerm.tpe.typeSymbol.memberMethod(name) match
+      funTerm.tpe.typeSymbol.methodMember(name) match
         case Nil => None
         case m::Nil =>
            val select = Select.unique(funTerm, name)
@@ -566,7 +566,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
            else 
              TypeApply(t, targs)
 
-         qual.tpe.typeSymbol.memberMethod(shiftedName) match
+         qual.tpe.typeSymbol.methodMember(shiftedName) match
            case Nil =>
              Left(List())
            case m::Nil =>
@@ -675,7 +675,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                                    } else {
                                      shiftType.typeSymbol
                                    }
-                   shiftSymbol.memberMethod(xName) match
+                   shiftSymbol.methodMember(xName) match
                      case Nil =>
                         cpsCtx.runtimeAwait match
                            case None =>

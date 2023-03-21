@@ -5,7 +5,7 @@ import scala.collection._
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayBuilder
 
-class SeqAsyncShift[A, C[X] <: scala.collection.Seq[X] & scala.collection.SeqOps[X,C,C[X]], CA <: C[A]] 
+class SeqAsyncShift[A, C[X] <: scala.collection.Seq[X] & scala.collection.SeqOps[X,C,C[X]], CA <: C[A]]
        extends IterableOpsAsyncShift[A,C,CA]
            with PartialFunctionAsyncShiftBase[Int,A,CA]
    {
@@ -13,10 +13,9 @@ class SeqAsyncShift[A, C[X] <: scala.collection.Seq[X] & scala.collection.SeqOps
 
   // TODO: move to IndexedSeq
   def aggregate[F[_], B](c:C[A], m: CpsMonad[F])(
-        z: () => F[B])(seqop: (B, A) => F[B], combop: (B, B) ⇒ F[B]): F[B] =
-     c.aggregate[F[B]](z())(
+        z: () => F[B])(seqop: (B, A) => F[B]): F[B] =
+    c.foldLeft[F[B]](z())(
             (fb, a) => m.flatMap(fb)(b=>seqop(b,a)),
-            (fbx, fby) => m.flatMap(fbx)(bx=>m.flatMap(fby)(by=>combop(bx,by)))
      )
                       
   def distinctBy[F[_],B](c:CA, m: CpsMonad[F])(f: (A)=>F[B]): F[C[A]] =

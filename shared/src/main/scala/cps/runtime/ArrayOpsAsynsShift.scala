@@ -115,7 +115,7 @@ class ArrayOpsAsyncShift[A] extends AsyncShift[ArrayOps[A]] {
            monad.map(f(e)){ b =>
               if ! s._1.contains(b) then {
                  s._2.addOne(e)
-                 (s._1 + b, s._2)
+                 (s._1.union(Set(b)), s._2)
               } else s
            }
          }
