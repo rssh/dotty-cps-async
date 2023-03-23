@@ -22,8 +22,9 @@ class TestCollectionMonads {
       assert(allPairs == List((1,1), (1,2), (1,3), (2,1), (2,2), (2,3), (3,1), (3,2), (3,3)))
     }
 
-    def forceCondion(value: =>Boolean)(using CpsMonad[Iterable]): Iterable[Unit] = {
-      // insert solution here
+    def forceCondion(value: =>Boolean): Iterable[Unit] = {
+       // insert solution here
+       ???
     }
 
     @Test
