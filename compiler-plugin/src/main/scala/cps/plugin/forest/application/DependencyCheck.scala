@@ -38,13 +38,17 @@ object DependencyCheck {
                   tmpState.copy(inPossibleRhs = oldPossibleInRhs)
                 case x: Literal =>
                   state
-                case other if other.symbol != NoSymbol =>
-                  val depFound = state.depFound || syms.contains(other.symbol)
-                  val nextSyms = if (state.inPossibleRhs) then
-                    state.next + other.symbol
+                case other =>
+                  if other.symbol != NoSymbol then
+                    val depFound = state.depFound || syms.contains(other.symbol)
+                    val nextSyms = if (state.inPossibleRhs) then
+                      state.next + other.symbol
+                    else
+                      state.next
+                    foldOver(state.copy(depFound=depFound,next = nextSyms),tree)
                   else
-                    state.next
-                  foldOver(state.copy(depFound=depFound,next = nextSyms),tree)  
+                    foldOver(state,tree)
+
          }
       }
       val res = acc.apply(CheckState(syms,Set.empty,false,false),tree)

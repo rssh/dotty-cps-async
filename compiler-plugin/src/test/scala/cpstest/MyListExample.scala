@@ -6,7 +6,7 @@ sealed trait MyList[+A] {
 
   def map[B](f: A=>B ): MyList[B]
 
-  def map_async[B,F[_]](m: CpsMonad[F])(f: A=>F[B] ): F[List[B]] = ???
+//  def map_async[B,F[_]](m: CpsMonad[F])(f: A=>F[B] ): F[List[B]] = ???
 
 }
 
@@ -25,9 +25,9 @@ case class MyCons[A](head:A, tail:MyList[A]) extends MyList[A]{
     MyCons(f(head), tail.map(f))
   }
 
-  //def map_async[B](m: CpsMonad[F])(f: A => F[B]): F[List[B]] = async[F]{
-  //  MyCons(await(f(head)), await(tail.map_asyn(f)) )
-  //}
+//  def map_async[B](m: CpsMonad[F])(f: A => F[B]): F[List[B]] = async[F]{
+//    MyCons(await(f(head)), await(tail.map_asyn(f)) )
+//  }
 
 }
 
@@ -51,19 +51,35 @@ object MyListExample {
       ???
   }
 
-  //def myFunction(l:MyList[String]): Future[List[String]] = async[Future] {
+  //def myFunction1(l:MyList[String]): Future[List[String]] = async[Future] {
   //   val otherList: List[Int] = l.map(url => await(network.fetch(url)))
   //   println(otherList)
   //}
 
-  def myFunction(l: MyList[String]): CpsMonadContext[Future] ?=> MyList[String] =
+  //A=>B
+  // A=>F[B]
+
+  //def myFunction1_t(l: MyList[String]): Future[List[String]] = {
+  //  m.pure(l).flatMap{ l =>
+  //     l.map_async(m){
+  //       url => network.fetch(url).map{ otherList =>
+  //         println(otherList)
+  //       }
+  //     })
+  //  }
+    //val otherList: List[Int] = l.map(url => await(network.fetch(url)))
+    //println(otherList)
+  //}
+
+
+  def myFunction2(l: MyList[String]): CpsMonadContext[Future] ?=> MyList[String] =
   {
     val otherList: MyList[String] = l.map(url => network.fetch(url) )
     println(otherList)
     otherList
   }
 
-
+  //def myFunction2_compiler(l: MyList[String]): CpsMonadContext[Future] ?=> Future[MyList[String]] = ...
 
 
 }

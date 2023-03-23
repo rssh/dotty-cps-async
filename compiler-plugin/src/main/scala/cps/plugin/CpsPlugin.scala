@@ -11,6 +11,14 @@ class CpsPlugin extends StandardPlugin {
   override val name        = "rssh.cps"
   override val description = "cps-transform plugin"
 
+  //
+  //  def a(){
+  //     def b() { .. }
+  //     def c() { .. }
+  //  }
+  //
+  
+
   def init(options: List[String]): List[PluginPhase] = {
      val shiftedSymbols = new ShiftedSymbols()
      val selectedNodes = new SelectedNodes()

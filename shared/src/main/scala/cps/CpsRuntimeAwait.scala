@@ -1,6 +1,11 @@
 package cps
 
 
+//
+//  map: A=>B
+//  map_async: A=>F[B] ???
+//  f': A=>F[B],    f'':  A=>runtime.await(F[B]) 
+
 /**
  * When this typeclass is implemented for a monad F, 
  * dotty-cps-async can use runtime await invocations
