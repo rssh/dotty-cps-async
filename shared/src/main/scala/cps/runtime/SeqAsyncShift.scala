@@ -1,7 +1,9 @@
 package cps.runtime
 
-import cps._
-import scala.collection._
+import cps.*
+
+import scala.annotation.nowarn
+import scala.collection.*
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayBuilder
 
@@ -12,10 +14,14 @@ class SeqAsyncShift[A, C[X] <: scala.collection.Seq[X] & scala.collection.SeqOps
 
 
   // TODO: move to IndexedSeq
+  // aggregate is deprecated since 2.13.0, but our aim is to perform
+  // the correct translation even if the programmer uses the deprecated method.
+  @nowarn
   def aggregate[F[_], B](c:C[A], m: CpsMonad[F])(
-        z: () => F[B])(seqop: (B, A) => F[B]): F[B] =
-    c.foldLeft[F[B]](z())(
+        z: () => F[B])(seqop: (B, A) => F[B])(combop: (B, B) => F[B]): F[B] =
+    c.aggregate[F[B]](z())(
             (fb, a) => m.flatMap(fb)(b=>seqop(b,a)),
+            (fbx, fby) => m.flatMap(fbx)(bx=>m.flatMap(fby)(by=>combop(bx,by))),
      )
                       
   def distinctBy[F[_],B](c:CA, m: CpsMonad[F])(f: (A)=>F[B]): F[C[A]] =
