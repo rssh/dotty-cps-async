@@ -18,7 +18,7 @@ import cps.plugin.annotation.CpsDebugLevel
 class TestExample1:
 
   
-  @CpsDebugLevel(0)
+  @CpsDebugLevel(1)
   @Test def testExample1Future(): Unit = 
      import scala.concurrent.ExecutionContext.Implicits.global
      

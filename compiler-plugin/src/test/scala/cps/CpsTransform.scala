@@ -26,7 +26,11 @@ object CpsTransform {
   class InfernAsyncArg[F[_],C<:CpsMonadContext[F]](using val am: CpsMonad.Aux[F,C]) {
     
       @compileTimeOnly("this call should be eliminated by cps plugin")
-      def apply[A](expr: C ?=> A): F[A] = ???
+      def apply[A](expr: C ?=> A): F[A] =
+        ???
+
+      def applyM[A](expr: C ?=> F[A]): F[A] =
+        am.apply(c => expr(using c))
 
   }
 

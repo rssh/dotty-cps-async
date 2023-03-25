@@ -33,7 +33,6 @@ object DebugSettings {
           case other => 
             throw CpsTransformException(s"CpsDebugLevelAnnotation should have literal constant as argument, we have $other",an.tree.srcPos)
       case None =>
-        println(s"annotation not found")
         0
     if (false) {
       //don't  work after 'cc' stage  (always show name)

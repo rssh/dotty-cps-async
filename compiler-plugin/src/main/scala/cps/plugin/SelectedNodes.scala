@@ -23,10 +23,14 @@ enum DefDefSelectKind {
   case RETURN_CONTEXT_FUN(internal: DefDefSelectKind)
 }
 
-case class DefDefSelectRecord(
-                               val kind: DefDefSelectKind,
-                               var internal: Boolean
-                             )
+/**
+ * Record for defDef, which was selected for transformation.
+ * Note, that this shouln not be case class, because it used in MutableSymbolMap
+ * and it is important to have equals/hashCode methods not depended from value (i.e. - system).
+ * @param kind
+ * @param internal
+ */
+class DefDefSelectRecord(val kind: DefDefSelectKind, var internal: Boolean)
 
 
 class SelectedNodes {
@@ -34,7 +38,19 @@ class SelectedNodes {
   val allDefDefs: MutableSymbolMap[DefDefSelectRecord] = new MutableSymbolMap()
 
   def addDefDef(sym: Symbol, kind: DefDefSelectKind): Unit = {
-    allDefDefs.update(sym, DefDefSelectRecord(kind,false))
+    allDefDefs.get(sym) match
+      case Some(r) =>
+        throw IllegalStateException(s"defDef already exists: ${sym}")
+      case None =>
+        allDefDefs.update(sym, DefDefSelectRecord(kind,false))
+  }
+
+  def markAsInternal(sym: Symbol): Unit = {
+    allDefDefs.get(sym) match
+      case Some(r) =>
+        r.internal= true
+      case None =>
+        throw IllegalStateException(s"defDef not found in markIntenal: ${sym}")
   }
 
   def defDefKindIfTopLevel(sym:Symbol): Option[DefDefSelectKind] = {
@@ -101,7 +117,7 @@ object SelectedNodes {
         paramssHead match
           case paramsHead :: paramTail =>
             paramsHead match
-              case vd: ValDef =>
+              case vd: Trees.ValDef[?] =>
                 val filtered = paramssHead.asInstanceOf[List[ValDef]].filter((p: ValDef) => CpsTransformHelper.isCpsMonadContextType(p.tpt.tpe))
                 findAllCpsMonadContextParam(paramssTail, filtered ++ acc)
               case _ =>

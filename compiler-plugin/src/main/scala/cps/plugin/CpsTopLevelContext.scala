@@ -10,7 +10,8 @@ import ast.tpd.*
 case class CpsTopLevelContext(
   //val shiftedSymbols: ShiftedSymbols,
   val monadType: Type,  // F[_]
-  val cpsMonadRef: Tree,  // summon[CpsTryMonad[F]]
+  val cpsMonadValDef: ValDef, // val m = summon[CpsTryMonad[F]]
+  val cpsMonadRef: Tree,  // m
   val cpsMonadContextRef: Tree, // TODO: many contexts, if we have context per effect ?
   val optRuntimeAwait: Option[Tree] ,
   val settings: DebugSettings

@@ -29,7 +29,7 @@ object CpsTransformHelper {
   }
 
   /**
-   *@param contextFunctionArgType is CpsTransform[F]
+   *@param contextFunctionArgType is CpsMonadContext[F]
    *@return F
    **/
   def extractMonadType(contextFunctionArgType: Type, pos: SrcPos)(using Context): Type =
