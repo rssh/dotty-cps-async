@@ -17,13 +17,13 @@ object TypeApplyTransform {
 
       def apply(taTerm: TypeApply, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
           val funCps = RootTransform(taTerm.fun,owner, nesting+1)
-          val newOp = SelectTypeApplyCpsTree.OpTypeApply(taTerm)
+          val newOp = SelectTypeApplyTypedCpsTree.OpTypeApply(taTerm)
           funCps match
-            case SelectTypeApplyCpsTree(records,nested,fcpsOrigin) =>
-                SelectTypeApplyCpsTree(records.appended(newOp),nested,taTerm)
+            case SelectTypeApplyTypedCpsTree(records,nested,fcpsOrigin) =>
+                SelectTypeApplyTypedCpsTree(records.appended(newOp),nested,taTerm)
             case _ =>
                 val records = IndexedSeq(newOp)
-                SelectTypeApplyCpsTree(records,funCps,taTerm)
+                SelectTypeApplyTypedCpsTree(records,funCps,taTerm)
       }
 
 

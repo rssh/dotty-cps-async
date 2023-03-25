@@ -16,22 +16,10 @@ import cps.plugin.*
 object TypedTransform {
 
   def apply(typedTerm: Typed, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
-     val nested = RootTransform(typedTerm.expr, owner, nesting+1)
-     nested.unpure match
-       case Some(value) =>
-         if (nested.isOriginEqSync) {
-           CpsTree.unchangedPure(typedTerm,owner)
-         } else {
-           CpsTree.pure(typedTerm, owner, value)
-         }
-       case None =>
-         ???
-         /*
-          nested.asyncKind match
-            case Async(internalKind) =>
-              ???
-          val changedType = CpsTransformHelper.cpsTransformedType(typedTerm.tpt, summon[CpsTopLevelContext].monadType)
-         */
+    val nested = RootTransform(typedTerm.expr, owner, nesting + 1)
+
+    val nType = CpsTransformHelper.cpsTransformedType(typedTerm.tpt.tpe, summon[CpsTopLevelContext].monadType)
+    nested.typed(typedTerm)
   }
 
 }

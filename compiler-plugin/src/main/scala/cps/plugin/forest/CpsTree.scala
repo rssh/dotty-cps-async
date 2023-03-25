@@ -14,6 +14,21 @@ import cps.plugin.*
 
 /**
  * CpsTree -- transfomed element
+ *
+ * Hierarchy:
+ *  CpsTree
+ *    |- SyncCpsTree
+ *    |    |- PureCpsTree
+ *    |    |- UnitCpsTree
+ *    |- AsyncCpsTree
+ *    |    |-  AsyncTermCpsTree
+ *    |    | - MapCpsTree
+ *    |    | - FlatMapCpsTree
+ *    |- LambdaCpsTree
+ *    |- SeqCpsTree
+ *    |- BlockBoundsCpsTree
+ *    |- SelectTypeApplyTypedCpsTree
+ *
  **/
 sealed trait CpsTree {
   
@@ -33,7 +48,7 @@ sealed trait CpsTree {
   /**
    * is this is a sync-tree ?
    **/
-  def unpure(using Context): Option[Tree] 
+  def unpure(using Context, CpsTopLevelContext): Option[Tree]
 
   def transformed(using Context, CpsTopLevelContext): Tree
 
@@ -42,7 +57,24 @@ sealed trait CpsTree {
   
   def asyncKind: AsyncKind
 
-  def isOriginEqSync(using Context): Boolean =
+  // TODO
+  def asyncKindAccessor: CpsTreeKindAccessor =
+    asyncKind match
+      case AsyncKind.Sync =>
+        new SyncCpsTreeAccessor {
+          override def cpsTree = CpsTree.this
+        }
+      case k: AsyncKind.Async =>
+        new AsyncCpsTreeAccessor {
+          override def cpsTree = CpsTree.this
+        }
+      case k: AsyncKind.AsyncLambda =>
+        new LambdaCpsTreeAccessor {
+          override def cpsTree = CpsTree.this
+        }
+
+
+  def isOriginEqSync(using Context, CpsTopLevelContext): Boolean =
     unpure match
       case None => false
       case Some(unpureTerm) => (unpureTerm eq origin)
@@ -86,14 +118,22 @@ sealed trait CpsTree {
    *  one to f' = summon[RuntiemAwait[F].await(f(x1..xN))(monad,monad-context)]
    *  and return CpsTree with f' in unpure
    *  otherwise - unchanged or throw error
+   *  TODO: move to Lambda
    *
    *  precondition:  kind  <: AsyncLambda(*)
    **/
   def applyRuntimeAwait(runtimeAwait: Tree)(using Context, CpsTopLevelContext): CpsTree
 
-  def select(name: Name, origin: Select, otpe: Type): CpsTree =
-    SelectTypeApplyCpsTree(
-      List(SelectTypeApplyCpsTree.OpSelect(origin)),
+  def select(origin: Select)(using Context, CpsTopLevelContext): CpsTree =
+    SelectTypeApplyTypedCpsTree(
+      List(SelectTypeApplyTypedCpsTree.OpSelect(origin)),
+      this,
+      origin
+    )
+
+  def typed(origin: Typed)(using Context, CpsTopLevelContext): CpsTree =
+    SelectTypeApplyTypedCpsTree(
+      List(SelectTypeApplyTypedCpsTree.OpTyped(origin)),
       this,
       origin
     )
@@ -123,13 +163,14 @@ object CpsTree {
 }
 
 
-sealed trait SyncCpsTree extends CpsTree {
+sealed trait SyncCpsTree extends CpsTree with SyncCpsTreeAccessor {
 
   def asyncKind: AsyncKind = AsyncKind.Sync
+  override def asyncKindAccessor:CpsTreeKindAccessor = this
 
-  def getUnpure(using Context): Tree
+  def getUnpure(using Context, CpsTopLevelContext): Tree
 
-  def unpure(using Context): Option[Tree] = Some(getUnpure)
+  def unpure(using Context, CpsTopLevelContext): Option[Tree] = Some(getUnpure)
 
   override def transformed(using Context, CpsTopLevelContext): Tree = {
     val pureName = "pure".toTermName
@@ -149,6 +190,9 @@ sealed trait SyncCpsTree extends CpsTree {
     //not needed
     this
 
+  // asyncKindAccessor methods
+  override def cpsTree = this
+
 
 }
 
@@ -159,9 +203,9 @@ case class PureCpsTree(
                         val term: Tree
 ) extends SyncCpsTree {
 
-  override def unpure(using Context) = Some(term) 
+  override def unpure(using Context, CpsTopLevelContext) = Some(term)
 
-  override def getUnpure(using Context) = term 
+  override def getUnpure(using Context,CpsTopLevelContext) = term
 
   override def appendInBlock(next: CpsTree)(using Context, CpsTopLevelContext): CpsTree =
     SeqCpsTree(origin,owner,IndexedSeq(this),next.changeOwner(owner))
@@ -176,7 +220,31 @@ case class PureCpsTree(
     else
       PureCpsTree(origin.changeOwner(owner,newOwner),newOwner,term.changeOwner(owner,newOwner))
 
-  
+  override def select(origin: Select)(using Context, CpsTopLevelContext): CpsTree = {
+    if (isOriginEqSync && (origin.qualifier eq this.origin)) {
+      val r = CpsTree.unchangedPure(origin, owner)
+      if (owner eq origin.symbol.owner) {
+        r
+      } else {
+        r.changeOwner(origin.symbol.owner)
+      }
+    } else {
+      super.select(origin)
+    }
+  }
+
+  override def typed(origin: Typed)(using Context, CpsTopLevelContext): CpsTree = {
+    if (isOriginEqSync && (origin.expr eq this.origin))
+      val r = CpsTree.unchangedPure(origin, owner)
+      if (owner eq origin.symbol.owner)
+        r
+      else
+        r.changeOwner(origin.symbol.owner)
+    else
+      super.typed(origin)
+  }
+
+
   override def show(using Context): String = {
       s"PureCpsTree(t=${term.show})"
   }    
@@ -198,8 +266,7 @@ case class SeqCpsTree(
 
   override def asyncKind = last.asyncKind
 
-
-  override def unpure(using Context) = {
+  override def unpure(using Context, CpsTopLevelContext) = {
     last.asyncKind match
       case AsyncKind.Sync =>
         val stats = prevs.map{ t =>
@@ -253,7 +320,7 @@ sealed trait AsyncCpsTree extends CpsTree {
 
   override def asyncKind = AsyncKind.Async(internalAsyncKind)
 
-  override def unpure(using Context) = None
+  override def unpure(using Context, CpsTopLevelContext) = None
 
   override def applyRuntimeAwait(runtimeAwait: Tree)(using Context, CpsTopLevelContext): CpsTree =
     val tctx = summon[CpsTopLevelContext]
@@ -373,7 +440,7 @@ case class MapCpsTreeArgument(
     body:  CpsTree
 )  {
 
-  def makeLambda(mapCpsTree:MapCpsTree)(using Context): Block = {
+  def makeLambda(mapCpsTree:MapCpsTree)(using Context, CpsTopLevelContext): Block = {
     body.unpure match
       case None =>
         throw CpsTransformException("attempt use MapCpsTree with async argumemt. use FlatMapCpsTree instead",body.origin.srcPos)
@@ -478,7 +545,7 @@ case class LambdaCpsTree(
 
   override def asyncKind = AsyncKind.AsyncLambda(cpsBody.asyncKind)
 
-  override def unpure(using Context): Option[Tree] = {
+  override def unpure(using Context, CpsTopLevelContext): Option[Tree] = {
     cpsBody.unpure match
       case None => None
       case Some(unpureBody) =>
@@ -577,7 +644,7 @@ case class LambdaCpsTree(
 case class UnitCpsTree(override val origin: Tree,
                        override val owner: Symbol) extends SyncCpsTree {
 
-    override def getUnpure(using Context): Tree = origin
+    override def getUnpure(using Context, CpsTopLevelContext): Tree = origin
 
     override def appendInBlock(next: CpsTree)(using Context, CpsTopLevelContext): CpsTree = next
 
@@ -599,7 +666,7 @@ case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
     override def origin = internal.origin
     override def owner = internal.owner
 
-    override def unpure(using Context) = internal.unpure
+    override def unpure(using Context, CpsTopLevelContext) = internal.unpure
 
     override def transformed(using Context, CpsTopLevelContext) = internal.transformed
 
@@ -622,7 +689,7 @@ case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
 
 }
 
-case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation], 
+case class SelectTypeApplyTypedCpsTree(records: Seq[SelectTypeApplyTypedCpsTree.Operation],
                                   nested: CpsTree,  
                                   override val origin:Tree,
                                 ) extends CpsTree {
@@ -638,7 +705,7 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
                                    nested.originType.widen, Symbols.NoSymbol)
           val param = ValDef(paramSym, EmptyTree)
           //TODO:  we can not change owner in bodu,
-          val lambda = TransformUtil.makeLambda(List(param),originType.widen, owner,  prefixTerm(ref(paramSym)), ctx.owner)
+          val lambda = TransformUtil.makeLambda(List(param),originType.widen, owner,  prefixTerm(ref(paramSym),false), ctx.owner)
           val mapName = "map".toTermName
           Apply(
             Apply(
@@ -654,11 +721,11 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
           if (nested.isOriginEqSync) then
             origin
           else 
-            prefixTerm(nestedTerm)   
+            prefixTerm(nestedTerm, true)
     } 
 
-    override def unpure(using Context) = {
-      nested.unpure map (prefixTerm _)
+    override def unpure(using Context, CpsTopLevelContext) = {
+      nested.unpure map (prefixTerm(_,true))
     }
   
     override def withOrigin(newOrigin: Tree) =
@@ -668,16 +735,19 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
       copy(nested = nested.applyRuntimeAwait(runtimeAwait))
   
 
-    override def select(name: Name, origin: Select, otpe: Type): CpsTree =
-      copy(records = records.appended(SelectTypeApplyCpsTree.OpSelect(origin)))
-      
+    override def select(origin: Select)(using Context, CpsTopLevelContext): CpsTree =
+      copy(records = records.appended(SelectTypeApplyTypedCpsTree.OpSelect(origin)))
+
+    override def typed(origin: Typed)(using Context, CpsTopLevelContext): CpsTree =
+      copy(records = records.appended(SelectTypeApplyTypedCpsTree.OpTyped(origin)))
+
     override def changeOwner(newOwner:Symbol)(using Context) =
       copy(nested = nested.changeOwner(newOwner))  
          
 
-    private def prefixTerm(nestedTerm: Tree)(using Context): Tree =
+    private def prefixTerm(nestedTerm: Tree, isPure: Boolean)(using Context, CpsTopLevelContext): Tree =
       records.foldLeft(nestedTerm){(s,e) => 
-        e.prefixTerm(s)
+        e.prefixTerm(s, isPure)
       }
 
     override def show(using Context): String = {
@@ -688,16 +758,16 @@ case class SelectTypeApplyCpsTree(records: Seq[SelectTypeApplyCpsTree.Operation]
 
 }
 
-object SelectTypeApplyCpsTree {
+object SelectTypeApplyTypedCpsTree {
 
    sealed trait Operation {
-      def prefixTerm(term:Tree)(using Context): Tree
+      def prefixTerm(term:Tree, isPure: Boolean)(using Context, CpsTopLevelContext): Tree
       def show(using Context): String
    }
 
    case class OpSelect(origin:Select) extends Operation {
 
-      override def prefixTerm(term:Tree)(using Context): Tree =
+      override def prefixTerm(term:Tree, isPure: Boolean)(using Context, CpsTopLevelContext): Tree =
         val sym = origin.symbol
         val ntpe = TermRef(term.tpe, origin.name.toTermName, sym.denot.asSeenFrom(term.tpe))
         Select(term,Types.TermRef(term.tpe,sym)).withType(ntpe).withSpan(origin.span)
@@ -709,7 +779,7 @@ object SelectTypeApplyCpsTree {
 
    case class OpTypeApply(origin:TypeApply) extends Operation {
 
-      override def prefixTerm(term:Tree)(using Context): Tree = {
+      override def prefixTerm(term:Tree, isPure: Boolean)(using Context, CpsTopLevelContext): Tree = {
         if (origin.args.isEmpty) then
           term
         else
@@ -719,6 +789,22 @@ object SelectTypeApplyCpsTree {
       override def show(using Context) = {
         val targs = origin.args.map(_.show).mkString(",")
         s"[$targs]"
+      }
+
+   }
+
+   case class OpTyped(origin:Typed) extends Operation {
+
+      override def prefixTerm(term:Tree, isPure: Boolean)(using Context, CpsTopLevelContext): Tree = {
+        if (isPure) then
+          Typed(term,origin.tpt).withSpan(origin.span)
+        else
+          val nTpt = CpsTransformHelper.cpsTransformedType(origin.tpt.tpe, summon[CpsTopLevelContext].monadType)
+          Typed(term,TypeTree(nTpt)).withSpan(origin.span)
+      }
+
+      override def show(using Context) = {
+        s"typedCps[${origin.tpt.show}]"
       }
 
    }

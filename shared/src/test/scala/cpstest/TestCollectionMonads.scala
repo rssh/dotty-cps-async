@@ -22,13 +22,14 @@ class TestCollectionMonads {
       assert(allPairs == List((1,1), (1,2), (1,3), (2,1), (2,2), (2,3), (3,1), (3,2), (3,3)))
     }
 
-    //def forceCondion(value: =>Boolean)(using CpsMonad[Iterable]): Iterable[Unit] = {
+    def forceCondion(value: =>Boolean)(using CpsMonad[Iterable]): Iterable[Unit] = {
       // insert solution here
-    //}
+      ???
+    }
 
     //@Test
     //def testAllPairsForIterableWithForceCondition() = {
-    //  val l = List(1, 2, 3)
+    // val l = List(1, 2, 3)
     //  val result = reify[Iterable] {
     //    val x = reflect(l)
     //    val y = reflect(l)
