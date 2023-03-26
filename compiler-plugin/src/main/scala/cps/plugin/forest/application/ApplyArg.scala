@@ -22,6 +22,7 @@ sealed trait ApplyArg {
 
     def isAsync: Boolean
     def isLambda: Boolean
+    def isMonadContext: Boolean
 
     def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)]
     def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree
@@ -32,34 +33,34 @@ sealed trait ApplyArg {
 
 object ApplyArg {
 
-  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, owner: Symbol, dependFromLeft: Boolean, nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
+  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, isMonadContext: Boolean, owner: Symbol, dependFromLeft: Boolean, nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
     expr match
       case SeqLiteral(elems, elementtp) =>
         RepeatApplyArg(paramName, paramType, elems.zipWithIndex.map{ (p,i) =>
           val newName = (paramName.toString + i.toString).toTermName
-          ApplyArg(p,newName,elementtp.tpe,isByName,owner, dependFromLeft,  nesting)
+          ApplyArg(p,newName,elementtp.tpe,isByName, isMonadContext, owner, dependFromLeft,  nesting)
         })
       case _ =>
         val cpsExpr = RootTransform(expr, owner, nesting+1)
         if (isByName) then
-          ByNameApplyArg(paramName, paramType, cpsExpr)
+          ByNameApplyArg(paramName, paramType, cpsExpr, isMonadContext)
         else
           paramType match
             case AnnotatedType(tp, an) if an.symbol == defn.InlineParamAnnot =>
-                InlineApplyArg(paramName,tp,cpsExpr)
+                InlineApplyArg(paramName,tp,cpsExpr,isMonadContext)
             case AnnotatedType(tp, an) if an.symbol == defn.ErasedParamAnnot =>
-                ErasedApplyArg(paramName,tp,expr)
+                ErasedApplyArg(paramName,tp,expr,isMonadContext)
             case _ =>
                 cpsExpr.asyncKind match
                   case AsyncKind.Sync if !dependFromLeft =>
-                    PlainApplyArg(paramName,paramType,cpsExpr,None)
+                    PlainApplyArg(paramName,paramType,cpsExpr,None,isMonadContext)
                   case AsyncKind.AsyncLambda(_) =>
-                    PlainApplyArg(paramName,paramType,cpsExpr,None)
+                    PlainApplyArg(paramName,paramType,cpsExpr,None,isMonadContext)
                   case _ =>
                     val sym = newSymbol(owner,paramName,Flags.EmptyFlags,paramType,NoSymbol)
                     val optRhs =  cpsExpr.unpure
                     val valDef =  ValDef(sym.asTerm, optRhs.getOrElse(EmptyTree))
-                    PlainApplyArg(paramName,paramType,cpsExpr,Some(valDef))
+                    PlainApplyArg(paramName,paramType,cpsExpr,Some(valDef), isMonadContext)
   }
 
 }
@@ -84,6 +85,7 @@ case class PlainApplyArg(
   override val tpe: Type,
   override val expr: CpsTree,  
   val optIdentValDef: Option[ValDef],
+  val isMonadContext: Boolean
 ) extends ExprApplyArg  {
 
   override def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] = {
@@ -133,12 +135,15 @@ case class PlainApplyArg(
 case class RepeatApplyArg(
   override val name: TermName,
   override val tpe: Type,
-  elements: Seq[ApplyArg]
+  elements: Seq[ApplyArg],
 ) extends ApplyArg {
 
   override def isAsync = elements.exists(_.isAsync)
 
   override def isLambda = elements.exists(_.isLambda)
+
+  override def isMonadContext: Boolean = elements.exists(_.isMonadContext)
+
 
   override def flatMapsBeforeCall(using Context) = 
     elements.foldLeft(IndexedSeq.empty[(CpsTree,ValDef)]){ (s,e) =>
@@ -164,7 +169,8 @@ case class RepeatApplyArg(
 case class ByNameApplyArg(
   override val name: TermName,
   override val tpe: Type,
-  override val expr: CpsTree
+  override val expr: CpsTree,
+  override val isMonadContext: Boolean,
 ) extends ExprApplyArg  {
 
   override def isLambda = true
@@ -211,7 +217,8 @@ case class ByNameApplyArg(
 case class InlineApplyArg(
   override val name: TermName,
   override val tpe: Type,
-  override val expr: CpsTree
+  override val expr: CpsTree,
+  override val isMonadContext: Boolean
 ) extends ExprApplyArg {
 
 
@@ -241,7 +248,8 @@ case class InlineApplyArg(
 case class ErasedApplyArg(
   override val name: TermName,
   override val tpe: Type,
-           val exprTree: Tree
+           val exprTree: Tree,
+  override val isMonadContext: Boolean
 ) extends ApplyArg {
 
   def isAsync: Boolean =

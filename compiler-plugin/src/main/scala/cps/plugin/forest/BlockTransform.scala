@@ -14,7 +14,7 @@ object BlockTransform {
 
   def apply(term: Block, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
     term match
-      case Block((ddef: DefDef)::Nil, closure: Closure)  =>
+      case Block((ddef: DefDef)::Nil, closure: Closure)  if ddef.symbol == closure.meth.symbol =>
         // TODO:
         //   if we here, this is not an argument of function.
         val cpsBody = {

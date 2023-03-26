@@ -28,6 +28,8 @@ trait MethodParamsDescriptor {
           case _: ExprType => true
           case _ => false
 
+  def  isMonadContext(index: Int, pos: SrcPos)(using Context): Boolean
+
 }
 
 
@@ -58,6 +60,10 @@ class MethodTypeBasedParamsDescriptor(mt: MethodType) extends MethodParamsDescri
          paramTypes(index)
        else
         throw CpsTransformException(s"method $mt have no parameter with index $index",pos)
+
+  override def  isMonadContext(index: Int, pos: SrcPos)(using Context): Boolean =
+    mt.isContextualMethod && CpsTransformHelper.isCpsMonadContextType(paramTypes(index))
+
 
   private lazy val paramNames = mt.paramNames.toIndexedSeq
   private lazy val paramIndexes = paramNames.zipWithIndex.toMap

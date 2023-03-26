@@ -14,6 +14,7 @@ import cps.plugin.forest.*
 sealed trait ApplyArgList {
   def isAsync: Boolean
   def containsAsyncLambda: Boolean
+  def containsMonadContext: Boolean
   def show(using Context):String
 }
 
@@ -24,6 +25,7 @@ case class ApplyTermArgList(
 ) extends ApplyArgList {
   override def isAsync = args.exists(_.isAsync)
   override def containsAsyncLambda = args.exists(_.isLambda)
+  override def containsMonadContext = args.exists(_.isMonadContext)
 
   override def show(using Context): String = {
     s"ApplyTermArgList(${args.map(_.show)})"
@@ -37,6 +39,7 @@ case class ApplyTypeArgList(
 ) extends ApplyArgList {
   override def isAsync = false
   override def containsAsyncLambda = false
+  override def containsMonadContext = false
   override def show(using Context): String = {
     s"ApplyTypeArgList(${args})"
   }
@@ -59,6 +62,7 @@ object ApplyTermArgList {
           mt.paramName(s.index, a.srcPos).toTermName,  
           mt.paramType(s.index, a.srcPos),
           mt.isByName(s.index, a.srcPos),
+          mt.isMonadContext(s.index, a.srcPos),
           owner,
           depResult.canBeDependent,
           nesting
