@@ -16,7 +16,7 @@ import cps.plugin.forest.*
 import dotty.tools.dotc.ast.{Trees, tpd}
 import dotty.tools.dotc.util.SrcPos
 
-class PhaseCps(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase {
+class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
   val phaseName = "rssh.cps"
 
@@ -174,8 +174,7 @@ class PhaseCps(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) exte
   private def makeCpsTopLevelContext(cpsMonadContext: Tree, tree: Tree, optSettings:Option[DebugSettings]=None)(using Context): CpsTopLevelContext =  {
     val monadInit = Select(cpsMonadContext, "monad".toTermName).withSpan(tree.span)
     val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, tree.srcPos)
-    val optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(monadType, tree.span)
-    //val insideContext =
+    val optRuntimeAwait = if(settings.useLoom) CpsTransformHelper.findRuntimeAwait(monadType, tree.span) else None
     val monadValDef = SyntheticValDef("m".toTermName, monadInit).changeOwner(summon[Context].owner, tree.symbol)
     val monadRef = ref(monadValDef.symbol)
     val debugSettings = optSettings.getOrElse(DebugSettings.make(tree))
