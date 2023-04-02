@@ -66,6 +66,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
             throw CpsTransformException("Lambda function was expected, we have $tree",tree.srcPos)
     if (debugSettings.printCode) then
       report.log(s"transforned: ${retval.show}",tree.srcPos)
+      report.log(s"transforned: ${retval}",tree.srcPos)
     retval
   }
 

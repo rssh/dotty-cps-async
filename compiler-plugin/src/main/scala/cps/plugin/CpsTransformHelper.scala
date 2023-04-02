@@ -23,20 +23,9 @@ object CpsTransformHelper {
   def isCpsMonadContextType(tpe:Type)(using Context): Boolean = {
      tpe.dealias match
        case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsMonadContextClassSymbol) =>
-         println(s"isCpsMonadContextType(${tpe.show})=true")
          true
        case other =>
-         val genericMonadContext = cpsMonadContextClassSymbol.typeRef.appliedTo(TypeBounds.empty)
-
-         val retval = other.baseType(cpsMonadContextClassSymbol) != NoType
-         val stringType = if (other == tpe) {
-              s"${tpe.show}"
-         } else {
-              s"${tpe.show} [-> ${other.show}]"
-         }
-         println(s"isCpsMonadContextType($stringType,${other.typeSymbol.showFullName}=$retval gmc=${genericMonadContext}")
-         //println(s"gmc.parents=${genericMonadContext.parents}")
-         retval
+         other.baseType(cpsMonadContextClassSymbol) != NoType
   }
 
   /**

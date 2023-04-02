@@ -30,7 +30,6 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
         override def traverse(tree: Tree)(using Context): Unit = {
             tree match
               case fun: DefDef if (fun.symbol != topTree.symbol) =>
-                println(s"selectPhase: check ${fun.symbol.showFullName} (${fun.symbol.id}) at ${tree.srcPos.startPos.show}")
                 selectedNodes.getDefDefRecord(tree.symbol) match
                   case Some(r) =>
                     if (!r.internal) {
@@ -39,7 +38,6 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
                       traverseChildren(tree)
                     }
                   case None =>
-                    println(s"selectPhase: no entry for ${fun.symbol.showFullName} (${fun.symbol.id}) at ${tree.srcPos.startPos.show}")
                     traverseChildren(tree)
               case _ =>
                 traverseChildren(tree)
@@ -54,8 +52,6 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
 object PhaseSelect {
 
   val phaseName = "rssh.cpsSelect"
-
-
 
 
 }

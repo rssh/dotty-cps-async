@@ -145,6 +145,17 @@ sealed trait CpsTree {
 
 }
 
+
+/*
+
+  Block(DefDef(....), ref(closure))
+
+  Block(List(valDef,valDef), expr) 
+  { v1=.., v2=..,  expr }
+
+ 
+
+*/
 object CpsTree {
 
   def unchangedPure(origin: Tree, owner: Symbol): PureCpsTree =

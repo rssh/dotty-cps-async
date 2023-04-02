@@ -29,7 +29,11 @@ class TestExample1:
 
      val r = Await.result(fr, 30.seconds)
      assert(r == 3)
-  
+
+  def myFun(): Unit = {
+    println(1)
+  }
+
   /*
   @Test def testExample1Free(): Unit = 
      val fr = cpsAsync[Free] {

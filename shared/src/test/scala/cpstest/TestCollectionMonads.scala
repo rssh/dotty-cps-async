@@ -27,19 +27,23 @@ class TestCollectionMonads {
       ???
     }
 
-    //@Test
-    //def testAllPairsForIterableWithForceCondition() = {
-    // val l = List(1, 2, 3)
-    //  val result = reify[Iterable] {
-    //    val x = reflect(l)
-    //    val y = reflect(l)
-    //    reflect(forceCondion(x == y+1))
-    //    assert(x == y+1)
-    //    (x,y)
-    //  }
-    //  //println(s"allPairs=${allPairs}")
-    //  assert(result == List((2, 1), (3, 2)))
-    //}
+    transparent inline guard(inline value: Boolean)(using CpsMonad[Iterable]): Unit = {
+       reflect(forceCondion(value))
+    }
+
+    @Test
+    def testAllPairsForIterableWithForceCondition() = {
+      val l = List(1, 2, 3)
+      val result = reify[Iterable] {
+        val x = reflect(l)
+        val y = reflect(l)
+        guard(x == y+1)
+        assert(x == y+1)
+        (x,y)
+      }
+      //println(s"allPairs=${allPairs}")
+      assert(result == List((2, 1), (3, 2)))
+    }
 
     @Test
     def testAllPairsForVector() = {

@@ -1,7 +1,6 @@
 package cps.plugin.forest
 
 import scala.annotation.tailrec
-
 import dotty.tools.dotc.*
 import ast.tpd.*
 import core.*
@@ -12,18 +11,26 @@ import core.Symbols.*
 import core.SymDenotations.*
 import util.Spans.Span
 import core.Types.*
-
-
 import cps.plugin.*
 import cps.plugin.forest.application.*
 import QuoteLikeAPI.*
+import cps.{CpsMonadContext, CpsMonadConversion}
 
 
 object ApplyTransform {
 
   def apply(term: Apply, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
       //Log.trace(s"Apply: origin=${term.show}", nesting)
-      val cpsTree = applyMArgs(term,owner, nesting, Nil)
+      val cpsTree = term match
+        case Apply(Apply(TypeApply(fCpsAwaitCn,List(tf,ta,tg)),List(fa)), List(gc,gcn)) =>
+             println(s"cpsAwait form at : ${term.show},  symbol=${fCpsAwaitCn.symbol}")
+             if fCpsAwaitCn.symbol == Symbols.requiredMethod("cps.cpsAwait") then
+                //def cpsAwait[F[_], A, G[_]](fa: F[A])(using CpsMonadContext[G], CpsMonadConversion[F, G]): A =
+                Log.info(s"cpsAwait: ${term.show}", nesting,term.srcPos)
+                ???
+             else
+               applyMArgs(term,owner, nesting, Nil)
+        case _ => applyMArgs(term,owner, nesting, Nil)
       //Log.trace(s"Apply result: ${cpsTree}", nesting)
       cpsTree
   }
@@ -263,37 +270,42 @@ object ApplyTransform {
         case success => Right(searchResult)
     }
 
+
     def retrieveShiftedMethod(obj: Tree, methodName: Name, targs:List[Tree] ): Tree = {
 
       tryFindInplaceAsyncShiftedMethods(obj.tpe.widen.classSymbol, methodName, Set("_async","Async","$cps")) match
         case Left(err) =>
+          ???
           //TODO: debug output
-          resolveAsyncShiftedObject(nObj) match
-            case Right(value) =>
+          resolveAsyncShiftedObject(obj) match
+            case Right(nObj) =>
               // TODO:
               // 1. check that method exists
-              val method = nObj.typeSymbol.member(methodName) 
-              if (!method.exists) then
-                throw CpsTransformException(s"Can't find async-shifted method ${methodName} in ${nObj}", fun.span)
+              //   TODO: we should go throught all list.
+              val methods = nObj.tpe.typeSymbol.lookupPrefix.allMembers.filter(_.symbol.name == methodName)
+              if (methods.isEmpty) then
+                throw CpsTransformException(s"Can't find async-shifted method ${methodName} in ${nObj}", fun.srcPos)
               // is we need additional type-args?
 
-              nObj.select(methodName)
+              //nObj.select(methodName)
               // 2. check that method have same type-args as in origin method
               ???
             case Left(err1) =>
-              reporting.error("Can't find async-shifted method or implicit AsyncShift for "+obj.show, fun.span)
-              reporting.error(s" method search: $err", fun.span)
-              reporting.error(s" implicit AsyncShifg object search: $err1", fun.span)
-              throw CpsTransformException("Cn't find async-shifted method or implicit AsyncShift for "+obj.show, fun.span)
+              report.error("Can't find async-shifted method or implicit AsyncShift for "+obj.show, fun.srcPos)
+              report.error(s" method search: $err", fun.srcPos)
+              report.error(s" implicit AsyncShifg object search: $err1", fun.srcPos)
+              throw CpsTransformException("Cn't find async-shifted method or implicit AsyncShift for "+obj.show, fun.srcPos)
         case Right(methodsWithShape) =>
           methodsWithShape.headOption match
             case Some((sym,shape)) =>
+              // TODO: we should check nArgs, because now typeAppl
               val funWithoutTypeapply =  Select(obj,TermRef(obj.tpe,sym)).withSpan(fun.span)
               shape match
                 case ShiftedArgumentsShape.SAME_PARAMS =>
                   funWithoutTypeapply
                 case ShiftedArgumentsShape.EXTRA_TYPEPARAM =>
-                  TypeApply(funWithoutTypeapply, tctx.monadType :: targs).withSpan(fun.span)
+                  val tctx = summon[CpsTopLevelContext]
+                  TypeApply(funWithoutTypeapply, TypeTree(tctx.monadType) :: targs).withSpan(fun.span)
                 case ShiftedArgumentsShape.EXTRA_TYPEPARAM_LIST =>
                   TypeApply(funWithoutTypeapply, targs :+ TypeTree(obj.tpe.widen)).withSpan(fun.span)
             case None => EmptyTree
