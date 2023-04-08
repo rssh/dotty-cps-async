@@ -1,5 +1,5 @@
-val dottyVersion = "3.3.1-RC1-bin-SNAPSHOT"
-//val dottyVersion = "3.2.2"
+//val dottyVersion = "3.3.1-RC1-bin-SNAPSHOT"
+val dottyVersion = "3.2.2"
 
 ThisBuild/version := "0.9.17-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
@@ -100,7 +100,7 @@ lazy val cpsLoomJVM = project.in(file("jvm-loom"))
 
 
 lazy val compilerPlugin = project.in(file("compiler-plugin"))
-                           .dependsOn(cps.jvm)  //temporary (?)
+                           .dependsOn(cps.jvm)
                            .settings(sharedSettings)
                            .settings(
                               name := "dotty-cps-compiler-plugin",
@@ -109,13 +109,13 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
                                   "com.novocode" % "junit-interface" % "0.11" % Test,
                               ),
                               // TODO: split test into subdirectories.
-                              Test/scalacOptions ++= {
-                                 val jar = (Compile / packageBin).value
-                                 Seq(s"-Xplugin:${jar.getAbsolutePath}", s"-Jdummy=${jar.lastModified}",
-                                      "-color:never",
-                                      "-explain"
-                                    ) 
-                              },
+                              //Test/scalacOptions ++= {
+                              //   val jar = (Compile / packageBin).value
+                              //   Seq(s"-Xplugin:${jar.getAbsolutePath}", s"-Jdummy=${jar.lastModified}",
+                              //        "-color:never",
+                              //        "-explain"
+                              //      )
+                              //},
                               Test/fork := true
                            )
 

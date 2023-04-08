@@ -72,12 +72,8 @@ object MyListExample {
   //}
 
   //
-  //def myFunction2(l: MyList[String]): CpsMonadContext[Future] ?=> MyList[String] =
-  //{
-  //  val otherList: MyList[String] = l.map(url => network.fetch(url) )
-  //  println(otherList)
-  //  otherList
-  //}
+  def fetchList(urls: List[String]): CpsMonadContext[Future] ?=> List[String] =
+      urls.map(url => network.fetch(url) )
 
   //def myFunction2_compiler(l: MyList[String]): CpsMonadContext[Future] ?=> Future[MyList[String]] = ...
 
