@@ -27,11 +27,11 @@ object ApplyTransform {
              if fCpsAwaitCn.symbol == Symbols.requiredMethod("cps.cpsAwait") then
                 //def cpsAwait[F[_], A, G[_]](fa: F[A])(using CpsMonadContext[G], CpsMonadConversion[F, G]): A =
                 Log.info(s"cpsAwait: ${term.show}", nesting,term.srcPos)
-                ???
+                AwaitTransform.fromApply(term, owner, nesting, tf, ta, tg, fa, gc, gcn)
              else
                applyMArgs(term,owner, nesting, Nil)
         case _ => applyMArgs(term,owner, nesting, Nil)
-      //Log.trace(s"Apply result: ${cpsTree}", nesting)
+      //Log.trace(s" Apply result: ${cpsTree}", nesting)
       cpsTree
   }
 

@@ -27,7 +27,7 @@ class TestCollectionMonads {
       ???
     }
 
-    transparent inline guard(inline value: Boolean)(using CpsMonad[Iterable]): Unit = {
+    transparent inline guardinline value: Boolean)(using CpsMonad[Iterable]): Unit = {
        reflect(forceCondion(value))
     }
 
