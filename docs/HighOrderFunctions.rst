@@ -3,7 +3,7 @@ High-order functions.
 
 |dotty-cps-async|_ supports the automatic transformation of high-order functions, where the lambda expression argument contains |await|_.  
 
-For example, assume an HTTP client provides the following interface to fetch some data from a list of remote servers.
+For example, assume an HTTP client providing the following interface to fetch some data from a list of remote servers.
 
 .. code-block:: scala
 
@@ -11,7 +11,7 @@ For example, assume an HTTP client provides the following interface to fetch som
    def fetchData(url: String): Future[String] 
 
 
-Then we can fetch data from all servers just by using |await|_ in the |map|_ argument:
+Then, we can fetch data from all servers just by using |await|_ in the |map|_ argument:
 
 .. code-block:: scala
 
@@ -27,7 +27,7 @@ If we want all requests to run in parallel, we can start them in one map and, wh
        urls.map( httpClient.fetchData(_) ).map(await(_))
 
 
-For handling awaits inside high-order functions, dotty-cps-async use different strategies in dependency of execution runtime capabilities.
+For handling awaits inside high-order functions, dotty-cps-async uses different strategies in dependency of execution runtime capabilities.
 
 Async shift substitution.
 -------------------------
@@ -62,7 +62,7 @@ Loom-based runtime await.
 
 JDK-19 includes a set of interfaces (project Loom) that allows execution of code in virtual threads, 
 where runtime blocking wait is not blocking from OS view:  real thread can execute tasks from other virtual threads during the wait.   
-In this case, we don't need to substitute a high-order function but transform instead change the function argument to the original form 
+In this case, we don't need to substitute a high-order function but change instead the function argument to the original form,
 if our monad implements the `CpsRuntimeAwait <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsRuntimeAwait.scala>`_  typeclass.
 
 This experimental feature should be enabled by declaring the implicit value of cps.macros.flags.UsingLoomAwait
@@ -77,7 +77,7 @@ Functional interface.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Suppose you want to make high-order methods of your class ``C`` be able to accept lambda functions with |await|_. 
-For that purpose you have to implement the |given AsyncShift[C]|_ type class with a shifted version of your high-order methods.  
+For that purpose, you have to implement the |given AsyncShift[C]|_ type class with a shifted version of your high-order methods.
 Such a 'shifted' version has an additional type parameter ``F[_]`` and an additional list of arguments, inserted first, containing the original object instance and an appropriate |CpsMonad[F]|_ instance.  
 
 
@@ -112,7 +112,7 @@ Example:
 Object-oriented interface.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In some cases, we use classes – defined in an object-oriented manner – with private data.  If we wants a class to provide an API for |dotty-cps-async|_, then we can do this without breaking encapsulation. What is needed - to implement an async-shifted version of the function inside our class:
+In some cases, we use classes – defined in an object-oriented manner – with private data.  If we want a class to provide an API for |dotty-cps-async|_, then we can do this without breaking encapsulation. What is needed - to implement an async-shifted version of the function inside our class:
 
 Example:
 
@@ -155,7 +155,7 @@ Consider a chain of calls, which accepts async-shifted functions.  One example i
   } yield item  
 
 
-Here usual semantics of |withFilter|_ assume that we iterate over ``urls`` only once.  But if we translate this expression according to the standard rules, we will receive two passes: one pass in async ``withFilter`` and the second pass in ``flatMap``.
+Here, the usual semantics of |withFilter|_ assume that we iterate over ``urls`` only once.  But if we translate this expression according to the standard rules, we will receive two passes: one pass in async ``withFilter`` and the second pass in ``flatMap``.
 
 To perform the iteration once, we translate ``withFilter`` not to ``F[WithFilter]`` but to a substituted type |DelayedWithFilter|_, which holds the received predicate and delays actual evaluation upon the call of the next operation in the chain.
 
@@ -187,7 +187,7 @@ The implementation of class |DelayedWithFilter|_ looks like:
 
 
 I.e., in the delayed variant, all original methods should collect operations into the next delayed object or perform an actual batched call.   
-Also, we have the method |finishChain|_,  which is called when we have no next call in the chain; an example of such a case is ``val x = c.withFilter(p)``.  
+We also  have the method |finishChain|_,  which is called when we have no next call in the chain; an example of such a case is ``val x = c.withFilter(p)``.
 
 By convention, the substituted type should be derived from trait |CallChainAsyncShiftSubst[F, T, FT]|_.
 
@@ -218,14 +218,14 @@ Here, method ``map`` is used for building the streaming interface. We can provid
    def mapAsync(f: A => F[B]): ReadChannel[F, B]
 
 
-Also we can see that our channel structure is already build on top of ``F[_]``, so it is not necessary to pass ``F`` to method parameter.
+Also, we can see that our channel structure is already build on top of ``F[_]``, so it is not necessary to pass ``F`` to method parameter.
  
-For convenience |dotty-cps-async|_ supports both naming variants of ``mapAsync``: camelCase ``mapAsync`` and snake_case ``map_async``.
+For convenience, |dotty-cps-async|_ supports both naming variants of ``mapAsync``: camelCase ``mapAsync`` and snake_case ``map_async``.
 
 We propose to use the following convention when naming such methods:
 
 - use ``method_async`` when the async method will unlikely be called directly by the programmer and will be used only for substitution in high-order function;
-- use ``methodAsync`` when we expect that developer can use this method directly along with cps substitution.
+- use ``methodAsync`` when we expect that the developer can use this method directly along with cps substitution.
 
 
 Async high-order functional interfaces  

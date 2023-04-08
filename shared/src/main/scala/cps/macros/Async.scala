@@ -64,7 +64,7 @@ object Async {
           transformMonad[F,T,C](f,dm,c)
        case None =>
           val msg = s"Can't find async monad for ${TypeRepr.of[F].show} (transformImpl)"
-          report.throwError(msg, f)
+          report.errorAndAbort(msg, f)
 
              
   /**
@@ -111,7 +111,7 @@ object Async {
                   else  
                      '{  ${dm}.lazyPure(${transformed}) }
                else
-                  report.throwError(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Async, runtimeAwait = ${cpsRuntimeAwait.show}")
+                  report.errorAndAbort(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Async, runtimeAwait = ${cpsRuntimeAwait.show}")
               } else {
                val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization, optRuntimeAwait, flags,observatory, 0, None)
                if (DEBUG) {
@@ -153,7 +153,7 @@ object Async {
       case ex: MacroError =>
         if (flags.debugLevel > 0)
            ex.printStackTrace
-        report.throwError(ex.msg, ex.posExpr)
+        report.errorAndAbort(ex.msg, ex.posExpr)
 
 
 
@@ -311,10 +311,10 @@ object Async {
             case Lambda(params,body) =>
                params match
                   case List(vd) => (params, body, identity)
-                  case _ => report.throwError(s"lambda with one argument expected, we have ${params}",cexpr)
+                  case _ => report.errorAndAbort(s"lambda with one argument expected, we have ${params}",cexpr)
             case Block(Nil,nested@Lambda(params,body)) => extractLambda(nested)
             case _ =>
-               report.throwError(s"lambda expected, have: ${f}", cexpr)
+               report.errorAndAbort(s"lambda expected, have: ${f}", cexpr)
       
       def transformNotInlined(t: Term): Term =
          val (oldParams, body, nestFun) = extractLambda(t)

@@ -18,7 +18,7 @@ object CollectionHelper {
       if (companion.tpe <:< TypeRepr.of[IterableFactory[CC]]) then
         companion.asExprOf[IterableFactory[CC]]
       else
-        report.throwError(s"companion for ${ccTpe.show} is not an IterableFactory")
+        report.errorAndAbort(s"companion for ${ccTpe.show} is not an IterableFactory")
     }
 
 }
