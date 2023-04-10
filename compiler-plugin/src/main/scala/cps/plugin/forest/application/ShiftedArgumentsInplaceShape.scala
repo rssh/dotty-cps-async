@@ -1,7 +1,6 @@
 package cps.plugin.forest.application
 
 
-enum ShiftedArgumentsShape {
+enum ShiftedArgumentsInplaceShape {
   case SAME_PARAMS, EXTRA_TYPEPARAM, EXTRA_TYPEPARAM_LIST
-
 }
