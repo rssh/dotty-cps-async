@@ -24,10 +24,13 @@ class TestCollectionMonads {
 
     def forceCondion(value: =>Boolean)(using CpsMonad[Iterable]): Iterable[Unit] = {
       // insert solution here
-      ???
+      if (value) then
+        Iterable(())
+      else
+        Iterable.empty
     }
 
-    transparent inline guardinline value: Boolean)(using CpsMonad[Iterable]): Unit = {
+    transparent inline def guard(inline value: Boolean)(using CpsMonad[Iterable], CpsMonadContext[Iterable]): Unit = {
        reflect(forceCondion(value))
     }
 
