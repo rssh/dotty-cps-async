@@ -79,8 +79,12 @@ object AsyncShift {
  transparent inline given shiftedImmutableMapOps[K,V,CC[K,V] <: MapOps[K,V,CC,CC[K,V]] with immutable.Iterable[(K,V)]]: AsyncShift[CC[K,V]] =
       cps.runtime.MapOpsAsyncShift[K,V,CC,immutable.Iterable,CC[K,V]]()
 
- transparent inline given shiftedList[A]: AsyncShift[scala.collection.immutable.List[A]] =
-      cps.runtime.ListAsyncShift[A]()
+ //transparent inline given shiftedList[A]: AsyncShift[scala.collection.immutable.List[A]] =
+ //     cps.runtime.ListAsyncShift[A]()
+
+ transparent inline given shiftedList[A]: cps.runtime.ListAsyncShift[A] =
+       cps.runtime.ListAsyncShift[A]()
+
 
  transparent inline given shiftedCpsMonad[F[_], M <: CpsMonad[F]](using CpsMonad[F]): AsyncShift[M] = new cps.runtime.CpsMonadSelfAsyncShift[F,M]
 

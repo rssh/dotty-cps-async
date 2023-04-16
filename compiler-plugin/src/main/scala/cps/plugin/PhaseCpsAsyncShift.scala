@@ -10,7 +10,7 @@ import ast.tpd.*
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Types.TypeRef
 import plugins.*
-import transform.PruneErasedDefs
+import transform.{Inlining, Pickler, PruneErasedDefs}
 
 
 class PhaseCpsAsyncShift(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
@@ -20,7 +20,7 @@ class PhaseCpsAsyncShift(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
   // strange -
   override def allowsImplicitSearch = true
   override val runsAfter  = Set("rssh.cps")
-  override val runsBefore = Set(PruneErasedDefs.name)
+  override val runsBefore = Set(Inlining.name)
 
   //override def run(using Context): Unit = {
     // TODO:
@@ -30,13 +30,13 @@ class PhaseCpsAsyncShift(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
   //}
 
   override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = {
-     println(s"transformTemplate: ${tree.symbol.name}, ${tree.symbol.name.mangledString}, ${tree.symbol.name.debugString}")
+     //println(s"transformTemplate: ${tree.symbol.name}, ${tree.symbol.name.mangledString}, ${tree.symbol.name.debugString}")
 
      var newMethods = List.empty[DefDef]
      for(tree <- tree.body if tree.symbol.is(Flags.Method) /*&& isHightOrder() && generateCps */) {
        tree match
          case fun: DefDef if (!fun.symbol.isAnonymousFunction)  =>
-           println(s"  ${fun.symbol.name}   ${tree.symbol.fullName}")
+           //println(s"  ${fun.symbol.name}   ${tree.symbol.fullName}")
            if (fun.symbol.name.debugString == "myFun") {
              // do something
              println("we see myFun, so let's add new method")
@@ -62,6 +62,7 @@ class PhaseCpsAsyncShift(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
      val retval = if (newMethods.isEmpty) {
        tree
      } else {
+       //tree
        cpy.Template(tree)(body = tree.body ++ newMethods)
      }
      //super.transformTemplate(tree)

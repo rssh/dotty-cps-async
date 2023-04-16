@@ -1,26 +1,30 @@
 package cps.plugin
 
 import scala.annotation.tailrec
-
 import dotty.tools.dotc.*
 import ast.tpd.*
-import ast.{Trees,tpd}
+import ast.{Trees, tpd}
 import core.*
 import core.Decorators.*
 import core.Contexts.*
 import core.Names.*
 import core.Symbols.*
 import core.Types.*
+import cps.plugin
 import util.SrcPos
-
 import plugins.*
-
 import cps.plugin.QuoteLikeAPI.*
 
 
 enum DefDefSelectKind {
-  case USING_CONTEXT_PARAM(cpsMonadContext: Tree)
+
+  case USING_CONTEXT_PARAM(val cpsMonadContext: Tree)
   case RETURN_CONTEXT_FUN(internal: DefDefSelectKind)
+
+  def getCpsMonadContext: Tree = this match
+    case USING_CONTEXT_PARAM(cmc) => cmc
+    case RETURN_CONTEXT_FUN(internal) => internal.getCpsMonadContext
+
 }
 
 /**
@@ -30,7 +34,7 @@ enum DefDefSelectKind {
  * @param kind
  * @param internal
  */
-class DefDefSelectRecord(val kind: DefDefSelectKind, var internal: Boolean)
+class DefDefSelectRecord(val kind: DefDefSelectKind, var internal: Boolean, var changedType: Type = NoType)
 
 
 class SelectedNodes {
@@ -71,6 +75,7 @@ class SelectedNodes {
 
 object SelectedNodes {
 
+
   /**
    *
    * @param tree: tree to process
@@ -108,6 +113,8 @@ object SelectedNodes {
         throw CpsTransformException("Few monadcontexts in one function is not supported yet", srcPos)
       case Nil => None
   }
+
+
 
   @tailrec
   private def findAllCpsMonadContextParam(paramss: List[Trees.ParamClause[Types.Type]],

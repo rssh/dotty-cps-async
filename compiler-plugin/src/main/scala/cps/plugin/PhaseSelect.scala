@@ -9,13 +9,14 @@ import core.Symbols.*
 import core.Types.*
 import plugins.*
 import cps.plugin.DefDefSelectKind.USING_CONTEXT_PARAM
+import dotty.tools.dotc.transform.{Pickler, SetRootTree}
 
 
 class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
 
   val phaseName = PhaseSelect.phaseName
 
-  override val runsAfter = Set("cc")
+  override val runsAfter = Set(SetRootTree.name, Pickler.name)
   override val runsBefore = Set("rssh.cps")
 
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
@@ -52,6 +53,5 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
 object PhaseSelect {
 
   val phaseName = "rssh.cpsSelect"
-
 
 }

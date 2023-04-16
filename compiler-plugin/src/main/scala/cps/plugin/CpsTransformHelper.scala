@@ -20,12 +20,15 @@ object CpsTransformHelper {
   def cpsMonadContextClassSymbol(using Context) =
       Symbols.requiredClass("cps.CpsMonadContext")
 
-  def isCpsMonadContextType(tpe:Type)(using Context): Boolean = {
-     tpe.dealias match
+  def isCpsMonadContextType(tpe:Type, debug:Boolean=false)(using Context): Boolean = {
+     val retval = tpe.dealias match
        case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsMonadContextClassSymbol) =>
          true
        case other =>
          other.baseType(cpsMonadContextClassSymbol) != NoType
+     if (debug)
+        println(s"isCpsMonadContextType(${tpe.show} [tree:${tpe}]) = ${retval}")
+     retval
   }
 
   /**
@@ -85,13 +88,37 @@ object CpsTransformHelper {
    *   F[T]  is T is not function type
    *   (X1..Xn) => CpsType[F, Y]  if T = (X1...Xn) => Y
    **/
-  def cpsTransformedType(t:Type, fType:Type)(using Context): Type = {
-    t match
-      case AppliedType(funCn,params) if (defn.isFunctionType(funCn)) =>
-        val nParams = adoptResultTypeParam(params, fType)
-        AppliedType(funCn, nParams)
+  def cpsTransformedType(t:Type, fType:Type, debug: Boolean = false)(using Context): Type = {
+    val retval = t match
+      case TermRef(prefix,name) =>
+         t
+      case AppliedType(funCn,params) =>
+        if (debug) {
+          println(s"cpsTransformedType, funCn = ${funCn.show}, isFunctionType=${defn.isFunctionType(funCn)}, isContextFunctionType=${defn.isContextFunctionType(funCn)}")
+          println(s"cpsTransformedType, isContextFunctionType(t)=${defn.isContextFunctionType(t)}")
+        }
+        if (defn.isFunctionType(t) || defn.isContextFunctionType(t)) then
+          val nParams = adoptResultTypeParam(params, fType)
+          AppliedType(funCn, nParams)
+        else
+          decorateTypeApplications(fType).appliedTo(t)
+      case mt: MethodType =>
+        if (mt.isContextualMethod)
+          mt.derivedLambdaType(mt.paramNames, mt.paramInfos, cpsTransformedType(mt.resType, fType, debug))
+          //ContextualMethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedType(mt.resType, fType, debug))
+        else if (mt.isImplicitMethod)
+          ImplicitMethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedType(mt.resType, fType, debug))
+        else
+          MethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedType(mt.resType, fType, debug))
+      case pt: PolyType =>
+        PolyType(pt.paramNames)(_ => pt.paramInfos, _ => cpsTransformedType(pt.resType, fType, debug))
       case _  =>
         decorateTypeApplications(fType).appliedTo(t)
+    if (debug) {
+      println(s"cpsTransformedType: in = (${t.show}   [${t}]")
+      println(s"cpsTransformedType: out = ${retval.show}   [${retval}]")
+    }
+    retval
   }
 
 

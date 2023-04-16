@@ -24,6 +24,7 @@ class CpsPlugin extends StandardPlugin {
      val shiftedSymbols = new ShiftedSymbols()
      val selectedNodes = new SelectedNodes()
      (new PhaseSelect(selectedNodes))::
+      // (new PhaseChangeSymInfo(settings, selectedNodes)) ::
        (new PhaseCps(settings,selectedNodes,shiftedSymbols)) ::
        (new PhaseCpsAsyncShift(shiftedSymbols)) :: Nil
   }

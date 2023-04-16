@@ -29,7 +29,7 @@ object CpsTransform {
       def apply[A](expr: C ?=> A): F[A] =
         ???
 
-      def applyM[A](expr: C ?=> F[A]): F[A] =
+      def applyM1[A](expr: C ?=> F[A]): F[A] =
         am.apply(c => expr(using c))
 
   }

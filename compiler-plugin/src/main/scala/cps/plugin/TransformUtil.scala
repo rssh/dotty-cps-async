@@ -42,7 +42,7 @@ object TransformUtil {
 
    def makeLambda(params: List[ValDef], resultType: Type, owner: Symbol,  body: Tree, bodyOwner: Symbol)(using Context): Block = {
       val paramNames = params.map(_.name)
-      val paramTypes = params.map(_.tpe)
+      val paramTypes = params.map(_.tpe.widen)
       val mt = MethodType(paramNames)(
          x => paramTypes,
          x => resultType

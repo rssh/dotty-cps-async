@@ -14,54 +14,98 @@ import plugins.*
 import cps.plugin.QuoteLikeAPI.*
 import cps.plugin.forest.*
 import dotty.tools.dotc.ast.{Trees, tpd}
+import dotty.tools.dotc.core.DenotTransformers.{InfoTransformer, SymTransformer}
 import dotty.tools.dotc.util.SrcPos
 
-class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase {
+class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase with SymTransformer {
 
   val phaseName = "rssh.cps"
 
   override def allowsImplicitSearch = true
+
+  override def changesMembers: Boolean = true
+
+  override def changesParents: Boolean = true
+
   override val runsAfter = Set("rssh.cpsSelect")
   override val runsBefore = Set("rssh.cpsAsyncShift")
 
+
   val debug = true
+
+  override def transformSym(sym: SymDenotations.SymDenotation)(using Context): SymDenotations.SymDenotation = {
+    selectedNodes.getDefDefRecord(sym.symbol) match
+      case Some(selectRecord) =>
+        val cpsMonadContext = selectRecord.kind.getCpsMonadContext
+        val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe, sym.symbol.srcPos)
+        val ntp = CpsTransformHelper.cpsTransformedType(sym.info, monadType)
+        selectRecord.changedType = ntp
+        println(s"transformSym: ${sym.info.show}  ->  ${ntp.show}, ${sym} '${sym.name.mangledString}' ${sym.symbol.id}")
+        sym.copySymDenotation(info = ntp)
+      case None =>
+        sym
+  }
+
+
+  override def prepareForDefDef(tree: tpd.DefDef)(using Context): Context = {
+    super.prepareForDefDef(tree).withPhase(this)
+  }
+
 
 
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
     selectedNodes.getDefDefRecord(tree.symbol) match
       case Some(selectRecord) if (!selectRecord.internal) =>
-        try
-          transformDefDefInternal(tree, selectRecord, None)
-        catch
-          case ex: CpsTransformException =>
-            report.error(ex.message, ex.pos)
-            //ex.printStackTrace()
-            throw ex
+          try
+            transformDefDefInternal(tree, selectRecord, None)
+          catch
+            case ex: CpsTransformException =>
+              report.error(ex.message, ex.pos)
+              //ex.printStackTrace()
+              throw ex
       case _ => tree
   }
 
   def transformDefDefInternal(tree: DefDef, selectRecord: DefDefSelectRecord, optTopLevelContext:Option[CpsTopLevelContext]=None)(using Context): DefDef = {
     val debugSettings = optTopLevelContext.map(_.settings).getOrElse(DebugSettings.make(tree))
-    println(s"transform ${tree.symbol.showFullName}, (${tree.symbol.id}) starting at${tree.srcPos.startPos.show}, selectRecord.kind=${selectRecord.kind}")
+    println(s"transformDefDef ${tree.symbol.showFullName}, (${tree.symbol.id}) starting at${tree.srcPos.startPos.show}, selectRecord.kind=${selectRecord.kind}")
     if (debugSettings.printCode) then
       report.log("transforming tree:", tree.srcPos)
     val retval = selectRecord.kind match
-      case USING_CONTEXT_PARAM(cpsMonadContext) =>
+      case USING_CONTEXT_PARAM(cpsMonadContextArg) =>
+        val cpsMonadContext = ref(cpsMonadContextArg.symbol)
         val tc = makeCpsTopLevelContext(cpsMonadContext,tree,Some(debugSettings))
         val nTpt = CpsTransformHelper.cpsTransformedType(tree.tpt.tpe, tc.monadType)
         given CpsTopLevelContext = tc
-        val transformedRhs = RootTransform(tree.rhs,tree.symbol,0).transformed
-        val nRhs = Block(tc.cpsMonadValDef::Nil,transformedRhs)
-        cpy.DefDef(tree)(tree.name, tree.paramss, TypeTree(nTpt), nRhs)
+        val ctx1: Context = summon[Context].withOwner(tree.symbol)
+        val transformedRhs = RootTransform(tree.rhs,tree.symbol,0)(using ctx1, tc).transformed
+        val nRhs = Block(tc.cpsMonadValDef::Nil,transformedRhs)(using ctx1)
+        tree match
+          case DefDef(name1, tparams1, tpt1, rhs1) =>
+            println(s"tpt1=${tpt1.show}")
+        println(s"cpy.DefDef:: tree=${tree.show}, tree.tpt=${tree.tpt.show}, nTpt=${nTpt.show}, tree.symbol.id=${tree.symbol.id}, tree.symbol.owner.id = ${tree.symbol.owner.id}, m.owner.id=${tc.cpsMonadValDef.symbol.owner.id}")
+        // make tree untyped to avoid divergence during typechecking
+        val nType = CpsTransformHelper.cpsTransformedType(tree.tpe, tc.monadType)
+        val retval = cpy.DefDef(tree)(tree.name, tree.paramss, TypeTree(nTpt), nRhs).withType(TermRef(tree.symbol.owner.thisType, tree.symbol))
+        if (selectRecord.changedType != NoType) {
+            println(s"selectRecord.changedType=${selectRecord.changedType.show}")
+            //retval.symbol.info = selectRecord.changedType
+        }
+        println(s"transformDefDef[1] for ${tree.symbol.id}  retval.tpe=${retval.tpe.show}, retval.typeOpt=${retval.typeOpt.show}, retval.symbol.info=${retval.symbol.info.show}, retval.symbol.infoOrCompleter=${retval.symbol.infoOrCompleter.show}, retval.symbol.denot.info=${retval.symbol.denot.info.show}, retval.symbol.denot.infoOrCompleter=${retval.symbol.info.show}")
+          //tree.symbol.defTree = retval
+        retval
       case RETURN_CONTEXT_FUN(internalKind) =>
         tree.rhs match
           case Block((ddef: DefDef)::Nil, closure: Closure) =>
             val nDefDef = transformDefDefInternal(ddef, DefDefSelectRecord(kind=internalKind,internal=true))
             val nTpt = nDefDef.tpt
+            println(s"closure.tpt=${closure.tpt.show}")
             //  if we not change defDef symbol,  call should be the same but with new type.
-            val nClosure = cpy.Closure(closure)(closure.env, closure.meth, nTpt)
+            val nClosure = cpy.Closure(closure)(closure.env, closure.meth, closure.tpt)
             val nLambda = cpy.Block(tree)(nDefDef::Nil,nClosure)
-            cpy.DefDef(tree)(tree.name, tree.paramss,  nTpt, nLambda)
+              val retval = cpy.DefDef(tree)(tree.name, tree.paramss, nTpt, nLambda).withType(Types.TermRef(tree.symbol.owner.thisType, tree.symbol))
+              println(s"transfromDefDef[2] for ${tree.symbol.id}: retval.tpe=${tree.tpe.show}")
+              retval
           case _ =>
             throw CpsTransformException("Lambda function was expected, we have $tree",tree.srcPos)
     if (debugSettings.printCode) then
@@ -91,79 +135,22 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
            =>
             println(s"found CpsAsync candidate: ${tree.show} ")
             println(s"CpsAsync.ctx=:  ${ddef.show} ")
+            println(s"inferAsyncArg=:  ${inferAsyncArg} ")
             val cpsMonadContext = ref(ddef.paramss(0)(0).symbol)
             val internalFun = transformDefDefInternal(ddef, DefDefSelectRecord(USING_CONTEXT_PARAM(cpsMonadContext),internal=true))
-            val applyM = "applyM".toTermName
+            println(s"closure.tpt=${closure.tpt}")
+            val internalClosure = cpy.Closure(closure)(closure.env, internalFun, closure.tpt)
+            val applyMArg = cpy.Block(ctxFun)(internalFun::Nil, closure)
+            println(s"internalFun=${internalFun}")
+            println(s"internalFun.tpt=${internalFun.tpt}")
+            println(s"internalFun.tpt.tpe=${internalFun.tpt.tpe}")
+            val applyM = "applyM1".toTermName
             val nApply = cpy.Apply(tree)(
               TypeApply(Select(inferAsyncArg, applyM), List(aCnd)),
-              List(internalFun)
+              List(applyMArg)
             )
             println(s"nApply=${nApply.show}")
             nApply
-            /*
-            infernAsyncArgCn.tpe match
-              case AppliedType(tycon, tpargs) 
-                if tycon.typeSymbol == Symbols.requiredClass("cps.CpsTransform.InfernAsyncArg") =>
-                  val body = ddef.rhs
-                  val bodyOwner = ddef.symbol
-                  println(s"found CpsAsync candidate, tycon.typeSymbol=:  ${tycon.typeSymbol} ")
-                  println(s"CpsAsync.body=:  ${body.show} ")
-                  println(s"CpsAsync.bodyType=:  ${body.tpe.show} ")
-                  println(s"funTree.symbol = ${ddef.symbol}, selectRecord=${selectedNodes.getDefDefRecord(ddef.symbol)}")
-                  try
-                    val params = ddef.paramss(0) match
-                      case ValDefs(valDefs) => valDefs
-                      case _ => throw CpsTransformException("CpsAsync lambda should be without type parameters", tree.srcPos)
-                    val cpsMonadContext = ref(params(0).symbol)
-                    val cpsTransformType = params(0).tpt.tpe
-                    val monadType = CpsTransformHelper.extractMonadType(cpsTransformType,tree.srcPos)
-                    val optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(monadType, tree.span)
-                    val mt = MethodType(List(params(0).name))(
-                      x => List(params(0).tpt.tpe),
-                      //x => tree.tpe.widen  //decorateTypeApplications(monadType).appliedTo(body.tpe)
-                      x => decorateTypeApplications(monadType).appliedTo(body.tpe)
-                    )
-                    // TODO:  pass am to apply 
-                    //val amInit = Select(infernAsyncArgCn,"am".toTermName)
-                    val amInit = Select(cpsMonadContext, "monad".toTermName).withSpan(tree.span)
-                    // TODO: changeOwnwe ?
-                    val amValDef = SyntheticValDef("m2".toTermName,amInit)
-                    val am = ref(amValDef.symbol)
-                    val meth = Symbols.newAnonFun(summon[Context].owner,mt)
-                    val ctxFun = Closure(meth, tss => {
-                                          // here = check that valDef constructire chaned amOwner
-                      val tc = CpsTopLevelContext(monadType, amValDef, am, params(0),optRuntimeAwait,DebugSettings.make(tree))
-                      given CpsTopLevelContext = tc
-                      println(s"cpsAsync:tc, debugLevel=${tc.settings.debugLevel}")
-                      val cpsTree = RootTransform(body,bodyOwner, 0)
-                      val transformedBody = Block(amValDef::Nil, cpsTree.transformed)
-                      TransformUtil.substParams(transformedBody,List(params(0)),tss.head)
-                                    .changeOwner(bodyOwner,meth)
-                                    .withSpan(body.span)
-                    }) 
-                    val apply = Apply(
-                                TypeApply(Select(am,"apply".toTermName),List(TypeTree(body.tpe.widen))),
-                                List(ctxFun)
-                    ).withSpan(tree.span)
-                    val retval = Block(
-                      List(amValDef),
-                      apply
-                    )
-                    println(s"origin cpsAsync tree: ${tree.show}")
-                    println(s"transformed cpsAwait tree: ${retval.show}")
-                    println(s"ctxFun=${ctxFun.show}")
-
-                    retval
-                  catch
-                    case ex:CpsTransformException =>
-                      report.error(ex.message,ex.pos)
-                      if (debug) {
-                        ex.printStackTrace()
-                      }
-                      tree
-              case _ =>
-                  super.transformApply(tree)
-            */
       case _ => super.transformApply(tree)
 
  
@@ -173,10 +160,19 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
 
 
   private def makeCpsTopLevelContext(cpsMonadContext: Tree, tree: Tree, optSettings:Option[DebugSettings]=None)(using Context): CpsTopLevelContext =  {
+    println(s"mekeCpsTopLevelContext: cpsMonadContext=${cpsMonadContext}")
+    cpsMonadContext match
+      case vd: ValDef =>
+        println("!! - found incorrect makeCpsTopLevelContext")
+        throw CpsTransformException("incorrect makeCpsTopLevelContext", tree.srcPos)
+      case _ =>
     val monadInit = Select(cpsMonadContext, "monad".toTermName).withSpan(tree.span)
     val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, tree.srcPos)
     val optRuntimeAwait = if(settings.useLoom) CpsTransformHelper.findRuntimeAwait(monadType, tree.span) else None
-    val monadValDef = SyntheticValDef("m".toTermName, monadInit).changeOwner(summon[Context].owner, tree.symbol)
+    val monadValDef = SyntheticValDef("m".toTermName, monadInit)(using summon[Context].fresh.setOwner(tree.symbol))
+    println(s"monadValDef=${monadValDef.show}")
+    //val monadValDef = monadValDef0.changeOwner(monadValDef0.symbol.owner, tree.symbol)
+    //println(s"!! monadVaDef0.owner.id=${monadValDef0.symbol.owner.id}, monadValDef.owner.id=${monadValDef.symbol.owner.id}, tree.symbol.id=${tree.symbol.id}")
     val monadRef = ref(monadValDef.symbol)
     val debugSettings = optSettings.getOrElse(DebugSettings.make(tree))
     val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsMonadContext, optRuntimeAwait, debugSettings)

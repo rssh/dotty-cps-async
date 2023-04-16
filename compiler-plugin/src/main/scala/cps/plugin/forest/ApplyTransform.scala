@@ -73,7 +73,7 @@ object ApplyTransform {
       val tctx = summon[CpsTopLevelContext]
       val containsAsyncLambda = argss.exists(_.containsAsyncLambda)
       val containsAsync = argss.exists(_.isAsync)
-      if (containsAsyncLambda) {
+      val retval = if (containsAsyncLambda) {
         tctx.optRuntimeAwait match
           case Some(runtimeAwait) =>
             genApplication(origin,owner,fun,argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait)))
@@ -81,8 +81,12 @@ object ApplyTransform {
             if (fun.denot != NoDenotation) {
                   // check -- can we add shifted version of fun
                   val shfnr = retrieveShiftedFun(origin,fun,owner)
-                  val nArgss = if (shfnr.skipFirstTargs) argss.tail else argss
-                  genApplication(origin, owner, shfnr.newFun, nArgss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None))
+                  val nArgss = if (false && shfnr.skipFirstTargs) argss.tail else argss
+                  val r = genApplication(origin, owner, shfnr.newFun, nArgss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None))
+                  println(s"application of shifted function: ${r.show},  shfnr=${shfnr}")
+                  println(s"origin=${origin.show}")
+                  println(s"argss=${argss.map(_.show).mkString(",")}")
+                  r
             } else {
               fun match
                 case QuoteLikeAPI.CheckLambda(params,body,bodyOwner) =>
@@ -96,6 +100,7 @@ object ApplyTransform {
       } else {
         parseSyncFunPureApplication(origin,owner, fun, argss)
       }
+      retval
   }
 
   //  just unchanged
@@ -309,7 +314,7 @@ object ApplyTransform {
                  ShiftedFunResult(
                    Apply(
                      TypeApply(nSelect, List(TypeTree(fType))),
-                     List(tctx.cpsMonadRef, obj)
+                     List(obj, tctx.cpsMonadRef)
                    ).withSpan(fun.span),
                    false
                  )
@@ -317,7 +322,7 @@ object ApplyTransform {
                  ShiftedFunResult(
                    Apply(
                      TypeApply(nSelect, TypeTree(fType)::targs),
-                     List(tctx.cpsMonadRef, obj)
+                     List(obj, tctx.cpsMonadRef)
                    ).withSpan(fun.span),
                    true
                  )
@@ -334,10 +339,22 @@ object ApplyTransform {
               // TODO:
               // 1. check that method exists
               //   TODO: we should go throught all list.
-              val methods = nObj.tpe.typeSymbol.lookupPrefix.allMembers.filter(_.symbol.name == methodName).map(_.symbol)
+              val methods = nObj.tpe.allMembers.filter(_.symbol.isMethod).map(_.symbol).filter(_.name == methodName)
               if (methods.isEmpty) then
-                throw CpsTransformException(s"Can't find async-shifted method ${methodName} in ${nObj}", fun.srcPos)
+                report.error(s"Can't find async-shifted method ${methodName} in ${nObj.show}", fun.srcPos)
+                report.error(s"all method names: ${nObj.tpe.allMembers.map(_.symbol.name).mkString(",")}", fun.srcPos)
+                report.error(s"nObj.tpe=${nObj.tpe.show},  neeedInlining = ${ctx.compilationUnit.needsInlining}")
+                throw CpsTransformException(s"Can't find async-shifted method ${methodName} in ${nObj.show}", fun.srcPos)
               // TODO: collect previous errors to pass as parameter
+              println(s"find shiftedObject,  nObj=${nObj.show}")
+              println(s"shiftedObject tree,  nObj=${nObj}")
+              println(s"shiftedObject needInlining=${ctx.compilationUnit.needsInlining}")
+              if (nObj.symbol.denot.is(Flags.Inline)) {
+                println(s"shiftedObject is inline")
+                ctx.compilationUnit.needsInlining=true
+              } else {
+                println(s"shiftedObject is not inline")
+              }
               prepareAsyncShiftedMethodCall(fun.symbol, obj, nObj, methods, targs)
             case Left(err1) =>
               report.error("Can't find async-shifted method or implicit AsyncShift for "+obj.show, fun.srcPos)

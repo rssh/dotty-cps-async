@@ -14,6 +14,14 @@ class DotcInvocations {
     val args = List("-d", outDir) ++
              extraArgs ++
              List("-Xplugin:src/main/resources", "-usejavacp") ++
+             //List("-Ycheck:all") ++
+             //List("-verbose") ++
+             List("-unchecked") ++
+             List("--color:never") ++
+             //List("-Vprint:rssh.cps") ++
+             //List("-Vprint:inlining") ++
+             List("-Vprint:constructors") ++
+             List("-Vprint:lambdaLift") ++
              files
     val filledReporter = Main.process(args.toArray, reporter, callback)
     filledReporter
