@@ -80,32 +80,36 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         val ctx1: Context = summon[Context].withOwner(tree.symbol)
         val transformedRhs = RootTransform(tree.rhs,tree.symbol,0)(using ctx1, tc).transformed
         val nRhs = Block(tc.cpsMonadValDef::Nil,transformedRhs)(using ctx1)
+        println(s"nRsh.block=${nRhs.show}")
+        println(s"nRhs.tpe = ${nRhs.tpe.show}")
         tree match
           case DefDef(name1, tparams1, tpt1, rhs1) =>
             println(s"tpt1=${tpt1.show}")
         println(s"cpy.DefDef:: tree=${tree.show}, tree.tpt=${tree.tpt.show}, nTpt=${nTpt.show}, tree.symbol.id=${tree.symbol.id}, tree.symbol.owner.id = ${tree.symbol.owner.id}, m.owner.id=${tc.cpsMonadValDef.symbol.owner.id}")
-        // make tree untyped to avoid divergence during typechecking
-        val nType = CpsTransformHelper.cpsTransformedType(tree.tpe, tc.monadType)
-        val retval = cpy.DefDef(tree)(tree.name, tree.paramss, TypeTree(nTpt), nRhs).withType(TermRef(tree.symbol.owner.thisType, tree.symbol))
+        val retval = cpy.DefDef(tree)(tree.name, tree.paramss, TypeTree(nTpt), nRhs)
         if (selectRecord.changedType != NoType) {
             println(s"selectRecord.changedType=${selectRecord.changedType.show}")
             //retval.symbol.info = selectRecord.changedType
         }
-        println(s"transformDefDef[1] for ${tree.symbol.id}  retval.tpe=${retval.tpe.show}, retval.typeOpt=${retval.typeOpt.show}, retval.symbol.info=${retval.symbol.info.show}, retval.symbol.infoOrCompleter=${retval.symbol.infoOrCompleter.show}, retval.symbol.denot.info=${retval.symbol.denot.info.show}, retval.symbol.denot.infoOrCompleter=${retval.symbol.info.show}")
+        println(s"transformDefDef[1] for ${tree.symbol.id}  ")
           //tree.symbol.defTree = retval
         retval
       case RETURN_CONTEXT_FUN(internalKind) =>
         tree.rhs match
-          case Block((ddef: DefDef)::Nil, closure: Closure) =>
+          case oldLambda@Block((ddef: DefDef)::Nil, closure: Closure) =>
             val nDefDef = transformDefDefInternal(ddef, DefDefSelectRecord(kind=internalKind,internal=true))
-            val nTpt = nDefDef.tpt
-            println(s"closure.tpt=${closure.tpt.show}")
-            //  if we not change defDef symbol,  call should be the same but with new type.
-            val nClosure = cpy.Closure(closure)(closure.env, closure.meth, closure.tpt)
-            val nLambda = cpy.Block(tree)(nDefDef::Nil,nClosure)
-              val retval = cpy.DefDef(tree)(tree.name, tree.paramss, nTpt, nLambda).withType(Types.TermRef(tree.symbol.owner.thisType, tree.symbol))
-              println(s"transfromDefDef[2] for ${tree.symbol.id}: retval.tpe=${tree.tpe.show}")
-              retval
+            val cpsMonadContext = ref(selectRecord.kind.getCpsMonadContext.symbol)
+            val fType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe, tree.srcPos)
+            // here closure created with wrong type, because symbol.info of ddef is yet not changed.
+            //  So, we need set correct type here by hands, otherwise -Ycheck:all will fail.
+            val nClosureType = CpsTransformHelper.cpsTransformedType(closure.tpe, fType)
+            val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span).withType(nClosureType)
+            println(s"creating closure (ref to ${nDefDef.symbol.id}):${nClosure} ")
+            println(s"closure.tpe=${closure.tpe.show},  nClosure.tpe=${nClosure.tpe.show}")
+            val nLambda = Block(nDefDef::Nil,nClosure).withSpan(oldLambda.span)
+            println(s"Block.tpe = ${nLambda.tpe.show}")
+            val retval = cpy.DefDef(tree)(tree.name, tree.paramss, TypeTree(nClosureType), nLambda)
+            retval
           case _ =>
             throw CpsTransformException("Lambda function was expected, we have $tree",tree.srcPos)
     if (debugSettings.printCode) then
@@ -139,8 +143,9 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
             val cpsMonadContext = ref(ddef.paramss(0)(0).symbol)
             val internalFun = transformDefDefInternal(ddef, DefDefSelectRecord(USING_CONTEXT_PARAM(cpsMonadContext),internal=true))
             println(s"closure.tpt=${closure.tpt}")
-            val internalClosure = cpy.Closure(closure)(closure.env, internalFun, closure.tpt)
-            val applyMArg = cpy.Block(ctxFun)(internalFun::Nil, closure)
+            //val internalClosure = cpy.Closure(closure)(closure.env, internalFun, closure.tpt)
+            val internalClosure = Closure(closure.env, ref(internalFun.symbol), EmptyTree).withSpan(closure.span)
+            val applyMArg = Block(internalFun::Nil, internalClosure).withSpan(ctxFun.span)
             println(s"internalFun=${internalFun}")
             println(s"internalFun.tpt=${internalFun.tpt}")
             println(s"internalFun.tpt.tpe=${internalFun.tpt.tpe}")

@@ -1,5 +1,6 @@
 package cpstest
 
+/*
 import cps._
 
 sealed trait MyList[+A] {
@@ -82,4 +83,4 @@ object MyListExample {
 
 //  EffectLike[Effects] =  [T] =>> EffectLikeM[Effects,T]
 //
-
+*/

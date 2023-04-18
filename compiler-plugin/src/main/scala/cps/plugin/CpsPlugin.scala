@@ -26,7 +26,7 @@ class CpsPlugin extends StandardPlugin {
      (new PhaseSelect(selectedNodes))::
       // (new PhaseChangeSymInfo(settings, selectedNodes)) ::
        (new PhaseCps(settings,selectedNodes,shiftedSymbols)) ::
-       (new PhaseCpsAsyncShift(shiftedSymbols)) :: Nil
+       (new PhaseCpsAsyncShift(selectedNodes, shiftedSymbols)) :: Nil
   }
 
   private def parseOptions(options:List[String]): CpsPluginSettings = {

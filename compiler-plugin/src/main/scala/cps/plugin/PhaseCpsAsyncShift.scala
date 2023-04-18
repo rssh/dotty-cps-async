@@ -13,7 +13,7 @@ import plugins.*
 import transform.{Inlining, Pickler, PruneErasedDefs}
 
 
-class PhaseCpsAsyncShift(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
+class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
   override val phaseName = "rssh.cpsAsyncShift"
 
@@ -68,6 +68,19 @@ class PhaseCpsAsyncShift(shiftedSymbols:ShiftedSymbols) extends PluginPhase {
      //super.transformTemplate(tree)
      //println(s"after CpsAsyncShift, retval: ${retval.show}")
      retval
+  }
+
+  /**
+   * just print symbol info to check - is it changed in phascCps
+   * @param tree
+   * @param Context
+   * @return
+   */
+  override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
+    if (selectedNodes.getDefDefRecord(tree.symbol).isDefined) {
+      println(s"cpsAsyncShift::transformDefDef: ${tree.symbol.name}, ${tree.symbol.info.show}")
+    }
+    tree
   }
 
 }

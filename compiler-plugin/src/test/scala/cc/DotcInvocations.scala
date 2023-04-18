@@ -14,14 +14,17 @@ class DotcInvocations {
     val args = List("-d", outDir) ++
              extraArgs ++
              List("-Xplugin:src/main/resources", "-usejavacp") ++
-             //List("-Ycheck:all") ++
+             List("-Ycheck:rssh.cps") ++
+             //List("-Yprint-syms") ++
+             //List("-Yprint-debug") ++
+             //List("-Yshow-tree-ids") ++
              //List("-verbose") ++
-             List("-unchecked") ++
+             //List("-unchecked") ++
              List("--color:never") ++
-             //List("-Vprint:rssh.cps") ++
+             List("-Vprint:rssh.cps") ++
              //List("-Vprint:inlining") ++
-             List("-Vprint:constructors") ++
-             List("-Vprint:lambdaLift") ++
+             //List("-Vprint:constructors") ++
+             //List("-Vprint:lambdaLift") ++
              files
     val filledReporter = Main.process(args.toArray, reporter, callback)
     filledReporter
@@ -34,6 +37,27 @@ class DotcInvocations {
 
   def compileFilesInDir(dir: String, outDir: String, extraArgs: List[String]=List.empty): Reporter = {
     compileFilesInDirs(List(dir), outDir, extraArgs)
+  }
+
+  def compileAndRunFilesInDirs(dirs: List[String], outDir: String, mainClass:String = "Main", extraArgs: List[String] = List.empty): String = {
+    val reporter = compileFilesInDirs(dirs, outDir, extraArgs)
+    if (reporter.hasErrors) {
+      println("Compilation failed")
+      println(reporter.allErrors.mkString("\n"))
+      throw new RuntimeException("Compilation failed")
+    } else {
+      run(outDir, mainClass)
+    }
+  }
+
+  private def run(outDir: String, mainClass: String): String = {
+    val classpath = s"$outDir:${System.getProperty("java.class.path")}"
+    val cmd = s"java -cp $classpath $mainClass"
+    println(s"Running $cmd")
+    val process = Runtime.getRuntime.exec(cmd)
+    val output = scala.io.Source.fromInputStream(process.getInputStream).mkString
+    println(output)
+    output
   }
 
   /**

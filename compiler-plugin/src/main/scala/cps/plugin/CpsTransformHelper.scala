@@ -90,8 +90,6 @@ object CpsTransformHelper {
    **/
   def cpsTransformedType(t:Type, fType:Type, debug: Boolean = false)(using Context): Type = {
     val retval = t match
-      case TermRef(prefix,name) =>
-         t
       case AppliedType(funCn,params) =>
         if (debug) {
           println(s"cpsTransformedType, funCn = ${funCn.show}, isFunctionType=${defn.isFunctionType(funCn)}, isContextFunctionType=${defn.isContextFunctionType(funCn)}")
