@@ -25,6 +25,7 @@ class DotcInvocations {
              //List("-Vprint:inlining") ++
              //List("-Vprint:constructors") ++
              //List("-Vprint:lambdaLift") ++
+             //List("-Xshow-phases") ++
              files
     val filledReporter = Main.process(args.toArray, reporter, callback)
     filledReporter

@@ -34,7 +34,10 @@ enum DefDefSelectKind {
  * @param kind
  * @param internal
  */
-class DefDefSelectRecord(val kind: DefDefSelectKind, var internal: Boolean, var changedType: Type = NoType)
+class DefDefSelectRecord(val kind: DefDefSelectKind,
+                         var internal: Boolean,
+                         var monadType: Type = NoType,
+                         var changedReturnType: Type = NoType)
 
 
 class SelectedNodes {

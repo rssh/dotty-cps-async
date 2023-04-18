@@ -17,34 +17,28 @@ import dotty.tools.dotc.ast.{Trees, tpd}
 import dotty.tools.dotc.core.DenotTransformers.{InfoTransformer, SymTransformer}
 import dotty.tools.dotc.util.SrcPos
 
-class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase with SymTransformer {
 
-  val phaseName = "rssh.cps"
+/**
+ * Phase where we do cps transformation. Note, that this phase should run before inlining, because when we
+ *  search for async-shift object, it can be inlined.
+ * @param settings
+ * @param selectedNodes
+ * @param shiftedSymbols
+ */
+class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase {
+
+  val phaseName = PhaseCps.name
 
   override def allowsImplicitSearch = true
 
   override def changesMembers: Boolean = true
 
-  override def changesParents: Boolean = true
 
   override val runsAfter = Set("rssh.cpsSelect")
-  override val runsBefore = Set("rssh.cpsAsyncShift")
+  override val runsBefore = Set("rssh.cpsAsyncShift", PhaseCpsChangeSymbols.name)
 
 
   val debug = true
-
-  override def transformSym(sym: SymDenotations.SymDenotation)(using Context): SymDenotations.SymDenotation = {
-    selectedNodes.getDefDefRecord(sym.symbol) match
-      case Some(selectRecord) =>
-        val cpsMonadContext = selectRecord.kind.getCpsMonadContext
-        val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe, sym.symbol.srcPos)
-        val ntp = CpsTransformHelper.cpsTransformedType(sym.info, monadType)
-        selectRecord.changedType = ntp
-        println(s"transformSym: ${sym.info.show}  ->  ${ntp.show}, ${sym} '${sym.name.mangledString}' ${sym.symbol.id}")
-        sym.copySymDenotation(info = ntp)
-      case None =>
-        sym
-  }
 
 
   override def prepareForDefDef(tree: tpd.DefDef)(using Context): Context = {
@@ -76,21 +70,16 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         val cpsMonadContext = ref(cpsMonadContextArg.symbol)
         val tc = makeCpsTopLevelContext(cpsMonadContext,tree,Some(debugSettings))
         val nTpt = CpsTransformHelper.cpsTransformedType(tree.tpt.tpe, tc.monadType)
+        selectRecord.monadType = tc.monadType
+        selectRecord.changedReturnType = nTpt
         given CpsTopLevelContext = tc
         val ctx1: Context = summon[Context].withOwner(tree.symbol)
         val transformedRhs = RootTransform(tree.rhs,tree.symbol,0)(using ctx1, tc).transformed
         val nRhs = Block(tc.cpsMonadValDef::Nil,transformedRhs)(using ctx1)
         println(s"nRsh.block=${nRhs.show}")
         println(s"nRhs.tpe = ${nRhs.tpe.show}")
-        tree match
-          case DefDef(name1, tparams1, tpt1, rhs1) =>
-            println(s"tpt1=${tpt1.show}")
-        println(s"cpy.DefDef:: tree=${tree.show}, tree.tpt=${tree.tpt.show}, nTpt=${nTpt.show}, tree.symbol.id=${tree.symbol.id}, tree.symbol.owner.id = ${tree.symbol.owner.id}, m.owner.id=${tc.cpsMonadValDef.symbol.owner.id}")
-        val retval = cpy.DefDef(tree)(tree.name, tree.paramss, TypeTree(nTpt), nRhs)
-        if (selectRecord.changedType != NoType) {
-            println(s"selectRecord.changedType=${selectRecord.changedType.show}")
-            //retval.symbol.info = selectRecord.changedType
-        }
+        val adoptedRhs = Scaffolding.adoptUncpsedRhs(nRhs, tree.tpt.tpe, tc.monadType)
+        val retval = cpy.DefDef(tree)(tree.name, tree.paramss, tree.tpt, adoptedRhs)
         println(s"transformDefDef[1] for ${tree.symbol.id}  ")
           //tree.symbol.defTree = retval
         retval
@@ -100,15 +89,15 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
             val nDefDef = transformDefDefInternal(ddef, DefDefSelectRecord(kind=internalKind,internal=true))
             val cpsMonadContext = ref(selectRecord.kind.getCpsMonadContext.symbol)
             val fType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe, tree.srcPos)
-            // here closure created with wrong type, because symbol.info of ddef is yet not changed.
-            //  So, we need set correct type here by hands, otherwise -Ycheck:all will fail.
+            selectRecord.monadType = fType
             val nClosureType = CpsTransformHelper.cpsTransformedType(closure.tpe, fType)
-            val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span).withType(nClosureType)
+            selectRecord.changedReturnType = nClosureType
+            val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
             println(s"creating closure (ref to ${nDefDef.symbol.id}):${nClosure} ")
             println(s"closure.tpe=${closure.tpe.show},  nClosure.tpe=${nClosure.tpe.show}")
             val nLambda = Block(nDefDef::Nil,nClosure).withSpan(oldLambda.span)
             println(s"Block.tpe = ${nLambda.tpe.show}")
-            val retval = cpy.DefDef(tree)(tree.name, tree.paramss, TypeTree(nClosureType), nLambda)
+            val retval = cpy.DefDef(tree)(tree.name, tree.paramss, tree.tpt, nLambda)
             retval
           case _ =>
             throw CpsTransformException("Lambda function was expected, we have $tree",tree.srcPos)
@@ -187,3 +176,8 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
 
 }
 
+object PhaseCps {
+
+  def name: String = "rssh.cps"
+
+}

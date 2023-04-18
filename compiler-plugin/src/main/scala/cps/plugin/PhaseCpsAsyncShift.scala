@@ -13,14 +13,15 @@ import plugins.*
 import transform.{Inlining, Pickler, PruneErasedDefs}
 
 
+
 class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
   override val phaseName = "rssh.cpsAsyncShift"
 
   // strange -
   override def allowsImplicitSearch = true
-  override val runsAfter  = Set("rssh.cps")
-  override val runsBefore = Set(Inlining.name)
+  override val runsAfter  = Set(PhaseCps.name)
+  override val runsBefore = Set(Inlining.name, PhaseCpsChangeSymbols.name)
 
   //override def run(using Context): Unit = {
     // TODO:

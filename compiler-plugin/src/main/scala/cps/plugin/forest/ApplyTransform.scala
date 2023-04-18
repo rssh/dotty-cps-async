@@ -113,7 +113,7 @@ object ApplyTransform {
             Apply(s,args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))).withSpan(orig.span)
      }
      if (argss.exists(_.containsMonadContext)) {
-       CpsTree.impure(origin, owner, plainTree)
+       CpsTree.impure(origin, owner, Scaffolding.adoptCpsedCall(plainTree, summon[CpsTopLevelContext].monadType))
      } else {
        CpsTree.pure(origin, owner, plainTree)
      }
@@ -124,7 +124,7 @@ object ApplyTransform {
     
     def genOneLastPureApply(fun: Tree, argList: ApplyArgList): Tree =
       argList match
-        case ApplyTypeArgList(origing, targs) =>
+        case ApplyTypeArgList(origin, targs) =>
           TypeApply(fun,targs).withSpan(origin.span)
         case ApplyTermArgList(origin, args) =>
           val l = Apply(fun, args.map(f)).withSpan(origin.span)
@@ -162,35 +162,17 @@ object ApplyTransform {
           case _ => s
       }
 
-    val pureReply = genPureReply(fun,argss)    
-    val nApplyCpsTree = genPrefixes(argss, CpsTree.pure(origin,owner,pureReply))
-    // if one of argument is monadic context, than return type should changed from T to F[T],
-    // therefore we should appropriative change Apply
-    val retval = if (argss.exists(_.containsMonadContext)) {
-      nApplyCpsTree.asyncKind match {
-        case AsyncKind.Sync =>
-          CpsTree.impure(nApplyCpsTree.origin,nApplyCpsTree.owner,nApplyCpsTree.unpure.get, AsyncKind.Async(AsyncKind.Sync))
-        case otherKind =>
-          // TODO: prove lambda translation
-          // F[T] => F[F[T]], or (A=>Cps[B]) => F[A=>Cps[B])]]   compansate this by flatMap to identity
-          val ffType = decorateTypeApplications(summon[CpsTopLevelContext].monadType).appliedTo(nApplyCpsTree.transformedType)
-          val nSym = Symbols.newSymbol(owner, "xx".toTermName, Flags.Synthetic, ffType)
-          val nValDef = ValDef(nSym,TypeTree(ffType), true).withSpan(origin.span)
-          val nRef = ref(nSym).withSpan(origin.span)
-          FlatMapCpsTree(nApplyCpsTree.origin,
-            nApplyCpsTree.owner,
-            nApplyCpsTree,
-            FlatMapCpsTreeArgument(Some(nValDef),
-              CpsTree.impure(nRef,nApplyCpsTree.owner, nRef, AsyncKind.Async(otherKind))
-            )
-          )
-      }
+    val pureReply = genPureReply(fun,argss)
+    val lastCpsTree = if (argss.exists(_.containsMonadContext)) {
+      CpsTree.impure(origin,owner,Scaffolding.adoptCpsedCall(pureReply, summon[CpsTopLevelContext].monadType))
     } else {
-      nApplyCpsTree
+      CpsTree.pure(origin,owner,pureReply)
     }
+
+    val nApplyCpsTree = genPrefixes(argss, lastCpsTree)
+    val retval = nApplyCpsTree
     println(s"genApplication result: ${retval.show}")
     retval
-
   }
 
   

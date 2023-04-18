@@ -23,10 +23,12 @@ class CpsPlugin extends StandardPlugin {
      val settings = parseOptions(options)
      val shiftedSymbols = new ShiftedSymbols()
      val selectedNodes = new SelectedNodes()
-     (new PhaseSelect(selectedNodes))::
-      // (new PhaseChangeSymInfo(settings, selectedNodes)) ::
-       (new PhaseCps(settings,selectedNodes,shiftedSymbols)) ::
-       (new PhaseCpsAsyncShift(selectedNodes, shiftedSymbols)) :: Nil
+     List(
+       new PhaseSelect(selectedNodes),
+       new PhaseCps(settings,selectedNodes,shiftedSymbols),
+       new PhaseCpsAsyncShift(selectedNodes, shiftedSymbols),
+       new PhaseCpsChangeSymbols(selectedNodes,shiftedSymbols)
+     )
   }
 
   private def parseOptions(options:List[String]): CpsPluginSettings = {

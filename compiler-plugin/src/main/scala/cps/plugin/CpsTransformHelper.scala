@@ -119,6 +119,27 @@ object CpsTransformHelper {
     retval
   }
 
+  def cpsTransformedErasedType(t:Type, fType:Type)(using Context): Type = {
+    if (defn.isFunctionType(t) || defn.isContextFunctionType(t)) then
+      // here we assume that  t is cps-transformed function, not F[(function-type)] which
+      //  shoild be translated to F.
+      t
+    else
+      t match
+        case mt: MethodType =>
+          if (mt.isContextualMethod)
+            mt.derivedLambdaType(mt.paramNames, mt.paramInfos, cpsTransformedErasedType(mt.resType, fType))
+            //ContextualMethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedErasedType(mt.resType, fType))
+          else if (mt.isImplicitMethod)
+            ImplicitMethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedErasedType(mt.resType, fType))
+          else
+            MethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedErasedType(mt.resType, fType))
+        case _ =>
+            // TODO: optimize
+            val retval = TypeErasure.erasure(decorateTypeApplications(fType).appliedTo(t))
+            println(s"eraded type application: ${retval.show},  is fType == ${retval == fType}, =:+= ${retval =:= fType}")
+            retval
+  }
 
   def findImplicitInstance(tpe: Type, span: Span)(using ctx:Context): Option[Tree] = {
     val searchResult = ctx.typer.inferImplicitArg(tpe,span)

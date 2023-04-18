@@ -26,7 +26,10 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
       } {
         (tree, kind) => Some(DefDefSelectKind.RETURN_CONTEXT_FUN(kind))
       }
-      optKind.foreach(kind => selectedNodes.addDefDef(tree.symbol,kind))
+      optKind.foreach{kind =>
+        selectedNodes.addDefDef(tree.symbol,kind)
+        println(s"phaseSelect, addDefDef for ${tree.symbol}, symbol.id= ${tree.symbol.id}")
+      }
       val childTraversor = new TreeTraverser {
         override def traverse(tree: Tree)(using Context): Unit = {
             tree match
