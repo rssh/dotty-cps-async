@@ -14,6 +14,8 @@ class TestCompileExample1 {
 
     println("summary: " + reporter.summary)
 
+    assert( reporter.allErrors.isEmpty, "There should be no errors" )
+
   }
 
 }

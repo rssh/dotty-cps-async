@@ -71,7 +71,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         val tc = makeCpsTopLevelContext(cpsMonadContext,tree,Some(debugSettings))
         val nTpt = CpsTransformHelper.cpsTransformedType(tree.tpt.tpe, tc.monadType)
         selectRecord.monadType = tc.monadType
-        selectRecord.changedReturnType = nTpt
+        //selectRecord.changedReturnType = nTpt
         given CpsTopLevelContext = tc
         val ctx1: Context = summon[Context].withOwner(tree.symbol)
         val transformedRhs = RootTransform(tree.rhs,tree.symbol,0)(using ctx1, tc).transformed
@@ -91,7 +91,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
             val fType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe, tree.srcPos)
             selectRecord.monadType = fType
             val nClosureType = CpsTransformHelper.cpsTransformedType(closure.tpe, fType)
-            selectRecord.changedReturnType = nClosureType
+            //selectRecord.changedReturnType = nClosureType
             val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
             println(s"creating closure (ref to ${nDefDef.symbol.id}):${nClosure} ")
             println(s"closure.tpe=${closure.tpe.show},  nClosure.tpe=${nClosure.tpe.show}")

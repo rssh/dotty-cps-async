@@ -630,11 +630,12 @@ case class LambdaCpsTree(
   private def createShiftedType()(using Context, CpsTopLevelContext): Type = {
     val params = originDefDef.termParamss.head
     val paramNames = params.map(_.name)
-    val paramTypes = params.map(_.tpe)
-    MethodType(paramNames)(
+    val paramTypes = params.map(_.tpe.widen)
+    val retval = MethodType(paramNames)(
       x => paramTypes,
-      x => CpsTransformHelper.cpsTransformedType(cpsBody.transformedType, tctx.monadType)
-    )    
+      x => cpsBody.transformedType.widen,
+    )
+    retval
   }
 
   private def createUnshiftedType()(using Context): Type = {

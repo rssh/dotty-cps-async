@@ -7,6 +7,9 @@ import scala.annotation.compileTimeOnly
  *  old shape, which can't be changed in compiler plugin before erase step.
  */
 
+//TODO: submit issue to dotty, that we need to have some way to remove function after erasure.
+//       (move checking compileTimeOnly after erasure)
+//
 // we can't use compileTimeOnly for this function, because compileTimeOnly is checked before erasure, and we need to remove it after erasure
 //  when we can change symbol dentations.
 //@compileTimeOnly("adoptForUncpsedDenotation should be removed by dotty-cps-async compiler plugin after symbol dentations will changed")

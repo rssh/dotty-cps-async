@@ -6,6 +6,7 @@ import dotty.tools.dotc.core.Contexts.*
 import dotty.tools.dotc.core.Decorators.*
 import dotty.tools.dotc.core.Denotations.*
 import dotty.tools.dotc.core.DenotTransformers.SymTransformer
+import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.{CompilationUnit, report}
 import dotty.tools.dotc.transform.{Erasure, PureStats, VCElideAllocations}
 import dotty.tools.dotc.transform.TypeUtils.*
@@ -33,12 +34,13 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
         println(s"transformSym for ${sym} (${sym.symbol.id}):  ${sym.info.show} ")
         val monadType = selectRecord.monadType
         val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType)
-        //selectRecord.changedType = ntp
+        selectRecord.changedType = ntp
         println(s"transformSym: ${sym.info.show}  ->  ${ntp.show}, ${sym} '${sym.name.mangledString}' ${sym.symbol.id}")
         sym.copySymDenotation(info = ntp)
       case None =>
         sym
   }
+
 
 
 
@@ -51,18 +53,34 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
       report.error(s"plain tree: ${tree}", tree.srcPos)
     }
 
-    def removeScaffolding(tree: Tree)(using Context): Tree = {
-      tree match
-        case Apply(fn, List(arg)) =>
-          if (Scaffolding.isAdoptForUncpsedDenotation(fn.symbol)) {
-            arg
-          } else {
-            reportErrorWithTree("unexpected rhs for using-context-param: should be adoptedForUncpsedDenoation", tree)
-            tree
-          }
-        case _ =>
-          reportErrorWithTree("unexpected rhs for using-context-param: should be Apply", tree)
-          tree
+    object UncpsedScaffolding {
+      def unapply(tree:Tree)(using Context): Option[Tree] = {
+        tree match
+          case TypeApply(sel@Select(internal,asInstanceOfCn),List(tpt))
+            if (asInstanceOfCn.toString == "asInstanceOf") =>
+               internal match
+                 case UncpsedScaffolding(internal1) =>
+                   Some(cpy.TypeApply(tree)(Select(internal1,asInstanceOfCn),List(TypeTree(internal1.tpe.widen))))
+                 case _ =>
+                   None
+          case Apply(cnUnbox, List(internal)) if Erasure.Boxing.isUnbox(cnUnbox.symbol) =>
+               internal match
+                 case UncpsedScaffolding(internal1) =>
+                    println(s"found unbox, internal1.tpe.widen = ${internal1.tpe.widen.show}")
+                    // TODO: set asInstanceOf ?
+                    Some(internal1)
+                 case _ => None
+          case Block((ddef: DefDef) :: Nil, closure: Closure) =>
+               ddef.rhs match
+                 case UncpsedScaffolding(nRhs) =>
+                   Some(cpy.Block(tree)(cpy.DefDef(ddef)(rhs = nRhs, tpt=TypeTree(nRhs.tpe.widen)) :: Nil, closure))
+                 case _ =>
+                   None
+          case Apply(fn, List(arg)) if (Scaffolding.isAdoptForUncpsedDenotation(fn.symbol)) =>
+              Some(arg)
+          case _ => None
+      }
+
     }
 
 
@@ -73,25 +91,27 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
         //  - type params are removed
         //  - all argument lists are merged into one
         //  - box/unbox for primitive types are inserted
-        if (tree.tpt.tpe.isPrimitiveValueType || tree.tpt.tpe.isErasedValueType)
-          tree.rhs match
-            case Apply(cnUnbox, List(arg)) if Erasure.Boxing.isUnbox(cnUnbox.symbol) =>
-              val nRhs = removeScaffolding(arg)
-              val nTpe = CpsTransformHelper.cpsTransformedErasedType(tree.tpt.tpe, selectRecord.monadType)
-              // TODO: set type by hand ?
-              cpy.DefDef(tree)(rhs = nRhs, tpt = TypeTree(nTpe))
-            case _ =>
-              reportErrorWithTree("unexpected rhs for using-context-param: should be unbox", tree.rhs)
-              tree
-        else
-          tree.rhs match
-            case  oldLambda@Block((ddef: DefDef) :: Nil, closure: Closure) =>
-              val nDefDef = transformDefDef(ddef)
-              val nLambda = cpy.Block(tree.rhs)(nDefDef :: Nil, closure)
-              cpy.DefDef(tree)(rhs = nLambda, tpt = TypeTree(nDefDef.tpe.widen))
-            case _ =>
-              val nRhs = removeScaffolding(tree.rhs)
-              cpy.DefDef(tree)(rhs = nRhs, tpt = TypeTree(nRhs.tpe.widen))
+        tree.rhs match
+          case UncpsedScaffolding(nRhs) =>
+            println(s"found uncpsed scaffolding for ${tree.symbol} (${tree.symbol.id})")
+            println(s"nRhs.tpe = ${nRhs.tpe.widen.show}")
+            val changedDdefType = if (selectRecord.changedType != Types.NoType) {
+              selectRecord.changedType
+            } else {
+              CpsTransformHelper.cpsTransformedErasedType(tree.symbol.info, selectRecord.monadType)
+            }
+            val nTpt = retrieveReturnType(changedDdefType)
+            println(s"nTpt = ${nTpt.show}")
+            val typedNRhs = if (nRhs.tpe.widen <:< nTpt) {
+              nRhs
+            } else {
+              TypeApply(Select(nRhs, "asInstanceOf".toTermName), List(TypeTree(nTpt)))
+            }
+            // TODO: insert asInstanceOf ?
+            cpy.DefDef(tree)(rhs = typedNRhs, tpt = TypeTree(nTpt))
+          case _ =>
+            reportErrorWithTree(s"not found uncpsed scaffolding for ${tree.symbol} (${tree.symbol.id})", tree.rhs)
+            tree
       case None =>
         tree
   }
@@ -113,6 +133,15 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
         }
       case _ =>
         tree
+  }
+
+  def retrieveReturnType(ddefType: Type)(using Context): Type = {
+    ddefType match
+      case mt: MethodType =>
+        mt.resType
+      case _ =>
+        report.error(s"not found return type for ${ddefType.show}")
+        Types.NoType
   }
 
 }

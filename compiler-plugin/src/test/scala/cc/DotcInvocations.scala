@@ -14,14 +14,14 @@ class DotcInvocations {
     val args = List("-d", outDir) ++
              extraArgs ++
              List("-Xplugin:src/main/resources", "-usejavacp") ++
-             List("-Ycheck:rssh.cps") ++
+             List("-Ycheck:all") ++
              //List("-Yprint-syms") ++
              //List("-Yprint-debug") ++
              //List("-Yshow-tree-ids") ++
              //List("-verbose") ++
              //List("-unchecked") ++
              List("--color:never") ++
-             List("-Vprint:rssh.cps") ++
+             //List("-Vprint:rssh.cps") ++
              //List("-Vprint:inlining") ++
              //List("-Vprint:constructors") ++
              //List("-Vprint:lambdaLift") ++

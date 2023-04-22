@@ -57,10 +57,10 @@ object ApplyArg {
                   case AsyncKind.AsyncLambda(_) =>
                     PlainApplyArg(paramName,paramType,cpsExpr,None,isMonadContext)
                   case _ =>
-                    val sym = newSymbol(owner,paramName,Flags.EmptyFlags,paramType,NoSymbol)
+                    val sym = newSymbol(owner,paramName,Flags.EmptyFlags,paramType.widen,NoSymbol)
                     val optRhs =  cpsExpr.unpure
                     val valDef =  ValDef(sym.asTerm, optRhs.getOrElse(EmptyTree))
-                    PlainApplyArg(paramName,paramType,cpsExpr,Some(valDef), isMonadContext)
+                    PlainApplyArg(paramName,paramType.widen,cpsExpr,Some(valDef), isMonadContext)
   }
 
 }

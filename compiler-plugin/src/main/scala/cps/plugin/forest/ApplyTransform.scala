@@ -76,13 +76,13 @@ object ApplyTransform {
       val retval = if (containsAsyncLambda) {
         tctx.optRuntimeAwait match
           case Some(runtimeAwait) =>
-            genApplication(origin,owner,fun,argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait)))
+            genApplication(origin,owner,fun,argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait)), false)
           case None =>
             if (fun.denot != NoDenotation) {
                   // check -- can we add shifted version of fun
                   val shfnr = retrieveShiftedFun(origin,fun,owner)
                   val nArgss = if (false && shfnr.skipFirstTargs) argss.tail else argss
-                  val r = genApplication(origin, owner, shfnr.newFun, nArgss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None))
+                  val r = genApplication(origin, owner, shfnr.newFun, nArgss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), true)
                   println(s"application of shifted function: ${r.show},  shfnr=${shfnr}")
                   println(s"origin=${origin.show}")
                   println(s"argss=${argss.map(_.show).mkString(",")}")
@@ -96,7 +96,7 @@ object ApplyTransform {
                   throw CpsTransformException(s"Can't transform function ${fun}",fun.srcPos)
             }
       } else if (containsAsync) {
-        genApplication(origin, owner, fun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None))
+        genApplication(origin, owner, fun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None), false)
       } else {
         parseSyncFunPureApplication(origin,owner, fun, argss)
       }
@@ -113,13 +113,13 @@ object ApplyTransform {
             Apply(s,args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))).withSpan(orig.span)
      }
      if (argss.exists(_.containsMonadContext)) {
-       CpsTree.impure(origin, owner, Scaffolding.adoptCpsedCall(plainTree, summon[CpsTopLevelContext].monadType))
+       CpsTree.impure(origin, owner, Scaffolding.adoptCpsedCall(plainTree, origin.tpe.widen, summon[CpsTopLevelContext].monadType))
      } else {
        CpsTree.pure(origin, owner, plainTree)
      }
   }
 
-  def genApplication(origin:Apply, owner: Symbol, fun: Tree, argss: List[ApplyArgList], f: ApplyArg => Tree)(using Context, CpsTopLevelContext): CpsTree = {
+  def genApplication(origin:Apply, owner: Symbol, fun: Tree, argss: List[ApplyArgList], f: ApplyArg => Tree, isImpure: Boolean)(using Context, CpsTopLevelContext): CpsTree = {
     println(s"genApplication origin: ${origin.show}")
     
     def genOneLastPureApply(fun: Tree, argList: ApplyArgList): Tree =
@@ -164,7 +164,9 @@ object ApplyTransform {
 
     val pureReply = genPureReply(fun,argss)
     val lastCpsTree = if (argss.exists(_.containsMonadContext)) {
-      CpsTree.impure(origin,owner,Scaffolding.adoptCpsedCall(pureReply, summon[CpsTopLevelContext].monadType))
+      CpsTree.impure(origin, owner, Scaffolding.adoptCpsedCall(pureReply, origin.tpe.widen, summon[CpsTopLevelContext].monadType))
+    } else if (isImpure) {
+      CpsTree.impure(origin, owner, pureReply)
     } else {
       CpsTree.pure(origin,owner,pureReply)
     }
@@ -172,6 +174,7 @@ object ApplyTransform {
     val nApplyCpsTree = genPrefixes(argss, lastCpsTree)
     val retval = nApplyCpsTree
     println(s"genApplication result: ${retval.show}")
+    println(s"genApplication exists containsMonadContext: ${argss.exists(_.containsMonadContext)}")
     retval
   }
 
@@ -288,8 +291,7 @@ object ApplyTransform {
          checkAsyncShiftedMethod(originMethod, candidateMethod) match
            case Left(err) => prepareAsyncShiftedMethodCall(originMethod, obj, nObj, methods.tail, targs)
            case Right(shape) =>
-             val nMethodType = candidateMethod.namedType
-             val nSelect = nObj.select(nMethodType)
+             val nSelect = nObj.select(candidateMethod)
              val fType = summon[CpsTopLevelContext].monadType
              shape match
                case ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM_LIST =>

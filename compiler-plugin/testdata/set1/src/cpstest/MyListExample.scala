@@ -1,6 +1,6 @@
 package cpstest
 
-/*
+
 import cps._
 
 sealed trait MyList[+A] {
@@ -36,14 +36,6 @@ import scala.concurrent.*
 import cps._
 import cps.monads.{*,given}
 
-/*
-Monad {
-
-  def pure
-  def map
-
-}
-*/
 
 object MyListExample {
 
@@ -72,6 +64,10 @@ object MyListExample {
     //println(otherList)
   //}
 
+  //def fetchList(urls: List[String]): Future[List[String]] = async[Future] {
+  //  urls.map(url => network.fetch(url))
+  //}
+
   //
   def fetchList(urls: List[String]): CpsMonadContext[Future] ?=> List[String] =
       urls.map(url => network.fetch(url) )
@@ -79,8 +75,9 @@ object MyListExample {
   //def myFunction2_compiler(l: MyList[String]): CpsMonadContext[Future] ?=> Future[MyList[String]] = ...
 
 
+
 }
 
 //  EffectLike[Effects] =  [T] =>> EffectLikeM[Effects,T]
 //
-*/
+

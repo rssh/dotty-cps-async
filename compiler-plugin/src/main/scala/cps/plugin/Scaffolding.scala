@@ -29,10 +29,10 @@ object Scaffolding {
     adoptedTree
   }
 
-  def adoptCpsedCall(tree: Tree, fType: Type)(using Context): Tree = {
+  def adoptCpsedCall(tree: Tree, origType: Type, fType: Type)(using Context): Tree = {
     val adoptSymbol = Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")
     val adoptIdent = ref(adoptSymbol)
-    Apply(TypeApply(adoptIdent, List(TypeTree(fType), TypeTree(tree.tpe.widen))), tree :: Nil)
+    Apply(TypeApply(adoptIdent, List(TypeTree(fType), TypeTree(origType))), tree :: Nil)
   }
 
   def isAdoptForUncpsedDenotation(sym: Symbol)(using Context): Boolean = {
