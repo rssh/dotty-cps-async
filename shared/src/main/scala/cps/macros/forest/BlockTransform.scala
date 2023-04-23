@@ -134,7 +134,7 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
       discardTerm.tpe.asType match
         case '[AwaitValueDiscard[F,tt]] =>
            val refP = p.asExprOf[F[tt]]
-           '{  await[F,tt,F]($refP)(using ${cpsCtx.monad}, ${cpsCtx.monadContext})  }
+           '{  await[F,tt,F]($refP)(using ${cpsCtx.monadContext}, CpsMonadConversion.identityConversion[F])  }
         //bug in dotty. TODO: submit
         //case '[AwaitValueDiscard[[xt]=>>ft,tt]] =>
         //   ???

@@ -21,7 +21,7 @@ object FutureAsync:
 
   inline def await[T](x:Future[T])(using ec: ExecutionContext):T = 
     val fm = FutureAsyncMonad(using ec)
-    cps.await[Future, T, Future](x)(using fm, FutureContext(fm))
+    cps.await[Future, T, Future](x)(using FutureContext(fm), CpsMonadConversion.identityConversion[Future])
 
 
 val sip22 = FutureAsync

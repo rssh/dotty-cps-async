@@ -47,7 +47,7 @@ class SLSelect[F[_], S](m:CpsMonad[F]):
   
   transparent inline def apply1[A](inline ch: IFReader[F,A], f: A=>S)(using CpsMonadContext[F]): S =
       val s0 = new SLSelect[F,S](asyncMonad)
-      await(s0.onRead(ch)(f).runAsync())(using asyncMonad)
+      await(s0.onRead(ch)(f).runAsync())
   
   inline def apply2[A](inline pf: PartialFunction[Any,S]): S =
       ???
@@ -57,7 +57,7 @@ class SLSelect[F[_], S](m:CpsMonad[F]):
       throw new RuntimeException("TestCase:runAsync:NotImplemented")
 
   transparent inline def run()(using mc: CpsMonadContext[F]): S =
-    await(runAsync())(using asyncMonad, mc)
+    await(runAsync())
       
   def fold[S](s0:S)(step: (S,SLSelect[F,S])=> S|SLSelect.Done[S]): S = {
      step(s0, new SLSelect[F,S](m) ) match {
@@ -112,7 +112,7 @@ object SLSelect:
           val g: Expr[SLSelect[F,Boolean]] = caseDefs.foldLeft(s0){(s,e) =>
               e.appended(s)
           }
-          val r = '{ await($g.runAsync())(using $m, $mc) }
+          val r = '{ await($g.runAsync())(using $mc, CpsMonadConversion.identityConversion[F]) }
           r.asExprOf[Unit]
       }
       runImpl( builder, pf)
@@ -126,7 +126,7 @@ object SLSelect:
           val g: Expr[SLSelect[F,S]] = caseDefs.foldLeft(s0){(s,e) =>
               e.appended(s)
           }
-          val r = '{ await($g.runAsync())(using $m, $mc) }
+          val r = '{ await($g.runAsync())(using $mc, CpsMonadConversion.identityConversion[F]) }
           r
       }
       runImpl( builder, pf)

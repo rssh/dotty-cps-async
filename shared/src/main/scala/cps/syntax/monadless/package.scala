@@ -17,6 +17,6 @@ transparent inline def lift[F[_]](using am: CpsMonad[F]) =
 /**
  * Synomym for `await`
  **/
-transparent inline def unlift[F[_],T,G[_]](f: F[T])(using am:CpsAwaitable[F], ctx: CpsMonadContext[G]): T = 
-  cps.await[F,T,G](f)(using am, ctx)
+transparent inline def unlift[F[_],T,G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMonadConversion[F,G]): T =
+  cps.await[F,T,G](f)(using ctx, conversion)
 

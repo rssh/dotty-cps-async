@@ -60,7 +60,7 @@ class SLSelectLoop[F[_]](using val am:CpsMonad[F]):
       am.map(readers.head.reader.aread())(a => ())
 
   transparent inline def run()(using CpsMonadContext[F]): Unit =
-    await(runAsync())
+    await(runAsync())(using summon[CpsMonadContext[F]], CpsMonadConversion.identityConversion[F])
       
   def fold[S](s0:S)(step: (S,SLSelectLoop[F])=> S|SLSelectLoop.Done[S]): S = {
      fold1[S](s0)(step, 10)

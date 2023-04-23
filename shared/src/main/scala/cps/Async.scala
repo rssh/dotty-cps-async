@@ -14,7 +14,7 @@ import scala.compiletime._
  * Pseudofunction, which can be used inside async block, to 'await' (i.e. receive value of `t:T` from `ft:F[T]`).
  **/
 @compileTimeOnly("await should be inside async block")
-def await[F[_],T,G[_]](f: F[T])(using am:CpsAwaitable[F], ctx: CpsMonadContext[G]): T = ???
+def await[F[_],T,G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMonadConversion[F,G]): T = ???
 
 /**
  * async block, which can contains awaits.
@@ -39,6 +39,6 @@ transparent inline def reify[F[_]](using am: CpsMonad[F]) =
 /**
  * Synonym for `await` 
  **/
-transparent inline def reflect[F[_],T,G[_]](f: F[T])(using inline am:CpsAwaitable[F], inline ctx: CpsMonadContext[G]): T = 
+transparent inline def reflect[F[_],T,G[_]](f: F[T])(using inline ctx: CpsMonadContext[G], inline conv: CpsMonadConversion[F,G]): T =
    await[F,T,G](f)
 
