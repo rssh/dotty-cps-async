@@ -80,10 +80,9 @@ object ApplyTransform {
           case None =>
             if (fun.denot != NoDenotation) {
                   // check -- can we add shifted version of fun
-                  val shfnr = retrieveShiftedFun(origin,fun,owner)
-                  val nArgss = if (false && shfnr.skipFirstTargs) argss.tail else argss
-                  val r = genApplication(origin, owner, shfnr.newFun, nArgss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), true)
-                  println(s"application of shifted function: ${r.show},  shfnr=${shfnr}")
+                  val newFun = retrieveShiftedFun(origin,fun,owner)
+                  val r = genApplication(origin, owner, newFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), true)
+                  println(s"application of shifted function: ${r.show},  newFun=${newFun.show}")
                   println(s"origin=${origin.show}")
                   println(s"argss=${argss.map(_.show).mkString(",")}")
                   r
@@ -191,15 +190,6 @@ object ApplyTransform {
     ApplyTypeArgList(term,term.args.map(tt => TypeTree(tt.tpe)))
   }
 
-  /**
-   *  result of shifted function.
-   * @param newFun  - tree, which represent shifted function. Can contains type arguments and additional
-   *                parameter list in case of shifted objects.
-   * @param skipFirstTargs - if true, then newFun contains first list of type arguments with appended
-   *                       F[_] and during build of function call, we should skip first type arguments
-   *                       from original function call as already present in newFun.
-   */
-  case class ShiftedFunResult(newFun:Tree, skipFirstTargs:Boolean)
 
   /**
    * retrieve shifted function or throw exception.
@@ -207,9 +197,9 @@ object ApplyTransform {
    * @param owner
    * @param Context
    * @param CpsTopLevelContext
-   * @return
+   * @return  new function (with type arguments and additional parameter list if needed)
    */
-  def retrieveShiftedFun(origin: Tree,  fun:Tree, owner:Symbol)(using Context, CpsTopLevelContext): ShiftedFunResult = {
+  def retrieveShiftedFun(origin: Tree,  fun:Tree, owner:Symbol)(using Context, CpsTopLevelContext): Tree = {
 
     val tctx = summon[CpsTopLevelContext]
 
@@ -283,7 +273,7 @@ object ApplyTransform {
 
 
     @tailrec
-    def prepareAsyncShiftedMethodCall(originMethod:Symbol, obj:Tree, nObj: Tree, methods: Seq[Symbol], targs: List[Tree]): ShiftedFunResult = {
+    def prepareAsyncShiftedMethodCall(originMethod:Symbol, obj:Tree, nObj: Tree, methods: Seq[Symbol], targs: List[Tree]): Tree = {
        if (methods.isEmpty)
          throw CpsTransformException(s"Can't find async-shifted method ${originMethod.name} of ${obj.show} in ${nObj.show}", fun.srcPos)
        else {
@@ -295,25 +285,19 @@ object ApplyTransform {
              val fType = summon[CpsTopLevelContext].monadType
              shape match
                case ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM_LIST =>
-                 ShiftedFunResult(
                    Apply(
                      TypeApply(nSelect, List(TypeTree(fType))),
                      List(obj, tctx.cpsMonadRef)
-                   ).withSpan(fun.span),
-                   false
-                 )
+                   ).withSpan(fun.span)
                case ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM =>
-                 ShiftedFunResult(
                    Apply(
                      TypeApply(nSelect, TypeTree(fType)::targs),
                      List(obj, tctx.cpsMonadRef)
-                   ).withSpan(fun.span),
-                   true
-                 )
+                   ).withSpan(fun.span)
        }
     }
 
-    def retrieveShiftedMethod(obj: Tree, methodName: Name, targs:List[Tree] ): ShiftedFunResult = {
+    def retrieveShiftedMethod(obj: Tree, methodName: Name, targs:List[Tree] ): Tree = {
 
       tryFindInplaceAsyncShiftedMethods(obj.tpe.widen.classSymbol, methodName, Set("_async","Async","$cps")) match
         case Left(err) =>
@@ -352,16 +336,13 @@ object ApplyTransform {
               val funWithoutTypeapply =  Select(obj,TermRef(obj.tpe,sym)).withSpan(fun.span)
               shape match
                 case ShiftedArgumentsInplaceShape.SAME_PARAMS =>
-                  ShiftedFunResult(funWithoutTypeapply,false)
+                  funWithoutTypeapply
                 case ShiftedArgumentsInplaceShape.EXTRA_TYPEPARAM =>
                   val tctx = summon[CpsTopLevelContext]
                   val retval = TypeApply(funWithoutTypeapply, TypeTree(tctx.monadType) :: targs).withSpan(fun.span)
-                  ShiftedFunResult(retval,true)
+                  retval
                 case ShiftedArgumentsInplaceShape.EXTRA_TYPEPARAM_LIST =>
-                  ShiftedFunResult(
-                    TypeApply(funWithoutTypeapply, targs :+ TypeTree(obj.tpe.widen)).withSpan(fun.span),
-                    false
-                  )
+                  TypeApply(funWithoutTypeapply, targs :+ TypeTree(obj.tpe.widen)).withSpan(fun.span)
             case None =>
               throw CpsTransformException(s"Can't find async-shifted method ${methodName} for ${obj.show}", fun.srcPos)
 
