@@ -7,7 +7,6 @@ import scala.language.implicitConversions
 import scalajs.*
 import scala.concurrent.Future
 
-given CpsAwaitable[js.Promise] with {}
 
 given CpsMonadMemoization[js.Promise] = CpsMonadMemoization.Default[js.Promise]()
 
