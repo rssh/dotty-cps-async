@@ -12,6 +12,8 @@ import dotty.tools.dotc.transform.{Erasure, PureStats, VCElideAllocations}
 import dotty.tools.dotc.transform.TypeUtils.*
 import dotty.tools.dotc.plugins.PluginPhase
 
+import scala.collection.immutable.Nil
+
 class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase, SymTransformer {
 
   override def phaseName: String = PhaseCpsChangeSymbols.name
@@ -42,6 +44,36 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
   }
 
 
+  object UncpsedScaffolding {
+
+    def unapply(tree: Tree)(using Context): Option[Tree] = {
+      tree match
+        case TypeApply(sel@Select(internal, asInstanceOfCn), List(tpt))
+          if (asInstanceOfCn.toString == "asInstanceOf") =>
+          internal match
+            case UncpsedScaffolding(internal1) =>
+              Some(cpy.TypeApply(tree)(Select(internal1, asInstanceOfCn), List(TypeTree(internal1.tpe.widen))))
+            case _ =>
+              None
+        case Apply(cnUnbox, List(internal)) if Erasure.Boxing.isUnbox(cnUnbox.symbol) =>
+          internal match
+            case UncpsedScaffolding(internal1) =>
+              println(s"found unbox, internal1.tpe.widen = ${internal1.tpe.widen.show}")
+              // TODO: set asInstanceOf ?
+              Some(internal1)
+            case _ => None
+        case Block((ddef: DefDef) :: Nil, closure: Closure) =>
+          ddef.rhs match
+            case UncpsedScaffolding(nRhs) =>
+              Some(cpy.Block(tree)(cpy.DefDef(ddef)(rhs = nRhs, tpt = TypeTree(nRhs.tpe.widen)) :: Nil, closure))
+            case _ =>
+              None
+        case Apply(fn, List(arg)) if (Scaffolding.isAdoptForUncpsedDenotation(fn.symbol)) =>
+          Some(arg)
+        case _ => None
+    }
+
+  }
 
 
   override def transformDefDef(tree: DefDef)(using Contexts.Context): Tree = {
@@ -53,35 +85,6 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
       report.error(s"plain tree: ${tree}", tree.srcPos)
     }
 
-    object UncpsedScaffolding {
-      def unapply(tree:Tree)(using Context): Option[Tree] = {
-        tree match
-          case TypeApply(sel@Select(internal,asInstanceOfCn),List(tpt))
-            if (asInstanceOfCn.toString == "asInstanceOf") =>
-               internal match
-                 case UncpsedScaffolding(internal1) =>
-                   Some(cpy.TypeApply(tree)(Select(internal1,asInstanceOfCn),List(TypeTree(internal1.tpe.widen))))
-                 case _ =>
-                   None
-          case Apply(cnUnbox, List(internal)) if Erasure.Boxing.isUnbox(cnUnbox.symbol) =>
-               internal match
-                 case UncpsedScaffolding(internal1) =>
-                    println(s"found unbox, internal1.tpe.widen = ${internal1.tpe.widen.show}")
-                    // TODO: set asInstanceOf ?
-                    Some(internal1)
-                 case _ => None
-          case Block((ddef: DefDef) :: Nil, closure: Closure) =>
-               ddef.rhs match
-                 case UncpsedScaffolding(nRhs) =>
-                   Some(cpy.Block(tree)(cpy.DefDef(ddef)(rhs = nRhs, tpt=TypeTree(nRhs.tpe.widen)) :: Nil, closure))
-                 case _ =>
-                   None
-          case Apply(fn, List(arg)) if (Scaffolding.isAdoptForUncpsedDenotation(fn.symbol)) =>
-              Some(arg)
-          case _ => None
-      }
-
-    }
 
 
     selectedNodes.getDefDefRecord(tree.symbol) match
@@ -105,6 +108,8 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
             val typedNRhs = if (nRhs.tpe.widen <:< nTpt) {
               nRhs
             } else {
+              // we know that monads are not primitive types.
+              //  (potentially, we can have monadic value classes in future)
               TypeApply(Select(nRhs, "asInstanceOf".toTermName), List(TypeTree(nTpt)))
             }
             // TODO: insert asInstanceOf ?
@@ -116,23 +121,29 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
         tree
   }
 
+  object CpsedScaffolding {
+
+    def unapply(tree: Tree)(using Context): Option[Tree] = {
+      tree match
+        case Apply(fn, List(arg)) if (Scaffolding.isAdoptCpsedCall(fn.symbol)) =>
+          // TODO:  (are we need check for isInstanceOf here?)
+          arg match
+            case Apply(fn1, List(arg1)) if Erasure.Boxing.isBox(fn1.symbol) =>
+              Some(arg1)
+            case _ =>
+              Some(arg)
+        case _ => None
+    }
+
+
+  }
+
   override def transformApply(tree: Apply)(using Contexts.Context): Tree = {
     tree match
-      case Apply(fn, List(arg)) =>
-        // after erasure we have no TypeApply (TODO: check it)
-        if (Scaffolding.isAdoptCpsedCall(fn.symbol)) {
-          //  TODO: mb we should transform childs of arg.
-          //  need to recheck, if transform is applied by defualt.
-          //    arg type is changed in symbold denotation, but here compiler can yet not known about this,
-          //     so let set new type manually.
-
-          // TODO: for primitive types insert boxing/unboxing
+      case CpsedScaffolding(arg) =>
           arg.withType(tree.tpe.widen)
-        } else {
-          super.transformApply(tree)
-        }
       case _ =>
-        tree
+          super.transformApply(tree)
   }
 
   def retrieveReturnType(ddefType: Type)(using Context): Type = {

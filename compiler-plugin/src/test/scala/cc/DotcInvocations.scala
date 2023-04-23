@@ -21,7 +21,8 @@ class DotcInvocations {
              //List("-verbose") ++
              //List("-unchecked") ++
              List("--color:never") ++
-             //List("-Vprint:rssh.cps") ++
+             List("-Vprint:erasure") ++
+             List("-Vprint:rssh.cps") ++
              //List("-Vprint:inlining") ++
              //List("-Vprint:constructors") ++
              //List("-Vprint:lambdaLift") ++

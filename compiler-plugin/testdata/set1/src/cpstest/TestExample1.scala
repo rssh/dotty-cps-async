@@ -1,6 +1,6 @@
 package cpstest
 
-/*
+
 import scala.annotation.*
 import scala.concurrent.*
 import scala.concurrent.duration.*
@@ -35,7 +35,7 @@ class TestExample1:
   def myFun(): Unit = {
     println(1)
   }
-*/
+
 
   /*
   @Test def testExample1Free(): Unit = 
