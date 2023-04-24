@@ -94,7 +94,7 @@ trait BlockTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
     discardTerm.tpe.asType match
         case '[AwaitValueDiscard[F,tt]] =>
            val refP = p.asExprOf[F[tt]]
-           '{  await[F,tt,F]($refP)(using ${cpsCtx.monad}, ${cpsCtx.monadContext})  }.asTerm
+           '{  await[F,tt,F]($refP)(using ${cpsCtx.monadContext}, CpsMonadConversion.identityConversion[F])  }.asTerm
            //bug in dotty. TODO: submit
            //case '[AwaitValueDiscard[[xt]=>>ft,tt]] =>
            //   ???

@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference
  * Implementing this typeclass is enough to use async/await with supports of
  * basic control-flow constructions (if, loops, but no exceptions).
  */
-trait CpsMonad[F[_]] extends CpsAwaitable[F] {
+trait CpsMonad[F[_]]  {
 
    type WF[X] = F[X]
 
@@ -64,12 +64,6 @@ object CpsMonad {
 }
 
 
-/**
- * Marker typeclass for wrappers, which we can await.
- * Such traits can be not monads itself (for example, its impossible to set monad structure over js.Promise)
- * but can be convertable into cps monads.
- **/
-trait CpsAwaitable[F[_]] 
 
 
 /**

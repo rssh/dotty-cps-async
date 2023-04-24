@@ -15,13 +15,13 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
   import qctx.reflect._
 
-  def runAwait(term: Term, arg: Term, awaitCpsMonadType: TypeRepr, awaitCpsMonad: Term, awaitCpsMonadContext: Term)(owner:Symbol): CpsTree =
+  def runAwait(term: Term, arg: Term, awaitCpsMonadType: TypeRepr, awaitCpsMonadConversion: Term, awaitCpsMonadContext: Term)(owner:Symbol): CpsTree =
       if cpsCtx.flags.debugLevel >= 10 then
           cpsCtx.log(s"runAwait, arg=${arg.show}")
       val r = if awaitCpsMonadType =:= monadTypeTree.tpe then
         runMyAwait(term, arg, awaitCpsMonadContext)(owner)
       else
-        runOtherAwait(term, arg, awaitCpsMonadType, awaitCpsMonad, awaitCpsMonadContext)(owner)
+        runOtherAwait(term, arg, awaitCpsMonadType, awaitCpsMonadConversion, awaitCpsMonadContext)(owner)
       if cpsCtx.flags.debugLevel >= 10 then
           cpsCtx.log(s"runAwait result=${r}")
       r
@@ -36,35 +36,33 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
       val cpsArg = runRoot(adoptedArg)(owner)
       cpsArg.applyAwait(awaitTerm.tpe)
 
-  def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, otherCpsMonad: Term, myMonadContext: Term)(owner: Symbol): CpsTree =
-      val myCpsMonad = cpsCtx.monad.asTerm
-      val myCpsMonadTpe = myCpsMonad.tpe
+  def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, awaitCpsMonadConversion: Term, myMonadContext: Term)(owner: Symbol): CpsTree =
+      //val myCpsMonad = cpsCtx.monad.asTerm
+      //val myCpsMonadTpe = myCpsMonad.tpe
       val myF = TypeRepr.of[F]
       val otherF = targ
       val tTpe = awaitTerm.tpe.widen
       //val conversion = TypeIdent(Symbol.classSymbol("scala.Conversion")).tpe
       //val taConversion = conversion.appliedTo(List(otherF.appliedTo(tTpe), myF.appliedTo(tTpe)))
       val monadConversion = TypeIdent(Symbol.classSymbol("cps.CpsMonadConversion")).tpe
-      val taConversion = monadConversion.appliedTo(List(otherF, myF))
-      Implicits.search(taConversion) match
-           case implSuccess: ImplicitSearchSuccess =>
-             //val convertedArg = Apply(Select.unique(implSuccess.tree, "apply"),List(arg))
-             val convertedArg = Apply(TypeApply(Select.unique(implSuccess.tree, "apply"),List(Inferred(tTpe))),List(arg))
-             runMyAwait(awaitTerm, convertedArg, myMonadContext)(owner)
-           case implFailure: ImplicitSearchFailure =>
-             val taConversionPrinted = try {
-               taConversion.show
-             } catch {
-               case NonFatal(ex) =>
-                taConversion.toString
-             }
-             throw MacroError(s"Can't find ${taConversionPrinted}: ${implFailure.explanation}",posExprs(awaitTerm))
+      // TODO: check for identity conversion and optimize one out
+      val convertedArg = Apply(TypeApply(Select.unique(awaitCpsMonadConversion, "apply"), List(Inferred(tTpe))), List(arg))
+      runMyAwait(awaitTerm, convertedArg, myMonadContext)(owner)
+
 
 
   def adoptContextInMyAwait(awaitTerm: Term, arg: Term, monadContext: Term): Term =
     //val monadContext = findContextObject()
-    val adoptedArg = Apply(
-      TypeApply(Select.unique(monadContext,"adoptAwait"), List(Inferred(awaitTerm.tpe.widen)) ),
-      List(arg)
-    )
-    adoptedArg
+    try {
+      val adoptedArg = Apply(
+        TypeApply(Select.unique(monadContext, "adoptAwait"), List(Inferred(awaitTerm.tpe.widen))),
+        List(arg)
+      )
+      adoptedArg
+    } catch {
+      case ex: Throwable =>
+        println(s"exception in await, monadContext=${monadContext.show}, arg=${arg.show}, pos=${awaitTerm.pos}")
+        report.error(s"exception in await, monadContext=${monadContext.show}, arg=${arg.show}",awaitTerm.pos)
+        throw ex
+    }
+

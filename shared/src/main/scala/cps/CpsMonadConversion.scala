@@ -8,9 +8,11 @@ package cps
 trait CpsMonadConversion[F[_],G[_]]:
   def apply[T](ft:F[T]): G[T]
 
+
 object CpsMonadConversion:
 
-  given indentityCMC[F[_]]: CpsMonadConversion[F,F] with
-      def apply[T](ft:F[T]):F[T] = ft
+  given identityConversion[F[_]]: CpsMonadConversion[F,F] with
+    def apply[T](ft:F[T]): F[T] = ft
 
 end CpsMonadConversion
+

@@ -47,11 +47,11 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
             handleFunIdent(applyTerm, fun, args, name, tails)(owner)
        case Apply(fun1@TypeApply(obj2,targs2), args1) if obj2.symbol == awaitSymbol =>
              // catch await early
-             val (awaitable, monadContext) = args match
+             val (monadContext, conversion) = args match
                case List(frs, snd) => (frs, snd)
                case other =>
                   throw MacroError(s"expected that await have two implicit argument, our args:${args}", posExprs(fun, applyTerm))
-             runAwait(applyTerm, args1.head, targs2.head.tpe, awaitable, monadContext)(owner)
+             runAwait(applyTerm, args1.head, targs2.head.tpe, conversion, monadContext)(owner)
        case applyFun@Apply(TypeApply(obj2,targs2),args1) if obj2.symbol == nonLocalReturnsThrowReturnSym /*&& cpsCtx.inShiftedReturning*/ =>
              runNonLocalReturnsThrowReturn(applyTerm, applyFun, args1.head, targs2, args.head)(owner)
        case Apply(fun1, args1) =>
@@ -209,10 +209,12 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                  cv)
               ) if (obj3.symbol == awaitSymbol
                    && xValDef.symbol == x.symbol) =>
+                  val monadContext = args1.head
+                  val monadConversion = args1.tail.head
                   // here we catch await, inserted by implicit conversion.
                   // this code is likey depends from implementation details of a compiler
                   // mb create compiler-level API ?
-                  withInlineBindings(owner, conv, runAwait(applyTerm, args.head, targs3.head.tpe, args1.head, args1.tail.head)(owner))
+                  withInlineBindings(owner, conv, runAwait(applyTerm, args.head, targs3.head.tpe,monadConversion, monadContext)(owner))
        case conv@Inlined(_,_,
                  Lambda(List(xValDef),
                    Block(List(),Apply(Apply(TypeApply(obj3,targs3),List(x)),args1)))
@@ -220,7 +222,9 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                    && xValDef.symbol == x.symbol) =>
                   // transient inlines have no 'Typed' entry
                   //  TODO: handle non-inlined conversion
-                  withInlineBindings(owner,conv,runAwait(applyTerm, args.head, targs3.head.tpe, args1.head, args1.tail.head)(owner))
+                  val monadContext = args1.head
+                  val monadConversion = args1.tail.head
+                  withInlineBindings(owner,conv,runAwait(applyTerm, args.head, targs3.head.tpe, monadConversion, monadContext)(owner))
        case _ =>
          val cpsObj = runRoot(obj)(owner)
          if (cpsCtx.flags.debugLevel >= 15)

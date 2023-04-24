@@ -20,7 +20,7 @@ trait IFWriter[F[_],A]:
     cpsMonad.pure(())
 
   transparent inline def write(inline a:A)(using inline monadContext: CpsMonadContext[F]): Unit =
-    await[F,Unit,F](awrite(a))(using wCpsMonad, monadContext )
+    await[F,Unit,F](awrite(a))(using monadContext, CpsMonadConversion.identityConversion[F] )
 
 
 class CIFWriter[F[_]:CpsMonad,A]  extends IFWriter[F,A]:
@@ -39,13 +39,13 @@ trait IFReader[F[_],A]:
         cpsMonad.pure(value.get)
 
    transparent inline def read()(using inline monadContext: CpsMonadContext[F]):A =
-        await(aread())(using cpsMonad)
+        await(aread())(using monadContext, CpsMonadConversion.identityConversion[F])
 
    def aOptRead(): F[Option[A]]=
         cpsMonad.pure(value)
 
    transparent inline def optRead()(using inline monadContext: CpsMonadContext[F]): Option[A] =
-        await(aOptRead())(using cpsMonad)
+        await(aOptRead())(using monadContext, CpsMonadConversion.identityConversion[F])
         
 
    def foreach_async(f: A=> F[Unit]): F[Unit] =
@@ -63,7 +63,7 @@ trait IFReader[F[_],A]:
      }
 
    transparent inline def foreach(inline f: CpsMonadContext[F] ?=> A=>Unit)(using CpsMonadContext[F]): Unit =
-        await(aforeach(f))(using cpsMonad, summon[CpsMonadContext[F]])
+     await(aforeach(f))(using summon[CpsMonadContext[F]], CpsMonadConversion.identityConversion[F])
 
 class CIFReader[F[_]:CpsMonad,A](a:A) extends IFReader[F,A]:
 

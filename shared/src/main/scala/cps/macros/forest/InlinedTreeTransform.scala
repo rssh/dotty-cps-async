@@ -1,5 +1,5 @@
 // CPS Transform for tasty inlined
-// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021, 2022
+// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021, 2022, 2023
 package cps.macros.forest
 
 import scala.quoted._
@@ -9,6 +9,7 @@ import cps.macros._
 import cps.macros.common._
 import cps.macros.misc._
 import scala.collection.immutable.HashMap
+
 
 
 trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
@@ -249,6 +250,7 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
   def generateAwaitFor(term: Term, tpe:TypeRepr): Term =
    val monad = cpsCtx.monad.asTerm
    val monadContext = cpsCtx.monadContext.asTerm
+   val identityConversion = '{ CpsMonadConversion.identityConversion[F] }.asTerm
    Apply(
       Apply(
          TypeApply(
@@ -257,7 +259,7 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
          ),
          List(term)
       ),
-      List(monad, monadContext)
+      List(monadContext,identityConversion)
    )
 
 
