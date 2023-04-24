@@ -30,12 +30,21 @@ class TestExample1:
      };
 
      val r = Await.result(fr, 30.seconds)
-     assert(r == 3)
+     assert(r == 4)
 
   def myFun(): Unit = {
     println(1)
   }
 
+object TestExample1:
+
+  def main(args: Array[String]):Unit = {
+    val t = new TestExample1()
+    t.testExample1Future()
+    println("Ok")
+  }
+
+end TestExample1
 
   /*
   @Test def testExample1Free(): Unit = 
