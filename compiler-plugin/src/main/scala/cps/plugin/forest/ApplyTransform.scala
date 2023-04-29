@@ -11,16 +11,19 @@ import core.Symbols.*
 import core.SymDenotations.*
 import util.Spans.Span
 import core.Types.*
+import core.Phases.*
 import cps.plugin.*
 import cps.plugin.forest.application.*
 import QuoteLikeAPI.*
 import cps.{CpsMonadContext, CpsMonadConversion}
+import inlines.Inlines
+import transform.Inlining
 
 
 object ApplyTransform {
 
   def apply(term: Apply, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
-      //Log.trace(s"Apply: origin=${term.show}", nesting)
+      Log.trace(s"Apply: origin=${term.show}", nesting)
       val cpsTree = term match
         case Apply(Apply(TypeApply(fCpsAwaitCn,List(tf,ta,tg)),List(fa)), List(gc,gcn)) =>
              println(s"cpsAwait form at : ${term.show},  symbol=${fCpsAwaitCn.symbol}")
@@ -31,7 +34,19 @@ object ApplyTransform {
                 AwaitTransform.fromApply(term, owner, nesting, tf, ta, tg, fa, gc, gcn)
              else
                applyMArgs(term,owner, nesting, Nil)
-        case _ => applyMArgs(term,owner, nesting, Nil)
+        case _ =>
+            println(s"apply default, summon[CpsTopLevelContext].isBeforeInliner=${summon[CpsTopLevelContext].isBeforeInliner}, Inlines.needsInlining(term)=${atPhase(inliningPhase)(Inlines.needsInlining(term))}")
+            println(s"apply default, term=${term.show}")
+            println(s"apply default, term.symbol=${term.symbol}")
+            if (summon[CpsTopLevelContext].isBeforeInliner && atPhase(inliningPhase)(Inlines.needsInlining(term))) {
+              // we should inline themself, because in inlined pickkle annotation we have non-cpsed code,
+              //  which will be substituted by inliner without cps.
+              println(s"Inlines:needsInlining ${term.show}")
+              val inlined = atPhase(inliningPhase)(Inlines.inlineCall(term))
+              RootTransform(inlined, owner, nesting)
+            }else {
+              applyMArgs(term, owner, nesting, Nil)
+            }
       //Log.trace(s" Apply result: ${cpsTree}", nesting)
       cpsTree
   }
@@ -83,6 +98,7 @@ object ApplyTransform {
                   // check -- can we add shifted version of fun
                   val newFun = retrieveShiftedFun(origin,fun,owner)
                   val r = genApplication(origin, owner, newFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), true)
+
                   println(s"application of shifted function: ${r.show},  newFun=${newFun.show}")
                   println(s"origin=${origin.show}")
                   println(s"argss=${argss.map(_.show).mkString(",")}")
@@ -124,6 +140,7 @@ object ApplyTransform {
 
   def genApplication(origin:Apply, owner: Symbol, fun: Tree, argss: List[ApplyArgList], f: ApplyArg => Tree, isImpure: Boolean)(using Context, CpsTopLevelContext): CpsTree = {
     println(s"genApplication origin: ${origin.show}")
+
     def genOneLastPureApply(fun: Tree, argList: ApplyArgList): Tree =
       argList match
         case ApplyTypeArgList(origin, targs) =>
@@ -165,6 +182,7 @@ object ApplyTransform {
       }
 
     val pureReply = genPureReply(fun,argss)
+    println(s"pureReply symbol = ${pureReply.symbol},  is inlined=${ Inlines.needsInlining(pureReply) }")
     val lastCpsTree = if (argss.exists(_.containsMonadContext)) {
       val adoptedPureReply = Scaffolding.adoptCpsedCall(pureReply, origin.tpe.widen, summon[CpsTopLevelContext].monadType)
       println("!!!adoptedCpsedCall-2: ${adoptedPureReply.show}")
@@ -324,7 +342,8 @@ object ApplyTransform {
               println(s"shiftedObject needInlining=${ctx.compilationUnit.needsInlining}")
               if (nObj.symbol.denot.is(Flags.Inline)) {
                 println(s"shiftedObject is inline")
-                ctx.compilationUnit.needsInlining=true
+                if (tctx.isBeforeInliner) then
+                  ctx.compilationUnit.needsInlining=true
               } else {
                 println(s"shiftedObject is not inline")
               }

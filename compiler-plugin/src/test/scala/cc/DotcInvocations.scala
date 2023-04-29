@@ -27,7 +27,7 @@ class DotcInvocations(silent: Boolean = false) {
              List("--color:never") ++
              List("-Vprint:erasure") ++
              List("-Vprint:rssh.cps") ++
-             //List("-Vprint:inlining") ++
+             List("-Vprint:inlining") ++
              //List("-Vprint:constructors") ++
              //List("-Vprint:lambdaLift") ++
              //List("-Xshow-phases") ++

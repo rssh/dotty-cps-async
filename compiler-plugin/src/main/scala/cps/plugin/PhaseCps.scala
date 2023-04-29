@@ -16,6 +16,7 @@ import cps.plugin.forest.*
 import dotty.tools.dotc.ast.{Trees, tpd}
 import dotty.tools.dotc.core.DenotTransformers.{InfoTransformer, SymTransformer}
 import dotty.tools.dotc.util.SrcPos
+import transform.Inlining
 
 
 /**
@@ -35,7 +36,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
 
 
   override val runsAfter = Set("rssh.cpsSelect")
-  override val runsBefore = Set("rssh.cpsAsyncShift", PhaseCpsChangeSymbols.name)
+  override val runsBefore = Set("rssh.cpsAsyncShift", PhaseCpsChangeSymbols.name, Inlining.name)
 
 
   val debug = true
@@ -186,7 +187,11 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     //val monadValDef = monadValDef0.changeOwner(monadValDef0.symbol.owner, tree.symbol)
     //println(s"!! monadVaDef0.owner.id=${monadValDef0.symbol.owner.id}, monadValDef.owner.id=${monadValDef.symbol.owner.id}, tree.symbol.id=${tree.symbol.id}")
     val monadRef = ref(monadValDef.symbol)
-    val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsMonadContext, optRuntimeAwait, debugSettings)
+    val isBeforeInliner = if (runsBefore.contains(Inlining.name)) { true }
+                          else if (runsAfter.contains(Inlining.name)) { false }
+                          else
+                             throw new CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
+    val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsMonadContext, optRuntimeAwait, debugSettings, isBeforeInliner)
     tc
   }
 
