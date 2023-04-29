@@ -24,7 +24,8 @@ object ApplyTransform {
       val cpsTree = term match
         case Apply(Apply(TypeApply(fCpsAwaitCn,List(tf,ta,tg)),List(fa)), List(gc,gcn)) =>
              println(s"cpsAwait form at : ${term.show},  symbol=${fCpsAwaitCn.symbol}")
-             if fCpsAwaitCn.symbol == Symbols.requiredMethod("cps.cpsAwait") then
+             if fCpsAwaitCn.symbol == Symbols.requiredMethod("cps.cpsAwait") ||
+                fCpsAwaitCn.symbol == Symbols.requiredMethod("cps.await")        then
                 //def cpsAwait[F[_], A, G[_]](fa: F[A])(using CpsMonadContext[G], CpsMonadConversion[F, G]): A =
                 Log.info(s"cpsAwait: ${term.show}", nesting,term.srcPos)
                 AwaitTransform.fromApply(term, owner, nesting, tf, ta, tg, fa, gc, gcn)
@@ -112,7 +113,10 @@ object ApplyTransform {
             Apply(s,args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))).withSpan(orig.span)
      }
      if (argss.exists(_.containsMonadContext)) {
-       CpsTree.impure(origin, owner, Scaffolding.adoptCpsedCall(plainTree, origin.tpe.widen, summon[CpsTopLevelContext].monadType))
+       println(s"adoptCpsedCall1: plainTree=${plainTree.show}")
+       val adoptedTree = Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
+       println(s"adoptCpsedCall1: adoptedTree=${adoptedTree.show}")
+       CpsTree.impure(origin, owner, adoptedTree)
      } else {
        CpsTree.pure(origin, owner, plainTree)
      }
@@ -120,7 +124,6 @@ object ApplyTransform {
 
   def genApplication(origin:Apply, owner: Symbol, fun: Tree, argss: List[ApplyArgList], f: ApplyArg => Tree, isImpure: Boolean)(using Context, CpsTopLevelContext): CpsTree = {
     println(s"genApplication origin: ${origin.show}")
-    
     def genOneLastPureApply(fun: Tree, argList: ApplyArgList): Tree =
       argList match
         case ApplyTypeArgList(origin, targs) =>
@@ -163,7 +166,9 @@ object ApplyTransform {
 
     val pureReply = genPureReply(fun,argss)
     val lastCpsTree = if (argss.exists(_.containsMonadContext)) {
-      CpsTree.impure(origin, owner, Scaffolding.adoptCpsedCall(pureReply, origin.tpe.widen, summon[CpsTopLevelContext].monadType))
+      val adoptedPureReply = Scaffolding.adoptCpsedCall(pureReply, origin.tpe.widen, summon[CpsTopLevelContext].monadType)
+      println("!!!adoptedCpsedCall-2: ${adoptedPureReply.show}")
+      CpsTree.impure(origin, owner, adoptedPureReply)
     } else if (isImpure) {
       CpsTree.impure(origin, owner, pureReply)
     } else {

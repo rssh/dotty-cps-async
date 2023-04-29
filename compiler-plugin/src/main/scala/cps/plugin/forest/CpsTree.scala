@@ -712,6 +712,8 @@ case class SelectTypeApplyTypedCpsTree(records: Seq[SelectTypeApplyTypedCpsTree.
     override def asyncKind: AsyncKind = nested.asyncKind
 
     override def transformed(using Context, CpsTopLevelContext): Tree = {
+      //println(s"SelectTypeApplyTypedCpsTree.transformed: origin=${origin.show}")
+      //println(s"SelectTypeApplyTypedCpsTree.transformed: nested=${nested.show}, records=${records.map(_.show)}")
       nested.unpure match
         case None =>
           val paramSym = newSymbol(owner, "xSelectTypeApplyCpsTree".toTermName, Flags.EmptyFlags, 
@@ -809,11 +811,12 @@ object SelectTypeApplyTypedCpsTree {
    case class OpTyped(origin:Typed) extends Operation {
 
       override def prefixTerm(term:Tree, isPure: Boolean)(using Context, CpsTopLevelContext): Tree = {
-        if (isPure) then
+        // we are always inside of map or flatMap, so type is already transformed.
+        //if (isPure) then
           Typed(term,origin.tpt).withSpan(origin.span)
-        else
-          val nTpt = CpsTransformHelper.cpsTransformedType(origin.tpt.tpe, summon[CpsTopLevelContext].monadType)
-          Typed(term,TypeTree(nTpt)).withSpan(origin.span)
+        //else
+        //  val nTpt = CpsTransformHelper.cpsTransformedType(origin.tpt.tpe, summon[CpsTopLevelContext].monadType)
+        //  Typed(term,TypeTree(nTpt)).withSpan(origin.span)
       }
 
       override def show(using Context) = {
