@@ -132,7 +132,7 @@ object ApplyTransform {
        println(s"adoptCpsedCall1: plainTree=${plainTree.show}")
        val adoptedTree = Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
        println(s"adoptCpsedCall1: adoptedTree=${adoptedTree.show}")
-       CpsTree.impure(origin, owner, adoptedTree)
+       CpsTree.impure(origin, owner, adoptedTree, AsyncKind.Sync)
      } else {
        CpsTree.pure(origin, owner, plainTree)
      }
@@ -186,9 +186,9 @@ object ApplyTransform {
     val lastCpsTree = if (argss.exists(_.containsMonadContext)) {
       val adoptedPureReply = Scaffolding.adoptCpsedCall(pureReply, origin.tpe.widen, summon[CpsTopLevelContext].monadType)
       println("!!!adoptedCpsedCall-2: ${adoptedPureReply.show}")
-      CpsTree.impure(origin, owner, adoptedPureReply)
+      CpsTree.impure(origin, owner, adoptedPureReply, AsyncKind.Sync)
     } else if (isImpure) {
-      CpsTree.impure(origin, owner, pureReply)
+      CpsTree.impure(origin, owner, pureReply, AsyncKind.Sync)
     } else {
       CpsTree.pure(origin,owner,pureReply)
     }

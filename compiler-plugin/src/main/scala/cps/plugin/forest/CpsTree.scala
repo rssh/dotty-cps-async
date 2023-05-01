@@ -28,6 +28,7 @@ import cps.plugin.*
  *    |- SeqCpsTree
  *    |- BlockBoundsCpsTree
  *    |- SelectTypeApplyTypedCpsTree
+ *    |- InlinedCpsTree
  *
  **/
 sealed trait CpsTree {
@@ -165,11 +166,16 @@ object CpsTree {
   def pure(origin: Tree, owner: Symbol, changed: Tree): PureCpsTree =
      PureCpsTree(origin, owner, changed)
 
-  def impure(origin: Tree, owner: Symbol, impure: Tree, internalKind:AsyncKind = AsyncKind.Sync): CpsTree =
+  def impure(origin: Tree, owner: Symbol, impure: Tree, internalKind:AsyncKind): CpsTree =
      AsyncTermCpsTree(origin, owner, impure, internalKind)
 
   def unit(owner: Symbol)(using Context): SyncCpsTree =
      UnitCpsTree(Literal(Constant(())), owner)
+
+  def lambda(origin:Tree, owner: Symbol, ddef: DefDef, transformedBody: CpsTree): CpsTree =
+     LambdaCpsTree(origin, owner, ddef, transformedBody)
+
+
 
 }
 
@@ -824,6 +830,75 @@ object SelectTypeApplyTypedCpsTree {
       }
 
    }
+
+
+}
+
+case class InlinedCpsTree(override val origin:Inlined,
+                          override val owner: Symbol,
+                          bindings: List[MemberDef],  // transformed bindings.
+                          expansion: CpsTree) extends CpsTree {
+
+  override def asyncKind = expansion.asyncKind
+
+  override def transformed(using Context, CpsTopLevelContext): Tree = {
+    expansion.asyncKind match {
+      case AsyncKind.Sync =>
+        if (isOriginEqSync) {
+          origin
+        } else {
+          val nExpansion = expansion.changeOwner(owner).unpure.get
+          CpsTree.pure(origin,owner,Inlined(origin.call, bindings, nExpansion).withSpan(origin.span)).transformed
+        }
+      case AsyncKind.Async(nested) =>
+        val nExpansion = expansion.changeOwner(owner).transformed
+        CpsTree.impure(origin,owner,Inlined(origin.call, bindings, nExpansion).withSpan(origin.span), nested).transformed
+      case AsyncKind.AsyncLambda(bodyKind) =>
+        val nExpansion = expansion.changeOwner(owner).transformed
+        Inlined(origin.call, bindings, nExpansion).withSpan(origin.span)
+    }
+  }
+
+  override def unpure(using Context, CpsTopLevelContext) = {
+    val retval = expansion.changeOwner(owner).unpure.map{ e =>
+      Inlined(origin.call, bindings, e).withSpan(origin.span)
+    }
+    retval
+  }
+
+  override def applyRuntimeAwait(runtimeAwait: Tree)(using Context, CpsTopLevelContext): CpsTree = {
+    val nExpansion = expansion.applyRuntimeAwait(runtimeAwait)
+    nExpansion.asyncKind match {
+      case AsyncKind.Sync =>
+        CpsTree.pure(origin,owner,Inlined(origin.call, bindings, nExpansion.unpure.get).withSpan(origin.span))
+      case AsyncKind.Async(nested) =>
+        // impossible (or applying was failed)
+        CpsTree.impure(origin,owner,Inlined(origin.call, bindings, nExpansion.transformed).withSpan(origin.span), nested)
+      case AsyncKind.AsyncLambda(bodyKind) =>
+        // impossible case, because applyRuntimeAwait should elimintate all AsyncLambda
+        throw CpsTransformException(s"impossible case: AsyncLambda kind after applyRuntimeAwait", origin.srcPos)
+    }
+  }
+
+  override def changeOwner(newOwner: Symbol)(using Context) =
+    copy(owner = newOwner, expansion= expansion.changeOwner(newOwner))
+
+  override def withOrigin(term: Tree):CpsTree =
+    copy(origin = term.asInstanceOf[Inlined])
+
+  override def show(using Context): String = {
+    s"InlinedCpsTree(${bindings.map(_.show).mkString(",")}, ${expansion.show})"
+  }
+
+}
+
+object InlinedCpsTree {
+
+
+  case class TransformedBindingsResult(
+                                      newBindings: List[MemberDef],
+                                      substitutions: Map[Symbol,Tree]
+                                      )
 
 
 }

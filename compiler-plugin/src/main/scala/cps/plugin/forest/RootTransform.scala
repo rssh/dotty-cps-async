@@ -20,6 +20,7 @@ object RootTransform {
             case applyTerm: Apply => ApplyTransform(applyTerm, owner, nesting)
             case block: Block => BlockTransform(block, owner, nesting)
             case id: Ident => IdentTransform(id, owner, nesting)
+            case il: Inlined => InlinedTransform(il, owner, nesting)
             case s: Select => SelectTransform(s, owner, nesting)
             case tIf@If(_,_,_) => IfTransform(tIf, owner, nesting)
             case t: TypeApply => TypeApplyTransform(t,owner, nesting)

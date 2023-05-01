@@ -22,22 +22,21 @@ object TransformUtil {
   
 
    def substParamsMap(term: Tree, map:Map[Symbol,Tree])(using Context): Tree = {
-      
-
-      val transformer = new TreeMap {
-         override def transform(tree:Tree)(using Context) = {
-            tree match
-               case tree: Ident if (tree.isTerm) =>
-                  map.get(tree.symbol) match
-                     case Some(value) => value
-                     case None => tree
-               case _ =>
-                  super.transform(tree)
-          }
-      }
-
-      transformer.transform(term)
-
+      if (map.isEmpty) then
+         term
+      else
+         val transformer = new TreeMap {
+            override def transform(tree:Tree)(using Context) = {
+               tree match
+                  case tree: Ident if (tree.isTerm) =>
+                     map.get(tree.symbol) match
+                        case Some(value) => value
+                        case None => tree
+                  case _ =>
+                     super.transform(tree)
+            }
+         }
+         transformer.transform(term)
    }
 
    def makeLambda(params: List[ValDef], resultType: Type, owner: Symbol,  body: Tree, bodyOwner: Symbol)(using Context): Block = {
