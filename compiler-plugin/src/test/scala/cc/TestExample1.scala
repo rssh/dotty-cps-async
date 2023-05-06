@@ -2,7 +2,7 @@ package cc
 
 import org.junit.Test
 
-class TesExample1 {
+class TestExample1 {
 
   @Test
   def testCompileExample1(): Unit = {

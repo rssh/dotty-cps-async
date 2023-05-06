@@ -6,19 +6,28 @@ import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
 
+@cps.plugin.annotation.CpsDebugLevel(15)
 object Example2Inline {
 
 
   inline def asyncPlus2[F[_]](a0:Int,b0:F[Int])(using CpsMonadContext[F]): Int =
     a0 + await(b0)
 
+  inline def asyncPlus3[F[_]](a0:Int,b0:F[Int]): CpsMonadContext[F] ?=> Int =
+    a0 + await(b0)
 
   def main(args: Array[String]):Unit = {
-      val fr = cpsAsync[Future]{
+      val fr2 = cpsAsync[Future]{
         asyncPlus2(1,(Future successful 2))
       }
-      val r = Await.result(fr, 30.seconds)
-      println(r)
+      val r2 = Await.result(fr2, 30.seconds)
+      println(r2)
+      //pending:
+      //val fr3 = cpsAsync[Future]{
+      //  asyncPlus3(1,(Future successful 2))
+      //}
+      //val r3 = Await.result(fr3, 30.seconds)
+      //println(r3)
   }
 
 }

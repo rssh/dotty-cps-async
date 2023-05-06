@@ -54,6 +54,18 @@ object TransformUtil {
       retval
    }
 
+   def collectDefOwners(tree:Tree)(using Context): List[(Symbol,Symbol)] = {
+      val gather = new TreeAccumulator[List[(Symbol,Symbol)]] {
+         def apply(x: List[(Symbol,Symbol)], tree: Tree)(using Context): List[(Symbol,Symbol)] =
+            tree match
+               case tree: DefTree =>
+                  ((tree.symbol,tree.symbol.owner)) :: x
+               case _ =>
+                  foldOver(x, tree)
+      }
+      gather(Nil,tree)
+   }
+
    final val COMMA = ","
 
 }

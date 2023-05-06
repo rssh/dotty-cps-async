@@ -16,5 +16,9 @@ case class CpsTopLevelContext(
   val optRuntimeAwait: Option[Tree] ,
   val settings: DebugSettings,
   val isBeforeInliner: Boolean,
-)  
+)   {
+
+  def isAfterInliner = !isBeforeInliner
+
+}
 

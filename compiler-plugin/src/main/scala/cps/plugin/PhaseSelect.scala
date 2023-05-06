@@ -20,6 +20,7 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
   override val runsBefore = Set("rssh.cps")
 
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
+      // TODO: skip inline methods
       val topTree = tree
       val optKind = SelectedNodes.checkAndProcessDefDef(tree){
         (tree, monadContext) => Some(USING_CONTEXT_PARAM(monadContext))

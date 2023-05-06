@@ -16,7 +16,7 @@ import cps.plugin.forest.*
 import dotty.tools.dotc.ast.{Trees, tpd}
 import dotty.tools.dotc.core.DenotTransformers.{InfoTransformer, SymTransformer}
 import dotty.tools.dotc.util.SrcPos
-import transform.Inlining
+import transform.{Inlining,Erasure,ElimPackagePrefixes,Pickler}
 
 
 /**
@@ -35,8 +35,8 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
   override def changesMembers: Boolean = true
 
 
-  override val runsAfter = Set("rssh.cpsSelect")
-  override val runsBefore = Set("rssh.cpsAsyncShift", PhaseCpsChangeSymbols.name, Inlining.name)
+  override val runsAfter = Set("rssh.cpsSelect", Inlining.name, Pickler.name)
+  override val runsBefore = Set("rssh.cpsAsyncShift", ElimPackagePrefixes.name, Erasure.name, PhaseCpsChangeSymbols.name)
 
 
   val debug = true
@@ -75,7 +75,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         //selectRecord.changedReturnType = nTpt
         given CpsTopLevelContext = tc
         val ctx1: Context = summon[Context].withOwner(tree.symbol)
-        val transformedRhs = RootTransform(tree.rhs,tree.symbol,0)(using ctx1, tc).transformed
+        val transformedRhs = RootTransform(tree.rhs,tree.symbol,tree.symbol,0)(using ctx1, tc).transformed
         val nRhs = Block(tc.cpsMonadValDef::Nil,transformedRhs)(using ctx1)
         println(s"nRsh.block=${nRhs.show}")
         println(s"nRhs.tpe = ${nRhs.tpe.show}")
@@ -159,7 +159,9 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     val nDefDef = DefDef(newSym, paramss => {
       given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree))
       val nctx = ctx.withOwner(newSym)
-      val nRhs = RootTransform(TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head), newSym, 0)(using nctx, tctx).transformed
+      println(s"cpsAsync.newSym=${newSym.id}, cpsAsync.oldSym=${ddef.symbol.id}")
+      val nRhsCps = RootTransform(TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head), ddef.symbol, newSym, 0)(using nctx, tctx)
+      val nRhs = nRhsCps.transformed
       Block(tctx.cpsMonadValDef::Nil, nRhs)
     } ).withSpan(ddef.span)
     nDefDef

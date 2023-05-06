@@ -31,13 +31,17 @@ object InlinedTransform {
 
 
   case class UnchangedBindingRecord(origin: MemberDef) extends BindingRecord {
-    def newBinding: Option[MemberDef] = Some(origin)
+    def newBinding: Option[MemberDef] = {
+      Some(origin)
+    }
     def generateFlatMap(tail: CpsTree)(using Context): Option[CpsTree] = None
     def substitute(tree: Tree,  treeMap: BinginsTreeMap, ctx: Context)(using CpsTopLevelContext): Option[Tree] = None
   }
 
   case class SyncChangedBindingRecord(origin: ValDef, newValDef: ValDef) extends BindingRecord {
-    def newBinding: Option[MemberDef] = Some(newValDef)
+    def newBinding: Option[MemberDef] = {
+      Some(newValDef)
+    }
     def generateFlatMap(tail:CpsTree)(using Context): Option[CpsTree] = None
     override def substitute(tree: Tree, treeMap: BinginsTreeMap, ctx: Context)(using CpsTopLevelContext): Option[Tree] = {
       given Context = ctx
@@ -53,21 +57,21 @@ object InlinedTransform {
 
   case class AdoptedValDefChange(asyncLambdaValDef: Option[ValDef], adoptedRhs: CpsTree)
 
-  def adoptTailToInternalKind(origin: ValDef, owner: Symbol, tail: CpsTree,  internalKind: AsyncKind)(using Context, CpsTopLevelContext): AdoptedValDefChange = {
+  def adoptTailToInternalKind(origin: ValDef, oldOwner: Symbol, newOwner: Symbol, tail: CpsTree,  internalKind: AsyncKind)(using Context, CpsTopLevelContext): AdoptedValDefChange = {
     internalKind match
       case AsyncKind.Sync =>
         AdoptedValDefChange(None, tail)
       case AsyncKind.Async(v) =>
-        val idSym = Symbols.newSymbol(owner, "xId".toTermName, Flags.EmptyFlags, tail.originType.widen, Symbols.NoSymbol)
+        val idSym = Symbols.newSymbol(newOwner, "xId".toTermName, Flags.EmptyFlags, tail.originType.widen, Symbols.NoSymbol)
         val idVal = ValDef(idSym)
         val idRef = ref(idSym)
         val nextCpsTree = FlatMapCpsTree(origin.rhs, tail.owner, tail,
               FlatMapCpsTreeArgument(Some(idVal), CpsTree.unchangedPure(idRef, tail.owner)))
-        adoptTailToInternalKind(origin, owner, nextCpsTree, v)
+        adoptTailToInternalKind(origin, oldOwner, newOwner, nextCpsTree, v)
       case AsyncKind.AsyncLambda(bodyKind) =>
         val lambdaName = (origin.name.toString + "$async").toTermName
-        val lambdaValSym = Symbols.newSymbol(owner, lambdaName, Flags.Synthetic, tail.transformedType)
-        val lambdaVal = ValDef(lambdaValSym, tail.transformed)
+        val lambdaValSym = Symbols.newSymbol(newOwner, lambdaName, Flags.Synthetic, tail.transformedType)
+        val lambdaVal = ValDef(lambdaValSym, tail.transformed.changeOwner(tail.owner, lambdaValSym))
         AdoptedValDefChange(Some(lambdaVal), tail)
   }
 
@@ -120,6 +124,7 @@ object InlinedTransform {
             case _ =>
               None
           }
+        case None => None
       }
     }
 
@@ -154,7 +159,18 @@ object InlinedTransform {
   }
 
 
-  def apply(inlinedTerm: Inlined, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
+  def apply(inlinedTermOldOwner: Inlined, oldOwner: Symbol, newOwner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
+      Log.trace(s"InlineTransform: inlinedTerm=${inlinedTermOldOwner.show} oldOwner=${oldOwner.id} newOwner=${newOwner.id}, bindings.size=${inlinedTermOldOwner.bindings.length}",nesting)
+
+      val inlinedTerm = inlinedTermOldOwner.changeOwner(oldOwner,newOwner)
+
+      val beforeDefOwners = TransformUtil.collectDefOwners(inlinedTerm).map(x => s"(${x._1.id} owner ${x._2.id})").mkString(",")
+      Log.trace(s"InlineTransform: beforeDefOwners: ${beforeDefOwners}", nesting)
+      val inlinedTermNewOwner = inlinedTerm.changeOwner(oldOwner, newOwner)
+      val afterDefOwners = TransformUtil.collectDefOwners(inlinedTermNewOwner).map(x => s"(${x._1.id} owner ${x._2.id})").mkString(",")
+      Log.trace(s"InlineTransform: afterDefOwners: ${afterDefOwners}", nesting)
+
+
       // transform async binder variables in the form
       // when v is Async(_) [not lambda]
       //   block(v'=cpsTransformed(v),Inlined(...[change v to v']..  ) )
@@ -164,10 +180,12 @@ object InlinedTransform {
       // where statements in block are bindings.
       //TODO: implement
       //   Now we just check that there are no async bindings in inlined term.
-      val records = inlinedTerm.bindings.map{ b =>
+      val records = inlinedTermNewOwner.bindings.map{ b =>
         b match {
           case v: ValDef =>
-            val cpsed = RootTransform(v.rhs,owner,nesting+1)
+            //  doesm not change symbol of v.
+            //   TODO:  add flag to generate new symbol when we need to gnerate a new function.
+            val cpsed = RootTransform(v.rhs,v.symbol,v.symbol,nesting+1)
             cpsed.asyncKind match {
               case AsyncKind.Sync =>
                 if (cpsed.isOriginEqSync) then
@@ -178,10 +196,10 @@ object InlinedTransform {
                 // TODO: check that v can be inline and generate new record for inl
                 if (v.symbol.flags.is(Flags.Inline)) then
                   throw new CpsTransformException(s"inline valdefs are not supported in inlined bindings yet [in TODO]", v.srcPos)
-                val adoptedValDefChange = adoptTailToInternalKind(v, owner, cpsed,internal)
+                val adoptedValDefChange = adoptTailToInternalKind(v, oldOwner, newOwner, cpsed,internal)
                 AsyncChangedBindingRecord(v, cpsed, adoptedValDefChange)
               case k@AsyncKind.AsyncLambda(bodyKind) =>
-                val adoptedValDefChange = adoptTailToInternalKind(v, owner, cpsed,k)
+                val adoptedValDefChange = adoptTailToInternalKind(v, oldOwner, newOwner, cpsed,k)
                 AsyncChangedBindingRecord(v, cpsed, adoptedValDefChange)
             }
           case _ =>
@@ -190,22 +208,29 @@ object InlinedTransform {
       }
 
       val bindingsTreeMap = new BinginsTreeMap(records)
-      val changedExpansion = bindingsTreeMap.transform(inlinedTerm.expansion)
+      val changedExpansion = bindingsTreeMap.transform(inlinedTermNewOwner.expansion)
 
       val newBindings = records.flatMap(_.newBinding)
 
-      val cpsedExpansion = RootTransform(changedExpansion,owner,nesting+1)
+      val cpsedExpansion = RootTransform(changedExpansion,newOwner,newOwner,nesting+1)
 
       val newInlined = cpsedExpansion.asyncKind match
         case AsyncKind.Sync =>
           if (cpsedExpansion.isOriginEqSync) then
-            CpsTree.unchangedPure(inlinedTerm,owner)
+            Log.trace(s"InlineTransform  newInlined: unchangedPure: ${inlinedTermNewOwner.show}",nesting)
+            CpsTree.unchangedPure(inlinedTermNewOwner,newOwner)
           else
-            CpsTree.pure(inlinedTerm, owner, Inlined(inlinedTerm.call, newBindings, cpsedExpansion.unpure.get))
+            Log.trace(s"InlineTransform  newInlined: changedPure",nesting)
+            CpsTree.pure(inlinedTermNewOwner, newOwner, Inlined(inlinedTermNewOwner.call, newBindings, cpsedExpansion.unpure.get))
         case AsyncKind.Async(v) =>
-            CpsTree.impure(inlinedTerm, owner, Inlined(inlinedTerm.call, newBindings, cpsedExpansion.transformed), v)
+            Log.trace(s"InlineTransform newInlined: impure, newBindings=${newBindings.map(_.show)}",nesting)
+            CpsTree.impure(inlinedTermNewOwner, newOwner, Inlined(inlinedTermNewOwner.call, newBindings, cpsedExpansion.transformed), v)
         case AsyncKind.AsyncLambda(_) =>
-            InlinedCpsTree(inlinedTerm,owner,newBindings,cpsedExpansion)
+            Log.trace(s"InlineTransform: newInlined InlinedCpsTree",nesting)
+            InlinedCpsTree(inlinedTermNewOwner,newOwner,newBindings,cpsedExpansion)
+
+      Log.trace(s"InlineTransform, newInlined: ${newInlined.show}",nesting)
+
 
       val prefixedInlined = records.foldRight(newInlined) { (r, acc) =>
           r.generateFlatMap(acc).getOrElse(acc)

@@ -82,7 +82,7 @@ object AsyncShift {
  //transparent inline given shiftedList[A]: AsyncShift[scala.collection.immutable.List[A]] =
  //     cps.runtime.ListAsyncShift[A]()
 
- transparent inline given shiftedList[A]: cps.runtime.ListAsyncShift[A] =
+ inline given shiftedList[A]: cps.runtime.ListAsyncShift[A] =
        cps.runtime.ListAsyncShift[A]()
 
 

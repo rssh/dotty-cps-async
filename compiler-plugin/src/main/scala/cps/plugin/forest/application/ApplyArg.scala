@@ -33,15 +33,17 @@ sealed trait ApplyArg {
 
 object ApplyArg {
 
-  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, isMonadContext: Boolean, owner: Symbol, dependFromLeft: Boolean, nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
+  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, isMonadContext: Boolean,
+            oldOwner: Symbol, newOwner: Symbol,
+            dependFromLeft: Boolean, nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
     expr match
       case SeqLiteral(elems, elementtp) =>
         RepeatApplyArg(paramName, paramType, elems.zipWithIndex.map{ (p,i) =>
           val newName = (paramName.toString + i.toString).toTermName
-          ApplyArg(p,newName,elementtp.tpe,isByName, isMonadContext, owner, dependFromLeft,  nesting)
+          ApplyArg(p,newName,elementtp.tpe,isByName, isMonadContext, oldOwner, newOwner, dependFromLeft,  nesting)
         })
       case _ =>
-        val cpsExpr = RootTransform(expr, owner, nesting+1)
+        val cpsExpr = RootTransform(expr, oldOwner, newOwner, nesting+1)
         if (isByName) then
           ByNameApplyArg(paramName, paramType, cpsExpr, isMonadContext)
         else
@@ -57,9 +59,9 @@ object ApplyArg {
                   case AsyncKind.AsyncLambda(_) =>
                     PlainApplyArg(paramName,paramType,cpsExpr,None,isMonadContext)
                   case _ =>
-                    val sym = newSymbol(owner,paramName,Flags.EmptyFlags,paramType.widen,NoSymbol)
+                    val sym = newSymbol(newOwner,paramName,Flags.EmptyFlags,paramType.widen,NoSymbol)
                     val optRhs =  cpsExpr.unpure
-                    val valDef =  ValDef(sym.asTerm, optRhs.getOrElse(EmptyTree))
+                    val valDef =  ValDef(sym.asTerm, optRhs.getOrElse(EmptyTree).changeOwner(cpsExpr.owner, sym))
                     PlainApplyArg(paramName,paramType.widen,cpsExpr,Some(valDef), isMonadContext)
   }
 

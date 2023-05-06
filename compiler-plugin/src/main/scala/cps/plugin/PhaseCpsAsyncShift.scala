@@ -10,18 +10,18 @@ import ast.tpd.*
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Types.TypeRef
 import plugins.*
-import transform.{Inlining, Pickler, PruneErasedDefs}
+import transform.{Erasure, Inlining, Pickler, PruneErasedDefs}
 
 
 
 class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase {
 
-  override val phaseName = "rssh.cpsAsyncShift"
+  override val phaseName = PhaseCpsAsyncShift.name
 
   // strange -
   override def allowsImplicitSearch = true
   override val runsAfter  = Set(PhaseCps.name)
-  override val runsBefore = Set(Inlining.name, PhaseCpsChangeSymbols.name)
+  override val runsBefore = Set(Erasure.name, PhaseCpsChangeSymbols.name)
 
   //override def run(using Context): Unit = {
     // TODO:
@@ -86,3 +86,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSym
 
 }
 
+object PhaseCpsAsyncShift {
+  val name: String = "rssh.cpsAsyncShift"
+}

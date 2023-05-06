@@ -15,9 +15,9 @@ import cps.plugin.*
 object TypeApplyTransform {
 
 
-      def apply(taTerm: TypeApply, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
-          val funCps = RootTransform(taTerm.fun,owner, nesting+1)
-          val newOp = SelectTypeApplyTypedCpsTree.OpTypeApply(taTerm)
+      def apply(taTerm: TypeApply, oldOwner: Symbol, newOwner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
+          val funCps = RootTransform(taTerm.fun,oldOwner,newOwner, nesting+1)
+          val newOp = SelectTypeApplyTypedCpsTree.OpTypeApply(taTerm.changeOwner(oldOwner,newOwner))
           funCps match
             case SelectTypeApplyTypedCpsTree(records,nested,fcpsOrigin) =>
                 SelectTypeApplyTypedCpsTree(records.appended(newOp),nested,taTerm)

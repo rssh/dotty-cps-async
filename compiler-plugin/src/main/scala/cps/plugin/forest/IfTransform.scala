@@ -15,10 +15,10 @@ import cps.plugin.*
 object IfTransform {
 
 
-      def apply(ifTerm: If, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
-        val cpsCond = RootTransform(ifTerm.cond, owner, nesting+1)
-        val cpsIfTrue = RootTransform(ifTerm.thenp, owner, nesting+1)
-        val cpsIfFalse = RootTransform(ifTerm.elsep, owner, nesting+1)
+      def apply(ifTerm: If, oldOwner: Symbol, newOwner:Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
+        val cpsCond = RootTransform(ifTerm.cond, oldOwner, newOwner, nesting+1)
+        val cpsIfTrue = RootTransform(ifTerm.thenp, oldOwner, newOwner, nesting+1)
+        val cpsIfFalse = RootTransform(ifTerm.elsep, oldOwner, newOwner, nesting+1)
         cpsCond.unpure match
           case Some(condSync) =>
             (cpsIfTrue.unpure,  cpsIfFalse.unpure) match
@@ -26,46 +26,46 @@ object IfTransform {
                 if ( !cpsCond.isOriginEqSync || !cpsIfTrue.isOriginEqSync || !cpsIfFalse.isOriginEqSync) then
                   PureCpsTree(
                     ifTerm,
-                    owner,
-                    cpy.If(ifTerm)(condSync,ifTrueSync,ifFalseSync),
+                    newOwner,
+                    cpy.If(ifTerm)(condSync,ifTrueSync,ifFalseSync).changeOwner(oldOwner,newOwner)
                   )
                 else
+                  val ifTermNewOwner = ifTerm.changeOwner(oldOwner,newOwner)
                   PureCpsTree(
-                    ifTerm,
-                    owner,
-                    ifTerm
+                    ifTermNewOwner,
+                    newOwner,
+                    ifTermNewOwner
                   )
               case _ =>
                   if (cpsIfTrue.asyncKind != cpsIfFalse.asyncKind) then
                     throw CpsTransformException("Different async kind in if branch",ifTerm.srcPos)
                   AsyncTermCpsTree(
                     ifTerm,
-                    owner,
+                    newOwner,
                     cpy.If(ifTerm)(condSync, cpsIfTrue.transformed, cpsIfFalse.transformed),
                     cpsIfTrue.asyncKind
                   )
           case None =>
-            val sym = newSymbol(owner, "c".toTermName , Flags.EmptyFlags, defn.BooleanType)
+            val sym = newSymbol(newOwner, "c".toTermName , Flags.EmptyFlags, defn.BooleanType)
             val valDef = ValDef(sym.asTerm, EmptyTree)
             (cpsIfTrue.unpure,  cpsIfFalse.unpure) match
               case (Some(ifTrueSync), Some(ifFalseSync)) =>
                 val newIf = If(ref(sym),ifTrueSync,ifFalseSync).withSpan(ifTerm.span)
                 MapCpsTree(
-                  
                   ifTerm,
-                  owner,
+                  newOwner,
                   cpsCond,
-                  MapCpsTreeArgument(Some(valDef), CpsTree.pure(ifTerm,owner,newIf))
+                  MapCpsTreeArgument(Some(valDef), CpsTree.pure(ifTerm,newOwner,newIf.changeOwner(oldOwner,newOwner)))
                 )
               case _ =>
                 if (cpsIfTrue.asyncKind != cpsIfFalse.asyncKind) then
                    throw CpsTransformException("Different async kind in if branches",ifTerm.srcPos) 
                 val newIf = If(ref(sym),cpsIfTrue.transformed,cpsIfFalse.transformed)
                               .withSpan(ifTerm.span)        
-                val cpsNewIf = AsyncTermCpsTree(ifTerm, owner, newIf, cpsIfTrue.asyncKind)              
+                val cpsNewIf = AsyncTermCpsTree(ifTerm, newOwner, newIf, cpsIfTrue.asyncKind)
                 FlatMapCpsTree(
                   ifTerm,
-                  owner,
+                  newOwner,
                   cpsCond,
                   FlatMapCpsTreeArgument(Some(valDef), cpsNewIf)
                 )
