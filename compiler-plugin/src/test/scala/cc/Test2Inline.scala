@@ -19,7 +19,8 @@ class Test2Inline {
 
     assert( reporter.allErrors.isEmpty, "There should be no errors" )
 
-    val output = output0.trim
+    val output = output0
+    assert(output=="3\n3\n", s"output=${output}")
     println(s"Test2Inline: output=${output}")
   }
 

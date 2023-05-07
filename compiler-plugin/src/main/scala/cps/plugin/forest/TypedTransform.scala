@@ -16,8 +16,9 @@ import cps.plugin.*
 object TypedTransform {
 
   def apply(typedTerm: Typed, oldOwner: Symbol, newOwner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
+    Log.trace(s"TypedTransform typedTerm=${typedTerm.show}",nesting)
     val nested = RootTransform(typedTerm.expr, oldOwner, newOwner, nesting + 1)
-    nested.asyncKind match {
+    val retval = nested.asyncKind match {
       case AsyncKind.Sync =>
         if (nested.isOriginEqSync)
           CpsTree.unchangedPure(typedTerm.changeOwner(oldOwner,newOwner),newOwner)
@@ -29,6 +30,8 @@ object TypedTransform {
       case _ =>
         nested.typed(typedTerm.changeOwner(oldOwner,newOwner))
     }
+    Log.trace(s"TypedTransform retval=${retval.show}, asyncKind=${retval.asyncKind}",nesting)
+    retval
   }
 
 }

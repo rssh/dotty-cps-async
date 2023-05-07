@@ -21,18 +21,21 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
 
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
       // TODO: skip inline methods
-      val topTree = tree
-      val optKind = SelectedNodes.checkAndProcessDefDef(tree){
-        (tree, monadContext) => Some(USING_CONTEXT_PARAM(monadContext))
-      } {
-        (tree, kind) => Some(DefDefSelectKind.RETURN_CONTEXT_FUN(kind))
-      }
-      optKind.foreach{kind =>
-        selectedNodes.addDefDef(tree.symbol,kind)
-        println(s"phaseSelect, addDefDef for ${tree.symbol}, symbol.id= ${tree.symbol.id}")
-      }
-      val childTraversor = new TreeTraverser {
-        override def traverse(tree: Tree)(using Context): Unit = {
+      if (tree.symbol.denot.is(Flags.Inline)) then
+        tree
+      else
+        val topTree = tree
+        val optKind = SelectedNodes.checkAndProcessDefDef(tree){
+            (tree, monadContext) => Some(USING_CONTEXT_PARAM(monadContext))
+        } {
+            (tree, kind) => Some(DefDefSelectKind.RETURN_CONTEXT_FUN(kind))
+        }
+        optKind.foreach{kind =>
+          selectedNodes.addDefDef(tree.symbol,kind)
+          println(s"phaseSelect, addDefDef for ${tree.symbol}, symbol.id= ${tree.symbol.id}")
+        }
+        val childTraversor = new TreeTraverser {
+          override def traverse(tree: Tree)(using Context): Unit = {
             tree match
               case fun: DefDef if (fun.symbol != topTree.symbol) =>
                 selectedNodes.getDefDefRecord(tree.symbol) match
@@ -46,10 +49,10 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
                     traverseChildren(tree)
               case _ =>
                 traverseChildren(tree)
+          }
         }
-      }
-      childTraversor.traverse(tree)
-      tree
+        childTraversor.traverse(tree)
+        tree
   }
 
 }

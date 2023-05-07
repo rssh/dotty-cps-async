@@ -23,11 +23,11 @@ object Example2Inline {
       val r2 = Await.result(fr2, 30.seconds)
       println(r2)
       //pending:
-      //val fr3 = cpsAsync[Future]{
-      //  asyncPlus3(1,(Future successful 2))
-      //}
-      //val r3 = Await.result(fr3, 30.seconds)
-      //println(r3)
+      val fr3 = cpsAsync[Future]{
+        asyncPlus3(1,(Future successful 2))
+      }
+      val r3 = Await.result(fr3, 30.seconds)
+      println(r3)
   }
 
 }

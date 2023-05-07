@@ -9,7 +9,7 @@ object Log {
 
   def apply(logLevel: Int, message: String, nesting: Int, srcPos: SrcPos=NoSourcePosition)(using Context, CpsTopLevelContext): Unit = {
       if (summon[CpsTopLevelContext].settings.debugLevel >= logLevel) {
-         val shiftedMessage = " "*(nesting*3)  + message
+         val shiftedMessage = ""+nesting+" "*(nesting*3)  + message
          println(shiftedMessage)
          report.log(shiftedMessage, srcPos)
       }

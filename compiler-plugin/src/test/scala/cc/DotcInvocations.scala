@@ -19,7 +19,8 @@ class DotcInvocations(silent: Boolean = false) {
              extraArgs ++
              List("-Xplugin:src/main/resources", "-usejavacp") ++
              List("-Ycheck:all") ++
-             List("--unique-id") ++
+             List("-Ydebug-error") ++
+             //List("--unique-id") ++
              //List("-Yprint-syms") ++
              //List("-Yprint-debug") ++
              //List("-Yshow-tree-ids") ++

@@ -158,8 +158,15 @@ object InlinedTransform {
 
   }
 
+  def apply(inlinedTerm: Inlined, oldOwner: Symbol, newOwner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
+     if (inlinedTerm.bindings.isEmpty) {
+        RootTransform(inlinedTerm.expansion, oldOwner, newOwner, nesting+1)
+     } else {
+        applyNonemptyBindings(inlinedTerm, oldOwner, newOwner, nesting)
+     }
+  }
 
-  def apply(inlinedTermOldOwner: Inlined, oldOwner: Symbol, newOwner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
+  def applyNonemptyBindings(inlinedTermOldOwner: Inlined, oldOwner: Symbol, newOwner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
       Log.trace(s"InlineTransform: inlinedTerm=${inlinedTermOldOwner.show} oldOwner=${oldOwner.id} newOwner=${newOwner.id}, bindings.size=${inlinedTermOldOwner.bindings.length}",nesting)
 
       val inlinedTerm = inlinedTermOldOwner.changeOwner(oldOwner,newOwner)
@@ -212,6 +219,7 @@ object InlinedTransform {
 
       val newBindings = records.flatMap(_.newBinding)
 
+
       val cpsedExpansion = RootTransform(changedExpansion,newOwner,newOwner,nesting+1)
 
       val newInlined = cpsedExpansion.asyncKind match
@@ -224,6 +232,8 @@ object InlinedTransform {
             CpsTree.pure(inlinedTermNewOwner, newOwner, Inlined(inlinedTermNewOwner.call, newBindings, cpsedExpansion.unpure.get))
         case AsyncKind.Async(v) =>
             Log.trace(s"InlineTransform newInlined: impure, newBindings=${newBindings.map(_.show)}",nesting)
+            Log.trace(s"InlineTransform newInlined: expansion = ${cpsedExpansion.show}",nesting)
+            Log.trace(s"InlineTransform newInlined: expansion.transformed = ${cpsedExpansion.transformed.show}",nesting)
             CpsTree.impure(inlinedTermNewOwner, newOwner, Inlined(inlinedTermNewOwner.call, newBindings, cpsedExpansion.transformed), v)
         case AsyncKind.AsyncLambda(_) =>
             Log.trace(s"InlineTransform: newInlined InlinedCpsTree",nesting)
