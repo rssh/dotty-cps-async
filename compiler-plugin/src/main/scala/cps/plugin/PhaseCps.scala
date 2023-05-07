@@ -75,7 +75,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         //selectRecord.changedReturnType = nTpt
         given CpsTopLevelContext = tc
         val ctx1: Context = summon[Context].withOwner(tree.symbol)
-        val transformedRhs = RootTransform(tree.rhs,tree.symbol,tree.symbol,0)(using ctx1, tc).transformed
+        val transformedRhs = RootTransform(tree.rhs,tree.symbol,0)(using ctx1, tc).transformed
         val nRhs = Block(tc.cpsMonadValDef::Nil,transformedRhs)(using ctx1)
         println(s"nRsh.block=${nRhs.show}")
         println(s"nRhs.tpe = ${nRhs.tpe.show}")
@@ -160,7 +160,8 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
       given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree))
       val nctx = ctx.withOwner(newSym)
       println(s"cpsAsync.newSym=${newSym.id}, cpsAsync.oldSym=${ddef.symbol.id}")
-      val nRhsCps = RootTransform(TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head), ddef.symbol, newSym, 0)(using nctx, tctx)
+      val nBody = TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head).changeOwner(ddef.symbol, newSym)
+      val nRhsCps = RootTransform(nBody, newSym, 0)(using nctx, tctx)
       val nRhs = nRhsCps.transformed
       Block(tctx.cpsMonadValDef::Nil, nRhs)
     } ).withSpan(ddef.span)
