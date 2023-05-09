@@ -7,13 +7,16 @@ import scala.concurrent.Future
 object Example3 {
 
     def fetch(x:String)(using CpsMonadContext[Future]): String =
-      Future successful s"${x}:ok"
+      s"${x}:ok"
 
     def fetchList(urls:List[String])(using CpsMonadContext[Future]): List[String] =
       urls.map(fetch)
 
     def main(args:Array[String]):Unit =
-      val r = fetchList(List("a","b"))
+      val fr = async[Future] {
+        fetchList(List("a","b"))
+      }
+      val r = Await.result(fr)
       println(r.mkString(","))
 
 }

@@ -24,6 +24,14 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
      def  paramType(index: Int): Option[TypeRepr]
 
+     def  isContext: Boolean
+
+     def  isCpsMonadContext: Boolean =
+            paramType(0) match
+              case Some(t) =>
+                  t <:< TypeRepr.of[CpsMonadContext[F]]
+              case None => false
+
      def  isByName(index: Int): Boolean =
            paramType(index) match
              case Some(ByNameType(_)) => true
@@ -52,6 +60,10 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
        else
          None
 
+     override def isContext: Boolean = {
+       mt.isImplicit
+     }
+
      override def  paramType(index: Int): Option[TypeRepr] =
        if (index >= 0 && index < paramTypes.size)
          Some(paramTypes(index))
@@ -68,6 +80,8 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
      override def  paramIndex(name: String): Option[Int] = None
      override def  paramName(index: Int): Option[String] = None
      override def  paramType(index: Int): Option[TypeRepr] = None
+     override def  isContext: Boolean = false
+
 
 
   object DynaminParamsDescriptor extends MethodParamsDescriptor:
@@ -77,5 +91,6 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
      override def  paramName(index: Int): Option[String] =  Some(index.toString)
      override def  paramType(index: Int): Option[TypeRepr] = Some(TypeRepr.of[Any])
+     override def  isContext: Boolean = false
 
 

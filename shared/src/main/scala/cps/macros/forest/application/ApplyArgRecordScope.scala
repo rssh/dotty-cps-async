@@ -22,7 +22,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
   case class ApplyArgsSummaryPropertiesStep1(
     hasAsync: Boolean,
     hasShiftedLambda: Boolean,
-    shouldBeChangedSync: Boolean
+    shouldBeChangedSync: Boolean,
+    hasCpsMonadContext: Boolean
   ):
 
     def merge(other: ApplyArgRecord): ApplyArgsSummaryPropertiesStep1 =
@@ -30,6 +31,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
         hasAsync || other.isAsync,
         hasShiftedLambda || other.hasShiftedLambda,
         shouldBeChangedSync || other.shouldBeChangedSync,
+        hasCpsMonadContext || other.isCpsMonadContext
       )
 
     def mergeSeq(seq: Seq[ApplyArgRecord]): ApplyArgsSummaryPropertiesStep1 =
@@ -42,7 +44,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
   object ApplyArgsSummaryPropertiesStep1:
 
      def mergeSeqSeq(args: Seq[Seq[ApplyArgRecord]]): ApplyArgsSummaryPropertiesStep1 =
-        val zero = ApplyArgsSummaryPropertiesStep1(false,false,false)
+        val zero = ApplyArgsSummaryPropertiesStep1(false,false,false,false)
         zero.mergeSeqSeq(args)
 
   case class ApplyArgsSummaryProperties(
@@ -83,6 +85,9 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
     // means, that the value of argument is independed from the order of evaluation of aguments in a function.
     def noOrderDepended: Boolean
 
+    // means, that this is context parameter of CpsMonad.
+    def isCpsMonadContext: Boolean
+
     // usePrepend: means that args is collected as 'append(...append(...  funcall(..ident...)))`
     //  when some of arguments is async, we should in 'first part'(i.e. in append) - calculate
     //  argument itself, to preserve order of evaluation.  When we have no async arguments, than
@@ -91,6 +96,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
     // means, that the value of argument can depend from the order of evaluation of aguments in a function.
     def isOrderDepended = !noOrderDepended
+
+
 
     def shift(shiftType: ApplicationShiftType): ApplyArgRecord
 
@@ -128,6 +135,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
           term
     override def isAsync = elements.exists(_.isAsync)
     override def hasShiftedLambda = elements.exists(_.hasShiftedLambda)
+    override def isCpsMonadContext: Boolean = false
     override def noOrderDepended = elements.forall(_.noOrderDepended)
     override def shouldBeChangedSync:Boolean = elements.exists(_.shouldBeChangedSync)
     override def shift(shiftType: ApplicationShiftType) = copy(elements = elements.map(_.shift(shiftType)))
@@ -181,7 +189,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
   case class ApplyArgNoPrecalcTermRecord(
        term: Term,
        index: Int,
-       isChanged: Boolean
+       isChanged: Boolean,
+       override val isCpsMonadContext: Boolean
   ) extends ApplyArgRecord
   {
      def isAsync = false
@@ -198,7 +207,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
        index: Int,
        termCpsTree: CpsTree,
        valDef: ValDef,
-       ident: Term
+       ident: Term,
+        override val isCpsMonadContext: Boolean
   ) extends ApplyArgRecord
   {
      def isAsync = termCpsTree.isAsync
@@ -232,6 +242,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
        def hasShiftedLambda: Boolean = cpsBody.isAsync && !existsLambdaUnshift
 
        def isAsync: Boolean = false
+
+       def isCpsMonadContext: Boolean = false
 
        def noOrderDepended: Boolean = true
 
@@ -471,6 +483,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
        def isAsync: Boolean = nested.isAsync
        def noOrderDepended = nested.noOrderDepended
        def shouldBeChangedSync = nested.shouldBeChangedSync
+       def isCpsMonadContext: Boolean = nested.isCpsMonadContext
        def identArg(existsAsync: Boolean): Term = NamedArg(name, nested.identArg(existsAsync))
        def shift(shiftType: ApplicationShiftType): ApplyArgRecord = copy(nested=nested.shift(shiftType))
        def append(a: CpsTree): CpsTree = nested.append(a)
@@ -502,6 +515,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
     def isAsync: Boolean = cpsTree.isAsync
     def hasShiftedLambda: Boolean = cpsTree.isAsync || optShiftType.isDefined
     def noOrderDepended: Boolean = true
+    def isCpsMonadContext: Boolean = false
     def shouldBeChangedSync: Boolean = cpsTree.isChanged
     def shift(shiftType: ApplicationShiftType) = copy(optShiftType = Some(shiftType))
     def append(tree: CpsTree): CpsTree = tree
@@ -517,6 +531,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
        def hasShiftedLambda: Boolean = nested.hasShiftedLambda
        def isAsync: Boolean = nested.isAsync
        def noOrderDepended = nested.noOrderDepended
+       def isCpsMonadContext: Boolean = nested.isCpsMonadContext
        def shouldBeChangedSync: Boolean = nested.shouldBeChangedSync
        def identArg(existsAsync:Boolean): Term = nested.identArg(existsAsync)
        def shift(shiftType: ApplicationShiftType): ApplyArgRecord = copy(nested=nested.shift(shiftType))

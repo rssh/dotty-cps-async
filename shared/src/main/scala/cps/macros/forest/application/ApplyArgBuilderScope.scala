@@ -133,9 +133,9 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
        else
           if (!termCpsTree.isAsync && termIsNoOrderDepended(t)) then
              if (!termCpsTree.isChanged) then
-               acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex,false))
+               acc.advance(ApplyArgNoPrecalcTermRecord(t,acc.posIndex,false,paramsDescriptor.isCpsMonadContext))
              else
-               acc.advance(ApplyArgNoPrecalcTermRecord(termCpsTree.syncOrigin.get,acc.posIndex,true))
+               acc.advance(ApplyArgNoPrecalcTermRecord(termCpsTree.syncOrigin.get,acc.posIndex,true,paramsDescriptor.isCpsMonadContext))
           else
              if (termCpsTree.isLambda) 
                termCpsTree match
@@ -159,7 +159,7 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
                val ident = Ref(symbol)
                if (cpsCtx.flags.debugLevel > 15)
                  cpsCtx.log(s"buildApplyArg: Precacl, t=$t\n, termCpsTree=${termCpsTree}\n, i=${acc.posIndex}")
-               acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree.castOtpe(widenType),valDef,ident))
+               acc.advance(ApplyArgPrecalcTermRecord(t,acc.posIndex,termCpsTree.castOtpe(widenType),valDef,ident,paramsDescriptor.isCpsMonadContext))
 
     }
 

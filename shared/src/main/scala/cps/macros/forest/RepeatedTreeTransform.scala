@@ -21,6 +21,7 @@ trait RepeatedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
        override def  paramIndex(name: String): Option[Int] = None
        override def  paramName(index: Int): Option[String] = Some(index.toString)
        override def  paramType(index: Int): Option[TypeRepr] = Some(tpt.tpe)
+       override def isContext: Boolean = false
     }
     val args = O.buildApplyArgsRecords(paramsDescriptor, elements)(owner)
     // TODO: pass allowShiftedLambda = false ?

@@ -3,6 +3,7 @@ package futureScope
 import cps.*
 import cps.monads.{*,given}
 import cps.stream.{*,given}
+import cps.plugin.annotation.CpsNotChange
 import cps.testconfig.given
 
 import scala.concurrent.*
@@ -51,6 +52,7 @@ object FutureGroup {
 
    end Builder
 
+   @cps.plugin.annotation.CpsNotChange()
    def collect[E](runners: Iterable[FutureScopeContext ?=> Future[E]])(using FutureScopeContext): FutureGroup[E] =
       build[Iterable[FutureScopeContext ?=> Future[E]]](runners)
 

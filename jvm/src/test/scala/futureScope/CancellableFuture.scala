@@ -13,7 +13,7 @@ object CancellableFuture {
 
 
      given CpsMonadConversion[CancellableFuture,Future] with
-      def apply[T](ft:CancellableFuture[T]): Future[T] = ft
+       def apply[T](ft:CancellableFuture[T]): Future[T] = ft
  
 }
 
