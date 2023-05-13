@@ -41,7 +41,8 @@ class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T])(using Exe
              retval = m.flatMapTry(nNext)(n => finishNext(p,n))
          }
       }
-      retval
+      // here we outside loop, so retval is not null
+      retval.asInstanceOf[F[Option[T]]]
    }
 
    private def finishNext(p:Promise[Option[(T,AsyncList[F,T])]],r:Try[Option[(T,AsyncList[F,T])]]):F[Option[T]] = {

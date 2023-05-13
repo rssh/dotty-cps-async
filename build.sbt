@@ -1,5 +1,5 @@
-//val dottyVersion = "3.3.1-RC1-bin-SNAPSHOT"
-val dottyVersion = "3.2.2"
+val dottyVersion = "3.3.1-RC1-bin-SNAPSHOT"
+//val dottyVersion = "3.2.2"
 
 ThisBuild/version := "0.9.17-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
@@ -36,7 +36,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     .settings(sharedSettings)
     .disablePlugins(SitePreviewPlugin)
     .jvmSettings(
-        scalacOptions ++= Seq( "-Yexplicit-nulls",
+        scalacOptions ++= Seq( //"-Yexplicit-nulls",
                             "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types",
                             "-Ydebug", "-uniqid", "-Xcheck-macros", "-Ycheck:macro", "-Yprint-syms",
                             "-Ysafe-init",

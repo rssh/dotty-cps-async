@@ -443,7 +443,9 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
            pattern match
              case bd@Bind(name,pat1) =>
                 val bSym = bd.symbol
-                val nBSym = Symbol.newBind(Symbol.spliceOwner, name,bSym.flags, Ref(bSym).tpe.widen)
+                //  -Xcheck-macro complain that bSyn.flags are invalid
+                //val nBSym = Symbol.newBind(Symbol.spliceOwner, name, bSym.flags, Ref(bSym).tpe.widen)
+                val nBSym = Symbol.newBind(Symbol.spliceOwner, name, Flags.Case, Ref(bSym).tpe.widen)
                 val nMap = map.updated(bSym, Ref(nBSym))
                 val (nPat1, nMap1) = rebindPatterns(pat1, nMap)
                 (Bind(nBSym,nPat1), nMap1)

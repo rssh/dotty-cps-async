@@ -20,7 +20,8 @@ object WithOptExprProxy:
     originExpr.asTerm match
        case Ident(_) => buildExpr(originExpr) 
        case originTerm =>
-         val proxy = Symbol.newVal(Symbol.spliceOwner,name,originExpr.asTerm.tpe.widen,Flags.Local|Flags.Synthetic,Symbol.noSymbol)
+         //  Flags.Synthetics cause error in compiler:  TODO: report
+         val proxy = Symbol.newVal(Symbol.spliceOwner,name,originExpr.asTerm.tpe.widen,Flags.EmptyFlags,Symbol.noSymbol)
          val proxyValDef = ValDef(proxy,Some(originTerm))
          val proxyIdent = Ref(proxy).asExprOf[T]
          val buildTerm = buildExpr(proxyIdent).asTerm.changeOwner(Symbol.spliceOwner) 

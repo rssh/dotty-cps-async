@@ -100,7 +100,9 @@ object HappyEyeballs2 {
               event match
                 case Event.StartConnectionAttempt =>
                    while(!inetAdresses.isEmpty && !result.isCompleted) {
-                      val addr = inetAdresses.poll().nn
+                      //bug in dotty
+                      //val addr = inetAdresses.poll().nn
+                      val addr = inetAdresses.poll()
                       FutureScope.spawn{
                         try
                           val socket = await(networkApi.openSocket(addr))

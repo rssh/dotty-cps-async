@@ -29,7 +29,9 @@ object VP2:
         case NonFatal(ex) =>
           if !(test eq ExtremeSize) then
             println(s"exception during test: ${ex.getMessage} rerunning with trace")
-            val traceContext = testContext.copy(trace=true)
+            //bug in dotty: https://github.com/lampepfl/dotty/issues/17445
+            //val traceContext = testContext.copy(trace=true)
+            val traceContext = TestContext(testContext.clientId, testContext.url, true)
             try {
               await(test.run(traceContext))
             } catch {

@@ -261,6 +261,8 @@ class TestCBS1ShiftArrayOps:
      assert(r(2).toList.size == 2)
      assert(r(3).toList.size == 3)
 
+  /*
+  bug in dotty: https://github.com/lampepfl/dotty/issues/17445
   @Test def testIndexWhere(): Unit =
      val c = async[ComputationBound]{
           val c = Array("","a","aa","bb","aaa","bbb","ccc")
@@ -268,7 +270,10 @@ class TestCBS1ShiftArrayOps:
      }
      val r = c.run().get
      assert(r == 4)
+   */
 
+  /*
+  bug in dotty: https://github.com/lampepfl/dotty/issues/17445
   @Test def testLastIndexWhere(): Unit =
      val c = async[ComputationBound]{
           val c = Array("","a","aa","bb","aaa","bbb","ccc")
@@ -293,7 +298,7 @@ class TestCBS1ShiftArrayOps:
      }
      val r = c.run().get
      assert(r == -1)
-
+  */
 
 
   @Test def testPartition(): Unit =

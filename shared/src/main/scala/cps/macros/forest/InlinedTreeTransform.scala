@@ -93,7 +93,9 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                     cpsRhs.syncOrigin match
                       case None =>
                          val newName = if (debug) name+"DEBUG" else name
-                         val newSym = Symbol.newVal(Symbol.spliceOwner, newName, cpsRhs.rtpe,  vx.symbol.flags, Symbol.noSymbol)
+                         //bug in dotty
+                         //val newSym = Symbol.newVal(Symbol.spliceOwner, newName, cpsRhs.rtpe,  vx.symbol.flags, Symbol.noSymbol)
+                         val newSym = Symbol.newVal(Symbol.spliceOwner, newName, cpsRhs.rtpe,  Flags.EmptyFlags, Symbol.noSymbol)
                          val newValDef = ValDef(newSym, Some(cpsRhs.transformed.changeOwner(newSym)))
 
                          if (cpsRhs.isLambda) {
@@ -105,9 +107,12 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                          } else  {
                             // here awaits usage are internal  (we just use)
                             val monadContext = cpsCtx.monadContext.asTerm
-                     
-                            val awaitValSym = Symbol.newVal(Symbol.spliceOwner, name+"$await", tpt.tpe,  
-                                                            vx.symbol.flags, Symbol.noSymbol)
+                            //bug in dotty.
+                            //  TODO: find what flaga symbol have now and reproduce with minimal example
+                            //val awaitValSym = Symbol.newVal(Symbol.spliceOwner, name+"$await", tpt.tpe,
+                            //                                vx.symbol.flags, Symbol.noSymbol)
+                            val awaitValSym = Symbol.newVal(Symbol.spliceOwner, name+"$await", tpt.tpe,
+                                                            Flags.EmptyFlags, Symbol.noSymbol)
                             val awaitVal = ValDef(awaitValSym, Some(
                                    generateAwaitFor(Ref(newSym), cpsRhs.otpe).changeOwner(awaitValSym)
                             ))
@@ -119,7 +124,10 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                          }
                       case Some(term) =>
                          if (cpsRhs.isChanged) {
-                            val newSym = Symbol.newVal(Symbol.spliceOwner, name, vx.tpt.tpe,  vx.symbol.flags, Symbol.noSymbol)
+                            //  buf in dotty ?
+                            //    TODO: uncomment and debug to submit
+                            //val newSym = Symbol.newVal(Symbol.spliceOwner, name, vx.tpt.tpe,  vx.symbol.flags, Symbol.noSymbol)
+                            val newSym = Symbol.newVal(Symbol.spliceOwner, name, vx.tpt.tpe,  Flags.EmptyFlags, Symbol.noSymbol)
                             val newValDef = ValDef(newSym, Some(term.changeOwner(newSym)))
                             val bindingRecord =  InlinedValBindingRecord(newSym, cpsRhs, vx) 
                             s.copy(newBindings = newValDef::s.newBindings,

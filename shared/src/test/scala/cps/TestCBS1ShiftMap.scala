@@ -69,7 +69,8 @@ class TestBS1ShiftMap:
      val c = async[ComputationBound]{
        val m = Map(1 -> "one", 2 -> "two", 3->"tree")
        m.flatMap{(k:Int,v:String) => 
-            val it = v.toCharArray.nn.toList.zipWithIndex.map((x,i) => ( k*10+i, x))
+            //val it = v.toCharArray.nn.toList.zipWithIndex.map((x,i) => ( k*10+i, x))
+            val it = v.toCharArray.toList.zipWithIndex.map((x,i) => ( k*10+i, x))
             await(T1.cbt(it))
        }
      }

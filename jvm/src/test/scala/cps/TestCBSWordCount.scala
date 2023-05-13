@@ -17,7 +17,9 @@ object CBSWordCount1:
      //implicit val printCode = cps.macros.flags.PrintCode
      //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
      val r = async {
-       val words = line.split(" ").nn
+       //dotty bug:  https://github.com/lampepfl/dotty/issues/17009
+       //val words = line.split(" ").nn
+       val words = line.split(" ").asInstanceOf[Array[String]]
        for(w <- words) {
          await(channel.write(CountSignal.Data(w.nn)))
        }

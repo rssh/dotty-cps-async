@@ -3,6 +3,7 @@ package cpstest
 import org.junit.{Test,Ignore}
 import org.junit.Assert.*
 
+import scala.annotation.unchecked
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.util.*
@@ -117,7 +118,9 @@ class TestCompletableFutureTryCatch:
     var x = 0
     val a = async { 
                try
-                 await(CompletableFuture.completedFuture(1).nn)
+                 //bug in dotty
+                 //await(CompletableFuture.completedFuture(1).nn)
+                 await(CompletableFuture.completedFuture(1))
                  raise(new RuntimeException("CompletableFuture:simpleTryCatch:4.1")) 
                catch
                  case NonFatal(ex) =>

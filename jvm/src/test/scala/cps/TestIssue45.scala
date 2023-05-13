@@ -21,15 +21,19 @@ class TestIssue45:
 
 
   @Test def runSpawn(): Unit =
-    val threadIndexOutside1 = Thread.currentThread().nn.getId()
+    // bug in dotty (TODO: report)
+    //val threadIndexOutside1 = Thread.currentThread().nn.getId()
+    val threadIndexOutside1 = Thread.currentThread().getId()
     val beforeStart = System.currentTimeMillis()
     val f = async[Future]{
-      val threadIndexInside = Thread.currentThread().nn.getId()
+      //val threadIndexInside = Thread.currentThread().nn.getId()
+      val threadIndexInside = Thread.currentThread().getId()
       Thread.sleep(100)
       threadIndexInside
     }
     val afterStart = System.currentTimeMillis()
-    val threadIndexOutside2 = Thread.currentThread().nn.getId()
+    //val threadIndexOutside2 = Thread.currentThread().nn.getId()
+    val threadIndexOutside2 = Thread.currentThread().getId()
     assert(threadIndexOutside1  == threadIndexOutside2, "changed thread after spawn")
     val startDuration = afterStart - beforeStart 
     //println(s"startDuration=${startDuration}")

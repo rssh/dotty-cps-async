@@ -54,9 +54,9 @@ trait CpsAsyncEmitAbsorber4[R, F[_], C<:CpsMonadContext[F], T](using val auxAsyn
    override type Context = C
 
 
-class AsyncStreamHelper[R,F[_],C<:CpsMonadContext[F],A](a: CpsAsyncEmitAbsorber.Aux[R,F,C,A]){
+//TODO: fill bug report for dotty, about error in -Xcheck-macros when a is not val
+class AsyncStreamHelper[R,F[_],C<:CpsMonadContext[F],A](val a: CpsAsyncEmitAbsorber.Aux[R,F,C,A]){
 
-    
     transparent inline def apply(inline f: C ?=> CpsAsyncEmitter[F,A] => Unit): R = ${
          CpsAsyncStreamMacro.transform[R,F,C,A]('f, 'a)
     }
