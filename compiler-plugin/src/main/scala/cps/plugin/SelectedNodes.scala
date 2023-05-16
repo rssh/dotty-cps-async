@@ -18,12 +18,12 @@ import cps.plugin.QuoteLikeAPI.*
 
 enum DefDefSelectKind {
 
-  case USING_CONTEXT_PARAM(val cpsMonadContext: Tree)
+  case USING_CONTEXT_PARAM(val cpsDirectContext: Tree)
   case RETURN_CONTEXT_FUN(internal: DefDefSelectKind)
 
-  def getCpsMonadContext: Tree = this match
+  def getCpsDirectContext: Tree = this match
     case USING_CONTEXT_PARAM(cmc) => cmc
-    case RETURN_CONTEXT_FUN(internal) => internal.getCpsMonadContext
+    case RETURN_CONTEXT_FUN(internal) => internal.getCpsDirectContext
 
 }
 
@@ -90,8 +90,8 @@ object SelectedNodes {
    * @return
    */
   def checkAndProcessDefDef[A](tree:DefDef)(f: (DefDef, Tree) => Option[A])(acc:(DefDef,A)=>Option[A])(using Context):Option[A] = {
-    findCpsMonadContextParam(tree.paramss, tree.srcPos) match
-      case Some(cpsMonadContext) => f(tree, cpsMonadContext)
+    findCpsDirectContextParam(tree.paramss, tree.srcPos) match
+      case Some(cpsDirectContext) => f(tree, cpsDirectContext)
       case None =>
         //  TODO: are we transform only contect functions [?]. mb.all?
         if (Symbols.defn.isContextFunctionType(tree.tpt.tpe)) then
@@ -108,8 +108,8 @@ object SelectedNodes {
           None
   }
 
-  def findCpsMonadContextParam(value: List[Trees.ParamClause[Types.Type]], srcPos: SrcPos)(using Context): Option[Tree] = {
-    findAllCpsMonadContextParam(value, List.empty) match
+  def findCpsDirectContextParam(value: List[Trees.ParamClause[Types.Type]], srcPos: SrcPos)(using Context): Option[Tree] = {
+    findAllCpsDirectContextParam(value, List.empty) match
       case head :: Nil => Some(head)
       case head :: tail =>
         // later we can combine many contexts ar one using effect stacks or monad transformeds.
@@ -120,7 +120,7 @@ object SelectedNodes {
 
 
   @tailrec
-  private def findAllCpsMonadContextParam(paramss: List[Trees.ParamClause[Types.Type]],
+  private def findAllCpsDirectContextParam(paramss: List[Trees.ParamClause[Types.Type]],
                                           acc: List[ValDef])(using Context): List[Tree] = {
     paramss match
       case paramssHead :: paramssTail =>
@@ -128,12 +128,12 @@ object SelectedNodes {
           case paramsHead :: paramTail =>
             paramsHead match
               case vd: Trees.ValDef[?] =>
-                val filtered = paramssHead.asInstanceOf[List[ValDef]].filter((p: ValDef) => CpsTransformHelper.isCpsMonadContextType(p.tpt.tpe))
-                findAllCpsMonadContextParam(paramssTail, filtered ++ acc)
+                val filtered = paramssHead.asInstanceOf[List[ValDef]].filter((p: ValDef) => CpsTransformHelper.isCpsDirectType(p.tpt.tpe))
+                findAllCpsDirectContextParam(paramssTail, filtered ++ acc)
               case _ =>
-                findAllCpsMonadContextParam(paramssTail, acc)
+                findAllCpsDirectContextParam(paramssTail, acc)
           case Nil =>
-            findAllCpsMonadContextParam(paramssTail, acc)
+            findAllCpsDirectContextParam(paramssTail, acc)
       case Nil =>
         acc
   }

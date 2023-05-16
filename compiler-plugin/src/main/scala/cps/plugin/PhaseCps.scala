@@ -69,7 +69,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     val retval = selectRecord.kind match
       case USING_CONTEXT_PARAM(cpsMonadContextArg) =>
         val cpsMonadContext = ref(cpsMonadContextArg.symbol)
-        val tc = makeCpsTopLevelContext(cpsMonadContext,tree.symbol,tree.srcPos,debugSettings)
+        val tc = makeCpsTopLevelContext(cpsMonadContext,tree.symbol,tree.srcPos,debugSettings, CpsTransformHelper.cpsDirectClassSymbol)
         val nTpt = CpsTransformHelper.cpsTransformedType(tree.tpt.tpe, tc.monadType)
         selectRecord.monadType = tc.monadType
         //selectRecord.changedReturnType = nTpt
@@ -88,8 +88,8 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         tree.rhs match
           case oldLambda@Block((ddef: DefDef)::Nil, closure: Closure) =>
             val nDefDef = transformDefDefInternal(ddef, DefDefSelectRecord(kind=internalKind,internal=true))
-            val cpsMonadContext = ref(selectRecord.kind.getCpsMonadContext.symbol)
-            val fType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe, tree.srcPos)
+            val cpsDirectContext = ref(selectRecord.kind.getCpsDirectContext.symbol)
+            val fType = CpsTransformHelper.extractMonadType(cpsDirectContext.tpe, CpsTransformHelper.cpsDirectClassSymbol, tree.srcPos)
             selectRecord.monadType = fType
             val nClosureType = CpsTransformHelper.cpsTransformedType(closure.tpe, fType)
             //selectRecord.changedReturnType = nClosureType
@@ -152,12 +152,12 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
 
   private def transformDefDefInsideAsync(ddef: DefDef, asyncCallTree: Tree)(using ctx:Context): DefDef = {
     val cpsMonadContext = ddef.paramss.head.head
-    val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, asyncCallTree.srcPos)
+    val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, CpsTransformHelper.cpsMonadContextClassSymbol, asyncCallTree.srcPos)
     val nRhsType = CpsTransformHelper.cpsTransformedType(ddef.rhs.tpe.widen, monadType)
     val mt = ContextualMethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.symbol.info), _ => nRhsType)
     val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
     val nDefDef = DefDef(newSym, paramss => {
-      given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree))
+      given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
       val nctx = ctx.withOwner(newSym)
       println(s"cpsAsync.newSym=${newSym.id}, cpsAsync.oldSym=${ddef.symbol.id}")
       val nBody = TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head).changeOwner(ddef.symbol, newSym)
@@ -172,18 +172,18 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
 
   /**
    * create cps top-level context for transformation.
-   * @param cpsMonadContext - reference to cpsMonadContext.
+   * @param cpsDirectContext - reference to cpsMonadContext.
    * @param srcPos - position whre show monadInit
    **/
-  private def makeCpsTopLevelContext(cpsMonadContext: Tree, owner:Symbol, srcPos: SrcPos, debugSettings:DebugSettings)(using Context): CpsTopLevelContext =  {
-    println(s"mekeCpsTopLevelContext: cpsMonadContext=${cpsMonadContext}")
-    cpsMonadContext match
+  private def makeCpsTopLevelContext(cpsDirectContext: Tree, owner:Symbol, srcPos: SrcPos, debugSettings:DebugSettings, wrapperSym: ClassSymbol)(using Context): CpsTopLevelContext =  {
+    println(s"mekeCpsTopLevelContext: cpsDirectContext=${cpsDirectContext}")
+    cpsDirectContext match
       case vd: ValDef =>
         println("!! - found incorrect makeCpsTopLevelContext")
         throw CpsTransformException("incorrect makeCpsTopLevelContext", srcPos)
       case _ =>
-    val monadInit = Select(cpsMonadContext, "monad".toTermName).withSpan(srcPos.span)
-    val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, srcPos)
+    val monadInit = Select(cpsDirectContext, "monad".toTermName).withSpan(srcPos.span)
+    val monadType = CpsTransformHelper.extractMonadType(cpsDirectContext.tpe.widen, wrapperSym, srcPos)
     val optRuntimeAwait = if(settings.useLoom) CpsTransformHelper.findRuntimeAwait(monadType, srcPos.span) else None
     val monadValDef = SyntheticValDef("m".toTermName, monadInit)(using summon[Context].fresh.setOwner(owner))
     println(s"monadValDef=${monadValDef.show}")
@@ -194,7 +194,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
                           else if (runsAfter.contains(Inlining.name)) { false }
                           else
                              throw new CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
-    val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsMonadContext, optRuntimeAwait, debugSettings, isBeforeInliner)
+    val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectContext, optRuntimeAwait, debugSettings, isBeforeInliner)
     tc
   }
 

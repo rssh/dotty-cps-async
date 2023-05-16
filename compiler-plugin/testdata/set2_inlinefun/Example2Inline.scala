@@ -10,10 +10,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object Example2Inline {
 
 
-  inline def asyncPlus2[F[_]](a0:Int,b0:F[Int])(using CpsMonadContext[F]): Int =
+  inline def asyncPlus2[F[_]](a0:Int,b0:F[Int])(using CpsDirect[F]): Int =
     a0 + await(b0)
 
-  inline def asyncPlus3[F[_]](a0:Int,b0:F[Int]): CpsMonadContext[F] ?=> Int =
+  inline def asyncPlus3[F[_]](a0:Int,b0:F[Int]): CpsDirect[F] ?=> Int =
     a0 + await(b0)
 
   def main(args: Array[String]):Unit = {

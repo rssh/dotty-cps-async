@@ -345,6 +345,10 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         val existsPrependArg = argsProperties.usePrepend
         val existsShiftedLambda = argsProperties.hasShiftedLambda
         val shouldBeChangedSync = argsProperties.shouldBeChangedSync
+        val existsCpsDirect = argsProperties.hasCpsDirect
+        val callCpsDirect =  existsCpsDirect && !fun.symbol.hasAnnotation(cpsNotChangeSymbol)
+                                                         && !fun.symbol.flags.is(Flags.Inline)
+                                                         && !fun.symbol.name.contains("$")
         if cpsCtx.flags.debugLevel >= 15 then
             cpsCtx.log(s" existsShiftedLambda=${existsShiftedLambda}")
             cpsCtx.log(s" existsAsyncArg=${existsAsyncArg}")
@@ -355,12 +359,29 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
            val tailArgss = tails.map(_.map(_.term).toList)
            cpsFun match
               case lt: AsyncLambdaCpsTree =>
-                      CpsTree.impure(owner,Select.unique(lt.rLambda,"apply").appliedToArgss(args::tailArgss), applyTerm.tpe)
+                      if (callCpsDirect) then
+                        throw MacroError("Lambda accepting CpsDirect is not supported yet",applyTerm.asExpr)
+                      else
+                        CpsTree.impure(owner,Select.unique(lt.rLambda,"apply").appliedToArgss(args::tailArgss), applyTerm.tpe)
               case _ =>
                       cpsFun.syncOrigin match
                          case Some(fun1) =>
                            if (!cpsFun.isChanged && !unpure)
-                             CpsTree.pure(owner,applyTerm)
+                             if (callCpsDirect)
+                               // TODO: check that cps plugin is enabled.
+                               // XmacroSetting.find("cps:usePlugin")
+                               println(s"callCpsDirect detected:fun=${fun.show}, aritfact=${fun.symbol.flags.is(Flags.Artifact)}, synthetic=${fun.symbol.flags.is(Flags.Synthetic)}, paramAccessor=${fun.symbol.flags.is(Flags.ParamAccessor)}, ")
+                               if (fun.symbol.name.contains("spawnDelay")) {
+                                 println(s"fun.symbol.annotations=${fun.symbol.annotations}")
+                               }
+                               val adoptedApply = Apply(
+                                 TypeApply(Ref(adoptCpsedCallSymbol),
+                                           List(TypeTree.of[F],Inferred(applyTerm.tpe.widen))),
+                                 List(applyTerm)
+                               )
+                               CpsTree.impure(owner,adoptedApply, applyTerm.tpe.widen)
+                             else
+                               CpsTree.pure(owner,applyTerm)
                            else
                              if (unpure)
                                 val internalApply = fun1.appliedToArgss(args::tailArgss)

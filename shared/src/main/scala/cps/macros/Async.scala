@@ -276,8 +276,6 @@ object Async {
                    ReturnTransform(cpsCtx).run(returnTerm, from)
                 case constTerm@Literal(_)=>  
                    ConstTransform.run(cpsCtx, constTerm)
-                case repeatedTerm@Repeated(elems, tpt) =>  
-                   RepeatedTransform(cpsCtx).run(repeatedTerm)
                 case _ =>
                    println("f:"+f.show)
                    println("fTree:"+fTree)

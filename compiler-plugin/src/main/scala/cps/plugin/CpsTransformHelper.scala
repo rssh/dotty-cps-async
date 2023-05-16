@@ -20,34 +20,39 @@ object CpsTransformHelper {
   def cpsMonadContextClassSymbol(using Context) =
       Symbols.requiredClass("cps.CpsMonadContext")
 
-  def isCpsMonadContextType(tpe:Type, debug:Boolean=false)(using Context): Boolean = {
+  def cpsDirectClassSymbol(using Context) =
+    Symbols.requiredClass("cps.CpsDirect")
+
+
+  def isCpsDirectType(tpe:Type, debug:Boolean=false)(using Context): Boolean = {
      val retval = tpe.dealias match
-       case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsMonadContextClassSymbol) =>
+       case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsDirectClassSymbol) =>
          true
        case other =>
-         other.baseType(cpsMonadContextClassSymbol) != NoType
+         other.baseType(cpsDirectClassSymbol) != NoType
      if (debug)
-        println(s"isCpsMonadContextType(${tpe.show} [tree:${tpe}]) = ${retval}")
+        println(s"isCpsDirectType(${tpe.show} [tree:${tpe}]) = ${retval}")
      retval
   }
 
   /**
-   *@param contextFunctionArgType is CpsMonadContext[F]
+   *@param contextFunctionArgType is CpsDirect[F] or CpsMonadContext[F]
+   *@param wrapperSymbol: naked symbol of wrapper. i.e. requiredClass("cps.CpsDirect") or requiredClass("cps.CpsMonadContext")
    *@return F
    **/
-  def extractMonadType(contextFunctionArgType: Type, pos: SrcPos)(using Context): Type =
+  def extractMonadType(contextFunctionArgType: Type, wrapperSymbol: Symbol, pos: SrcPos)(using Context): Type =
     contextFunctionArgType.dealias match
-      case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsMonadContextClassSymbol) => 
+      case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == wrapperSymbol) =>
              targ
       case other =>
-             val cntBase = other.baseType(cpsMonadContextClassSymbol)
+             val cntBase = other.baseType(wrapperSymbol)
              if (cntBase != NoType) 
                 cntBase match
                   case AppliedType(tycon, List(targ)) => targ
                   case _ =>
                     throw CpsTransformException(s"Can't extract monad from context-type: ${cntBase.show}", pos)
              else
-                throw CpsTransformException("assument that contect function type is CpsMonadContext[T]", pos)
+                throw CpsTransformException(s"assumed that contect function type is ${wrapperSymbol}, but ${other.show} is not", pos)
 
 
   /**

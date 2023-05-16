@@ -82,6 +82,13 @@ object ApplyTransform {
     // remove case, when we have async lamba apply call.
     Log.trace(s"ApplyTransfopm.parseApplication  fun=: ${appTerm.fun.show}", nesting)
     Log.trace(s"ApplyTransfopm.parseApplication  fun.tree=: ${appTerm.fun}", nesting)
+    Log.trace(s"ApplyTransfopm.parseApplication  argss.size=: ${argss.size}", nesting)
+    Log.trace(s"ApplyTransfopm.parseApplication  appTerm=: ${appTerm.show}", nesting)
+
+    val fullAppTerm = argss.last match
+      case ApplyTermArgList(origin,args) => origin
+      case _ => appTerm
+
     appTerm.fun match {
       case sel@Select(obj,method) =>
         val cpsObj = RootTransform(obj,owner,nesting+1)
@@ -212,11 +219,12 @@ object ApplyTransform {
           case ApplyTermArgList(orig,args) =>
             Apply(s,args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))).withSpan(orig.span)
      }
-     adoptCallMode(origin, plainTree, owner, argss, callMode)
+     val fullOrigin = if (argss.isEmpty) origin else argss.last.origin
+     adoptCallMode(fullOrigin, plainTree, owner, argss, callMode)
   }
 
   def adoptCallMode(origin: Tree, plainTree: Tree, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
-    if (argss.exists(_.containsMonadContext) ) {
+    if (argss.exists(_.containsDirectContext) ) {
       val adoptedTree = if (!callMode.asyncLambdaApplication) {
          Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
       } else plainTree
@@ -290,19 +298,16 @@ object ApplyTransform {
         val inlined = atPhase(inliningPhase){
            Inlines.inlineCall(pureReply)
         }
-        println(s"pureReplyInlinedIfNeeded: before inlined=${pureReply.show}")
-        println(s"pureReplyInlinedIfNeeded: inlined=${inlined.show}")
-        println(s"pureReplyInlinedIfNeeded: inlined tree =${inlined}")
-        println(s"pureReplyInlinedIfNeeded: inlined.tpe=${inlined.tpe}")
         inlined
     } else {
         pureReply
     }
-    val lastCpsTree = adoptCallMode(origin, pureReply, owner, argss, callMode)
+    val fullOrigin = if (argss.isEmpty) origin else argss.last.origin
+    val lastCpsTree = adoptCallMode(fullOrigin, pureReply, owner, argss, callMode)
     val nApplyCpsTree = genPrefixes(argss, lastCpsTree)
     val retval = nApplyCpsTree
     println(s"genApplication result: ${retval.show}")
-    println(s"genApplication exists containsMonadContext: ${argss.exists(_.containsMonadContext)}")
+    println(s"genApplication exists containsMonadContext: ${argss.exists(_.containsDirectContext)}")
     retval
   }
 

@@ -12,6 +12,9 @@ trait CpsMonadContext[F[_]] {
 
   type Monad[X] = F[X]
 
+  type Direct = CpsDirect[F]
+
+
   /**
    *@return instance of cps-monad.
    */ 
@@ -23,6 +26,12 @@ trait CpsMonadContext[F[_]] {
    **/
   def adoptAwait[A](fa:F[A]):F[A]
  
+
+}
+
+object CpsMonadContext {
+
+  given monadContext[F[_]](using direct:CpsDirect[F]):CpsMonadContext[F] = direct.context
 
 }
 
@@ -102,5 +111,16 @@ trait CpsContextMonad[F[_],Ctx <: CpsMonadContext[F]]  extends CpsMonad[F] {
 trait CpsConcurrentContextMonad[F[_], Ctx <: CpsMonadContext[F]] extends CpsConcurrentMonad[F] with CpsContextMonad[F, Ctx] {
 
   type Context = Ctx
+
+}
+
+
+class CpsDirect[F[_]](val context: CpsMonadContext[F]) extends AnyVal {
+  def monad: CpsMonad[F] = context.monad
+}
+
+object CpsDirect {
+
+  given direct[F[_]](using context: CpsMonadContext[F]): CpsDirect[F] = new CpsDirect[F](context)
 
 }

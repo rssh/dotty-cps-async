@@ -8,9 +8,10 @@ import core.Names.*
 import core.Symbols.*
 import core.Types.*
 import ast.tpd.*
-
 import cps.plugin.*
 import cps.plugin.forest.*
+
+import scala.util.control.NonFatal
 
 enum ApplyArgCallMode {
   case SYNC, ASYNC, ASYNC_SHIFT
@@ -22,7 +23,7 @@ sealed trait ApplyArg {
 
     def isAsync: Boolean
     def isLambda: Boolean
-    def isMonadContext: Boolean
+    def isDirectContext: Boolean
 
     def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)]
     def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree
@@ -33,36 +34,48 @@ sealed trait ApplyArg {
 
 object ApplyArg {
 
-  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, isMonadContext: Boolean,
+
+  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, isDirectContext: Boolean,
             owner: Symbol,
             dependFromLeft: Boolean, nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
     expr match
-      case SeqLiteral(elems, elementtp) =>
+      case Typed(sq@SeqLiteral(elems,elemtpt),rtp) if isRepeatedParamType(rtp) =>
         RepeatApplyArg(paramName, paramType, elems.zipWithIndex.map{ (p,i) =>
           val newName = (paramName.toString + i.toString).toTermName
-          ApplyArg(p,newName,elementtp.tpe,isByName, isMonadContext, owner, dependFromLeft,  nesting)
-        })
+          ApplyArg(p,newName,elemtpt.tpe,isByName, isDirectContext, owner, dependFromLeft,  nesting)
+        },  elemtpt,  expr)
       case _ =>
-        val cpsExpr = RootTransform(expr, owner, nesting+1)
+        val cpsExpr = try{
+          RootTransform(expr, owner, nesting+1)
+        }catch {
+          case NonFatal(ex) =>
+            expr match
+              case Typed(expr,tpt) =>
+                println(s"Failed term: ${expr}")
+                println(s"Failed type: ${tpt}")
+              case _ =>
+                println(s"Failed term: ${expr}")
+            throw ex
+        }
         if (isByName) then
-          ByNameApplyArg(paramName, paramType, cpsExpr, isMonadContext)
+          ByNameApplyArg(paramName, paramType, cpsExpr, isDirectContext)
         else
           paramType match
             case AnnotatedType(tp, an) if an.symbol == defn.InlineParamAnnot =>
-                InlineApplyArg(paramName,tp,cpsExpr,isMonadContext)
+                InlineApplyArg(paramName,tp,cpsExpr,isDirectContext)
             case AnnotatedType(tp, an) if an.symbol == defn.ErasedParamAnnot =>
-                ErasedApplyArg(paramName,tp,expr,isMonadContext)
+                ErasedApplyArg(paramName,tp,expr,isDirectContext)
             case _ =>
                 cpsExpr.asyncKind match
                   case AsyncKind.Sync if !dependFromLeft =>
-                    PlainApplyArg(paramName,paramType,cpsExpr,None,isMonadContext)
+                    PlainApplyArg(paramName,paramType,cpsExpr,None,isDirectContext)
                   case AsyncKind.AsyncLambda(_) =>
-                    PlainApplyArg(paramName,paramType,cpsExpr,None,isMonadContext)
+                    PlainApplyArg(paramName,paramType,cpsExpr,None,isDirectContext)
                   case _ =>
                     val sym = newSymbol(owner,paramName,Flags.EmptyFlags,paramType.widen,NoSymbol)
                     val optRhs =  cpsExpr.unpure
                     val valDef =  ValDef(sym.asTerm, optRhs.getOrElse(EmptyTree).changeOwner(cpsExpr.owner, sym))
-                    PlainApplyArg(paramName,paramType.widen,cpsExpr,Some(valDef), isMonadContext)
+                    PlainApplyArg(paramName,paramType.widen,cpsExpr,Some(valDef), isDirectContext)
   }
 
 }
@@ -87,7 +100,7 @@ case class PlainApplyArg(
   override val tpe: Type,
   override val expr: CpsTree,  
   val optIdentValDef: Option[ValDef],
-  val isMonadContext: Boolean
+  val isDirectContext: Boolean
 ) extends ExprApplyArg  {
 
   override def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] = {
@@ -106,6 +119,12 @@ case class PlainApplyArg(
    **/
    override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree =
     import AsyncKind.*
+    println(s"!exprInCall(${expr}), callMode=${callMode}")
+    expr match
+      case LambdaCpsTree(origin,owner,originDefDef,cpsBody) =>
+        println(s"!exprInCall: origin=${origin.show}")
+        println(s"!exprInCall: originDefDef=${originDefDef.show}")
+      case _ =>
     expr.asyncKind match
       case Sync => expr.unpure match
         case Some(tree) => 
@@ -138,13 +157,15 @@ case class RepeatApplyArg(
   override val name: TermName,
   override val tpe: Type,
   elements: Seq[ApplyArg],
+  elementTpt: Tree,
+  origin: Tree,
 ) extends ApplyArg {
 
   override def isAsync = elements.exists(_.isAsync)
 
   override def isLambda = elements.exists(_.isLambda)
 
-  override def isMonadContext: Boolean = elements.exists(_.isMonadContext)
+  override def isDirectContext: Boolean = elements.exists(_.isDirectContext)
 
 
   override def flatMapsBeforeCall(using Context) = 
@@ -156,11 +177,14 @@ case class RepeatApplyArg(
     val trees = elements.foldLeft(IndexedSeq.empty[Tree]){ (s,e) =>
       s.appended(e.exprInCall(callMode,optRuntimeAwait))
     }
-    val nTpe = callMode match
-      case ApplyArgCallMode.ASYNC_SHIFT if elements.exists(_.isLambda) => 
-        CpsTransformHelper.cpsTransformedType(tpe, summon[CpsTopLevelContext].monadType)
-      case _ => tpe
-    SeqLiteral(trees.toList, TypeTree(nTpe))
+    val (nElemTpt, nRtp) = callMode match
+      case ApplyArgCallMode.ASYNC_SHIFT if elements.exists(_.isLambda) =>
+        val elemTpe = CpsTransformHelper.cpsTransformedType(elementTpt.tpe, summon[CpsTopLevelContext].monadType)
+        val elemTpt = TypeTree(elemTpe)
+        (elemTpt, AppliedTypeTree(TypeTree(defn.RepeatedParamType), List(elemTpt)))
+      case _ => (elementTpt, TypeTree(tpe))
+    // todo - return orign if nothing was changed
+    Typed(SeqLiteral(trees.toList,nElemTpt),nRtp).withSpan(origin.span)
 
   override def show(using Context): String = {
     s"Repeated(${elements.map(_.show)})"
@@ -172,7 +196,7 @@ case class ByNameApplyArg(
   override val name: TermName,
   override val tpe: Type,
   override val expr: CpsTree,
-  override val isMonadContext: Boolean,
+  override val isDirectContext: Boolean,
 ) extends ExprApplyArg  {
 
   override def isLambda = true
@@ -220,7 +244,7 @@ case class InlineApplyArg(
   override val name: TermName,
   override val tpe: Type,
   override val expr: CpsTree,
-  override val isMonadContext: Boolean
+  override val isDirectContext: Boolean
 ) extends ExprApplyArg {
 
 
@@ -251,7 +275,7 @@ case class ErasedApplyArg(
   override val name: TermName,
   override val tpe: Type,
            val exprTree: Tree,
-  override val isMonadContext: Boolean
+  override val isDirectContext: Boolean
 ) extends ApplyArg {
 
   def isAsync: Boolean =

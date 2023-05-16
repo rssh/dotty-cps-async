@@ -40,7 +40,7 @@ import cps.monads.{*,given}
 object MyListExample {
 
   object network {
-    def fetch(x:String): CpsMonadContext[Future] ?=> String =
+    def fetch(x:String): CpsDirect[Future] ?=> String =
       ???
   }
 
@@ -69,7 +69,7 @@ object MyListExample {
   //}
 
   //
-  def fetchList(urls: List[String]): CpsMonadContext[Future] ?=> List[String] =
+  def fetchList(urls: List[String]): CpsDirect[Future] ?=> List[String] =
       urls.map(url => network.fetch(url) )
 
   //def myFunction2_compiler(l: MyList[String]): CpsMonadContext[Future] ?=> Future[MyList[String]] = ...

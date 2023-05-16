@@ -10,7 +10,7 @@ import cps.*
 object Example1 {
 
 
-  def asyncPlus[F[_]](a0:Int, b0:F[Int]): CpsMonadContext[F] ?=> Int =
+  def asyncPlus[F[_]](a0:Int, b0:F[Int]): CpsDirect[F] ?=> Int =
     a0 + cpsAwait(b0)
 
   /*

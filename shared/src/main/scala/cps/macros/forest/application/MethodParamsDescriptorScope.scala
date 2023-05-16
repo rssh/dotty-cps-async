@@ -26,11 +26,13 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
      def  isContext: Boolean
 
-     def  isCpsMonadContext: Boolean =
-            paramType(0) match
-              case Some(t) =>
-                  t <:< TypeRepr.of[CpsMonadContext[F]]
-              case None => false
+     def  isCpsDirect(index:Int): Boolean =
+            isContext && (
+              paramType(index) match
+                case Some(t) =>
+                  t <:< TypeRepr.of[CpsDirect[F]]
+                case None => false
+            )
 
      def  isByName(index: Int): Boolean =
            paramType(index) match

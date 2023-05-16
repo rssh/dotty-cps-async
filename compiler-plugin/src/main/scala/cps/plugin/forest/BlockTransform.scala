@@ -20,7 +20,8 @@ object BlockTransform {
         val cpsBody = {
           val ddefCtx = summon[Context].withOwner(ddef.symbol)
           val tctx = summon[CpsTopLevelContext]
-          RootTransform(ddef.rhs(using ddefCtx), ddef.symbol, nesting+1)(using ddefCtx, tctx)
+          val ddefRhs = ddef.rhs(using ddefCtx)
+          RootTransform(ddefRhs, ddef.symbol, nesting+1)(using ddefCtx, tctx.copy(settings = tctx.settings.copy(debugLevel = 15)))
         }
         LambdaCpsTree(term, owner, ddef, cpsBody)
       case Block(Nil, last) =>
