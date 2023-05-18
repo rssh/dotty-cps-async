@@ -13,7 +13,6 @@ sealed trait FreeMonad[+T]
 
 object FreeMonad {
   case class Pure[A](a:A) extends FreeMonad[A]
-  case class Map[A,B](fa:FreeMonad[A],f: A=>B) extends FreeMonad[B]
   case class FlatMap[A,B](fa: FreeMonad[A], f: A=>FreeMonad[B]) extends FreeMonad[B]
   case class Error(e: Throwable) extends FreeMonad[Nothing]
   case class FlatMapTry[A,B](fa: FreeMonad[A], f: Try[A]=>FreeMonad[B]) extends FreeMonad[B]
@@ -39,7 +38,7 @@ given FreeCpsMonad: CpsTryMonad[FreeMonad] with CpsMonadInstanceContext[FreeMona
 
   def pure[A](a:A): F[A] = FreeMonad.Pure(a)
 
-  def map[A,B](fa:F[A])(f: A=>B): F[B] = FreeMonad.Map(fa,f)
+  def map[A,B](fa:F[A])(f: A=>B): F[B] = FreeMonad.FlatMap(fa, (x:A) => pure(f(x)))
 
   def flatMap[A,B](fa: F[A])(f: A => F[B]): F[B] = FreeMonad.FlatMap(fa,f)
 

@@ -9,8 +9,8 @@ import core.Decorators.*
 import core.Symbols.*
 import core.Names.*
 import ast.tpd.*
-
 import cps.plugin.*
+import dotty.tools.dotc.ast.tpd
 
 /**
  * CpsTree -- transfomed element
@@ -25,6 +25,7 @@ import cps.plugin.*
  *    |    | - MapCpsTree
  *    |    | - FlatMapCpsTree
  *    |- LambdaCpsTree
+ *    |- OpaqueAsyncLambdaTermCpsTree
  *    |- SeqCpsTree
  *    |- BlockBoundsCpsTree
  *    |- SelectTypeApplyTypedCpsTree
@@ -80,7 +81,7 @@ sealed trait CpsTree {
       case None => false
       case Some(unpureTerm) => (unpureTerm eq origin)
 
-  def originType: Type = origin.tpe
+  def originType(using Context): Type = origin.tpe.widen
 
   /**
    * let we have block {A; B}
@@ -182,7 +183,8 @@ object CpsTree {
   def lambda(origin:Tree, owner: Symbol, ddef: DefDef, transformedBody: CpsTree): CpsTree =
      LambdaCpsTree(origin, owner, ddef, transformedBody)
 
-
+  def opaqueAsyncLambda(origin: Tree, owner: Symbol, changed: Tree, bodyKind: AsyncKind): OpaqueAsyncLambdaTermCpsTree =
+      OpaqueAsyncLambdaTermCpsTree(origin, owner, changed, bodyKind)
 
 }
 
@@ -711,6 +713,94 @@ case class LambdaCpsTree(
       x => paramTypes,
       x => cpsBody.originType
     )    
+  }
+
+}
+
+case class OpaqueAsyncLambdaTermCpsTree(
+                          override val origin: Tree,
+                          override val owner: Symbol,
+                          val transformedTree: Tree,
+                          val bodyKind: AsyncKind
+                                       ) extends CpsTree {
+
+  override def asyncKind = AsyncKind.AsyncLambda(bodyKind)
+
+  override def unpure(using Context, CpsTopLevelContext): Option[Tree] = None
+
+  override def transformed(using Context, CpsTopLevelContext): Tree = transformedTree
+
+  override def appendInBlock(next: CpsTree)(using Context, CpsTopLevelContext): CpsTree = {
+    SeqCpsTree(EmptyTree,owner,IndexedSeq(this),next.changeOwner(owner))
+  }
+
+  override def applyRuntimeAwait(runtimeAwait: tpd.Tree)(using Context, CpsTopLevelContext): CpsTree = {
+    val tpe = transformedTree.tpe.widen.dealias
+    if (defn.isFunctionType(tpe) || defn.isContextFunctionType(tpe)) {
+      val argTypes = tpe.argTypes
+      val resultType = tpe.resultType
+      val (mtRes, optParamType) = summon[CpsTopLevelContext].monadType match
+        case HKTypeLambda(params, resType) =>
+          // TODO: check that type-lambda have one argument and throw if nof
+          (resType, params.headOption)
+        case other => (other, None)
+      val cntBase = tpe.baseType(mtRes.typeSymbol)
+      if (!cntBase.exists) {
+         throw CpsTransformException(s"Result type of ${tpe.show} should be wrapped into monad", origin.srcPos)
+      }
+      val unwrappedReturnType = cntBase match
+        case AppliedType(base,cntArgs) =>
+           cntArgs match
+             case List(arg) => arg
+             case other =>
+               if (optParamType.isDefined) {
+                 //  TODO:  unify AppliedType with HKTypeLambda.resultType
+                 //   place of optParamType will be our unwrapped.
+                 ???
+               } else {
+                 throw CpsTransformException(s"Can't unwrapped base type of ${cntBase.show} in the reuslt of ${tpe.show} ", origin.srcPos)
+               }
+        case other =>
+           throw CpsTransformException(s"Expected that result type of AsyncLambda(${tpe.show}) is AppliedType, we have ", origin.srcPos)
+      val mt = if (defn.isContextFunctionType(tpe)) {
+        ContextualMethodType(paramNames = tpe.firstParamNames)(_ => argTypes, _ => unwrappedReturnType)
+      } else {
+        MethodType(paramNames = tpe.firstParamNames)(_ => argTypes, _ => unwrappedReturnType)
+      }
+      val nLambdaSym = Symbols.newAnonFun(owner,mt)
+      val lambda = Closure(nLambdaSym,tss => {
+        val nBody = Apply(
+          Apply(
+            TypeApply(runtimeAwait, List(TypeTree(unwrappedReturnType))),
+            List(
+              Apply(
+                Select(transformedTree,"apply".toTermName),
+                tss.head
+              )
+            )
+          ),
+          List(
+            tctx.cpsMonadRef,
+            tctx.cpsMonadContextRef
+          )
+        )
+        nBody
+      })
+      CpsTree.pure(origin,owner,lambda)
+    } else {
+      throw CpsTransformException(s"Can't apply runtime await to ${tpe.show}: expected function type", origin.srcPos)
+    }
+  }
+
+  override def changeOwner(newOwner: Symbol)(using Context): CpsTree = {
+    copy(owner=newOwner, transformedTree = transformedTree.changeOwner(owner,newOwner))
+  }
+
+  override def withOrigin(term: tpd.Tree): CpsTree =
+    copy(origin = term)
+
+  override def show(using Context): String = {
+    s"OpaqueAsyncLambdaTermCpsTree(${transformedTree.show})"
   }
 
 }
