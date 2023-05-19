@@ -54,6 +54,17 @@ object TransformUtil {
       retval
    }
 
+   def realWiden(tpe:Type)(using Context): Type =
+      tpe match
+         case tpeOr@OrType(tp1,tp2) =>
+            val tp1w = realWiden(tp1)
+            val tp2w = realWiden(tp2)
+            if (tp1w eq tp1) && (tp2w eq tp2) then
+               tpe
+            else
+               OrType.make(tp1w,tp2w,tpeOr.isSoft)
+         case _ => tpe.widen
+
    def collectDefOwners(tree:Tree)(using Context): List[(Symbol,Symbol)] = {
       val gather = new TreeAccumulator[List[(Symbol,Symbol)]] {
          def apply(x: List[(Symbol,Symbol)], tree: Tree)(using Context): List[(Symbol,Symbol)] =

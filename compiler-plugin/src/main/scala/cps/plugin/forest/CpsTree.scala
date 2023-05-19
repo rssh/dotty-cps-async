@@ -81,7 +81,7 @@ sealed trait CpsTree {
       case None => false
       case Some(unpureTerm) => (unpureTerm eq origin)
 
-  def originType(using Context): Type = origin.tpe.widen
+  def originType(using Context): Type = origin.tpe
 
   /**
    * let we have block {A; B}
@@ -446,7 +446,7 @@ case class MapCpsTree(
           Apply(
             TypeApply(
               Select(tctx.cpsMonadRef, mapName),
-              List(TypeTree(mapSource.originType.widen), TypeTree(originType.widen))
+              List(TypeTree(mapSource.originType.widen), TypeTree(TransformUtil.realWiden(originType)))
             ),
             List(mapSource.transformed)
           ),

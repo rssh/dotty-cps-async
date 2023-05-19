@@ -34,6 +34,7 @@ object RootTransform {
             case vd:ValDef => ValDefTransform(vd, owner, nesting)
             case lt:Literal => LiteralTransform(lt, owner,  nesting)
             case tt:Typed => TypedTransform(tt, owner, nesting)
+            case at:Assign => AssignTransform(at, owner, nesting)
             case _ =>
               throw CpsTransformException(s"Unsupported tree in cps: $term",term.srcPos)
             //report.error(s"Unsupported tree in cps: $term",term.srcPos)

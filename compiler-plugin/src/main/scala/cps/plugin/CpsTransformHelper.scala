@@ -104,7 +104,7 @@ object CpsTransformHelper {
           val nParams = adoptResultTypeParam(params, fType)
           AppliedType(funCn, nParams)
         else
-          decorateTypeApplications(fType).appliedTo(t)
+          decorateTypeApplications(fType).appliedTo(t.widen)
       case mt: MethodType =>
         if (mt.isContextualMethod)
           mt.derivedLambdaType(mt.paramNames, mt.paramInfos, cpsTransformedType(mt.resType, fType, debug))
@@ -116,7 +116,7 @@ object CpsTransformHelper {
       case pt: PolyType =>
         PolyType(pt.paramNames)(_ => pt.paramInfos, _ => cpsTransformedType(pt.resType, fType, debug))
       case _  =>
-        decorateTypeApplications(fType).appliedTo(t)
+        decorateTypeApplications(fType).appliedTo(t.widen)
     if (debug) {
       println(s"cpsTransformedType: in = (${t.show}   [${t}]")
       println(s"cpsTransformedType: out = ${retval.show}   [${retval}]")
