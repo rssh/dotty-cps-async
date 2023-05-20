@@ -9,23 +9,27 @@ import cps.monads.{*,given}
 
 
 //@cps.plugin.annotation.CpsDebugLevel(15)
-object Test5m1 {
+//TODO:  the samw with some code in testFun after assingment.
+object Test5m2 {
+
+  class X{
+    var value: String = "__INIT__"
+  }
 
   def fetch(url:String)(using CpsDirect[Future]): String =
     s"ok:$url"
 
-  def testFun(): CpsDirect[Future] ?=> String = {
-    var a = ""
-    a = fetch("myurl")
-    s"result:${a}"
+  def testFun(x:X): CpsDirect[Future] ?=> Unit = {
+    x.value = fetch("myurl")
   }
 
   def main(args: Array[String]): Unit = {
+    val x = new X()
     val fr = async[Future] {
-      testFun()
+      testFun(x)
     }
     val r = Await.result(fr, 1000.millis)
-    println(r)
+    println(x.value)
   }
 
 }

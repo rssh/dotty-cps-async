@@ -63,6 +63,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
 
   def transformDefDefInternal(tree: DefDef, selectRecord: DefDefSelectRecord, optTopLevelContext:Option[CpsTopLevelContext]=None)(using Context): DefDef = {
     val debugSettings = optTopLevelContext.map(_.settings).getOrElse(DebugSettings.make(tree))
+    selectRecord.debugLevel = debugSettings.debugLevel
     println(s"transformDefDef ${tree.symbol.showFullName}, (${tree.symbol.id}) starting at${tree.srcPos.startPos.show}, selectRecord.kind=${selectRecord.kind}")
     if (debugSettings.printCode) then
       report.log("transforming tree:", tree.srcPos)
@@ -127,23 +128,16 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
               inferAsyncArg.tpe.typeSymbol == Symbols.requiredClass("cps.CpsTransform.InfernAsyncArg")  &&
               applyCn.mangledString == "apply"
            =>
-            println(s"found CpsAsync candidate: ${tree.show} ")
-            println(s"CpsAsync.ctx=:  ${ddef.show} ")
-            println(s"inferAsyncArg=:  ${inferAsyncArg} ")
 
             val nDefDef = transformDefDefInsideAsync(ddef, tree)
             val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
 
             val applyMArg = Block(nDefDef::Nil, nClosure).withSpan(ctxFun.span)
-            println(s"nDefDef=${nDefDef}")
-            println(s"nDefDef.tpt=${nDefDef.tpt.show}")
-            println(s"nDefDef.tpt.tpe=${nDefDef.tpt.tpe.show}")
             val applyM = "applyM1".toTermName
             val nApply = cpy.Apply(tree)(
               TypeApply(Select(inferAsyncArg, applyM), List(aCnd)),
               List(applyMArg)
             )
-            println(s"nApply=${nApply.show}")
             nApply
       case _ => super.transformApply(tree)
 
@@ -159,7 +153,6 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     val nDefDef = DefDef(newSym, paramss => {
       given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
       val nctx = ctx.withOwner(newSym)
-      println(s"cpsAsync.newSym=${newSym.id}, cpsAsync.oldSym=${ddef.symbol.id}")
       val nBody = TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head).changeOwner(ddef.symbol, newSym)
       val nRhsCps = RootTransform(nBody, newSym, 0)(using nctx, tctx)
       val nRhs = nRhsCps.transformed

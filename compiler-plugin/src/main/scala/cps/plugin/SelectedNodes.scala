@@ -37,7 +37,9 @@ enum DefDefSelectKind {
 class DefDefSelectRecord(val kind: DefDefSelectKind,
                          var internal: Boolean,
                          var monadType: Type = NoType,
-                         var changedType: Type = NoType)
+                         var changedType: Type = NoType,
+                         var debugLevel: Int = 0
+                        )
 
 
 class SelectedNodes {
@@ -73,6 +75,8 @@ class SelectedNodes {
     allDefDefs.get(sym).exists(!_.internal)
   }
 
+  
+  
 }
 
 

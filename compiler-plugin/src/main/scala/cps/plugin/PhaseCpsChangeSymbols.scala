@@ -2,10 +2,13 @@ package cps.plugin
 
 import dotty.tools.dotc.ast.tpd.*
 import dotty.tools.dotc.core.*
+import dotty.tools.dotc.core.Constants.*
 import dotty.tools.dotc.core.Contexts.*
 import dotty.tools.dotc.core.Decorators.*
 import dotty.tools.dotc.core.Denotations.*
+import dotty.tools.dotc.core.Definitions.*
 import dotty.tools.dotc.core.DenotTransformers.SymTransformer
+import dotty.tools.dotc.core.Symbols.*
 import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.{CompilationUnit, report}
 import dotty.tools.dotc.transform.{Erasure, PureStats, VCElideAllocations}
@@ -70,6 +73,9 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
               None
         case Apply(fn, List(arg)) if (Scaffolding.isAdoptForUncpsedDenotation(fn.symbol)) =>
           Some(arg)
+        case Block(List(UncpsedScaffolding(internal)),Literal(Constant(()))) =>
+          // we can have function Direct => Unit and it's can be wrapped in empty block to return Unit regardless of computation result.
+          Some(internal)
         case _ => None
     }
 
@@ -85,10 +91,13 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
       report.error(s"plain tree: ${tree}", tree.srcPos)
     }
 
-
-
     selectedNodes.getDefDefRecord(tree.symbol) match
       case Some(selectRecord) =>
+        //if (true || selectRecord.debugLevel > 10) {
+        //  println(s"changeSymbol for ${tree.symbol} ")
+        //  println(s"rhs ${tree.rhs.show} ")
+        //  println(s"plain rhs ${tree.rhs} ")
+        //}
         // here we see our defdefs with next changes:
         //  - erased type
         //  - type params are removed
@@ -115,7 +124,7 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
             // TODO: insert asInstanceOf ?
             cpy.DefDef(tree)(rhs = typedNRhs, tpt = TypeTree(nTpt))
           case _ =>
-            reportErrorWithTree(s"not found uncpsed scaffolding for ${tree.symbol} (${tree.symbol.id})", tree.rhs)
+            reportErrorWithTree(s"not found uncpsed scaffolding: for ${tree.symbol} (${tree.symbol.id})", tree.rhs)
             tree
       case None =>
         tree
@@ -127,9 +136,16 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
       tree match
         case Apply(fn, List(arg)) if (Scaffolding.isAdoptCpsedCall(fn.symbol)) =>
           // TODO:  (are we need check for isInstanceOf here?)
+          if (true) {
+            println(s"uncpsedScaffFolding:arg= ${arg.show}")
+            println(s"uncpsedScaffFolding:plain tree = ${arg}")
+          }
           arg match
             case Apply(fn1, List(arg1)) if Erasure.Boxing.isBox(fn1.symbol) =>
               Some(arg1)
+            case Block(List(stat),expr) if expr == Literal(Constant(()))
+                                  || expr.symbol.exists && expr.symbol == defn.BoxedUnit_UNIT =>
+              Some(stat)
             case _ =>
               Some(arg)
         case _ => None
