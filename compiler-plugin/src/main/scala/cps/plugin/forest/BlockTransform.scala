@@ -13,7 +13,8 @@ import cps.plugin.*
 object BlockTransform {
 
   def apply(term: Block, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
-    term match
+    Log.trace(s"BlockTransform, term=${term.show}",nesting)
+    val retval = term match
       case Block((ddef: DefDef)::Nil, closure: Closure)  if ddef.symbol == closure.meth.symbol =>
         // TODO:
         //   if we here, this is not an argument of function.
@@ -40,11 +41,16 @@ object BlockTransform {
         val s0: CpsTree = CpsTree.unit(owner)
         val statsCps = statements.foldLeft(s0){ (s,e) =>
            val cpsE = RootTransform(e, owner, nesting+1)
-           s.appendInBlock(cpsE)
+           Log.trace(s"BlockTransform::appendInBlock, before s=${s.show} cpsE=${cpsE}",nesting)
+           val r = s.appendInBlock(cpsE)
+           Log.trace(s"BlockTransform::appendInBlock, after s=${r.show}",nesting)
+           r
         }  
         val lastCps = RootTransform(last, owner, nesting+1)
         val blockCps = statsCps.appendInBlock(lastCps).withOrigin(term)
         BlockBoundsCpsTree(blockCps)
+    Log.trace(s"BlockTransform, retval=${retval.show}",nesting)
+    retval
   }
 
 }

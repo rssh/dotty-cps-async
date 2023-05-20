@@ -229,6 +229,9 @@ case class PureCpsTree(
                         val term: Tree
 ) extends SyncCpsTree {
 
+  override def originType(using Context): Type =
+    term.tpe
+
   override def unpure(using Context, CpsTopLevelContext) = Some(term)
 
   override def getUnpure(using Context,CpsTopLevelContext) = term
@@ -302,6 +305,9 @@ case class SeqCpsTree(
 
   override def asyncKind = last.asyncKind
 
+  override def originType(using Context): Type =
+    last.originType
+
   override def unpure(using Context, CpsTopLevelContext) = {
     last.asyncKind match
       case AsyncKind.Sync =>
@@ -317,7 +323,7 @@ case class SeqCpsTree(
     if (prevs.length == 0) then
       last.transformed
     else
-      val tstats = prevs.map(t => t.transformed.changeOwner(t.owner,owner))
+      val tstats = prevs.map(t => t.unpure.get.changeOwner(t.owner,owner))
       val tlast = last.transformed.changeOwner(last.owner,owner)
       Block(tstats.toList,tlast)
   }
@@ -433,7 +439,10 @@ case class MapCpsTree(
                        val mapSource: CpsTree,
                        val mapFun: MapCpsTreeArgument //  lambda function
 ) extends AsyncCpsTree {
-   
+
+  override def originType(using Context): Type =
+    mapFun.body.originType
+
   override def internalAsyncKind = 
     mapFun.body.asyncKind
 
@@ -530,6 +539,9 @@ case class FlatMapCpsTree(
                            val flatMapSource: CpsTree,
                            val flatMapFun: FlatMapCpsTreeArgument
 ) extends AsyncCpsTree {
+
+  override def originType(using Context): Type =
+    flatMapFun.body.originType
 
   override def internalAsyncKind: AsyncKind =
     flatMapFun.body.asyncKind match
@@ -844,7 +856,10 @@ case class UnitCpsTree(override val origin: Tree,
 
 case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
 
+
     override def origin = internal.origin
+    override def originType(using Context) = internal.originType
+
     override def owner = internal.owner
 
     override def unpure(using Context, CpsTopLevelContext) = internal.unpure
@@ -890,6 +905,11 @@ case class SelectTypeApplyTypedCpsTree(records: Seq[SelectTypeApplyTypedCpsTree.
 
     override def asyncKind: AsyncKind = nested.asyncKind
 
+     override def originType(using Context): Type =
+       if (records.isEmpty) then
+          nested.originType
+       else
+          records.last.originType
 
     override def transformed(using Context, CpsTopLevelContext): Tree = {
       val retval = nested.asyncKind match
@@ -964,6 +984,7 @@ object SelectTypeApplyTypedCpsTree {
    sealed trait Operation {
       def prefixTerm(term:Tree, kind: AsyncKind)(using Context, CpsTopLevelContext): Tree
       def show(using Context): String
+      def originType: Type
    }
 
    case class OpSelect(origin:Select) extends Operation {
@@ -987,6 +1008,8 @@ object SelectTypeApplyTypedCpsTree {
         origin.symbol.name.toString
       }
 
+      override def originType: Type = origin.tpe
+
    }
 
    case class OpTypeApply(origin:TypeApply) extends Operation {
@@ -1002,6 +1025,8 @@ object SelectTypeApplyTypedCpsTree {
         val targs = origin.args.map(_.show).mkString(",")
         s"typeApply[$targs]"
       }
+
+      override def originType: Type = origin.tpe
 
    }
 
@@ -1020,6 +1045,8 @@ object SelectTypeApplyTypedCpsTree {
       override def show(using Context) = {
         s"typed[${origin.tpt.show}]"
       }
+
+      override def originType: Type = origin.tpt.tpe
 
    }
 
