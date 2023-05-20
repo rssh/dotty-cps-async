@@ -1,5 +1,7 @@
 package cps.plugin
 
+import cps.plugin.AsyncKind.AsyncLambda
+
 
 enum AsyncKind  {
 
@@ -15,6 +17,26 @@ enum AsyncKind  {
       case (Async(a), Sync) => a.unify(Sync).map(Async(_))
       case (Sync, Async(a)) => a.unify(Sync).map(Async(_))
       case _ => Left((this,other))
+
+  /**
+   * True, if those kinds can be in sibling branches of `ìf` or `match`.
+   * @param other
+   * @return
+   */
+  def isCompatible(other: AsyncKind): Boolean =
+    (this,other) match
+      case (Sync, Sync) => true
+      case (Async(a), Sync) => a.isCompatible(AsyncKind.Sync)
+      case (AsyncLambda(a), Sync) =>
+                 // here in theory we can check async-tree and try transform righ-part of async-lambda.
+                 // Leave it for future.
+                 false
+      case (Sync, Async(b)) => b.isCompatible(AsyncKind.Sync)
+      case (Sync, AsyncLambda(b)) => false
+      case (Async(a), Async(b)) => a.isCompatible(b)
+      case (AsyncLambda(a), Async(b)) => false
+      case (Async(a), AsyncLambda(b)) => false
+      case (AsyncLambda(a), AsyncLambda(b)) => a.isCompatible(b)
 
 }
 

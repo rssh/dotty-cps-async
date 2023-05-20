@@ -19,8 +19,7 @@ trait CpsMonadContext[F[_]] {
    *@return instance of cps-monad.
    */ 
    def monad: CpsMonad[F]
-
-
+  
   /**
    * adopt external monadic value to the current context.
    **/

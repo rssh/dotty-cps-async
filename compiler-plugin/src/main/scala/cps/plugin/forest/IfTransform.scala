@@ -36,7 +36,15 @@ object IfTransform {
                     ifTerm
                   )
               case _ =>
-                  if (cpsIfTrue.asyncKind != cpsIfFalse.asyncKind) then
+                  if ( !cpsIfTrue.asyncKind.isCompatible(cpsIfFalse.asyncKind) ) then
+                    report.error(
+                      s"""
+                        |Different async kind in if branches
+                        |If: ${ifTerm.show}
+                        |leftKind: ${cpsIfTrue.asyncKind}
+                        |rightKind: ${cpsIfFalse.asyncKind}
+                        |""".stripMargin
+                    )
                     throw CpsTransformException("Different async kind in if branch",ifTerm.srcPos)
                   AsyncTermCpsTree(
                     ifTerm,

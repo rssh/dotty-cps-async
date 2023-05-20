@@ -160,5 +160,16 @@ object CpsTransformHelper {
       findImplicitInstance(tpe, span)
   }
   
+  def findCpsThrowSupport(monadType:Type, span: Span)(using ctx:Context): Option[Tree] = {
+      val cpsThrowSupport = requiredClassRef("cps.CpsThrowSupport")
+      val tpe = AppliedType(cpsThrowSupport, List(monadType))
+      findImplicitInstance(tpe, span)
+  }
 
+  def findCpsTrySupport(monadType: Type, span: Span)(using ctx:Context): Option[Tree] = {
+      val cpsTrySupport = requiredClassRef("cps.CpsTrySupport")
+      val tpe = AppliedType(cpsTrySupport, List(monadType))
+      findImplicitInstance(tpe, span)
+  }
+  
 }

@@ -47,6 +47,8 @@ object ApplyTransform {
              else
                Log.trace(s"cpsAwait not recognized",nesting)
                applyMArgs(term, owner, nesting, Nil)
+        case Apply(cnThrow, List(_)) if (cnThrow.symbol == defn.throwMethod) =>
+             ThrowTransform(term, owner, nesting)
         case _ =>
             if (summon[CpsTopLevelContext].isBeforeInliner && atPhase(inliningPhase)(Inlines.needsInlining(term))) {
               // we should inline themself, because in inlined pickkle annotation we have non-cpsed code,

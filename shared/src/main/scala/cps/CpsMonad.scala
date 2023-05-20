@@ -64,6 +64,19 @@ object CpsMonad {
 }
 
 
+/**
+ * Throw support for monads, decoupled from monad itself.
+ * @tparam F
+ */
+trait CpsThrowSupport[F[_]] {
+
+  /**
+   * represent error `e` in monadic context.
+   **/
+  def error[A](e: Throwable): F[A]
+
+}
+
 
 
 /**
@@ -73,13 +86,12 @@ object CpsMonad {
  * An example as monad which interpret in sync context,
  * such as Option or collections.
  **/
-trait CpsThrowMonad[F[_]] extends CpsMonad[F] {
+trait CpsThrowMonad[F[_]] extends CpsMonad[F] with CpsThrowSupport[F]
 
-   /**
-    * represent error `e` in monadic context.
-    **/
-    def error[A](e: Throwable): F[A]
 
+trait CpsTrySupport[F[_]] extends CpsThrowSupport[F] {
+
+   def flatMapTry[A,B](fa:F[A])(f: Try[A] => F[B]):F[B]
 
 }
 
@@ -88,7 +100,7 @@ trait CpsThrowMonad[F[_]] extends CpsMonad[F] {
  * If you monad supports this typeclass, than
  * you can use try/catch/finally inside await.
  **/
-trait CpsTryMonad[F[_]] extends CpsThrowMonad[F] {
+trait CpsTryMonad[F[_]] extends CpsThrowMonad[F] with CpsTrySupport[F] {
 
    /**
     * represent error `e` in monadic context.

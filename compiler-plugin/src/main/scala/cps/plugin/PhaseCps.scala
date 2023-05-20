@@ -183,11 +183,15 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     //val monadValDef = monadValDef0.changeOwner(monadValDef0.symbol.owner, tree.symbol)
     //println(s"!! monadVaDef0.owner.id=${monadValDef0.symbol.owner.id}, monadValDef.owner.id=${monadValDef.symbol.owner.id}, tree.symbol.id=${tree.symbol.id}")
     val monadRef = ref(monadValDef.symbol)
+    val optThrowSupport = CpsTransformHelper.findCpsThrowSupport(monadType, srcPos.span)
+    val optTrySupport = CpsTransformHelper.findCpsTrySupport(monadType, srcPos.span)
     val isBeforeInliner = if (runsBefore.contains(Inlining.name)) { true }
                           else if (runsAfter.contains(Inlining.name)) { false }
                           else
                              throw new CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
-    val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectContext, optRuntimeAwait, debugSettings, isBeforeInliner)
+    val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectContext,
+                                optRuntimeAwait, optThrowSupport, optTrySupport,
+                                debugSettings, isBeforeInliner)
     tc
   }
 

@@ -6,7 +6,7 @@ class Test5Assign {
 
 
   @Test
-  def testCompileAndSimpleAssign_m1(): Unit = {
+  def testCompileAndRunSimpleAssign_m1(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
     val (code, output) = dotcInvocations.compileAndRunFilesInDir(
