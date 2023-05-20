@@ -218,19 +218,16 @@ object InlinedTransform {
       val newInlined = cpsedExpansion.asyncKind match
         case AsyncKind.Sync =>
           if (cpsedExpansion.isOriginEqSync) then
-            Log.trace(s"InlineTransform  newInlined: unchangedPure: ${inlinedTerm.show}",nesting)
             CpsTree.unchangedPure(inlinedTerm,owner)
           else
-            Log.trace(s"InlineTransform  newInlined: changedPure",nesting)
             CpsTree.pure(inlinedTerm, owner, Inlined(inlinedTerm.call, newBindings, cpsedExpansion.unpure.get))
         case AsyncKind.Async(v) =>
-            Log.trace(s"InlineTransform newInlined: impure, newBindings=${newBindings.map(_.show)}",nesting)
-            Log.trace(s"InlineTransform newInlined: expansion = ${cpsedExpansion.show}",nesting)
-            Log.trace(s"InlineTransform newInlined: expansion.transformed = ${cpsedExpansion.transformed.show}",nesting)
             CpsTree.impure(inlinedTerm, owner, Inlined(inlinedTerm.call, newBindings, cpsedExpansion.transformed), v)
-        case AsyncKind.AsyncLambda(_) =>
+        case AsyncKind.AsyncLambda(internalKind) =>
             Log.trace(s"InlineTransform: newInlined InlinedCpsTree",nesting)
-            InlinedCpsTree(inlinedTerm,owner,newBindings,cpsedExpansion)
+            val newTerm = Inlined(inlinedTerm.call, newBindings, cpsedExpansion.transformed)
+            CpsTree.opaqueAsyncLambda(inlinedTerm, owner, newTerm, internalKind)
+            //InlinedCpsTree(inlinedTerm,owner,newBindings,cpsedExpansion)
 
       Log.trace(s"InlineTransform, newInlined: ${newInlined.show}",nesting)
 

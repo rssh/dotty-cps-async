@@ -1056,8 +1056,10 @@ object SelectTypeApplyTypedCpsTree {
 
 
 
-
-case class InlinedCpsTree(override val origin:Inlined,
+//
+//  disabled,  will be removed if we will not discover need in
+//   walking into Inlined parts and opaqueAsyncLambda will be enoughf.
+case class InlinedCpsTreeDisabled(override val origin:Inlined,
                           override val owner: Symbol,
                           bindings: List[MemberDef],  // transformed bindings.
                           expansion: CpsTree) extends CpsTree {
