@@ -32,7 +32,7 @@ object ThrowTransform {
             val nValDef = ValDef(newSym).withSpan(term.span)
             FlatMapCpsTree(term, owner, cpsArg,
               FlatMapCpsTreeArgument(Some(nValDef),
-                       CpsTree.pure(term,owner,genMonadError(term,ref(newSym)))
+                       CpsTree.impure(term,owner,genMonadError(term,ref(newSym)), AsyncKind.Sync),
               )
             )
           case AsyncKind.AsyncLambda(bodyKind) =>
