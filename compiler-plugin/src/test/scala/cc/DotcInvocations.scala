@@ -58,6 +58,9 @@ class DotcInvocations(silent: Boolean = false) {
     }
   }
 
+  def compileAndRunFilesInDir(dir: String, outDir: String, mainClass:String = "Main", extraArgs: List[String] = List.empty): (Int,String) = {
+    compileAndRunFilesInDirs(List(dir), outDir, mainClass, extraArgs)
+  }
 
   private def run(outDir: String, mainClass: String, timeout: FiniteDuration = 1.minute): (Int, String) = {
     val classpath = s"$outDir:${System.getProperty("java.class.path")}"
