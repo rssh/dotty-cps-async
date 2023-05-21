@@ -169,8 +169,7 @@ object CpsTree {
 
   def unchangedPure(origin: Tree, owner: Symbol): PureCpsTree =
      PureCpsTree(origin, owner, origin)
-
-
+  
   def pure(origin: Tree, owner: Symbol, changed: Tree): PureCpsTree =
      PureCpsTree(origin, owner, changed)
 
@@ -312,7 +311,7 @@ case class SeqCpsTree(
     last.asyncKind match
       case AsyncKind.Sync =>
         val stats = prevs.map{ t =>
-          t.unpure.get.changeOwner(t.owner,owner)
+           t.unpure.get.changeOwner(t.owner,owner)
         }.toList
         Some(Block( stats, last.unpure.get.changeOwner(last.owner,owner) ))
       case _ =>
@@ -369,6 +368,12 @@ case class SeqCpsTree(
   }
 
 }
+
+object SeqCpsTree {
+
+
+}
+
 
 sealed trait AsyncCpsTree extends CpsTree {
 

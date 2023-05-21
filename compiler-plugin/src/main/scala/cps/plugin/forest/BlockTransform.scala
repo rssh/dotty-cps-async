@@ -40,11 +40,18 @@ object BlockTransform {
       case Block(statements, last) =>
         val s0: CpsTree = CpsTree.unit(owner)
         val statsCps = statements.foldLeft(s0){ (s,e) =>
-           val cpsE = RootTransform(e, owner, nesting+1)
-           Log.trace(s"BlockTransform::appendInBlock, before s=${s.show} cpsE=${cpsE}",nesting)
-           val r = s.appendInBlock(cpsE)
-           Log.trace(s"BlockTransform::appendInBlock, after s=${r.show}",nesting)
-           r
+           e match
+             case importTree: Import =>
+               // ignore imports,
+               //   (TODO:  is it correct?)  FirstTransform deleted all non-language imports, but what with language
+               //   imports here ?
+               s
+             case _ =>
+              val cpsE = RootTransform(e, owner, nesting+1)
+              Log.trace(s"BlockTransform::appendInBlock, before s=${s.show} cpsE=${cpsE}",nesting)
+              val r = s.appendInBlock(cpsE)
+              Log.trace(s"BlockTransform::appendInBlock, after s=${r.show}",nesting)
+              r
         }  
         val lastCps = RootTransform(last, owner, nesting+1)
         val blockCps = statsCps.appendInBlock(lastCps).withOrigin(term)
