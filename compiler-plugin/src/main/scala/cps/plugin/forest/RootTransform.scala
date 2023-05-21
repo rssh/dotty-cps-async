@@ -36,6 +36,10 @@ object RootTransform {
             case tt:Typed => TypedTransform(tt, owner, nesting)
             case at:Assign => AssignTransform(at, owner, nesting)
             case nt:New => SyncTransform(nt, owner, nesting)
+            case st:Super => SyncTransform(st, owner, nesting)
+            case th:This => SyncTransform(th, owner, nesting)
+            case rt:Return =>
+              throw CpsTransformException(s"Return is not supported, use NonLocalReturns instead", rt.srcPos)
             case _ =>
               throw CpsTransformException(s"Unsupported tree in cps: $term",term.srcPos)
             //report.error(s"Unsupported tree in cps: $term",term.srcPos)
