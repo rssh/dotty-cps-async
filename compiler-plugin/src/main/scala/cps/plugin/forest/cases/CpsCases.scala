@@ -24,6 +24,9 @@ class CpsCases(val cases: List[CpsCaseDef]) {
   def  transformedCaseDefs(targedKind:AsyncKind)(using Context, CpsTopLevelContext): List[CaseDef] =
     cases.map(_.transform(targedKind))
 
+  def  unpureCaseDefs(using Context, CpsTopLevelContext): List[CaseDef] =
+    cases.map(c => CaseDef(c.origin.pat,c.origin.guard,c.cpsBody.unpure.get))
+
   def unchanged(using Context, CpsTopLevelContext): Boolean =
     cases.forall(_.cpsBody.isOriginEqSync)
 

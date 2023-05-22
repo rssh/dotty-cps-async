@@ -38,5 +38,23 @@ enum AsyncKind  {
       case (Async(a), AsyncLambda(b)) => false
       case (AsyncLambda(a), AsyncLambda(b)) => a.isCompatible(b)
 
+  def isSync: Boolean =
+    this match
+      case Sync => true
+      case Async(_) => false
+      case AsyncLambda(_) => false
+
+  def isAsync: Boolean =
+    this match
+      case Sync => false
+      case Async(_) => true
+      case AsyncLambda(_) => false
+
+   def isAsyncLambda: Boolean =
+     this match
+        case Sync => false
+        case Async(_) => false
+        case AsyncLambda(_) => true
+
 }
 

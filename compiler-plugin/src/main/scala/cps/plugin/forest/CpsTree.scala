@@ -59,22 +59,6 @@ sealed trait CpsTree {
   
   def asyncKind: AsyncKind
 
-  // TODO
-  def asyncKindAccessor: CpsTreeKindAccessor =
-    asyncKind match
-      case AsyncKind.Sync =>
-        new SyncCpsTreeAccessor {
-          override def cpsTree = CpsTree.this
-        }
-      case k: AsyncKind.Async =>
-        new AsyncCpsTreeAccessor {
-          override def cpsTree = CpsTree.this
-        }
-      case k: AsyncKind.AsyncLambda =>
-        new LambdaCpsTreeAccessor {
-          override def cpsTree = CpsTree.this
-        }
-
 
   def isOriginEqSync(using Context, CpsTopLevelContext): Boolean =
     unpure match
@@ -169,7 +153,7 @@ object CpsTree {
 
   def unchangedPure(origin: Tree, owner: Symbol): PureCpsTree =
      PureCpsTree(origin, owner, origin)
-  
+
   def pure(origin: Tree, owner: Symbol, changed: Tree): PureCpsTree =
      PureCpsTree(origin, owner, changed)
 
@@ -188,10 +172,9 @@ object CpsTree {
 }
 
 
-sealed trait SyncCpsTree extends CpsTree with SyncCpsTreeAccessor {
+sealed trait SyncCpsTree extends CpsTree  {
 
   def asyncKind: AsyncKind = AsyncKind.Sync
-  override def asyncKindAccessor:CpsTreeKindAccessor = this
 
   def getUnpure(using Context, CpsTopLevelContext): Tree
 
@@ -214,9 +197,6 @@ sealed trait SyncCpsTree extends CpsTree with SyncCpsTreeAccessor {
   override def applyRuntimeAwait(runtimeAwait: Tree)(using Context, CpsTopLevelContext): CpsTree =
     //not needed
     this
-
-  // asyncKindAccessor methods
-  override def cpsTree = this
 
 
 }
