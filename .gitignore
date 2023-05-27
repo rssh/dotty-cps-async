@@ -2,3 +2,9 @@ target/
 
 .dotty-ide-artifact
 .dotty-ide.json
+
+# metals folders
+.bloop
+.bsp
+.metals
+metals.sbt
