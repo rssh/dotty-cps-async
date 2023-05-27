@@ -23,24 +23,25 @@ object RootTransform {
       def apply(term: Tree, owner:Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
         try
           val retval = term match
-            case applyTerm: Apply => ApplyTransform(applyTerm, owner, nesting)
-            case block: Block => BlockTransform(block, owner, nesting)
-            case id: Ident => IdentTransform(id, owner, nesting)
-            case il: Inlined => InlinedTransform(il, owner, nesting)
-            case mt: Match => MatchTransform(mt, owner, nesting)
-            case s: Select => SelectTransform(s, owner, nesting)
-            case tIf@If(_,_,_) => IfTransform(tIf, owner, nesting)
-            case t: TypeApply => TypeApplyTransform(t, owner, nesting)
-            case vd:ValDef => ValDefTransform(vd, owner, nesting)
-            case lt:Literal => LiteralTransform(lt, owner,  nesting)
-            case tt:Typed => TypedTransform(tt, owner, nesting)
-            case at:Assign => AssignTransform(at, owner, nesting)
-            case nt:New => SyncTransform(nt, owner, nesting)
-            case st:Super => SyncTransform(st, owner, nesting)
-            case th:This => SyncTransform(th, owner, nesting)
-            case rt:Return =>
-              throw CpsTransformException(s"Return is not supported, use NonLocalReturns instead", rt.srcPos)
-            case _ =>
+            case applyTerm: Apply    => ApplyTransform(applyTerm, owner, nesting)
+            case block: Block        => BlockTransform(block, owner, nesting)
+            case ident: Ident        => IdentTransform(ident, owner, nesting)
+            case inlineTerm: Inlined => InlinedTransform(inlineTerm, owner, nesting)
+            case matchTerm: Match    => MatchTransform(matchTerm, owner, nesting)
+            case selectTerm: Select  => SelectTransform(selectTerm, owner, nesting)
+            case ifTerm@If(_,_,_)    => IfTransform(ifTerm, owner, nesting)
+            case typeApply: TypeApply => TypeApplyTransform(typeApply, owner, nesting)
+            case valDef:ValDef        => ValDefTransform(valDef, owner, nesting)
+            case literal:Literal      => LiteralTransform(literal, owner,  nesting)
+            case typedTerm:Typed      => TypedTransform(typedTerm, owner, nesting)
+            case tryTerm:Try          => TryTransform(tryTerm, owner, nesting)
+            case assignTerm:Assign    => AssignTransform(assignTerm, owner, nesting)
+            case newTerm:New          => SyncTransform(newTerm, owner, nesting)
+            case superTerm:Super      => SyncTransform(superTerm, owner, nesting)
+            case thisTerm:This        => SyncTransform(thisTerm, owner, nesting)
+            case returnTerm:Return    =>
+              throw CpsTransformException(s"Return is not supported, use NonLocalReturns instead", returnTerm.srcPos)
+            case _  =>
               throw CpsTransformException(s"Unsupported tree in cps: $term",term.srcPos)
             //report.error(s"Unsupported tree in cps: $term",term.srcPos)
           retval

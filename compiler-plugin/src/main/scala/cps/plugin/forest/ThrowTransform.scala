@@ -11,8 +11,11 @@ import ast.tpd.*
 import cps.plugin.*
 
 
+/**
+ * Note, that actually throw is a special variant of Apply,  so
+ * ThrowTransform is called from Apply,  not from RootTransform as others.
+ */
 object ThrowTransform {
-
 
   def apply(term:Apply, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
     term.args match

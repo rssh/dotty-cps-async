@@ -23,7 +23,7 @@ class TestIssue45:
   @Test def runSpawn(): Unit =
     // bug in dotty (TODO: report)
     //val threadIndexOutside1 = Thread.currentThread().nn.getId()
-    val threadIndexOutside1 = Thread.currentThread().TgetId()
+    val threadIndexOutside1 = Thread.currentThread().getId()
     val beforeStart = System.currentTimeMillis()
     val f = async[Future]{
       //val threadIndexInside = Thread.currentThread().nn.getId()
