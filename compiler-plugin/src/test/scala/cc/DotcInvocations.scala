@@ -2,7 +2,6 @@ package cc
 
 import scala.concurrent.*
 import scala.concurrent.duration.*
-
 import dotty.tools.dotc.*
 import core.Contexts.*
 import dotty.tools.io.Path
@@ -16,23 +15,9 @@ class DotcInvocations(silent: Boolean = false) {
     val outPath = Path(outDir)
     if (!outPath.exists) outPath.createDirectory()
     val args = List("-d", outDir) ++
-             extraArgs ++
              List("-Xplugin:src/main/resources", "-usejavacp") ++
-             List("-Ycheck:all") ++
-             //List("-Ydebug-error") ++
-             //List("--unique-id") ++
-             //List("-Yprint-syms") ++
-             //List("-Yprint-debug") ++
-             //List("-Yshow-tree-ids") ++
-             //List("-verbose") ++
-             //List("-unchecked") ++
-             List("--color:never") ++
-             List("-Vprint:erasure") ++
-             List("-Vprint:rssh.cps") ++
-             List("-Vprint:inlining") ++
-             //List("-Vprint:constructors") ++
-             //List("-Vprint:lambdaLift") ++
-             //List("-Xshow-phases") ++
+             extraArgs ++
+             DotcInvocations.defaultCompileOpts ++
              files
     val filledReporter = Main.process(args.toArray, reporter, callback)
     filledReporter
@@ -114,4 +99,62 @@ class DotcInvocations(silent: Boolean = false) {
     }
 
   }
+}
+
+object DotcInvocations {
+
+  import org.junit.Assert.*
+
+  val defaultCompileOpts: List[String] = {
+    List("-Ycheck:all",
+      //List("-Ydebug-error") ++
+      //List("--unique-id") ++
+      //List("-Yprint-syms") ++
+      //List("-Yprint-debug") ++
+      //List("-Yshow-tree-ids") ++
+      //List("-verbose") ++
+      //List("-unchecked") ++
+       "--color:never",
+       "-Vprint:erasure",
+       "-Vprint:rssh.cps",
+       "-Vprint:inlining"
+    //List("-Vprint:constructors") ++
+    //List("-Vprint:lambdaLift") ++
+    //List("-Xshow-phases") ++
+    )
+  }
+
+  case class InvocationArgs(
+                           extraDotcArgs: List[String] = List.empty,
+                           silent: Boolean = false
+                           )
+
+  def compileAndRunFilesInDirAndCheckResult(
+                                  dir: String,
+                                  mainClass: String,
+                                  expectedOutput: String,
+                                  invocationArgs: InvocationArgs = InvocationArgs()
+                                           ): Unit = {
+    val dotcInvocations = new DotcInvocations(invocationArgs.silent)
+
+    val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+      "testdata/set9Try/m1",
+      "testdata/set9Try/m1",
+      "cpstest.Test9m1"
+    )
+
+    val reporter = dotcInvocations.reporter
+    println("summary: " + reporter.summary)
+    if (!reporter.allErrors.isEmpty) {
+      for(err <- reporter.allErrors)  {
+        println(err)
+      }
+    }
+
+    assert(reporter.allErrors.isEmpty, "There should be no errors")
+    //println(s"output=${output}")
+    assert(output == expectedOutput, s"The output should be '$expectedOutput', we have '$output''")
+
+  }
+
 }
