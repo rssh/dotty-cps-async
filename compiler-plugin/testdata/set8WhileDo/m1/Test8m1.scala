@@ -9,7 +9,7 @@ import cps.monads.{ *, given }
 
 object Test8m1 {
   
-  def fetch(url: String)(using CpsDirect[Future]): String =
+  def syncLoop(url: String)(using CpsDirect[Future]): String =
     var i = 0
     while (i < 3) do {
       i += 1
@@ -18,7 +18,7 @@ object Test8m1 {
 
   def main(args: Array[String]): Unit = {
     val fr = async[Future] {
-      fetch("myurl")
+      syncLoop("myurl")
     }
     val r  = Await.result(fr, 1000.millis)
     println(r)
