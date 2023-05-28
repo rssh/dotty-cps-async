@@ -10,7 +10,7 @@ class Test8WhileDo {
     val dotcInvocations = new DotcInvocations()
     try {
       val (code, output) = dotcInvocations.compileAndRunFilesInDir(
-        "testdata/set8WhileDo",
+        "testdata/set8WhileDo/m1",
         "testdata/set8WhileDo/m1",
         "cpstest.Test8m1"
       )
@@ -30,7 +30,7 @@ class Test8WhileDo {
     val dotcInvocations = new DotcInvocations()
     try {
       val (code, output) = dotcInvocations.compileAndRunFilesInDir(
-        "testdata/set8WhileDo",
+        "testdata/set8WhileDo/m2",
         "testdata/set8WhileDo/m2",
         "cpstest.Test8m2"
       )
@@ -50,7 +50,7 @@ class Test8WhileDo {
     val dotcInvocations = new DotcInvocations()
     try {
       val (code, output) = dotcInvocations.compileAndRunFilesInDir(
-        "testdata/set8WhileDo",
+        "testdata/set8WhileDo/m3",
         "testdata/set8WhileDo/m3",
         "cpstest.Test8m3"
       )
@@ -70,7 +70,7 @@ class Test8WhileDo {
     val dotcInvocations = new DotcInvocations()
     try {
       val (code, output) = dotcInvocations.compileAndRunFilesInDir(
-        "testdata/set8WhileDo",
+        "testdata/set8WhileDo/m4",
         "testdata/set8WhileDo/m4",
         "cpstest.Test8m4"
       )
