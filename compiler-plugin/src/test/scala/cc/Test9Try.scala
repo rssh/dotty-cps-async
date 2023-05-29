@@ -4,7 +4,7 @@ import org.junit.Test
 
 class Test9Try {
 
-  /*
+
   @Test
   def testCompileAndRunM1(): Unit = {
     DotcInvocations.compileAndRunFilesInDirAndCheckResult(
@@ -13,7 +13,7 @@ class Test9Try {
       "Right(10)\n"
     )
   }
-  */
+
 
   @Test
   def testCompileAndRunM2(): Unit = {

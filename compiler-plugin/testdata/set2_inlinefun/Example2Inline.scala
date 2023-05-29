@@ -2,11 +2,13 @@ package cpstest
 
 import cps.*
 import cps.monads.{*,given}
+import scala.annotation.*
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
 
-@cps.plugin.annotation.CpsDebugLevel(15)
+@experimental
+//@cps.plugin.annotation.CpsDebugLevel(15)
 object Example2Inline {
 
 
