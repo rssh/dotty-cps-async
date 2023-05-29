@@ -158,18 +158,16 @@ object InlinedTransform {
 
   }
 
-  def apply(inlinedTerm: Inlined, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
+  def apply(inlinedTerm: Inlined, owner: Symbol,  nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
      if (inlinedTerm.bindings.isEmpty) {
         RootTransform(inlinedTerm.expansion, owner, nesting+1)
      } else {
-        applyNonemptyBindings(inlinedTerm, owner, nesting)
+        applyNonemptyBindings(inlinedTerm, owner,  nesting)
      }
   }
 
   def applyNonemptyBindings(inlinedTerm: Inlined, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
       Log.trace(s"InlineTransform: inlinedTerm=${inlinedTerm.show} owner=${owner.id}, bindings.size=${inlinedTerm.bindings.length}",nesting)
-
-
 
       // transform async binder variables in the form
       // when v is Async(_) [not lambda]
@@ -185,7 +183,7 @@ object InlinedTransform {
           case v: ValDef =>
             //  doesm not change symbol of v.
             //   TODO:  add flag to generate new symbol when we need to gnerate a new function.
-            val cpsed = RootTransform(v.rhs,v.symbol,nesting+1)
+            val cpsed = RootTransform(v.rhs,v.symbol, nesting+1)
             cpsed.asyncKind match {
               case AsyncKind.Sync =>
                 if (cpsed.isOriginEqSync) then

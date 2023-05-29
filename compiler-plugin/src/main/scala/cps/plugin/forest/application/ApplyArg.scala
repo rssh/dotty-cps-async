@@ -38,7 +38,7 @@ object ApplyArg {
   def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, isDirectContext: Boolean,
             owner: Symbol,
             dependFromLeft: Boolean, nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
-    expr match
+    val retval = expr match
       case Typed(sq@SeqLiteral(elems,elemtpt),rtp) if isRepeatedParamType(rtp) =>
         RepeatApplyArg(paramName, paramType, elems.zipWithIndex.map{ (p,i) =>
           val newName = (paramName.toString + i.toString).toTermName
@@ -76,6 +76,8 @@ object ApplyArg {
                     val optRhs =  cpsExpr.unpure
                     val valDef =  ValDef(sym.asTerm, optRhs.getOrElse(EmptyTree).changeOwner(cpsExpr.owner, sym))
                     PlainApplyArg(paramName,paramType.widen,cpsExpr,Some(valDef), isDirectContext)
+    Log.trace(s"creating arg for expr: ${expr.show}, resut=${retval}", nesting)
+    retval
   }
 
 }

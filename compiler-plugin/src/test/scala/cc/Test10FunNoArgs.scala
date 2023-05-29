@@ -2,26 +2,25 @@ package cc
 
 import org.junit.Test
 
-class Test9Try {
 
-  /*
+class Test10FunNoArgs {
+
+
   @Test
   def testCompileAndRunM1(): Unit = {
     DotcInvocations.compileAndRunFilesInDirAndCheckResult(
-      "testdata/set9Try/m1",
-      "cpstest.Test9m1",
-      "Right(10)\n"
+      "testdata/set10FunNoArgs/m1",
+      "cpstest.Test10m1"
     )
   }
-  */
+
 
   @Test
   def testCompileAndRunM2(): Unit = {
     DotcInvocations.compileAndRunFilesInDirAndCheckResult(
-      "testdata/set9Try/m2",
-      "cpstest.Test9m2"
+      "testdata/set10FunNoArgs/m2",
+      "cpstest.Test10m2"
     )
   }
-
 
 }

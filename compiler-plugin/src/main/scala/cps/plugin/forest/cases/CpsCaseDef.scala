@@ -14,20 +14,20 @@ import cps.plugin.forest.*
 
 case class CpsCaseDef(origin: CaseDef, cpsBody: CpsTree) {
 
-  def transform(targetKind: AsyncKind)(using Context, CpsTopLevelContext): CaseDef =
-    CaseDef(origin.pat, origin.guard, transformBody(targetKind))
+  def transform(targetKind: AsyncKind, targetType: Type)(using Context, CpsTopLevelContext): CaseDef =
+    CaseDef(origin.pat, origin.guard, transformBody(targetKind, targetType))
 
-  def transformBody(targetKind: AsyncKind)(using Context, CpsTopLevelContext): Tree = {
+  def transformBody(targetKind: AsyncKind, targetType: Type)(using Context, CpsTopLevelContext): Tree = {
     targetKind match
       case AsyncKind.Sync =>
-        cpsBody.unpure.get
+        cpsBody.castOriginType(targetType).unpure.get
       case AsyncKind.Async(internalKind) =>
         cpsBody.asyncKind match
           case AsyncKind.Sync =>
-            cpsBody.transformed
+            cpsBody.castOriginType(targetType).transformed
           case AsyncKind.Async(internalKind2) =>
             if (internalKind == AsyncKind.Sync) then
-              cpsBody.transformed
+              cpsBody.castOriginType(targetType).transformed
             else
               throw CpsTransformException(s"complex shape is not supported.", origin.srcPos)
           case AsyncKind.AsyncLambda(_) =>
@@ -41,7 +41,7 @@ case class CpsCaseDef(origin: CaseDef, cpsBody: CpsTree) {
             throw CpsTransformException(s"can't convert asysync case to asyncLambda", origin.srcPos)
           case AsyncKind.AsyncLambda(internalKind2) =>
             if (internalKind1 == internalKind2) then
-              cpsBody.transformed
+              cpsBody.castOriginType(targetType).transformed
             else
               throw CpsTransformException(s"can't convert asyncLambda case to asyncLambda with different internal kind", origin.srcPos)
   }

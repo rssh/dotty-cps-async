@@ -16,7 +16,7 @@ object IdentTransform {
 
 
       def apply(identTerm: Ident,  owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
-          CpsTree.unchangedPure(identTerm,owner)
+              CpsTree.unchangedPure(identTerm,owner)
       }
 
 

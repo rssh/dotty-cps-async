@@ -14,13 +14,13 @@ import cps.plugin.forest.cases.*
 object MatchTransform {
 
   def apply(term: Match, owner:Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
-    //Log.trace(s"MatchTransform, term=${term.show}",nesting)
+    Log.trace(s"MatchTransform, term=${term.show}",nesting)
     term match
       case Match(selector, cases) =>
         val selectorCps = RootTransform(selector, owner, nesting+1)
         val casesCps =  CpsCases.create(cases, owner, nesting+1)
         val casesAsyncKind = casesCps.collectAsyncKind
-        val casesPrepared = casesCps.transformedCaseDefs(casesAsyncKind)
+        val casesPrepared = casesCps.transformedCaseDefs(casesAsyncKind, term.tpe)
         val retval = selectorCps.asyncKind match
           case AsyncKind.Sync =>
             if (casesAsyncKind == AsyncKind.Sync  && casesCps.unchanged) then

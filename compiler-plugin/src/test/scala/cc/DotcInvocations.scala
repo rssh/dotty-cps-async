@@ -107,7 +107,7 @@ object DotcInvocations {
 
   val defaultCompileOpts: List[String] = {
     List("-Ycheck:all",
-      //List("-Ydebug-error") ++
+      //  "-Ydebug-error",
       //List("--unique-id") ++
       //List("-Yprint-syms") ++
       //List("-Yprint-debug") ++
@@ -132,16 +132,12 @@ object DotcInvocations {
   def compileAndRunFilesInDirAndCheckResult(
                                   dir: String,
                                   mainClass: String,
-                                  expectedOutput: String,
+                                  expectedOutput: String = "Ok\n",
                                   invocationArgs: InvocationArgs = InvocationArgs()
                                            ): Unit = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDir(
-      "testdata/set9Try/m1",
-      "testdata/set9Try/m1",
-      "cpstest.Test9m1"
-    )
+    val (code, output) = dotcInvocations.compileAndRunFilesInDir(dir,dir,mainClass)
 
     val reporter = dotcInvocations.reporter
     println("summary: " + reporter.summary)

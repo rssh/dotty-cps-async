@@ -18,7 +18,7 @@ object IfTransform {
       def apply(ifTerm: If, owner:Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
         val cpsCond = RootTransform(ifTerm.cond, owner, nesting+1)
         val cpsIfTrue = RootTransform(ifTerm.thenp, owner, nesting+1)
-        val cpsIfFalse = RootTransform(ifTerm.elsep, owner, nesting+1)
+        val cpsIfFalse = RootTransform(ifTerm.elsep, owner,  nesting+1)
         cpsCond.unpure match
           case Some(condSync) =>
             (cpsIfTrue.unpure,  cpsIfFalse.unpure) match
