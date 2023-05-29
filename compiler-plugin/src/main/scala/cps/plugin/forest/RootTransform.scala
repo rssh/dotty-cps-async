@@ -40,6 +40,7 @@ object RootTransform {
             case newTerm:New          => SyncTransform(newTerm, owner,  nesting)
             case superTerm:Super      => SyncTransform(superTerm, owner,  nesting)
             case thisTerm:This        => SyncTransform(thisTerm, owner,  nesting)
+            case whileTerm: WhileDo   => WhileTransform(whileTerm, owner, nesting)
             case returnTerm:Return    =>
               throw CpsTransformException(s"Return is not supported, use NonLocalReturns instead", returnTerm.srcPos)
             case _  =>

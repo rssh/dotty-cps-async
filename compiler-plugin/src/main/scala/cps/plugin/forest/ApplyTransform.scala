@@ -60,7 +60,6 @@ object ApplyTransform {
               applyMArgs(term, owner, nesting, Nil)
             }
       Log.trace(s" Apply result: ${cpsTree.show}", nesting)
-      Log.trace(s" Apply result transformed: ${cpsTree.transformed.show}", nesting)
       cpsTree
   }
 
@@ -68,7 +67,6 @@ object ApplyTransform {
   def applyMArgs(term: Apply, owner: Symbol, nesting:Int, tail:List[ApplyArgList] )(using Context, CpsTopLevelContext): CpsTree = {
     Log.trace(s"ApplyMArgs, term=${term.show}",nesting)
     val argList = makeArgList(term, MethodParamsDescriptor(term.fun), owner, nesting)
-    Log.trace(s"ApplyMArgs, after makeArgList, args=${argList.show}",nesting)
     val retval = term.fun match
       case tfa@Apply(fun1,args1) =>
         applyMArgs(tfa, owner, nesting,  argList::tail)

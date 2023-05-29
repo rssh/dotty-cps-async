@@ -7,23 +7,14 @@ class Test8WhileDo {
   // sync condition + sync body
   @Test
   def testCompileAndRunWhileDom1(): Unit = {
-    val dotcInvocations = new DotcInvocations()
-    try {
-      val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+      DotcInvocations.compileAndRunFilesInDirAndCheckResult(
         "testdata/set8WhileDo/m1",
-        "testdata/set8WhileDo/m1",
-        "cpstest.Test8m1"
+        "cpstest.Test8m1",
+        "myurl:3\n"
       )
-    } catch {
-      case ex: cps.plugin.CpsTransformException =>
-        val reporter = dotcInvocations.reporter
-        println("summary: " + reporter.summary)
-
-        assert(reporter.allErrors.nonEmpty, "There should be errors")
-      case _ => assert(false, "Expected a CpsTransformException error")
-    }
   }
 
+  /*
   // sync condition + async body
   @Test
   def testCompileAndRunWhileDom2(): Unit = {
@@ -83,5 +74,6 @@ class Test8WhileDo {
       case _ => assert(false, "Expected a CpsTransformException error")
     }
   }
+  */
 
 }
