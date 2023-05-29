@@ -16,8 +16,8 @@ object Test8m3 {
     var i = 0
     while (asyncCheck(i)) do {
       i += 1
+      println(s"$url:$i")
     }
-    s"$url:$i"
   }
 
   def main(args: Array[String]): Unit = {
@@ -25,7 +25,7 @@ object Test8m3 {
       asyncLoop("myurl")
     }
     val r  = Await.result(fr, 1000.millis)
-    println(r)
+    println("Ok")
   }
 
 }

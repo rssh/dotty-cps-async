@@ -24,7 +24,7 @@ object Test8m2 {
       asyncLoop
     }
     val r  = Await.result(fr, 1000.millis)
-    println(r)
+    println("Ok")
   }
 
 }

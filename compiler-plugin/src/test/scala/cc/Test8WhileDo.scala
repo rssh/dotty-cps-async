@@ -4,7 +4,6 @@ import org.junit.Test
 
 class Test8WhileDo {
 
-  // sync condition + sync body
   @Test
   def testCompileAndRunWhileDom1(): Unit = {
       DotcInvocations.compileAndRunFilesInDirAndCheckResult(
@@ -14,66 +13,34 @@ class Test8WhileDo {
       )
   }
 
-  /*
-  // sync condition + async body
+
   @Test
   def testCompileAndRunWhileDom2(): Unit = {
-    val dotcInvocations = new DotcInvocations()
-    try {
-      val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+      DotcInvocations.compileAndRunFilesInDirAndCheckResult(
         "testdata/set8WhileDo/m2",
-        "testdata/set8WhileDo/m2",
-        "cpstest.Test8m2"
+        "cpstest.Test8m2",
+        "myurl:1\nmyurl:2\nmyurl:3\nOk\n"
       )
-    } catch {
-      case ex: cps.plugin.CpsTransformException =>
-        val reporter = dotcInvocations.reporter
-        println("summary: " + reporter.summary)
-
-        assert(reporter.allErrors.nonEmpty, "There should be errors")
-      case _ => assert(false, "Expected a CpsTransformException error")
-    }
   }
 
-  // async condition + sync body
+
   @Test
   def testCompileAndRunWhileDom3(): Unit = {
-    val dotcInvocations = new DotcInvocations()
-    try {
-      val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+    DotcInvocations.compileAndRunFilesInDirAndCheckResult(
         "testdata/set8WhileDo/m3",
-        "testdata/set8WhileDo/m3",
-        "cpstest.Test8m3"
-      )
-    } catch {
-      case ex: cps.plugin.CpsTransformException =>
-        val reporter = dotcInvocations.reporter
-        println("summary: " + reporter.summary)
-
-        assert(reporter.allErrors.nonEmpty, "There should be errors")
-      case _ => assert(false, "Expected a CpsTransformException error")
-    }
+        "cpstest.Test8m3",
+        "myurl:1\nmyurl:2\nmyurl:3\nOk\n"
+    )
   }
 
   // async condition + async body
   @Test
   def testCompileAndRunWhileDom4(): Unit = {
-    val dotcInvocations = new DotcInvocations()
-    try {
-      val (code, output) = dotcInvocations.compileAndRunFilesInDir(
-        "testdata/set8WhileDo/m4",
-        "testdata/set8WhileDo/m4",
-        "cpstest.Test8m4"
-      )
-    } catch {
-      case ex: cps.plugin.CpsTransformException =>
-        val reporter = dotcInvocations.reporter
-        println("summary: " + reporter.summary)
-
-        assert(reporter.allErrors.nonEmpty, "There should be errors")
-      case _ => assert(false, "Expected a CpsTransformException error")
-    }
+    DotcInvocations.compileAndRunFilesInDirAndCheckResult(
+      "testdata/set8WhileDo/m4",
+      "cpstest.Test8m4",
+      "myurl:1\nmyurl:2\nmyurl:3\n()\n"
+    )
   }
-  */
 
 }
