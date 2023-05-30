@@ -2,33 +2,34 @@ package cpstest
 
 import cps.*
 import cps.monads.{*,given}
-import cps.plugin.annotation.CpsDebugLevel
 
 import testUtil.*
 
-//@CpsDebugLevel(20)
-object Test9m2 {
+
+object Test9m5_1 {
+
+  var finallyWasRun=false
 
   def wrapped[A](a:A): CpsDirect[FreeMonad] ?=> A = a
 
   def simpleTry(x:String)(using CpsDirect[FreeMonad]):Either[String,Int] = {
     try
       Right(wrapped(x).toInt)
-    catch
-      case ex:NumberFormatException =>
-        Left(s"Invalid number format ${x}")
+    finally
+      finallyWasRun = true
 
   }
 
   def main(args:Array[String]): Unit = {
+    val input = "10"
     val fr = reify[FreeMonad] {
-      simpleTry("10")
+      simpleTry(input)
     }
     val r = fr.eval
-    if (r==Right(10)) then
+    if (r == Right(10) && finallyWasRun) then
       println("Ok")
     else
-      println(s"r=$r")
+      println("r=$r")
   }
 
 

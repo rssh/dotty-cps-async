@@ -8,6 +8,8 @@ import dotty.tools.io.Path
 import interfaces.{CompilerCallback, SourceFile}
 import reporting.*
 
+import scala.util.matching.Regex
+
 
 class DotcInvocations(silent: Boolean = false) {
 
@@ -101,6 +103,9 @@ class DotcInvocations(silent: Boolean = false) {
   }
 }
 
+
+case class TestRun(inputDir: String, mainClass: String, expectedOutput: String = "Ok\n")
+
 object DotcInvocations {
 
   import org.junit.Assert.*
@@ -151,6 +156,16 @@ object DotcInvocations {
     //println(s"output=${output}")
     assert(output == expectedOutput, s"The output should be '$expectedOutput', we have '$output''")
 
+  }
+
+  def checkRuns(selection: Regex = Regex(".*"), dotcArgs:InvocationArgs = InvocationArgs())(
+                 runs: TestRun*
+               ): Unit = {
+    for(r <- runs) {
+       if (selection.matches(r.inputDir)) {
+         compileAndRunFilesInDirAndCheckResult(r.inputDir,r.mainClass,r.expectedOutput,dotcArgs)
+       }
+    }
   }
 
 }

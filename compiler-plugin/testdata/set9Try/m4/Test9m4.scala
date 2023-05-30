@@ -7,7 +7,7 @@ import cps.plugin.annotation.CpsDebugLevel
 import testUtil.*
 
 //@CpsDebugLevel(20)
-object Test9m2 {
+object Test9m4 {
 
   def wrapped[A](a:A): CpsDirect[FreeMonad] ?=> A = a
 
@@ -16,19 +16,24 @@ object Test9m2 {
       Right(wrapped(x).toInt)
     catch
       case ex:NumberFormatException =>
-        Left(s"Invalid number format ${x}")
+        Left(s"Invalid number format ${wrapped(x)}")
 
   }
 
   def main(args:Array[String]): Unit = {
+    val input = "x-not-a-number-xxx"
     val fr = reify[FreeMonad] {
-      simpleTry("10")
+      simpleTry(input)
     }
     val r = fr.eval
-    if (r==Right(10)) then
-      println("Ok")
-    else
-      println(s"r=$r")
+    r match
+      case Right(x) =>
+        println("?? x=$x")
+      case Left(message) =>
+        if message == s"Invalid number format $input" then
+           println("Ok")
+        else
+           println("?? message=$message")
   }
 
 

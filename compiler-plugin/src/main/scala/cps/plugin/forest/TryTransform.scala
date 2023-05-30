@@ -120,7 +120,7 @@ object TryTransform {
                                         )(using Context, CpsTopLevelContext): CpsTree = {
      generateWithAsyncFinalizerTree( origin, owner,
        wrapPureCpsTreeInTry(origin, exprCpsTree),
-       exprCpsTree.originType,
+       exprCpsTree.originType.widen,
        exprCpsTree.asyncKind,
        finalizerCpsTree
      )
@@ -149,7 +149,7 @@ object TryTransform {
       Apply(
         TypeApply(
           Select(trySupport(origin), "withAsyncFinalizer".toTermName),
-          List(TypeTree(argUnwrappedType))
+          List(TypeTree(argUnwrappedType.widen))
         ),
         List(arg)
       ),
@@ -211,7 +211,7 @@ object TryTransform {
         val bindSym = Symbols.newPatternBoundSymbol("ex".toTermName, defn.ThrowableType, origin.span)
         val nonFatalUnapplySym = Symbols.requiredMethod("scala.util.control.NonFatal.unapply")
         // TODO:  with deprecation of NonFatal think about cactu Exception (i.e. Typed instead Unaopplu)
-        val nonFatalUnapply = UnApply(ref(nonFatalUnapplySym), List(), List(ref(bindSym)), defn.NothingType)
+        val nonFatalUnapply = Bind(bindSym,UnApply(ref(nonFatalUnapplySym), List(), List(ref(bindSym)), defn.NothingType))
         val errorCall = Apply(
           TypeApply(
             Select(trySupport(origin), "error".toTermName),
