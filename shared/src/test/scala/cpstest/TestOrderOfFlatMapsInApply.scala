@@ -51,8 +51,8 @@ class TestOrderOfFlatMapsInApply {
    @Test
    def testMinSeq() = {
 
-      implicit val printCode = cps.macros.flags.PrintCode
-      implicit val debugLevel = cps.macros.flags.DebugLevel(20)
+      //implicit val printCode = cps.macros.flags.PrintCode
+      //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
 
 
       val x = List(1,2)

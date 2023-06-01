@@ -113,8 +113,11 @@ object AsyncShift {
  transparent inline given shiftedEitherLeftProjection[A,B]: AsyncShift[Either.LeftProjection[A,B]] =
       cps.runtime.util.EitherLeftProjectionAsyncShift[A,B]()
 
- transparent inline given shiftedNonLocalReturns: AsyncShift[scala.util.control.NonLocalReturns.type] =
+ transparent inline given shiftedNonLocalReturns: cps.runtime.util.control.NonLocalReturnsAsyncShift.type =
      cps.runtime.util.control.NonLocalReturnsAsyncShift     
+
+ transparent inline given shiftedBoundary: cps.runtime.util.BoundaryAsyncShift.type =
+     cps.runtime.util.BoundaryAsyncShift
 
 }
 
