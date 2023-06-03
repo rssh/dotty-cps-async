@@ -52,7 +52,7 @@ class TestBS1While:
      assert(c.run() == Success(45))
 
   @Test def tWhileC1_11(): Unit = 
-     given ctx: CpsMonadInstanceContextBody[ComputationBound] = CpsMonadInstanceContextBody(ComputationBoundAsyncMonad)
+     given ctx: CpsTryMonadInstanceContextBody[ComputationBound] = CpsTryMonadInstanceContextBody(ComputationBoundAsyncMonad)
      val c = macros.Async.transform[ComputationBound,Int, ComputationBoundAsyncMonad.Context]({
         val n = 10
         var s = 0

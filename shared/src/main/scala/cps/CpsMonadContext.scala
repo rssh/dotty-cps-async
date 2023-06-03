@@ -24,12 +24,21 @@ trait CpsMonadContext[F[_]] {
    * adopt external monadic value to the current context.
    **/
   //@deprecated("use wrapped monad operation instead", "0.17")
-  //def adoptAwaitDisabled[A](fa:F[A]):F[A]
+  //def adoptAwait[A](fa:F[A]):F[A]
  
 
 }
 
-trait CpsTryMonadContext[F[_]] extends CpsMonadContext[F] {
+trait CpsThrowMonadContext[F[_]] extends CpsMonadContext[F] {
+
+  /**
+   * @return instance of cps-monad which should supports throw operations.
+   */
+  override def monad: CpsThrowMonad[F]
+
+}
+
+trait CpsTryMonadContext[F[_]] extends CpsThrowMonadContext[F] {
 
   /**
    * @return instance of cps-monad which should supports try operations.
@@ -42,7 +51,7 @@ trait CpsTryMonadContext[F[_]] extends CpsMonadContext[F] {
 
 object CpsMonadContext {
 
-  given monadContext[F[_]](using direct:CpsDirect[F]):CpsMonadContext[F] = direct.context
+  given monadContext[F[_]](using direct:CpsDirect[F]): CpsMonadContext[F] = direct.context
 
 }
 
@@ -62,7 +71,7 @@ trait CpsMonadNoAdoptContext[F[_]] extends CpsMonadContext[F] {
 } 
 
 
-class CpsMonadInstanceContextBody[F[_]](m: CpsMonadInstanceContext[F]) extends CpsMonadNoAdoptContext[F] {
+class CpsPureMonadInstanceContextBody[F[_]](m: CpsPureMonadInstanceContext[F]) extends CpsMonadNoAdoptContext[F] {
 
 
    def monad: CpsMonad[F] = m
@@ -75,16 +84,16 @@ class CpsMonadInstanceContextBody[F[_]](m: CpsMonadInstanceContext[F]) extends C
  * Mixin this trait into your monad in cases, when you monad have no internal API and
  * not support try/catch operations.
  **/
-trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] {
+trait CpsPureMonadInstanceContext[F[_]] extends CpsMonad[F] {
 
 
-  type Context = CpsMonadInstanceContextBody[F]
+  type Context = CpsPureMonadInstanceContextBody[F]
 
   /**
   * run with this instance
   **/
   def apply[T](op: Context => F[T]): F[T] =
-    op(CpsMonadInstanceContextBody(this))
+    op(CpsPureMonadInstanceContextBody(this))
   
 
    ///**
@@ -94,6 +103,21 @@ trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] {
    //**/
    //def adoptAwait[A](fa:F[A]):F[A] = fa
     
+
+}
+
+class CpsThrowMonadInstanceContextBody[F[_]](val m: CpsThrowMonadInstanceContext[F]) extends CpsThrowMonadContext[F]  {
+
+    override def monad: CpsThrowMonad[F] = m
+
+}
+
+trait CpsThrowMonadInstanceContext[F[_]] extends CpsThrowMonad[F] {
+
+    override type Context = CpsThrowMonadInstanceContextBody[F]
+
+    override def apply[T](op: Context => F[T]): F[T] =
+      op(CpsThrowMonadInstanceContextBody(this))
 
 }
 
@@ -151,12 +175,3 @@ trait CpsConcurrentContextMonad[F[_], Ctx <: CpsTryMonadContext[F]] extends CpsC
 }
 
 
-class CpsDirect[F[_]](val context: CpsMonadContext[F]) extends AnyVal {
-  def monad: CpsMonad[F] = context.monad
-}
-
-object CpsDirect {
-
-  given direct[F[_]](using context: CpsMonadContext[F]): CpsDirect[F] = new CpsDirect[F](context)
-
-}

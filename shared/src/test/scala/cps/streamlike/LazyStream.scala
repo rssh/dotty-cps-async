@@ -48,7 +48,7 @@ object LazyStream {
 
 }
 
-object LazyStreamCpsMonad extends CpsMonad[LazyStream] with CpsMonadInstanceContext[LazyStream]:
+object LazyStreamCpsMonad extends CpsMonad[LazyStream] with CpsPureMonadInstanceContext[LazyStream]:
 
   def pure[A](a:A) = LazyStreamCons(a, () => LazyStreamNil)
 

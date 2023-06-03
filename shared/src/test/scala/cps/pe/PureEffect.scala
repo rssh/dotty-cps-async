@@ -72,7 +72,7 @@ case class MappedThunk[A,B](fa: PureEffect[A], f: Try[A] => Try[B]) extends Pure
 case class FlatMappedThunk[A,B](fa: PureEffect[A], f: Try[A] => PureEffect[B]) extends PureEffect[B]
 
 
-given PureEffectCpsMonad: CpsConcurrentEffectMonad[PureEffect] with CpsMonadInstanceContext[PureEffect] with
+given PureEffectCpsMonad: CpsConcurrentEffectMonad[PureEffect] with CpsTryMonadInstanceContext[PureEffect] with
 
   type F[T] = PureEffect[T]
 

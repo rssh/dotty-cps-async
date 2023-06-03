@@ -45,13 +45,13 @@ class TestAccidentContextResolving {
   class M1[X]
   class M2[X]
   
-  given CpsMonad[M1] with CpsMonadInstanceContext[M1] with {
+  given CpsMonad[M1] with CpsPureMonadInstanceContext[M1] with {
     def pure[A](x:A):M1[A] = M1[A]()
     def map[A,B](fa:M1[A])(f: A=>B):M1[B] = M1[B]()
     def flatMap[A,B](fa:M1[A])(f:A=>M1[B]):M1[B] = M1[B]()
   }
 
-  given CpsMonad[M2] with CpsMonadInstanceContext[M2] with {
+  given CpsMonad[M2] with CpsPureMonadInstanceContext[M2] with {
     def pure[A](x:A):M2[A] = M2[A]()
     def map[A,B](fa:M2[A])(f: A=>B):M2[B] = M2[B]()
     def flatMap[A,B](fa:M2[A])(f:A=>M2[B]):M2[B] = M2[B]()
@@ -97,13 +97,13 @@ class TestAccidentContextResolving {
 
   class ZM2[-R,+X]
 
-  class ZM1CpsMonad[R] extends CpsMonad[[X] =>> ZM1[R,X]] with CpsMonadInstanceContext[[X] =>> ZM1[R,X]] {
+  class ZM1CpsMonad[R] extends CpsMonad[[X] =>> ZM1[R,X]] with CpsPureMonadInstanceContext[[X] =>> ZM1[R,X]] {
     def pure[A](x:A):ZM1[R,A] = ZM1[R,A]()
     def map[A,B](fa:ZM1[R,A])(f: A=>B):ZM1[R,B] = ZM1[R,B]()
     def flatMap[A,B](fa:ZM1[R,A])(f:A=>ZM1[R,B]):ZM1[R,B] = ZM1[R,B]()
   }
 
-  class ZM2CpsMonad[R] extends CpsMonad[[X] =>> ZM2[R,X]] with CpsMonadInstanceContext[[X] =>> ZM2[R,X]] {
+  class ZM2CpsMonad[R] extends CpsMonad[[X] =>> ZM2[R,X]] with CpsPureMonadInstanceContext[[X] =>> ZM2[R,X]] {
     def pure[A](x:A):ZM2[R,A] = ZM2[R,A]()
     def map[A,B](fa:ZM2[R,A])(f: A=>B):ZM2[R,B] = ZM2[R,B]()
     def flatMap[A,B](fa:ZM2[R,A])(f:A=>ZM2[R,B]):ZM2[R,B] = ZM2[R,B]()

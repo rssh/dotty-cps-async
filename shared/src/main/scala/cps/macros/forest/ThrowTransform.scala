@@ -32,5 +32,5 @@ object ThrowTransform:
             CpsExpr.async[F,T](monad,
                 cpsEx.flatMap[T]( '{ (ex:S) => ${errorMonad}.error(ex) } ).transformed )
      else
-       throw MacroError("this monad not support try/catch",patternCode)
+       throw MacroError(s"monad ${monad.show} of type ${monad.asTerm.tpe.widen.show} in context ${TypeRepr.of[C].show} not support try/catch",patternCode)
 

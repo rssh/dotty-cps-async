@@ -86,7 +86,11 @@ trait CpsThrowSupport[F[_]] {
  * An example as monad which interpret in sync context,
  * such as Option or collections.
  **/
-trait CpsThrowMonad[F[_]] extends CpsMonad[F] with CpsThrowSupport[F]
+trait CpsThrowMonad[F[_]] extends CpsMonad[F] with CpsThrowSupport[F] {
+
+  override type Context <: CpsThrowMonadContext[F]
+
+}
 
 
 trait CpsTrySupport[F[_]] extends CpsThrowSupport[F] {

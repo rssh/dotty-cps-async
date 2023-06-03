@@ -118,7 +118,7 @@ class JSFuture[T](
 
 object JSFuture:
    
-   given JSFutureCpsMonad: CpsTryMonad[JSFuture] with CpsMonadInstanceContext[JSFuture] with
+   given JSFutureCpsMonad: CpsTryMonad[JSFuture] with CpsTryMonadInstanceContext[JSFuture] with
 
       def pure[A](a:A): JSFuture[A] = new JSFuture[A](js.undefined, Future successful a)
 

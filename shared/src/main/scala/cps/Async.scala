@@ -28,6 +28,8 @@ def await[F[_],T,G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMo
 transparent inline def async[F[_]](using am: CpsMonad[F]) =
    macros.Async.InferAsyncArg(using am)
 
+//transparent inline def async[F[_]](using am: CpsTryMonad[F]) =
+//   macros.Async.InferAsyncArg1(using am)
 
 
 /**

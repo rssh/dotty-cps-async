@@ -15,7 +15,7 @@ import scala.util.Try
  *    }
  * ```
  **/
- class IterableCpsMonad[C[x]<:IterableOnce[x]](iterableFactory:IterableFactory[C]) extends CpsThrowMonad[C] with CpsMonadInstanceContext[C] {
+ class IterableCpsMonad[C[x]<:IterableOnce[x]](iterableFactory:IterableFactory[C]) extends CpsThrowMonad[C] with CpsThrowMonadInstanceContext[C] {
 
     override def pure[A](a:A):C[A] = {
       iterableFactory.apply(a)

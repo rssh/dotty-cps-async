@@ -38,27 +38,32 @@ class FutureScopeContext(m: CpsTryMonad[Future], ec: ExecutionContext, parentSco
 
   override val monad:CpsTryMonad[Future] = new CpsTryMonad[Future] {
 
+    override type Context = FutureScopeContext
+
     given executionContext: ExecutionContext = ec
 
     export  m.pure
 
-
     override def map[A,B](fa: Future[A])(f: A=>B): Future[B] = {
-      adoptAwait(fa.map(f))
+      adoptAwait(m.map(fa)(f))
     }
 
     override def flatMap[A, B](fa: Future[A])(f: A => Future[B]): Future[B] = {
-      adoptAwait(fa.flatMap(f))
+      adoptAwait(m.flatMap(fa)(f))
     }
 
     export m.error
 
     override def mapTry[A, B](fa: Future[A])(f: Try[A] => B): Future[B] = {
-      adoptAwait(fa.mapTry(f))
+      adoptAwait(m.mapTry(fa)(f))
     }
 
     override def flatMapTry[A, B](fa: Future[A])(f: Try[A] => Future[B]): Future[B] = {
-      adoptAwait(fa.flatMapTry(f))
+      adoptAwait(m.flatMapTry(fa)(f))
+    }
+
+    override def apply[T](op: Context => Future[T]): Future[T] = {
+      FutureScope.spawn_async(using FutureScopeContext.this)(op, ec)
     }
 
 
@@ -66,7 +71,7 @@ class FutureScopeContext(m: CpsTryMonad[Future], ec: ExecutionContext, parentSco
 
   //override def monad: CpsTryMonad[Future] = m
   
-  override def adoptAwait[A](fa: Future[A]):Future[A] = {
+  def adoptAwait[A](fa: Future[A]):Future[A] = {
     given ExecutionContext = ec
     stateRef.get match
       case FutureScopeContext.State.Active =>    

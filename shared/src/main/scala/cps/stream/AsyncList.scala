@@ -340,7 +340,7 @@ object AsyncList {
           AsyncListEmitAbsorber[F,C,T]()
 
 
-  given [F[_]:CpsConcurrentMonad]: CpsMonad[[T] =>> AsyncList[F,T]] with CpsMonadInstanceContext[[T]=>>AsyncList[F,T]] with
+  given [F[_]:CpsConcurrentMonad]: CpsMonad[[T] =>> AsyncList[F,T]] with CpsPureMonadInstanceContext[[T]=>>AsyncList[F,T]] with
      def pure[A](a:A): AsyncList[F,A] =
           AsyncList.Cons(a,() => AsyncList.empty)
      def map[A,B](fa:AsyncList[F,A])(f: A=>B): AsyncList[F,B] =

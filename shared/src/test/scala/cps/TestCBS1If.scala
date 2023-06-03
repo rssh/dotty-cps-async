@@ -33,7 +33,7 @@ class TestBS1If:
      assert(c.run() == Success(1))
 
   @Test def tIfC1_011(): Unit = 
-     given ctx: CpsMonadInstanceContextBody[ComputationBound] = CpsMonadInstanceContextBody(ComputationBoundAsyncMonad)
+     given ctx: CpsTryMonadInstanceContextBody[ComputationBound] = CpsTryMonadInstanceContextBody(ComputationBoundAsyncMonad)
      val c = Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.Context]({
         if (true) await(T1.cbi(1)) else await(T1.cbi(2))
      }, ctx)
@@ -41,7 +41,7 @@ class TestBS1If:
 
 
   @Test def tIfC1_100(): Unit = 
-     given ctx: CpsMonadInstanceContextBody[ComputationBound] = CpsMonadInstanceContextBody(ComputationBoundAsyncMonad)
+     given ctx: CpsTryMonadInstanceContextBody[ComputationBound] = CpsTryMonadInstanceContextBody(ComputationBoundAsyncMonad)
      val c = Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.Context]({
         if (await(T1.cbBool(true)))
             2 
@@ -51,7 +51,7 @@ class TestBS1If:
      assert(c.run() == Success(2))
 
   @Test def tIfC1_100f(): Unit = 
-     given ctx: CpsMonadInstanceContextBody[ComputationBound] = CpsMonadInstanceContextBody(ComputationBoundAsyncMonad)
+     given ctx: CpsTryMonadInstanceContextBody[ComputationBound] = CpsTryMonadInstanceContextBody(ComputationBoundAsyncMonad)
      val c = Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.Context]({
         if (await(T1.cbBool(false)))
             2 
@@ -62,7 +62,7 @@ class TestBS1If:
   
 
   @Test def tIfC1_111(): Unit = 
-     given ctx: CpsMonadInstanceContextBody[ComputationBound] = CpsMonadInstanceContextBody(ComputationBoundAsyncMonad)
+     given ctx: CpsTryMonadInstanceContextBody[ComputationBound] = CpsTryMonadInstanceContextBody(ComputationBoundAsyncMonad)
      val c = Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.Context]({
         if (await(T1.cbBool(true)))
             await(T1.cbi(2))
@@ -72,7 +72,7 @@ class TestBS1If:
      assert(c.run() == Success(2))
 
   @Test def tIfC1_inBlock(): Unit = 
-     given ctx: CpsMonadInstanceContextBody[ComputationBound] = CpsMonadInstanceContextBody(ComputationBoundAsyncMonad)
+     given ctx: CpsTryMonadInstanceContextBody[ComputationBound] = CpsTryMonadInstanceContextBody(ComputationBoundAsyncMonad)
      val c = Async.transform[ComputationBound,Int, ComputationBoundAsyncMonad.Context]({
        { val x = await(T1.cbBool(true))
          val y = 3

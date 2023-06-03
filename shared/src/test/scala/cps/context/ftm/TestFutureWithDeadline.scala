@@ -47,7 +47,7 @@ given cpsMonadConversion(using DeadlineContext): CpsMonadConversion[Future,Futur
 }
 
 
-class DeadlineContext(m: CpsMonad[FutureWithDeadline], initDeadline: Long) extends CpsMonadContext[FutureWithDeadline] {
+class DeadlineContext(m: CpsAsyncMonad[FutureWithDeadline], initDeadline: Long) extends CpsTryMonadContext[FutureWithDeadline] {
 
     private[this] var deadline: Long = initDeadline;
     private[this] val timeoutPromise: Promise[Nothing] = Promise()
@@ -89,17 +89,52 @@ class DeadlineContext(m: CpsMonad[FutureWithDeadline], initDeadline: Long) exten
         p.tryCompleteWith(x)
         FutureWithDeadline.Computation(p, this)
 
-    override def monad = m
+    override val monad: CpsTryMonad[FutureWithDeadline] = new CpsAsyncEffectMonad[FutureWithDeadline] {
 
-    override def adoptAwait[A](fa:FutureWithDeadline[A]):FutureWithDeadline[A] =
-        addComputation(fa.future)    
+        override type Context = DeadlineContext
+
+        override def pure[A](a:A):FutureWithDeadline[A] = m.pure(a)
+
+        override def map[A, B](fa: FutureWithDeadline[A])(f: A => B): FutureWithDeadline[B] = {
+            addComputation(fa.future.map(f))
+        }
+
+        override def flatMap[A, B](fa: FutureWithDeadline[A])(f: A => FutureWithDeadline[B]): FutureWithDeadline[B] = {
+            addComputation(m.flatMap(fa)(f).future)
+        }
+
+        override def error[A](e: Throwable): FutureWithDeadline[A] = {
+            m.error(e)
+        }
+
+        override def mapTry[A, B](fa: FutureWithDeadline[A])(f: Try[A] => B): FutureWithDeadline[B] = {
+            addComputation(m.mapTry(fa)(f).future)
+        }
+
+        override def flatMapTry[A, B](fa: FutureWithDeadline[A])(f: Try[A] => FutureWithDeadline[B]): FutureWithDeadline[B] = {
+            addComputation(m.flatMapTry(fa)(f).future)
+        }
+
+        override def adoptCallbackStyle[A](source: (Try[A]=>Unit) => Unit): FutureWithDeadline[A] = {
+            addComputation(m.adoptCallbackStyle(source).future)
+        }
+
+        override def apply[T](op: Context => FutureWithDeadline[T]): FutureWithDeadline[T] = {
+            addComputation(op(DeadlineContext.this).future)
+        }
+
+    }
+
+    //override def adoptAwait[A](fa:FutureWithDeadline[A]):FutureWithDeadline[A] =
+    //    addComputation(fa.future)
     
 
 }
 
 
 
-class FutureWithDeadlineCpsMonad(using ExecutionContext) extends CpsAsyncMonad[FutureWithDeadline] with CpsContextMonad[FutureWithDeadline, DeadlineContext] {
+class FutureWithDeadlineCpsMonad(using ExecutionContext) extends CpsAsyncMonad[FutureWithDeadline] with CpsTryContextMonad[FutureWithDeadline, DeadlineContext] {
+
 
     def pure[T](t:T):FutureWithDeadline[T] = FutureWithDeadline.Value(Success(t))
 

@@ -4,7 +4,7 @@ import cps.*
 import scala.concurrent.*
 import scala.util.*
 
-class ProcessContext extends CpsMonadContext[Process] {
+class ProcessContext extends CpsTryMonadContext[Process] {
 
   def spawn[A](op: ProcessContext ?=> A): Process[A] =
      ??? 
@@ -12,13 +12,13 @@ class ProcessContext extends CpsMonadContext[Process] {
   def spawnAsync[A](op: ProcessContext => Process[A]): Process[A] =
      ???
 
-  override def monad: CpsMonad[Process] = ???   
+  override def monad: CpsTryMonad[Process] = ???
 
-  override def adoptAwait[T](ft:Process[T]):Process[T] = ???
+  def adoptAwait[T](ft:Process[T]):Process[T] = ???
 
 }
 
-class ProcessCpsMonad() extends  CpsConcurrentMonad[Process] with CpsContextMonad[Process, ProcessContext] {
+class ProcessCpsMonad() extends  CpsConcurrentMonad[Process] with CpsTryContextMonad[Process, ProcessContext] {
 
    type Spawned[A] = Process[A]
 

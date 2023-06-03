@@ -10,7 +10,7 @@ import cps.testconfig.given
 class TestCBS1:
 
   @Test def tConstantMeta(): Unit = 
-     val c = macros.Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.Context](3, CpsMonadInstanceContextBody(ComputationBoundAsyncMonad))
+     val c = macros.Async.transform[ComputationBound,Int,ComputationBoundAsyncMonad.Context](3, CpsTryMonadInstanceContextBody(ComputationBoundAsyncMonad))
      val r = c.run()
      assert(r == Success(3))
   

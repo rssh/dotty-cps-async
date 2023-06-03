@@ -167,7 +167,7 @@ object ComputationBound {
 
 }
 
-implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBound] with CpsMonadInstanceContext[ComputationBound]  {
+implicit object ComputationBoundAsyncMonad extends CpsAsyncMonad[ComputationBound] with CpsTryMonadInstanceContext[ComputationBound]  {
 
    type WF[T] = ComputationBound[T]
 

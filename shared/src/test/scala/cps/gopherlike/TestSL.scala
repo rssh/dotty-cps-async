@@ -14,7 +14,7 @@ class TestSL:
   // should not be covariant
   class MyF[T]
     
-  given CpsMonad[MyF] with CpsMonadInstanceContext[MyF] with
+  given CpsMonad[MyF] with CpsPureMonadInstanceContext[MyF] with
     def pure[A](a:A): MyF[A] = ???
     def map[A,B](fa:MyF[A])(f:A=>B):MyF[B] = ???
     def flatMap[A,B](fa:MyF[A])(f:A=>MyF[B]):MyF[B] = ???

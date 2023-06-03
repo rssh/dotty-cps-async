@@ -31,10 +31,21 @@ object Async {
             //   transform[F,T,C](expr,x)
             //)
 
-       
-       transparent inline def in[T](mc: CpsMonadContextProvider[F] )(inline expr: mc.Context ?=> T ): F[T]  = 
-            mc.contextualize(am, transformContextLambda(expr))
-       
+        transparent inline def in[T](mc: CpsMonadContextProvider[F])(inline expr: mc.Context ?=> T): F[T] =
+            //  TODO: compile-time check instead instance-om.
+            //  Promblem,  that it should be implemented at the top level
+            mc.contextualize(am.asInstanceOf[CpsTryMonad.Aux[F,C]], transformContextLambda(expr))
+
+
+  }
+
+  class InferAsyncArg1[F[_], C<:CpsTryMonadContext[F]](using val am: CpsTryMonad.Aux[F,C]) {
+
+      transparent inline def apply[T](inline expr: C ?=> T) =
+            am.apply(transformContextLambda(expr))
+
+
+
   }
 
   transparent inline def async[F[_]](using am:CpsMonad[F]) =

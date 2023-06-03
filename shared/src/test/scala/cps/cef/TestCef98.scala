@@ -12,7 +12,7 @@ import cps.automaticColoring.given
 
 class TestCef98 {
 
-    given CpsMonad[Option] with CpsMonadInstanceContext[Option]  with {
+    given CpsMonad[Option] with CpsPureMonadInstanceContext[Option]  with {
       def pure[T](t:T):Option[T] = Some(t)
       def map[A,B](fa:Option[A])(f: A=>B):Option[B] = fa.map(f)
       def flatMap[A,B](fa:Option[A])(f: A=>Option[B]):Option[B] = fa.flatMap(f)
