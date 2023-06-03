@@ -37,11 +37,25 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
      val isAsync = cpsBody.isAsync || isCaseDefsAsync || isFinalizerAsync
      val isChanged = cpsBody.isChanged || isCaseDefsChanged || isFinalizerChanged
 
+     /*
      val errorMonad = if (monad.asTerm.tpe <:< TypeRepr.of[CpsTryMonad[F]]) {
                           monad.asExprOf[CpsTryMonad[F]]
                       } else {
                           throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support", patternCode)
                       }
+     */
+     val errorMonad = try {
+       monad.asExprOf[CpsTryMonad[F]]
+     } catch {
+       case NonFatal(ex) =>
+         //report.error(s"${monad} should be instance of CpsTryMonad for try/catch support: ${ex.getMessage}", patternCode)
+         report.error(
+          s"""|monad=${monad.show},  C=${TypeRepr.of[C].show}, monadContext=${cpsCtx.monadContext.show}
+              |monad.tpe.widen=${monad.asTerm.tpe.widen.show},  monadContext.tpw.widen=${cpsCtx.monadContext.asTerm.tpe.widen}
+              |monadContext.tpe <:< TypeReprOf[CpsTryMonadContext[F]] = ${monadContext.asTerm.tpe.widen <:< TypeRepr.of[CpsMonadContext]}
+          """.stripMargin('|'), patternCode)
+         throw MacroError(s"${monad} should be instance of CpsTryMonad for try/catch support: ${ex.getMessage}", patternCode)
+     }
 
      def makeAsyncCaseDefs(): List[CaseDef] =
         ((cases lazyZip cpsCaseDefs) map { (frs,snd) =>

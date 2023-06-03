@@ -16,7 +16,7 @@ import cps.macros.observatory.*
 //  via yet one inline.  
 object LoomTransform:
 
-    def run[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], 
+    def run[F[_]:Type, T:Type, C<:CpsTryMonadContext[F]:Type](f: Expr[T],
         dm: Expr[CpsAsyncMonad[F]], 
         ctx: Expr[C], 
         runtimeApi: Expr[CpsRuntimeAwait[F]],
@@ -267,7 +267,7 @@ object LoomTransform:
                     if sc.tree.tpe <:< TypeRepr.of[cps.AwaitValueDiscard[?,?]] then
                       sc.tree.tpe.asType match
                         case '[AwaitValueDiscard[F,tt]] =>
-                           '{  ${runtimeApi}.await[tt](${t.asExprOf[F[tt]]})($dm,$ctx) }.asTerm
+                           '{  ${runtimeApi}.await[tt](${t.asExprOf[F[tt]]})($ctx) }.asTerm
                         case _ =>   
                            ???
                     else

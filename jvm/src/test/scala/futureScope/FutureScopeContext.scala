@@ -21,7 +21,7 @@ import cps.testconfig.given
 /**
  * ScopedContext - bring structured concurrency primitives for futures.
  **/
-class FutureScopeContext(m: CpsMonad[Future], ec: ExecutionContext, parentScope: Option[FutureScopeContext] = None) extends CpsMonadContext[Future] 
+class FutureScopeContext(m: CpsTryMonad[Future], ec: ExecutionContext, parentScope: Option[FutureScopeContext] = None) extends CpsTryMonadContext[Future]
                                                                                                   with ExecutionContextProvider  
                                                                                                   with Cancellable {
 
@@ -36,7 +36,35 @@ class FutureScopeContext(m: CpsMonad[Future], ec: ExecutionContext, parentScope:
   
   def executionContext: ExecutionContext = ec
 
-  override def monad: CpsMonad[Future] = m
+  override val monad:CpsTryMonad[Future] = new CpsTryMonad[Future] {
+
+    given executionContext: ExecutionContext = ec
+
+    export  m.pure
+
+
+    override def map[A,B](fa: Future[A])(f: A=>B): Future[B] = {
+      adoptAwait(fa.map(f))
+    }
+
+    override def flatMap[A, B](fa: Future[A])(f: A => Future[B]): Future[B] = {
+      adoptAwait(fa.flatMap(f))
+    }
+
+    export m.error
+
+    override def mapTry[A, B](fa: Future[A])(f: Try[A] => B): Future[B] = {
+      adoptAwait(fa.mapTry(f))
+    }
+
+    override def flatMapTry[A, B](fa: Future[A])(f: Try[A] => Future[B]): Future[B] = {
+      adoptAwait(fa.flatMapTry(f))
+    }
+
+
+  }
+
+  //override def monad: CpsTryMonad[Future] = m
   
   override def adoptAwait[A](fa: Future[A]):Future[A] = {
     given ExecutionContext = ec

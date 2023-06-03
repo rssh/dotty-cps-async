@@ -23,10 +23,22 @@ trait CpsMonadContext[F[_]] {
   /**
    * adopt external monadic value to the current context.
    **/
-  def adoptAwait[A](fa:F[A]):F[A]
+  //@deprecated("use wrapped monad operation instead", "0.17")
+  //def adoptAwaitDisabled[A](fa:F[A]):F[A]
  
 
 }
+
+trait CpsTryMonadContext[F[_]] extends CpsMonadContext[F] {
+
+  /**
+   * @return instance of cps-monad which should supports try operations.
+   */
+  override def monad: CpsTryMonad[F]
+
+
+}
+
 
 object CpsMonadContext {
 
@@ -45,7 +57,7 @@ trait CpsMonadNoAdoptContext[F[_]] extends CpsMonadContext[F] {
    * this call is completely eliminated by dotty-cps-async macro
    *@return fa
    **/
-   def adoptAwait[A](fa:F[A]):F[A] = fa
+   //def adoptAwait[A](fa:F[A]):F[A] = fa
 
 } 
 
@@ -60,7 +72,8 @@ class CpsMonadInstanceContextBody[F[_]](m: CpsMonadInstanceContext[F]) extends C
 
 /**
  * Trait for minimal monad context, which provides an instance of CpsMonad.
- * Mixin this trait into your monad in cases, when you monad have no internal API.
+ * Mixin this trait into your monad in cases, when you monad have no internal API and
+ * not support try/catch operations.
  **/
 trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] {
 
@@ -74,13 +87,28 @@ trait CpsMonadInstanceContext[F[_]] extends CpsMonad[F] {
     op(CpsMonadInstanceContextBody(this))
   
 
-   /**
-   * If is it statically known, that monad is evaluated in this context, then
-   * this call is completely eliminated by dotty-cps-async macro
-   *@return fa
-   **/
-   def adoptAwait[A](fa:F[A]):F[A] = fa
+   ///**
+   //* If is it statically known, that monad is evaluated in this context, then
+   //* this call is completely eliminated by dotty-cps-async macro
+   //*@return fa
+   //**/
+   //def adoptAwait[A](fa:F[A]):F[A] = fa
     
+
+}
+
+class CpsTryMonadInstanceContextBody[F[_]](val m: CpsTryMonadInstanceContext[F]) extends CpsTryMonadContext[F]  {
+
+    override def monad: CpsTryMonad[F] = m
+
+}
+
+trait CpsTryMonadInstanceContext[F[_]] extends CpsTryMonad[F] {
+
+    override type Context = CpsTryMonadInstanceContextBody[F]
+
+    override def apply[T](op: Context => F[T]): F[T] =
+      op(CpsTryMonadInstanceContextBody(this))
 
 }
 
@@ -107,7 +135,16 @@ trait CpsContextMonad[F[_],Ctx <: CpsMonadContext[F]]  extends CpsMonad[F] {
   
 }
 
-trait CpsConcurrentContextMonad[F[_], Ctx <: CpsMonadContext[F]] extends CpsConcurrentMonad[F] with CpsContextMonad[F, Ctx] {
+trait CpsTryContextMonad[F[_],Ctx <: CpsTryMonadContext[F]] extends CpsContextMonad[F, Ctx] with CpsTryMonad[F] {
+
+  override type Context = Ctx
+
+  override def apply[T](op: Context => F[T]): F[T] =
+    applyContext(c => op(c.asInstanceOf[Context]))
+
+}
+
+trait CpsConcurrentContextMonad[F[_], Ctx <: CpsTryMonadContext[F]] extends CpsConcurrentMonad[F] with CpsTryContextMonad[F, Ctx] {
 
   type Context = Ctx
 

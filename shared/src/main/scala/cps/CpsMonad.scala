@@ -134,6 +134,8 @@ trait CpsTrySupport[F[_]] extends CpsThrowSupport[F] {
  **/
 trait CpsTryMonad[F[_]] extends CpsThrowMonad[F] with CpsTrySupport[F] {
 
+   override type Context <: CpsTryMonadContext[F]
+  
    /**
     * represent error `e` in monadic context.
     **/

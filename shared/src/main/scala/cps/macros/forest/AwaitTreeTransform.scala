@@ -28,12 +28,15 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
 
   def runMyAwait(awaitTerm: Term, arg: Term, context: Term)(owner:Symbol): CpsTree =
-      val adoptedArg = if (context.tpe <:< TypeRepr.of[CpsMonadNoAdoptContext[?]]) {
-                         arg
-                       } else {  
-                         adoptContextInMyAwait(awaitTerm, arg, context)
-                       } 
-      val cpsArg = runRoot(adoptedArg)(owner)
+
+      //val adoptedArg = if (context.tpe <:< TypeRepr.of[CpsMonadNoAdoptContext[?]]) {
+      //                   arg
+      //                 } else {
+      //                   adoptContextInMyAwait(awaitTerm, arg, context)
+      //                 }
+      //val cpsArg = runRoot(adoptedArg)(owner)
+      //  now we have no adoptContext, instead assume that monad is proxied via context.
+      val cpsArg = runRoot(arg)(owner)
       cpsArg.applyAwait(awaitTerm.tpe)
 
   def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, awaitCpsMonadConversion: Term, myMonadContext: Term)(owner: Symbol): CpsTree =

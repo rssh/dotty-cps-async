@@ -13,7 +13,7 @@ trait ExecutionContextProvider {
      def executionContext: ExecutionContext
 }
 
-class FutureContext(m: FutureAsyncMonadAPI) extends CpsMonadNoAdoptContext[Future] with ExecutionContextProvider {
+class FutureContext(m: FutureAsyncMonadAPI) extends CpsTryMonadContext[Future] with ExecutionContextProvider {
 
    def monad: FutureAsyncMonadAPI = m
 

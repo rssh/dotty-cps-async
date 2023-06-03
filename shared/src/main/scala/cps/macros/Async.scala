@@ -103,7 +103,7 @@ object Async {
                val cpsRuntimeAwait = optRuntimeAwait.get
                if (dm.asTerm.tpe <:< TypeRepr.of[CpsAsyncMonad[F]]) then
                   val dma = dm.asExprOf[CpsAsyncMonad[F]]
-                  val transformed = loomTransform[F,T,C](f,dma,mc.asExprOf[C],cpsRuntimeAwait, memoization, observatory, flags)
+                  val transformed = loomTransform[F,T,C & CpsTryMonadContext[F]](f,dma,mc.asExprOf[C & CpsTryMonadContext[F]],cpsRuntimeAwait, memoization, observatory, flags)
                   if (dm.asTerm.tpe <:< TypeRepr.of[CpsAsyncEffectMonad[F]]) then
                      '{ ${dm.asExprOf[CpsEffectMonad[F]]}.delay(${transformed}) }
                   else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then
@@ -227,7 +227,7 @@ object Async {
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._    
-     val cpsCtx = TransformationContext[F,T,C](f,tType,dm,mc,optMemoization,optRuntimeAwait,
+     val cpsCtx = TransformationContext[F,T,C](f,tType,/*dm,*/mc,optMemoization,optRuntimeAwait,
                                                flags,observatory, nesting,parent)
      val retval = f match 
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
@@ -328,12 +328,13 @@ object Async {
       retval
 
 
-  def transformContextInstanceMonad[F[_]:Type,T:Type,C<:CpsMonadInstanceContext[F] :Type](f: Expr[T], dm: Expr[C])(using Quotes): Expr[F[T]] = 
+  //TODO: find usage and remove if not used
+  def transformContextInstanceMonad[F[_]:Type,T:Type,C<:CpsTryMonadInstanceContext[F] :Type](f: Expr[T], dm: Expr[C])(using Quotes): Expr[F[T]] =
          '{
             $dm.apply( mc => ${transformMonad(f, dm, 'mc)})
           }
 
-  def loomTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](f: Expr[T], 
+  def loomTransform[F[_]:Type, T:Type, C<:CpsTryMonadContext[F]:Type](f: Expr[T],
                                                         dm: Expr[CpsAsyncMonad[F]], 
                                                         ctx: Expr[C], 
                                                         runtimeApi: Expr[CpsRuntimeAwait[F]],

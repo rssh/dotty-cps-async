@@ -372,7 +372,7 @@ object AsyncIterator:
      }
    }
 
-   given [F[_]:CpsConcurrentMonad]: CpsTryMonad[[T] =>> AsyncIterator[F,T]] with CpsMonadInstanceContext[[T]=>>AsyncIterator[F,T]] with
+   given [F[_]:CpsConcurrentMonad]: CpsTryMonad[[T] =>> AsyncIterator[F,T]] with CpsTryMonadInstanceContext[[T]=>>AsyncIterator[F,T]] with
      override def pure[A](a:A):AsyncIterator[F,A] = one(a)
      override def map[A,B](fa:AsyncIterator[F,A])(f:A=>B):AsyncIterator[F,B] = fa.map(f)
      override def flatMap[A,B](fa:AsyncIterator[F,A])(f:A=>AsyncIterator[F,B]):AsyncIterator[F,B] = fa.flatMap(f)

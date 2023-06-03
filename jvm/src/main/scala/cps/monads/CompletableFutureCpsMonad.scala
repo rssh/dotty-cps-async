@@ -8,7 +8,7 @@ import scala.util.Success
 import scala.util.control.NonFatal
 
 
-given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with CpsMonadInstanceContext[CompletableFuture] with {
+given CompletableFutureCpsMonad: CpsSchedulingMonad[CompletableFuture] with CpsTryMonadInstanceContext[CompletableFuture] with {
 
    def pure[T](t:T):CompletableFuture[T] =
          CompletableFuture.completedFuture(t).nn

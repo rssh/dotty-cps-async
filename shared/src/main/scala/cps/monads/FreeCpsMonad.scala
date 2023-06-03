@@ -32,7 +32,7 @@ object FreeMonad {
  If you really want use async wthout type parameter, define given instance of selected CpsMonad in the neareast scope
 """
 )
-given FreeCpsMonad: CpsTryMonad[FreeMonad] with CpsMonadInstanceContext[FreeMonad] with {
+given FreeCpsMonad: CpsTryMonad[FreeMonad] with CpsTryMonadInstanceContext[FreeMonad] with {
 
   type F[A] = FreeMonad[A]
 
@@ -65,7 +65,7 @@ object AsyncFreeMonad {
   case class FlatMapTry[A, B](fa: AsyncFreeMonad[A], f: Try[A] => AsyncFreeMonad[B]) extends AsyncFreeMonad[B]
   case class AdoptCallbackStyle[A](source:(Try[A]=>Unit)=>Unit) extends AsyncFreeMonad[A]
 
-  given CpsAsyncMonad[AsyncFreeMonad] with CpsMonadInstanceContext[AsyncFreeMonad] with
+  given CpsAsyncMonad[AsyncFreeMonad] with CpsTryMonadInstanceContext[AsyncFreeMonad] with
     def pure[A](a:A): AsyncFreeMonad[A] = AsyncFreeMonad.Pure(a)
     def map[A,B](fa:AsyncFreeMonad[A])(f: A=>B): AsyncFreeMonad[B] =
         AsyncFreeMonad.FlatMap(fa, (x:A) => pure(f(x)))

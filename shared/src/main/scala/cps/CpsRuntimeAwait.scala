@@ -13,13 +13,13 @@ package cps
  **/
 trait CpsRuntimeAwait[F[_]] {
 
-    def async[A,C <: CpsMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A] = {
+    def async[A,C <: CpsTryMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A] = {
       m.flatDelay(runAsync(f)(m,ctx))
     }
     
-    def runAsync[A,C <: CpsMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A]
+    def runAsync[A,C <: CpsTryMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A]
 
-    def await[A](fa: F[A])(m: CpsAsyncMonad[F], ctx: CpsMonadContext[F]): A 
+    def await[A](fa: F[A])(ctx: CpsTryMonadContext[F]): A
 
 }
 
