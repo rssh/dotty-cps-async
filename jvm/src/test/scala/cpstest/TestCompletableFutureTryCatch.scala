@@ -58,9 +58,11 @@ class TestCompletableFutureTryCatch:
     assert(x == 1)
     val r = f.value.get
     assert(r.isFailure)
-    val Failure(ex) = r
-    assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryCatch:1.2"))
-
+    r match
+      case Failure(ex) =>
+        assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryCatch:1.2"))
+      case _ =>
+        assert(false)
   }
 
 
@@ -79,9 +81,11 @@ class TestCompletableFutureTryCatch:
     assert(x == 1)
     val r = f.value.get
     assert(r.isFailure)
-    val Failure(ex) = r
-    assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryFinally:2"))
-
+    r match
+      case Failure(ex) =>
+        assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryFinally:2"))
+      case _ =>
+        assert(false)
   }
 
 
@@ -106,7 +110,12 @@ class TestCompletableFutureTryCatch:
     assert(y == 0)
     val r = f.value.get
     assert(r.isFailure)
-    val Failure(ex) = r
+    r match
+      case Failure(ex) =>
+        //assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryFinally:3.1"))
+      case _ =>
+        assert(false)
+    //val Failure(ex) = r
     //println(ex.getMessage())
     // unchanged: looks like scala and java behavious here is differ.
     //assert(ex.getMessage().contains("CompletableFuture:simpleTryFinally:3.1"))
@@ -132,8 +141,11 @@ class TestCompletableFutureTryCatch:
     assert(x == 1)
     val r = f.value.get
     assert(r.isFailure)
-    val Failure(ex) = r
-    assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryCatch:4.2"))
+    r match
+      case Failure(ex) =>
+        assert(ex.getMessage().nn.contains("CompletableFuture:simpleTryCatch:4.2"))
+      case _ =>
+        assert(false)
 
   }
 
