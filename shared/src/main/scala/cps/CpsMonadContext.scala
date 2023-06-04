@@ -16,8 +16,10 @@ trait CpsMonadContext[F[_]] {
 
 
   /**
-   *@return instance of cps-monad.
-   */ 
+   *@return instance of cps-monad, where operations can be intercepted by context.
+   *   I.e. for context-full operation, like setting common deadline, this deadline can be propagated via
+   *   flatMap chains.
+   */
    def monad: CpsMonad[F]
   
   /**
@@ -55,26 +57,15 @@ object CpsMonadContext {
 
 }
 
-/**
- * marker trait for context with NOOP intercaprAwait operation 
- **/
-trait CpsMonadNoAdoptContext[F[_]] extends CpsMonadContext[F] {
+
+
+class CpsPureMonadInstanceContextBody[F[_]](m: CpsPureMonadInstanceContext[F]) extends CpsMonadContext[F] {
 
 
   /**
-   * If is it statically known, that monad is evaluated in this context, then
-   * this call is completely eliminated by dotty-cps-async macro
-   *@return fa
-   **/
-   //def adoptAwait[A](fa:F[A]):F[A] = fa
-
-} 
-
-
-class CpsPureMonadInstanceContextBody[F[_]](m: CpsPureMonadInstanceContext[F]) extends CpsMonadNoAdoptContext[F] {
-
-
-   def monad: CpsMonad[F] = m
+   * @return return instance of cps-moand where operations can be intercepred by context.
+   */
+  def monad: CpsMonad[F] = m
 
 }
 
@@ -94,7 +85,7 @@ trait CpsPureMonadInstanceContext[F[_]] extends CpsMonad[F] {
   **/
   def apply[T](op: Context => F[T]): F[T] =
     op(CpsPureMonadInstanceContextBody(this))
-  
+
 
    ///**
    //* If is it statically known, that monad is evaluated in this context, then
@@ -102,7 +93,7 @@ trait CpsPureMonadInstanceContext[F[_]] extends CpsMonad[F] {
    //*@return fa
    //**/
    //def adoptAwait[A](fa:F[A]):F[A] = fa
-    
+
 
 }
 
