@@ -10,4 +10,5 @@ target/
 metals.sbt
 
 #idea
-.idea
+
+.idea/
