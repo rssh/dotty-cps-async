@@ -89,10 +89,16 @@ object TryTransform {
       case (_, _, AsyncKind.AsyncLambda(_)) =>
         throw CpsTransformException("Try finalizer can't be an async lambda", cpsFinalizer.origin.srcPos)
       case (AsyncKind.Sync, AsyncKind.Sync, _) =>
-        val syncTry = Try(cpsExpr.unpure.get, cases.unpureCaseDefs, EmptyTree)
-        val wrapped = wrapPureExprTreeInTry(origin, syncTry, cpsExpr.originType)
-        val pureExpr = CpsTree.pure(origin, owner, wrapped)
-        generateWithAsyncFinalizer(origin, owner, pureExpr, cpsFinalizer)
+        val syncTry = Try(cpsExpr.unpure.get, cases.unpureCaseDefs, EmptyTree).withSpan(origin.span)
+        //val pureSyncTry = Apply(
+        //  TypeApply(
+        //    Select(summon[CpsTopLevelContext].cpsMonadRef, "pure".toTermName)
+        //  )
+        //)
+        val pureSyncTry = CpsTree.pure(origin, owner, syncTry)
+        val wrapped = wrapPureCpsTreeInTry(origin, pureSyncTry)
+        val wrappedExpr = CpsTree.impure(origin, owner, wrapped, AsyncKind.Sync)
+        generateWithAsyncFinalizer(origin, owner, wrappedExpr, cpsFinalizer)
       case (AsyncKind.AsyncLambda(il1), AsyncKind.AsyncLambda(il2), _) =>
         if (il1 == il2) {
           val nTry = Try(cpsExpr.transformed, cases.transformedCaseDefs(cpsExpr.asyncKind, origin.tpe.widen), EmptyTree)
@@ -156,7 +162,7 @@ object TryTransform {
       List(finalizerCpsTree.transformed)
     ).withSpan(origin.span)
     argAsyncKind match
-      case AsyncKind.Sync => AsyncKind.Sync
+      case AsyncKind.Sync =>
          CpsTree.impure(origin,owner,tree,AsyncKind.Sync)
       case AsyncKind.Async(ik) =>
           CpsTree.impure(origin,owner,tree,ik)
