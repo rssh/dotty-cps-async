@@ -99,17 +99,32 @@ object TryTransform {
         val wrapped = wrapPureCpsTreeInTry(origin, pureSyncTry)
         val wrappedExpr = CpsTree.impure(origin, owner, wrapped, AsyncKind.Sync)
         generateWithAsyncFinalizer(origin, owner, wrappedExpr, cpsFinalizer)
-      case (AsyncKind.AsyncLambda(il1), AsyncKind.AsyncLambda(il2), _) =>
+      case (AsyncKind.AsyncLambda(il1), AsyncKind.AsyncLambda(il2), finalizerKind) =>
         if (il1 == il2) {
-          val nTry = Try(cpsExpr.transformed, cases.transformedCaseDefs(cpsExpr.asyncKind, origin.tpe.widen), EmptyTree)
-          val expr = CpsTree.opaqueAsyncLambda(origin, owner, nTry,il1)
-          generateWithAsyncFinalizer(origin, owner, expr, cpsFinalizer)
+          finalizerKind match
+            case AsyncKind.Sync =>
+              val nCases = cases.transformedCaseDefs(cpsExpr.asyncKind, origin.tpe.widen)
+              println("TryTransform::applyFull:(AsyncLambda,AsyncLambda,Sync)")
+              println(s"cases.cases.head.cpsBody = ${cases.cases.head.cpsBody.show}")
+              println(s"cases.cases.head.cpsBody.transformed = ${cases.cases.head.cpsBody.transformed.show}")
+              println(s"caess.cases.head.cpsBody.cast(${origin.tpe.widen.show}) = ${cases.cases.head.cpsBody.castOriginType(origin.tpe.widen).show}")
+              val nTry = Try(cpsExpr.transformed, nCases, cpsFinalizer.unpure.get)
+              CpsTree.opaqueAsyncLambda(origin, owner, nTry,il1)
+            case AsyncKind.Async(fk) =>
+              val nTry = Try(cpsExpr.transformed, cases.transformedCaseDefs(cpsExpr.asyncKind, origin.tpe.widen), EmptyTree)
+              val expr = CpsTree.opaqueAsyncLambda(origin, owner, nTry,il1)
+              generateWithAsyncFinalizerTree(origin, owner, cpsExpr.transformed, cpsExpr.transformedType,expr.asyncKind,cpsFinalizer)
+            case AsyncKind.AsyncLambda(x) =>
+              // impossible, but make compiler happy
+              throw CpsTransformException("Try finalizer can't be an async lambda", cpsFinalizer.origin.srcPos)
         } else {
           throw CpsTransformException(s"Non-cpompatible async shape in try extression and handlers", origin.srcPos)
         }
       case (exprKind, casesKind, _) =>
         exprKind.unify(casesKind) match
           case Left(p) =>
+            println(s"expr=${cpsExpr.show},  expr.kind=${cpsExpr.asyncKind} ")
+            println(s"cases = ${cases.unpureCaseDefs.map(_.show)}  cases.kind=${casesAsyncKind} ")
             throw CpsTransformException(s"Non-compatible async shape in try exppression and handlers ${p}", origin.srcPos)
           case Right(k) =>
             val expr1 = generateWithAsyncCases(origin, owner, cpsExpr, cases, k)
@@ -147,7 +162,7 @@ object TryTransform {
                                           origin: Try,
                                           owner: Symbol,
                                           arg: Tree,
-                                          argUnwrappedType: Type,
+                                          returnType: Type,
                                           argAsyncKind: AsyncKind,
                                           finalizerCpsTree: CpsTree,
                                           )(using Context, CpsTopLevelContext): CpsTree = {
@@ -155,7 +170,7 @@ object TryTransform {
       Apply(
         TypeApply(
           Select(trySupport(origin), "withAsyncFinalizer".toTermName),
-          List(TypeTree(argUnwrappedType.widen))
+          List(TypeTree(returnType.widen))
         ),
         List(arg)
       ),

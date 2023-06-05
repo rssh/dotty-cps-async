@@ -1,0 +1,38 @@
+package cpstest
+
+import cps.*
+import cps.monads.{*,given}
+
+import testUtil.*
+
+
+object Test9m6_100 {
+
+  var finallyWasRun=false
+
+  def wrapped[A](a:A): CpsDirect[FreeMonad] ?=> A = a
+
+  def simpleTry(x:String)(using CpsDirect[FreeMonad]): Either[String,Int] = {
+    try
+      Right(wrapped(x.toInt))
+    catch
+      case ex: NumberFormatException =>
+        Left(s"Invalid number $x")
+    finally
+      finallyWasRun = true
+  }
+
+  def main(args:Array[String]): Unit = {
+    val input = "10"
+    val fr = reify[FreeMonad] {
+      simpleTry(input)
+    }
+    val r = fr.eval
+    if (r.isRight && finallyWasRun) then
+      println("Ok")
+    else
+      println("r=$r")
+  }
+
+
+}

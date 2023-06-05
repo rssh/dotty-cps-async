@@ -659,7 +659,16 @@ case class LambdaCpsTree(
   }
 
   override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree =
-    copy(cpsBody = cpsBody.castOriginType(ntpe))
+    if (defn.isFunctionType(ntpe) || defn.isContextFunctionType(ntpe)) then
+      ntpe match
+        case AppliedType(ntpfun, ntpargs) =>
+          // TODO: check that params are the same.
+          val nResType = ntpargs.last
+          copy(cpsBody = cpsBody.castOriginType(nResType))
+        case _ =>
+          throw CpsTransformException(s"Can't cast lambda to type ${ntpe.show}: expected AppliedType but have ${ntpe}",origin.srcPos)
+    else
+      throw CpsTransformException(s"Can't cast lambda to type ${ntpe.show}: expected function type",origin.srcPos)
 
   override def asyncKind = AsyncKind.AsyncLambda(cpsBody.asyncKind)
 
@@ -939,6 +948,7 @@ case class SelectTypeApplyTypedCpsTree(records: Seq[SelectTypeApplyTypedCpsTree.
                                   override val origin:Tree,
                                 ) extends CpsTree {
 
+
     override def owner = nested.owner
 
     override def asyncKind: AsyncKind = nested.asyncKind
@@ -967,21 +977,25 @@ case class SelectTypeApplyTypedCpsTree(records: Seq[SelectTypeApplyTypedCpsTree.
             List(prefixTerm(nested.unpure.get,AsyncKind.Sync))
           )
         case kind@AsyncKind.Async(internalKind) =>
-          val paramSym = newSymbol(owner, "xSelectTypeApplyCpsTree".toTermName, Flags.EmptyFlags,
+          internalKind match
+            case AsyncKind.Sync =>
+              val paramSym = newSymbol(owner, "xSelectTypeApplyCpsTree".toTermName, Flags.EmptyFlags,
                                    nested.originType.widen, Symbols.NoSymbol)
-          val param = ValDef(paramSym, EmptyTree)
-          val lambda = TransformUtil.makeLambda(List(param), originType.widen, owner, prefixTerm(ref(paramSym), kind), ctx.owner)
-          val mapName = "map".toTermName
-          Apply(
-            Apply(
-              TypeApply(
-                Select(tctx.cpsMonadRef, mapName),
-                List(TypeTree(nested.originType.widen), TypeTree(originType.widen))
-              ),
-              List(nested.transformed)
-            ),
-            List(lambda)
-          ).withSpan(origin.span)
+              val param = ValDef(paramSym, EmptyTree)
+              val lambda = TransformUtil.makeLambda(List(param), originType.widen, owner, prefixTerm(ref(paramSym), kind), ctx.owner)
+              val mapName = "map".toTermName
+              Apply(
+                Apply(
+                  TypeApply(
+                    Select(tctx.cpsMonadRef, mapName),
+                    List(TypeTree(nested.originType.widen), TypeTree(originType.widen))
+                  ),
+                  List(nested.transformed)
+                ),
+                List(lambda)
+              ).withSpan(origin.span)
+            case _ =>
+              throw new CpsTransformException(s"SelectTypeApplyTypedCpsTree.transformed: unexpected nested internal kind:${internalKind}", origin.srcPos)
         case kind@AsyncKind.AsyncLambda(bodyType) =>
           prefixTerm(nested.transformed,kind)
       retval

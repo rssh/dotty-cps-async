@@ -8,8 +8,7 @@ class Test9Try {
 
   @Test
   def testCompileAndRun(): Unit = {
-    DotcInvocations.checkRuns(selection = (".*m6_001" +
-      "").r)(
+    DotcInvocations.checkRuns(selection = (".*m6_220".r))(
       TestRun("testdata/set9Try/m1", "cpstest.Test9m1", "Right(10)\n"),
       TestRun("testdata/set9Try/m2", "cpstest.Test9m2"),
       TestRun("testdata/set9Try/m3", "cpstest.Test9m3"),
@@ -22,7 +21,14 @@ class Test9Try {
       TestRun("testdata/set9Try/m5_3", "cpstest.Test9m5_3"),
       TestRun("testdata/set9Try/m6_000", "cpstest.Test9m6_000"),
       TestRun("testdata/set9Try/m6_000e", "cpstest.Test9m6_000e"),
-      TestRun("testdata/set9Try/m6_001", "cpstest.Test9m6_001")
+      TestRun("testdata/set9Try/m6_001", "cpstest.Test9m6_001"),
+      TestRun("testdata/set9Try/m6_010", "cpstest.Test9m6_010"),
+      TestRun("testdata/set9Try/m6_011", "cpstest.Test9m6_011"),
+      TestRun("testdata/set9Try/m6_100", "cpstest.Test9m6_100"),
+      TestRun("testdata/set9Try/m6_101", "cpstest.Test9m6_101"),
+      TestRun("testdata/set9Try/m6_110", "cpstest.Test9m6_110"),
+      TestRun("testdata/set9Try/m6_111", "cpstest.Test9m6_111"),
+      TestRun("testdata/set9Try/m6_220", "cpstest.Test9m6_220"),
     )
   }
 

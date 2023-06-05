@@ -22,6 +22,12 @@ def adoptForUncpsedDenotation[F[_],T](f: F[T]): T = {
   ???
 }
 
+//
+//@compileTimeOnly
+def adoptFunForUncpsedDenotation[F[_],A,B](f: A=>B): A=>F[B] = {
+  ???
+}
+
 
 //@compileTimeOnly("adoptCpsedCall should be removed on compiler plugin after symbol dentations will changed")
 def adoptCpsedCall[F[_],T](f: T): F[T] = {

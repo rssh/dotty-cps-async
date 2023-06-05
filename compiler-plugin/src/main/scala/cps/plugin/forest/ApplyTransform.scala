@@ -246,7 +246,7 @@ object ApplyTransform {
   def adoptCallMode(origin: Tree, plainTree: Tree, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
     if (argss.exists(_.containsDirectContext) ) {
       val adoptedTree = if (!callMode.asyncLambdaApplication) {
-         Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
+        Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
       } else plainTree
       //if (isImpure) {
       //  TODO: such situationis possible when we pass lamba with context parameters (can be inline)

@@ -15,11 +15,15 @@ import cps.plugin.forest.*
 class CpsCases(val cases: List[CpsCaseDef]) {
 
   lazy val collectAsyncKind: AsyncKind =
-    cases.foldLeft(AsyncKind.Sync) { (acc, c) =>
-      acc.unify(c.cpsBody.asyncKind) match
-        case Right(x) => x
-        case Left(msg) => throw CpsTransformException("Can't unify async shape in case branches for match", c.origin.srcPos)
-    }
+    cases.foldLeft(None:Option[AsyncKind]) { (acc, c) =>
+      acc match
+        case None => Some(c.cpsBody.asyncKind)
+        case Some(x) => x.unify(c.cpsBody.asyncKind) match
+          case Right(x) => Some(x)
+          case Left(msg) => throw CpsTransformException("Can't unify async shape in case branches for match", c.origin.srcPos)
+    } match
+      case Some(x) => x
+      case None => throw CpsTransformException("Can't unify async shape in case branches for match", cases.head.origin.srcPos)
 
   def  transformedCaseDefs(targedKind:AsyncKind, targetType: Type)(using Context, CpsTopLevelContext): List[CaseDef] =
     val retval = cases.map(_.transform(targedKind, targetType))
