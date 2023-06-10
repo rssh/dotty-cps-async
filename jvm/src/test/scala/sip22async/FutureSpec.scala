@@ -126,16 +126,16 @@ class FutureSpec {
     }
 
     val future1 = for {
-      Res(a: Int)    <- asyncReq(Req("Hello"))
-      Res(b: String) <- asyncReq(Req(a))
-      Res(c: String) <- asyncReq(Req(7))
+      case Res(a: Int)    <- asyncReq(Req("Hello"))
+      case Res(b: String) <- asyncReq(Req(a))
+      case Res(c: String) <- asyncReq(Req(7))
     } yield b + "-" + c
 
-    val future2 = for {
-      Res(a: Int) <- asyncReq(Req("Hello"))
-      Res(b: Int) <- asyncReq(Req(a))
-      Res(c: Int) <- asyncReq(Req(7))
-    } yield b + "-" + c
+    val future2 = (for {
+      case Res(a: Int) <- asyncReq(Req("Hello"))
+      case Res(b: Int) <- asyncReq(Req(a))
+      case Res(c: Int) <- asyncReq(Req(7))
+    } yield b + "-" + c )
 
     Await.result(future1, defaultTimeout) mustBe ("10-14")
     intercept[NoSuchElementException] { Await.result(future2, defaultTimeout) }
