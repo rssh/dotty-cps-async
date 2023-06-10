@@ -24,7 +24,7 @@ class TestCustomValueDiscard:
   
 
   @Test def withCustomValueDiscard(): Unit = 
-     implicit val printCode = cps.macros.flags.PrintCode
+     //implicit val printCode = cps.macros.flags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(10)
      
@@ -38,7 +38,6 @@ class TestCustomValueDiscard:
          await(T1.cbt(MyObj(2)))
      }
      val r = c.run()
-     println(s"!CustomValueDiscard::run-1, r=$r, x=$x")
      assert(r.isSuccess)
      assert(x == 1)
 

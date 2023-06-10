@@ -28,7 +28,7 @@ class TestCef98 {
     @Test
     def testNestedAwaits() = {
 
-      implicit val printCode = cps.macros.flags.PrintCode
+      //implicit val printCode = cps.macros.flags.PrintCode
 
       val optionV: Option[ComputationBound[Int]] = Some(Done(1))
       val c = async[ComputationBound] {
