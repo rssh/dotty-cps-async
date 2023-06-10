@@ -51,6 +51,26 @@ If you want to change the function name for `throwReturn`, be sure that your ver
     throwReturn(t)
 
 
+Note, that non-local returns in Scala is deprecated.
+Instead better to use `boundary/break <https://scala-lang.org/api/3.3.0/scala/util/boundary$.html>`_ introduced in Scala 3.3, which is supported by dotty-cps-async out of the box.
+
+
+.. code-block:: scala
+
+    def sourceWeights(item:Item, dataApi:DataApi):Future[A] = async[Future] {
+       boundary {
+            val sources = await(dataApi.fetchSources(item))
+            val weight = sources.foldLeft(0.0){ (weight,s) =>
+                val si = await(dataApi.sourceInfo(s,item))
+                if (si.isBlacklisted) {
+                    break(0.0)
+                }
+                weight + si.weight
+            }
+            weight
+       }
+    } 
+
 
 
 
