@@ -1,6 +1,7 @@
 package cpstest
 
 import cps._
+import cps.monads.{*,given}
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -8,19 +9,22 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.ScheduledExecutorService
 
 
-object Test11m1 {
+object Test11m0 {
 
 
   def fetch(url:String)(using CpsDirect[Future]): String = {
-    Future successful s"result of $url"
+     s"result of $url"
   }
 
   def fetchAll(urls:List[String])(using CpsDirect[Future]): List[String] = {
-    urls.zip(delays).delay.map(async((url,delay) => fetch(url,delay))).map(await(_))
+    urls.map(url => async[Future](fetch(url))).map(await(_))
   }
 
   def main(args:Array[String]): Unit = {
-     val r = fetchAll(List("url1", "url2", "url3"))
+     val fr = async[Future] {
+       fetchAll(List("url1", "url2", "url3"))
+     }
+     val r = Await.result(fr, 1.second)
      if (r.contains("result of url1") && r.contains("result of url2") && r.contains("result of url3")) then
        println("OK")
      else
