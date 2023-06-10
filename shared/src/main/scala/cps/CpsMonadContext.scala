@@ -1,5 +1,6 @@
 package cps
 
+import scala.annotation.experimental
 import scala.compiletime.*
 import scala.util.NotGiven
 
@@ -12,6 +13,7 @@ trait CpsMonadContext[F[_]] {
 
   type Monad[X] = F[X]
 
+  @experimental
   type Direct = CpsDirect[F]
 
 
@@ -53,6 +55,7 @@ trait CpsTryMonadContext[F[_]] extends CpsThrowMonadContext[F] {
 
 object CpsMonadContext {
 
+  @experimental
   given monadContext[F[_]](using direct:CpsDirect[F]): CpsMonadContext[F] = direct.context
 
 }
@@ -103,6 +106,11 @@ class CpsThrowMonadInstanceContextBody[F[_]](val m: CpsThrowMonadInstanceContext
 
 }
 
+/**
+ * Minimal monad context, which provides an instance of CpsThrowMonad.
+ * Use it if your monad supports throw operation but not try/catch.
+ * @tparam F
+ */
 trait CpsThrowMonadInstanceContext[F[_]] extends CpsThrowMonad[F] {
 
     override type Context = CpsThrowMonadInstanceContextBody[F]
@@ -118,6 +126,11 @@ class CpsTryMonadInstanceContextBody[F[_]](val m: CpsTryMonadInstanceContext[F])
 
 }
 
+/**
+ * Minimal monad context, which provides an instance of CpsTryMonad.
+ * Use it if your monad supports throw and try/catch operations.
+ * @tparam F
+ */
 trait CpsTryMonadInstanceContext[F[_]] extends CpsTryMonad[F] {
 
     override type Context = CpsTryMonadInstanceContextBody[F]
@@ -126,6 +139,15 @@ trait CpsTryMonadInstanceContext[F[_]] extends CpsTryMonad[F] {
       op(CpsTryMonadInstanceContextBody(this))
 
 }
+
+/**
+ * @Deprecated  Use instead one of
+ * - CpsTryMonadInstanceContext  for monads supporting trow and try/catch
+ * - CpsThrowMonadInstanceContext for monads supporting only throw
+ * - CpsPureMonadInstanceContext for monads which not support throw and try/catch
+ */
+trait CpsMonaInstanceContext[F[_]] extends CpsTryMonadInstanceContext[F]
+
 
 /**
  * Base trait of CpsContextMonad which provide `Ctx` as a monad context 

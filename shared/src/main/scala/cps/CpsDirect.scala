@@ -12,7 +12,7 @@ import scala.annotation.experimental
  *   def fetch(url: String): CpsDirect[Future] ?=> String = ...
  *  ```
  **/
-//@experimental
+@experimental
 class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
 
   def monad: CpsMonad[F] = context.monad
@@ -23,7 +23,7 @@ class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
 
 }
 
-//@experimental
+@experimental
 object CpsDirect {
 
   given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] = new CpsDirect[F](context)

@@ -1,11 +1,12 @@
 package cps.macros.forest.application
 
-import scala.quoted._
+import scala.quoted.*
+import cps.*
+import cps.macros.*
+import cps.macros.forest.*
+import cps.macros.misc.*
 
-import cps._
-import cps.macros._
-import cps.macros.forest._
-import cps.macros.misc._
+import scala.annotation.experimental
 
 
 trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
@@ -26,11 +27,13 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
      def  isContext: Boolean
 
+
      def  isCpsDirect(index:Int): Boolean =
             isContext && (
               paramType(index) match
                 case Some(t) =>
-                  t <:< TypeRepr.of[CpsDirect[F]]
+                  t.derivesFrom(Symbol.requiredClass("cps.CpsDirect"))
+                  //t <:< TypeRepr.of[CpsDirect[F]]
                 case None => false
             )
 
