@@ -324,7 +324,6 @@ class TestAsyncIteratorOps {
       val ft = async[Future] {
         val l1 = await(iterator.take[List](2))
         assert(l1 == List(1,2))
-        println(s"stream1 = $stream1")
         val it2 = stream1.iterator
         val l2 = await(it2.take[List](10))
         assert(l2 == List(1,2,3))

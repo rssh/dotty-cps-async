@@ -37,7 +37,6 @@ class TestReflectReify {
          val y = reflect(List(1,11))
          x*y
      }
-     println(s"c=$c")
      assert(c == List(1,11,2,22,3,33,5,55))
   }
   

@@ -72,7 +72,7 @@ class TestOrderOfFlatMapsInApply {
       }
       // (1+1, 1+2, -1+1, -1+2) = List(2,3,0,1)
 
-      println(s"r1=$r1,  r2=$r2, r3=$r3")
+      //println(s"r1=$r1,  r2=$r2, r3=$r3")
       assert(r1 == r2)
    }
 

@@ -31,6 +31,8 @@ class TestInferredByDefault {
           println("CompletableFuture")
        case f: scala.concurrent.Future[?] =>
           println("Future")
+       case fm: FreeMonad[?] =>
+          println("FreeMonad")
        case _ =>
           println(s"unknown type $v")
      }
