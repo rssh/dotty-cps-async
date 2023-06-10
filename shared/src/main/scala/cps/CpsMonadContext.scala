@@ -148,7 +148,10 @@ trait CpsTryMonadInstanceContext[F[_]] extends CpsTryMonad[F] {
  * - CpsPureMonadInstanceContext for monads which not support throw and try/catch
  */
 @deprecated("use CpsTryMonadInstanceContext, CpsThrowMonadInstanceContext or CpsPureMonadInstanceContext instead", "0.17")
-trait CpsMonaInstanceContext[F[_]] extends CpsTryMonadInstanceContext[F]
+trait CpsMonadInstanceContext[F[_]] extends CpsTryMonadInstanceContext[F]
+
+@deprecated("use CpsTryMonadInstanceContextBody, CpsThrowMonadInstanceContext or CpsPureMonadInstanceContext instead", "0.17")
+type CpsMonadInstanceContextBody[F[_]] = CpsTryMonadInstanceContextBody[F]
 
 trait CpsAsyncMonadInstanceContext[F[_]] extends CpsAsyncMonad[F] with CpsTryMonadInstanceContext[F]
 
