@@ -19,7 +19,7 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
 
   def runRoot(term: qctx.reflect.Term, muted: Boolean = false)(owner: Symbol): CpsTree =
      if (cpsCtx.flags.debugLevel >= 15)
-        cpsCtx.log(s"runRoot: term=$safeShow(term)")
+        cpsCtx.log(s"runRoot: (nesting = ${cpsCtx.nesting} term=${safeShow(term)}")
      val r: CpsTree = term.tpe.widen match {
        case _ : MethodType =>
                //  in such case, we can't transform tree to expr
@@ -41,6 +41,8 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                                                  (owner.asInstanceOf[scope.qctx.reflect.Symbol]).inCake(thisTransform)
                             )
                   case applyTerm@Apply(fun,args)  =>
+                            if (cpsCtx.flags.debugLevel >= 15)
+                               cpsCtx.log(s"runRoot: applyTerm=$applyTerm, fun=${fun.show}")
                             val tree = B2.inNestedContext(applyTerm, owner, muted, scope =>
                                scope.runApply(applyTerm.asInstanceOf[scope.qctx.reflect.Apply],
                                               fun.asInstanceOf[scope.qctx.reflect.Term],

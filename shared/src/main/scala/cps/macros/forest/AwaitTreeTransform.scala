@@ -17,7 +17,9 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
   def runAwait(term: Term, arg: Term, awaitCpsMonadType: TypeRepr, awaitCpsMonadConversion: Term, awaitCpsMonadContext: Term)(owner:Symbol): CpsTree =
       if cpsCtx.flags.debugLevel >= 10 then
-          cpsCtx.log(s"runAwait, arg=${arg.show}")
+          cpsCtx.log(s"runAwait, arg=${arg.show}, awaitCpsMonadConversion = ${awaitCpsMonadConversion.show} awaitCpsMonadContext=${awaitCpsMonadContext.show}")
+          cpsCtx.log(s"runAwait, argTree=${arg.show}")
+
       val r = if awaitCpsMonadType =:= monadTypeTree.tpe then
         runMyAwait(term, arg, awaitCpsMonadContext)(owner)
       else
@@ -28,7 +30,6 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
 
   def runMyAwait(awaitTerm: Term, arg: Term, context: Term)(owner:Symbol): CpsTree =
-
       //val adoptedArg = if (context.tpe <:< TypeRepr.of[CpsMonadNoAdoptContext[?]]) {
       //                   arg
       //                 } else {
@@ -40,6 +41,7 @@ trait AwaitTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
       cpsArg.applyAwait(awaitTerm.tpe)
 
   def runOtherAwait(awaitTerm: Term, arg: Term, targ: TypeRepr, awaitCpsMonadConversion: Term, myMonadContext: Term)(owner: Symbol): CpsTree =
+
       //val myCpsMonad = cpsCtx.monad.asTerm
       //val myCpsMonadTpe = myCpsMonad.tpe
       val myF = TypeRepr.of[F]

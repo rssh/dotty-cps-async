@@ -140,7 +140,7 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
         //   ???
         case _ => 
            val (ftr, ttr) = parseDiscardTermType(discardTerm.tpe)
-           val ftmt = TypeRepr.of[CpsMonad].appliedTo(ftr)
+           val ftmt = TypeRepr.of[CpsMonadConversion].appliedTo(List(ftr,TypeRepr.of[F]))
            Implicits.search(ftmt) match
               case monadSuccess: ImplicitSearchSuccess =>
                 val ftm = monadSuccess.tree
@@ -150,7 +150,7 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
                           List(Inferred(ftr),Inferred(ttr),Inferred(ftr))),
                        List(p.asTerm)
                      ),
-                     List(ftm, cpsCtx.monadContext.asTerm)
+                     List(cpsCtx.monadContext.asTerm,ftm)
                 ).asExpr
               case monadFailure: ImplicitSearchFailure =>
                 throw MacroError(s"Can't find appropriative monad for ${discardTerm.show}, ${monadFailure.explanation}  : ", p)

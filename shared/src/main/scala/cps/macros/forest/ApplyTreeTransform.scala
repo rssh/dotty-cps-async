@@ -214,7 +214,8 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                   // here we catch await, inserted by implicit conversion.
                   // this code is likey depends from implementation details of a compiler
                   // mb create compiler-level API ?
-                  withInlineBindings(owner, conv, runAwait(applyTerm, args.head, targs3.head.tpe,monadConversion, monadContext)(owner))
+                  withInlineBindings(owner, conv, 
+                    runAwait(applyTerm, args.head, targs3.head.tpe,monadConversion, monadContext)(owner))
        case conv@Inlined(_,_,
                  Lambda(List(xValDef),
                    Block(List(),Apply(Apply(TypeApply(obj3,targs3),List(x)),args1)))
@@ -784,6 +785,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         if (cpsCtx.flags.debugLevel >= 15)
             cpsCtx.log(s"buildApply: fun=${safeShow(fun)}")
             cpsCtx.log(s"buildApply: cpsFun.isSync=${cpsFun.isSync}, withShiftedLambda=${argsProperties.hasShiftedLambda}, inShiftedCallChain=${inShiftedCallChain}")
+        val origFun = fun
         val withAsync = argsProperties.hasAsync
         val applyTpe = applyTerm.tpe
         if (argsProperties.hasShiftedLambda)
@@ -804,11 +806,20 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
              case _ =>
                     cpsFun.syncOrigin match
                        case Some(fun) =>
-                          val applied = fun.appliedToArgss(argss)
-                          if (inShiftedCallChain)
-                             shiftedResultCpsTree(applyTerm, applied)(owner)
-                          else
-                             CpsTree.pure(owner,applied, isChanged=true)
+                          try
+                            val applied = fun.appliedToArgss(argss)
+                            if (inShiftedCallChain)
+                               shiftedResultCpsTree(applyTerm, applied)(owner)
+                            else
+                               CpsTree.pure(owner,applied, isChanged=true)
+                          catch
+                            case ex: Throwable =>
+                              println("Errror during apply:")
+                              ex.printStackTrace()
+                              println(s"fun = ${fun.show}")
+                              println(s"origFun = ${origFun.show}")
+                              println(s"applyTerm = ${applyTerm.show}")
+                              throw ex
                        case None =>
                           if (inShiftedCallChain)
                              val shifted = cpsFun.transformed

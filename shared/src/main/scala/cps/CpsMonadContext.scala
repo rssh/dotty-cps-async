@@ -23,7 +23,8 @@ trait CpsMonadContext[F[_]] {
    *   flatMap chains.
    */
    def monad: CpsMonad[F]
-  
+
+
   /**
    * adopt external monadic value to the current context.
    **/
@@ -149,6 +150,18 @@ trait CpsTryMonadInstanceContext[F[_]] extends CpsTryMonad[F] {
 @deprecated("use CpsTryMonadInstanceContext, CpsThrowMonadInstanceContext or CpsPureMonadInstanceContext instead", "0.17")
 trait CpsMonaInstanceContext[F[_]] extends CpsTryMonadInstanceContext[F]
 
+trait CpsAsyncMonadInstanceContext[F[_]] extends CpsAsyncMonad[F] with CpsTryMonadInstanceContext[F]
+
+trait CpsAsyncEffectMonadInstanceContext[F[_]] extends CpsAsyncEffectMonad[F] with CpsAsyncMonadInstanceContext[F]
+
+trait CpsConcurrentMonadInstanceContext[F[_]] extends CpsConcurrentMonad[F] with CpsAsyncMonadInstanceContext[F]
+
+trait CpsConcurrentEffectMonadInstanceContext[F[_]] extends CpsConcurrentEffectMonad[F]
+                                                       with CpsConcurrentMonadInstanceContext[F]
+                                                       with CpsAsyncEffectMonadInstanceContext[F] {
+
+}
+
 
 /**
  * Base trait of CpsContextMonad which provide `Ctx` as a monad context 
@@ -181,6 +194,7 @@ trait CpsTryContextMonad[F[_],Ctx <: CpsTryMonadContext[F]] extends CpsContextMo
     applyContext(c => op(c.asInstanceOf[Context]))
 
 }
+
 
 trait CpsConcurrentContextMonad[F[_], Ctx <: CpsTryMonadContext[F]] extends CpsConcurrentMonad[F] with CpsTryContextMonad[F, Ctx] {
 
