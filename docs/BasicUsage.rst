@@ -4,17 +4,17 @@ Dependency
 Sbt Example
 -----------
 
-The current prerelease is |0.9.16| for using with Scala |3.2.2|_.
+The current prerelease is |0.9.17| for using with Scala |3.3.0|_.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.16"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.17"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.16"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.17"
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
@@ -95,7 +95,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.15"
+  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.17"
 
 
 **Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_ and streaming frameworks like |Akka Streams|_ and |fs2|_. 
@@ -224,8 +224,8 @@ Yet one pair of names 'lift/unlift', used for example in the |monadless|_ librar
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
 
-.. |0.9.16| replace:: ``0.9.16``
-.. _0.9.16: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.16/
+.. |0.9.17| replace:: ``0.9.17``
+.. _0.9.17: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.17/
 
 .. /*to update*/ 
 
@@ -241,8 +241,8 @@ Yet one pair of names 'lift/unlift', used for example in the |monadless|_ librar
 .. |3.2.0| replace:: ``3.2.0``
 .. _3.2.0: https://github.com/lampepfl/dotty/releases/tag/3.2.0
 
-.. |3.2.2| replace:: ``3.2.2``
-.. _3.2.2: https://github.com/lampepfl/dotty/releases/tag/3.2.1
+.. |3.3.0| replace:: ``3.3.0``
+.. _3.3.0: https://github.com/lampepfl/dotty/releases/tag/3.3.0
 
 
 .. |Akka Streams| replace:: **Akka Streams**

@@ -60,23 +60,24 @@ The monad context is defined as a type inside |CpsMonad|_ :
       
 .. code-block:: scala
 
-    trait CpsMonadContext[F[_]] {
+    trait CpsTryMonadContext[F[_]] {
 
       /**
-       * adopt external monadic value to the current context.
+       * Return monad, where operations are intercepted with current context.
        **/
-      def adoptAwait[A](fa: F[A]): F[A]
+      def monad: CpsTryMonad[F]
  
     }
-
 
 
 As a practical example, let's consider adding a timeout to the plain Scala future.  
 I.e., let's think about how to build the monad ``FutureWithTimeout``, which will complete within a timeout or fire a 
 |TimeoutException|_. It's more or less clear how to combine a small |Future|_ with timeouts into one 
 (at this point, we can rename timeouts to deadlines), but what should we do when the control flow 
-is waiting for completing an external |Future|_ in |await|_? The answer is the usage of a monad context:  
-``adoptAwait`` can generate a promise, which will be filled in case of finishing ``f`` or elapsing timeout.  
+is waiting for completing an external |Future|_ in |await|_?
+
+The answer is the usage of a monad context: intercepted monadic operation can generate a promise,
+ which will be filled in case of finishing of origin underlaying operation  or elapsing timeout.
 
 See example |TestFutureWithDeadline.scala|_ for the implementation of such an approach.
 
