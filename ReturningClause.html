@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Non-local returns &#8212; dotty-cps-async 0.9.17-SNAPSHOT documentation</title>
+    <title>Non-local returns &#8212; dotty-cps-async 0.9.17 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="HighOrderFunctions.html" title="High-order functions."
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Non-local returns</a></li> 
       </ul>
     </div>  
@@ -45,8 +45,7 @@
             
   <section id="non-local-returns">
 <h1>Non-local returns<a class="headerlink" href="#non-local-returns" title="Permalink to this heading">¶</a></h1>
-<p>You can use <a class="reference external" href="https://scala-lang.org/api/3.x/scala/util/control/NonLocalReturns$.html">returning</a> clause inside async block as the same way
-as in plain scala:</p>
+<p>You can use <a class="reference external" href="https://scala-lang.org/api/3.x/scala/util/control/NonLocalReturns$.html">returning</a> clause inside async block just like in plain Scala:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">sourceWeights</span><span class="p">(</span><span class="n">item</span><span class="p">:</span><span class="nc">Item</span><span class="p">,</span><span class="w"> </span><span class="n">dataApi</span><span class="p">:</span><span class="nc">DataApi</span><span class="p">):</span><span class="nc">Future</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">   </span><span class="n">returning</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">        </span><span class="kd">val</span><span class="w"> </span><span class="n">sources</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="p">(</span><span class="n">dataApi</span><span class="p">.</span><span class="n">fetchSources</span><span class="p">(</span><span class="n">item</span><span class="p">))</span><span class="w"></span>
@@ -76,11 +75,28 @@ as in plain scala:</p>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
-<p>Now dotty-cps-async uses compile-time translation to avoid runtime overhead when this future is not used, so when using return
+<p>Dotty-cps-async uses compile-time translation to avoid runtime overhead when this future is not used, so when using return
 you should not hide catching <cite>NonFatal</cite> exceptions and <cite>throwReturn</cite> clauses from the <cite>async</cite> macro.</p>
 <p>If you want to change the function name for <cite>throwReturn</cite>, be sure that your version is <cite>transparent inline</cite>:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">transparent</span><span class="w"> </span><span class="k">inline</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">earlyReturn</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="n">t</span><span class="p">:</span><span class="nc">T</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="nc">ReturnThrowable</span><span class="p">[</span><span class="nc">T</span><span class="p">]):</span><span class="nc">Nothing</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
 <span class="w">  </span><span class="n">throwReturn</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Note, that non-local returns in Scala is deprecated.
+Instead better to use <a class="reference external" href="https://scala-lang.org/api/3.3.0/scala/util/boundary$.html">boundary/break</a> introduced in Scala 3.3, which is supported by dotty-cps-async out of the box.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">sourceWeights</span><span class="p">(</span><span class="n">item</span><span class="p">:</span><span class="nc">Item</span><span class="p">,</span><span class="w"> </span><span class="n">dataApi</span><span class="p">:</span><span class="nc">DataApi</span><span class="p">):</span><span class="nc">Future</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">   </span><span class="n">boundary</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kd">val</span><span class="w"> </span><span class="n">sources</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="p">(</span><span class="n">dataApi</span><span class="p">.</span><span class="n">fetchSources</span><span class="p">(</span><span class="n">item</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="kd">val</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sources</span><span class="p">.</span><span class="n">foldLeft</span><span class="p">(</span><span class="mf">0.0</span><span class="p">){</span><span class="w"> </span><span class="p">(</span><span class="n">weight</span><span class="p">,</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
+<span class="w">            </span><span class="kd">val</span><span class="w"> </span><span class="n">si</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="p">(</span><span class="n">dataApi</span><span class="p">.</span><span class="n">sourceInfo</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">item</span><span class="p">))</span><span class="w"></span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">si</span><span class="p">.</span><span class="n">isBlacklisted</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                </span><span class="n">break</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="n">weight</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">weight</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">weight</span><span class="w"></span>
+<span class="w">   </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 </section>
@@ -135,7 +151,7 @@ you should not hide catching <cite>NonFatal</cite> exceptions and <cite>throwRet
         <li class="right" >
           <a href="HighOrderFunctions.html" title="High-order functions."
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Non-local returns</a></li> 
       </ul>
     </div>

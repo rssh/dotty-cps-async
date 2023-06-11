@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Additional Features &#8212; dotty-cps-async 0.9.17-SNAPSHOT documentation</title>
+    <title>Additional Features &#8212; dotty-cps-async 0.9.17 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -18,7 +18,7 @@
     <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Random Notes" href="random-notes/index.html" />
+    <link rel="next" title="Migration from previous versions." href="Migration.html" />
     <link rel="prev" title="Runtime Await." href="RuntimeAwait.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -28,12 +28,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="random-notes/index.html" title="Random Notes"
+          <a href="Migration.html" title="Migration from previous versions."
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="RuntimeAwait.html" title="Runtime Await."
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>  
@@ -47,7 +47,7 @@
 <h1>Additional Features<a class="headerlink" href="#additional-features" title="Permalink to this heading">¶</a></h1>
 <section id="short-syntax-for-await">
 <h2>Short syntax for <code class="docutils literal notranslate"><span class="pre">await</span></code><a class="headerlink" href="#short-syntax-for-await" title="Permalink to this heading">¶</a></h2>
-<p>It can be helpful when monad or environment does not support automatic coloring, but the default <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> syntax is too heavy.  For this case, we define the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/syntax/package.scala"><code class="docutils literal notranslate"><span class="pre">unary_!</span></code></a> operator for use instead of <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.</p>
+<p>It can be helpful when the monad or environment does not support automatic coloring, but the default <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> syntax is too heavy.  In this case, we define the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/syntax/package.scala"><code class="docutils literal notranslate"><span class="pre">unary_!</span></code></a> operator to use instead of <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.</p>
 <p>Example:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nn">cps</span><span class="p">.</span><span class="nn">syntax</span><span class="p">.</span><span class="n">`unary_!`</span>
 
@@ -106,8 +106,8 @@ and included in our regression suite.</p>
   </div>
   <div>
     <h4>Next topic</h4>
-    <p class="topless"><a href="random-notes/index.html"
-                          title="next chapter">Random Notes</a></p>
+    <p class="topless"><a href="Migration.html"
+                          title="next chapter">Migration from previous versions.</a></p>
   </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
@@ -137,12 +137,12 @@ and included in our regression suite.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="random-notes/index.html" title="Random Notes"
+          <a href="Migration.html" title="Migration from previous versions."
              >next</a> |</li>
         <li class="right" >
           <a href="RuntimeAwait.html" title="Runtime Await."
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Additional Features</a></li> 
       </ul>
     </div>

@@ -21,6 +21,7 @@ User Manual
    MonadContexts
    RuntimeAwait
    Features
+   Migration
    random-notes/index.rst
    FAQ
    References

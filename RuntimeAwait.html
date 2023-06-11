@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Runtime Await. &#8212; dotty-cps-async 0.9.17-SNAPSHOT documentation</title>
+    <title>Runtime Await. &#8212; dotty-cps-async 0.9.17 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="MonadContexts.html" title="Monad Context"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Runtime Await.</a></li> 
       </ul>
     </div>  
@@ -47,7 +47,7 @@
 <h1>Runtime Await.<a class="headerlink" href="#runtime-await" title="Permalink to this heading">¶</a></h1>
 <p>Starting from JDK-19,  the JVM provides lightweight concurrency constructions for representing non-blocking computations in
 synchronous form.</p>
-<p>We can use those constructions for some monads to escape the need to write shifted variants of high-order functions and,
+<p>We can use those constructions for some monads, to escape the need to write shifted variants of high-order functions and,
 in some cases, work without the cps transformation of the code inside the <cite>async</cite> macro.</p>
 <p>To utilize these possibilities for your monad,  you should implement
 <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsRuntimeAwait.scala">CpsRuntimeAwait[F]</a> typeclass
@@ -58,8 +58,8 @@ Also,  declare  <cite>given cps.macro.flags.UseLoom.type</cite>  value to enable
 <p>Note that for most effect systems, the cps transformation is still beneficial because of performance reasons.
 When processing runtime awaits,  an effect interpreter should start all code thunks, including synchronous API usage,
 in the new virtual thread.
-Therefore, a hybrid mode, when effect interpretation is based on non-blocking code, and the system starts a virtual thread
-only for arguments of hight-order functions, can be more performant.</p>
+Therefore, an hybrid mode, where effect interpretation is based on non-blocking code, and the system starts a virtual thread
+only for arguments of high-order functions, can be more performant.</p>
 </section>
 
 
@@ -112,7 +112,7 @@ only for arguments of hight-order functions, can be more performant.</p>
         <li class="right" >
           <a href="MonadContexts.html" title="Monad Context"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Runtime Await.</a></li> 
       </ul>
     </div>

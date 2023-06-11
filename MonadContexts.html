@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Monad Context &#8212; dotty-cps-async 0.9.17-SNAPSHOT documentation</title>
+    <title>Monad Context &#8212; dotty-cps-async 0.9.17 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monad Context</a></li> 
       </ul>
     </div>  
@@ -69,12 +69,12 @@ In the introduction chapter, we have shown a simplified representation of the <a
 Take a look at the argument of the <code class="docutils literal notranslate"><span class="pre">InferAsyncArg.apply</span></code> method: <code class="docutils literal notranslate"><span class="pre">expr:</span> <span class="pre">C</span> <span class="pre">?=&gt;</span> <span class="pre">T</span></code>.
 This is a context function. The context parameter <code class="docutils literal notranslate"><span class="pre">C</span></code> is extracted from the monad definition.
 Inside <code class="docutils literal notranslate"><span class="pre">expr</span></code> the Scala 3 compiler makes an implicit instance of <code class="docutils literal notranslate"><span class="pre">C</span></code> available, which we can use to provide an internal monad API.</p>
-<p>The complete await signature lools like:</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">await</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="nc">G</span><span class="p">[</span><span class="n">_</span><span class="p">]](</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsAwaitabe</span><span class="p">[</span><span class="nc">F</span><span class="p">],</span><span class="w"> </span><span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">G</span><span class="p">])(</span><span class="n">expr</span><span class="p">:</span><span class="w"> </span><span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span><span class="w"></span>
+<p>The complete await signature looks like:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">await</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="nc">G</span><span class="p">[</span><span class="n">_</span><span class="p">]](</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsAwaitable</span><span class="p">[</span><span class="nc">F</span><span class="p">],</span><span class="w"> </span><span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">G</span><span class="p">])(</span><span class="n">expr</span><span class="p">:</span><span class="w"> </span><span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span><span class="w"></span>
 </pre></div>
 </div>
 <p>where <cite>F</cite> is a type of awaited wrapper and <cite>G</cite> monad in enclosing <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> block.</p>
-<p>Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like <a class="reference external" href="https://en.wikipedia.org/wiki/Structured_concurrency"><strong>structured concurrency</strong></a>.
+<p>Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions, but allows us to represent important industry cases, like <a class="reference external" href="https://en.wikipedia.org/wiki/Structured_concurrency"><strong>structured concurrency</strong></a>.
 Jokingly, we can say that our monad is close to the original Leibnic definition of monad in his work <a class="reference external" href="https://en.wikipedia.org/wiki/Monadology"><strong>Monadology</strong></a>, where each monad has unique qualities, not accessible from outside.</p>
 <p>The monad context is defined as a type inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a> :</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span><span class="w"> </span><span class="nc">CpsMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span><span class="w"> </span><span class="p">....</span><span class="w"></span>
@@ -86,12 +86,12 @@ Jokingly, we can say that our monad is close to the original Leibnic definition 
 </pre></div>
 </div>
 <p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadContext.scala#L11"><code class="docutils literal notranslate"><span class="pre">CpsMonadContext</span></code></a> provides the functionality to adopt awaiting another monadic expression into the current context.</p>
-<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span><span class="w"> </span><span class="nc">CpsMonadContext</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span><span class="w"> </span><span class="nc">CpsTryMonadContext</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">]]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 
 <span class="w">  </span><span class="cm">/**</span>
-<span class="cm">   * adopt external monadic value to the current context.</span>
+<span class="cm">   * Return monad, where operations are intercepted with current context.</span>
 <span class="cm">   **/</span><span class="w"></span>
-<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">adoptAwait</span><span class="p">[</span><span class="nc">A</span><span class="p">](</span><span class="n">fa</span><span class="p">:</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">A</span><span class="p">]):</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span><span class="w"></span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">monad</span><span class="p">:</span><span class="w"> </span><span class="nc">CpsTryMonad</span><span class="p">[</span><span class="nc">F</span><span class="p">]</span><span class="w"></span>
 
 <span class="p">}</span><span class="w"></span>
 </pre></div>
@@ -100,11 +100,14 @@ Jokingly, we can say that our monad is close to the original Leibnic definition 
 I.e., let’s think about how to build the monad <code class="docutils literal notranslate"><span class="pre">FutureWithTimeout</span></code>, which will complete within a timeout or fire a
 <a class="reference external" href="https://www.scala-lang.org/api/current/scala/concurrent/index.html#TimeoutException=java.util.concurrent.TimeoutException"><code class="docutils literal notranslate"><span class="pre">TimeoutException</span></code></a>. It’s more or less clear how to combine a small <a class="reference external" href="https://www.scala-lang.org/api/current/scala/concurrent/Future.html"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a> with timeouts into one
 (at this point, we can rename timeouts to deadlines), but what should we do when the control flow
-is waiting for completing an external <a class="reference external" href="https://www.scala-lang.org/api/current/scala/concurrent/Future.html"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a> in <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>? The answer is the usage of a monad context:
-<code class="docutils literal notranslate"><span class="pre">adoptAwait</span></code> can generate a promise, which will be filled in case of finishing <code class="docutils literal notranslate"><span class="pre">f</span></code> or elapsing timeout.</p>
+is waiting for completing an external <a class="reference external" href="https://www.scala-lang.org/api/current/scala/concurrent/Future.html"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a> in <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>?</p>
+<dl class="simple">
+<dt>The answer is the usage of a monad context: intercepted monadic operation can generate a promise,</dt><dd><p>which will be filled in case of finishing of origin underlaying operation  or elapsing timeout.</p>
+</dd>
+</dl>
 <p>See example <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/test/scala/cps/context/ftm/TestFutureWithDeadline.scala"><code class="docutils literal notranslate"><span class="pre">TestFutureWithDeadline.scala</span></code></a> for the implementation of such an approach.</p>
 <p>Note that this is one variant of the code organization approach.  Alternatively, we can signal to <code class="docutils literal notranslate"><span class="pre">f</span></code>,
-if we know that we are exclusively own <code class="docutils literal notranslate"><span class="pre">f</span></code> evaluation. This can be an approach for lazy effect.
+if we know that we  exclusively own <code class="docutils literal notranslate"><span class="pre">f</span></code> evaluation. This can be an approach for lazy effect.
 The design choice for possible solutions is quite large.</p>
 <p>For monad writers: as a general design rule, use monad context when you want to provide access to some API, which should be visible only inside a monad (i.e. inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>).  For trivial cases, when you don’t need a context API, you can mix <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/a6f2bfdf83f4ffb9985b455c57e867e3e9b8c9da/shared/src/main/scala/cps/CpsMonadContext.scala#L22"><code class="docutils literal notranslate"><span class="pre">CpsMonadInstanceContext</span></code></a> into your implementation of trait <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a>.
 For more advanced cases, we advise using the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/a6f2bfdf83f4ffb9985b455c57e867e3e9b8c9da/shared/src/main/scala/cps/CpsMonadContext.scala#L47"><code class="docutils literal notranslate"><span class="pre">CpsContextMonad</span></code></a> trait.</p>
@@ -161,7 +164,7 @@ For more advanced cases, we advise using the <a class="reference external" href=
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monad Context</a></li> 
       </ul>
     </div>

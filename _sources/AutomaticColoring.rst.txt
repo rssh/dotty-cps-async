@@ -102,7 +102,7 @@ Custom value discard
 
 .. index:: customValueDiscard
 
-During the writing of asynchronous code, typical developers’ mistakes are to forget to handle something connected with discarded values, like error processing or awaiting.  
+During the writing of asynchronous code,  a typical developers’ mistake is to forget to handle something connected with discarded values, like error processing or awaiting.
 
 ``cps.customValueDiscard`` limits the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types ``T``, for which it exists an implementation of a special |ValueDiscard[T]|_.
 
@@ -140,7 +140,7 @@ Here the developer forgot to wrap ``dryRun`` into |await|_.  But ``customValueDi
 
 .. index:: warnValueDiscard
 
-If you want to see warning instead error, you can import `warnValueDiscard` feature:
+If you want to see a warning instead of an error, you can import `warnValueDiscard` feature:
 
 .. code-block:: scala
 
@@ -148,7 +148,7 @@ If you want to see warning instead error, you can import `warnValueDiscard` feat
  import cps.warnValueDiscard
 
 
-Note that custom value discarding is automatically enabled for effect monads to prevent situations where discarding values drop branches in the computation flow. Let's look again at the code:
+Note that custom value discarding is automatically enabled for effect monads, to prevent situations where discarding values drop branches in the computation flow. Let's look again at the code:
 
 .. code-block:: scala
 

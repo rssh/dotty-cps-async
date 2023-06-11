@@ -32,16 +32,16 @@ Take a look at the argument of the ``InferAsyncArg.apply`` method: ``expr: C ?=>
 This is a context function. The context parameter ``C`` is extracted from the monad definition. 
 Inside ``expr`` the Scala 3 compiler makes an implicit instance of ``C`` available, which we can use to provide an internal monad API. 
 
-The complete await signature lools like:
+The complete await signature looks like:
 
 .. code-block:: scala
 
-  def await[F[_], T, G[_]](using CpsAwaitabe[F], CpsMonadContext[G])(expr: T) => F[T]
+  def await[F[_], T, G[_]](using CpsAwaitable[F], CpsMonadContext[G])(expr: T) => F[T]
 
 where `F` is a type of awaited wrapper and `G` monad in enclosing |async|_ block.
 
 
-Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions but allows us to represent important industry cases, like |structured concurrency|_.   
+Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions, but allows us to represent important industry cases, like |structured concurrency|_.
 Jokingly, we can say that our monad is close to the original Leibnic definition of monad in his work |Monadology|_, where each monad has unique qualities, not accessible from outside.
 
 The monad context is defined as a type inside |CpsMonad|_ :
@@ -60,28 +60,29 @@ The monad context is defined as a type inside |CpsMonad|_ :
       
 .. code-block:: scala
 
-    trait CpsMonadContext[F[_]] {
+    trait CpsTryMonadContext[F[_]] {
 
       /**
-       * adopt external monadic value to the current context.
+       * Return monad, where operations are intercepted with current context.
        **/
-      def adoptAwait[A](fa: F[A]): F[A]
+      def monad: CpsTryMonad[F]
  
     }
-
 
 
 As a practical example, let's consider adding a timeout to the plain Scala future.  
 I.e., let's think about how to build the monad ``FutureWithTimeout``, which will complete within a timeout or fire a 
 |TimeoutException|_. It's more or less clear how to combine a small |Future|_ with timeouts into one 
 (at this point, we can rename timeouts to deadlines), but what should we do when the control flow 
-is waiting for completing an external |Future|_ in |await|_? The answer is the usage of a monad context:  
-``adoptAwait`` can generate a promise, which will be filled in case of finishing ``f`` or elapsing timeout.  
+is waiting for completing an external |Future|_ in |await|_?
+
+The answer is the usage of a monad context: intercepted monadic operation can generate a promise,
+ which will be filled in case of finishing of origin underlaying operation  or elapsing timeout.
 
 See example |TestFutureWithDeadline.scala|_ for the implementation of such an approach.
 
 Note that this is one variant of the code organization approach.  Alternatively, we can signal to ``f``, 
-if we know that we are exclusively own ``f`` evaluation. This can be an approach for lazy effect.  
+if we know that we  exclusively own ``f`` evaluation. This can be an approach for lazy effect.
 The design choice for possible solutions is quite large.
 
 For monad writers: as a general design rule, use monad context when you want to provide access to some API, which should be visible only inside a monad (i.e. inside |await|_).  For trivial cases, when you don't need a context API, you can mix |CpsMonadInstanceContext|_ into your implementation of trait |CpsMonad|_.  
@@ -91,7 +92,7 @@ Also, you can notice the compatibility of this context with |monadic-reflection|
 
 
 .. ###########################################################################
-.. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
+.. ## Hyperlink definitions with text formatting (e.g. verbatim, bold)
 
 .. |async| replace:: ``async``
 .. _async: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>High-order functions. &#8212; dotty-cps-async 0.9.17-SNAPSHOT documentation</title>
+    <title>High-order functions. &#8212; dotty-cps-async 0.9.17 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>  
@@ -46,12 +46,12 @@
   <section id="high-order-functions">
 <h1>High-order functions.<a class="headerlink" href="#high-order-functions" title="Permalink to this heading">¶</a></h1>
 <p><a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> supports the automatic transformation of high-order functions, where the lambda expression argument contains <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.</p>
-<p>For example, assume an HTTP client provides the following interface to fetch some data from a list of remote servers.</p>
+<p>For example, assume an HTTP client providing the following interface to fetch some data from a list of remote servers.</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span><span class="w"> </span><span class="nc">HttpClient</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">fetchData</span><span class="p">(</span><span class="n">url</span><span class="p">:</span><span class="w"> </span><span class="nc">String</span><span class="p">):</span><span class="w"> </span><span class="nc">Future</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span><span class="w"></span>
 </pre></div>
 </div>
-<p>Then we can fetch data from all servers just by using <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> in the <a class="reference external" href="https://www.scala-lang.org/api/current/scala/collection/immutable/List.html#map[B](f:A=%3EB):List[B]"><code class="docutils literal notranslate"><span class="pre">map</span></code></a> argument:</p>
+<p>Then, we can fetch data from all servers just by using <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> in the <a class="reference external" href="https://www.scala-lang.org/api/current/scala/collection/immutable/List.html#map[B](f:A=%3EB):List[B]"><code class="docutils literal notranslate"><span class="pre">map</span></code></a> argument:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">urls</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="w"> </span><span class="n">await</span><span class="p">(</span><span class="n">httpClient</span><span class="p">.</span><span class="n">fetchData</span><span class="p">(</span><span class="n">_</span><span class="p">))</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
 </pre></div>
 </div>
@@ -60,7 +60,7 @@
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">urls</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="w"> </span><span class="n">httpClient</span><span class="p">.</span><span class="n">fetchData</span><span class="p">(</span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="n">await</span><span class="p">(</span><span class="n">_</span><span class="p">))</span><span class="w"></span>
 </pre></div>
 </div>
-<p>For handling awaits inside high-order functions, dotty-cps-async use different strategies in dependency of execution runtime capabilities.</p>
+<p>For handling awaits inside high-order functions, dotty-cps-async uses different strategies in dependency of execution runtime capabilities.</p>
 <section id="async-shift-substitution">
 <h2>Async shift substitution.<a class="headerlink" href="#async-shift-substitution" title="Permalink to this heading">¶</a></h2>
 <p>The most general way is compile-time substitution: during async transform, <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> substitutes method <a class="reference external" href="https://www.scala-lang.org/api/current/scala/collection/immutable/List.html#map[B](f:A=%3EB):List[B]"><code class="docutils literal notranslate"><span class="pre">map</span></code></a> with signature <code class="docutils literal notranslate"><span class="pre">List[A].map[B](f:</span> <span class="pre">A</span> <span class="pre">=&gt;</span> <span class="pre">B)</span></code> to</p>
@@ -81,7 +81,7 @@
 <h2>Loom-based runtime await.<a class="headerlink" href="#loom-based-runtime-await" title="Permalink to this heading">¶</a></h2>
 <p>JDK-19 includes a set of interfaces (project Loom) that allows execution of code in virtual threads,
 where runtime blocking wait is not blocking from OS view:  real thread can execute tasks from other virtual threads during the wait.
-In this case, we don’t need to substitute a high-order function but transform instead change the function argument to the original form
+In this case, we don’t need to substitute a high-order function but change instead the function argument to the original form,
 if our monad implements the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsRuntimeAwait.scala">CpsRuntimeAwait</a>  typeclass.</p>
 <p>This experimental feature should be enabled by declaring the implicit value of cps.macros.flags.UsingLoomAwait</p>
 </section>
@@ -90,7 +90,7 @@ if our monad implements the <a class="reference external" href="https://github.c
 <section id="functional-interface">
 <h3>Functional interface.<a class="headerlink" href="#functional-interface" title="Permalink to this heading">¶</a></h3>
 <p>Suppose you want to make high-order methods of your class <code class="docutils literal notranslate"><span class="pre">C</span></code> be able to accept lambda functions with <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.
-For that purpose you have to implement the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/AsyncShift.scala#L11"><code class="docutils literal notranslate"><span class="pre">given</span> <span class="pre">AsyncShift[C]</span></code></a> type class with a shifted version of your high-order methods.
+For that purpose, you have to implement the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/AsyncShift.scala#L11"><code class="docutils literal notranslate"><span class="pre">given</span> <span class="pre">AsyncShift[C]</span></code></a> type class with a shifted version of your high-order methods.
 Such a ‘shifted’ version has an additional type parameter <code class="docutils literal notranslate"><span class="pre">F[_]</span></code> and an additional list of arguments, inserted first, containing the original object instance and an appropriate <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad[F]</span></code></a> instance.</p>
 <p>Parameters should be changed in the following way:</p>
 <ul class="simple">
@@ -119,7 +119,7 @@ Such a ‘shifted’ version has an additional type parameter <code class="docut
 </section>
 <section id="object-oriented-interface">
 <h3>Object-oriented interface.<a class="headerlink" href="#object-oriented-interface" title="Permalink to this heading">¶</a></h3>
-<p>In some cases, we use classes – defined in an object-oriented manner – with private data.  If we wants a class to provide an API for <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a>, then we can do this without breaking encapsulation. What is needed - to implement an async-shifted version of the function inside our class:</p>
+<p>In some cases, we use classes – defined in an object-oriented manner – with private data.  If we want a class to provide an API for <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a>, then we can do this without breaking encapsulation. What is needed - to implement an async-shifted version of the function inside our class:</p>
 <p>Example:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MyIntController</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="k">private</span><span class="w"> </span><span class="kd">var</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
@@ -152,7 +152,7 @@ Such a ‘shifted’ version has an additional type parameter <code class="docut
 <span class="p">}</span><span class="w"> </span><span class="k">yield</span><span class="w"> </span><span class="n">item</span><span class="w"></span>
 </pre></div>
 </div>
-<p>Here usual semantics of <a class="reference external" href="https://www.scala-lang.org/api/current/scala/collection/immutable/List.html#withFilter(p:A=%3EBoolean):scala.collection.WithFilter[A,CC]"><code class="docutils literal notranslate"><span class="pre">withFilter</span></code></a> assume that we iterate over <code class="docutils literal notranslate"><span class="pre">urls</span></code> only once.  But if we translate this expression according to the standard rules, we will receive two passes: one pass in async <code class="docutils literal notranslate"><span class="pre">withFilter</span></code> and the second pass in <code class="docutils literal notranslate"><span class="pre">flatMap</span></code>.</p>
+<p>Here, the usual semantics of <a class="reference external" href="https://www.scala-lang.org/api/current/scala/collection/immutable/List.html#withFilter(p:A=%3EBoolean):scala.collection.WithFilter[A,CC]"><code class="docutils literal notranslate"><span class="pre">withFilter</span></code></a> assume that we iterate over <code class="docutils literal notranslate"><span class="pre">urls</span></code> only once.  But if we translate this expression according to the standard rules, we will receive two passes: one pass in async <code class="docutils literal notranslate"><span class="pre">withFilter</span></code> and the second pass in <code class="docutils literal notranslate"><span class="pre">flatMap</span></code>.</p>
 <p>To perform the iteration once, we translate <code class="docutils literal notranslate"><span class="pre">withFilter</span></code> not to <code class="docutils literal notranslate"><span class="pre">F[WithFilter]</span></code> but to a substituted type <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/runtime/IterableAsyncShift.scala#L420"><code class="docutils literal notranslate"><span class="pre">DelayedWithFilter</span></code></a>, which holds the received predicate and delays actual evaluation upon the call of the next operation in the chain.</p>
 <p>The implementation of class <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/runtime/IterableAsyncShift.scala#L420"><code class="docutils literal notranslate"><span class="pre">DelayedWithFilter</span></code></a> looks like:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">DelayedWithFilter</span><span class="p">[</span><span class="nc">F</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="w"> </span><span class="nc">A</span><span class="p">,</span><span class="w"> </span><span class="nc">C</span><span class="p">[</span><span class="nc">X</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="nc">Iterable</span><span class="p">[</span><span class="nc">X</span><span class="p">],</span><span class="w"> </span><span class="nc">CA</span><span class="w"> </span><span class="o">&lt;:</span><span class="w"> </span><span class="nc">C</span><span class="p">[</span><span class="nc">A</span><span class="p">]](</span><span class="w"></span>
@@ -179,7 +179,7 @@ Such a ‘shifted’ version has an additional type parameter <code class="docut
 </pre></div>
 </div>
 <p>I.e., in the delayed variant, all original methods should collect operations into the next delayed object or perform an actual batched call.
-Also, we have the method <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/runtime/IterableAsyncShift.scala#L427"><code class="docutils literal notranslate"><span class="pre">_finishChain</span></code></a>,  which is called when we have no next call in the chain; an example of such a case is <code class="docutils literal notranslate"><span class="pre">val</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c.withFilter(p)</span></code>.</p>
+We also  have the method <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/runtime/IterableAsyncShift.scala#L427"><code class="docutils literal notranslate"><span class="pre">_finishChain</span></code></a>,  which is called when we have no next call in the chain; an example of such a case is <code class="docutils literal notranslate"><span class="pre">val</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">c.withFilter(p)</span></code>.</p>
 <p>By convention, the substituted type should be derived from trait <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/runtime/CallChainAsyncShiftSubst.scala#L13"><code class="docutils literal notranslate"><span class="pre">CallChainAsyncShiftSubst[F,</span> <span class="pre">T,</span> <span class="pre">FT]</span></code></a>.</p>
 <p>This structure has a nice categorical interpretation. If you are curious about that, read details in <a class="reference internal" href="random-notes/AsyncSubstCategoricalInterpretation.html#categorical-interpretation-for-callchainasyncsubst"><span class="std std-ref">Categorical interpretation for substitutions in async call chains:</span></a>.</p>
 </section>
@@ -199,12 +199,12 @@ Also, we have the method <a class="reference external" href="https://github.com/
 <span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">mapAsync</span><span class="p">(</span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="nc">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">F</span><span class="p">[</span><span class="nc">B</span><span class="p">]):</span><span class="w"> </span><span class="nc">ReadChannel</span><span class="p">[</span><span class="nc">F</span><span class="p">,</span><span class="w"> </span><span class="nc">B</span><span class="p">]</span><span class="w"></span>
 </pre></div>
 </div>
-<p>Also we can see that our channel structure is already build on top of <code class="docutils literal notranslate"><span class="pre">F[_]</span></code>, so it is not necessary to pass <code class="docutils literal notranslate"><span class="pre">F</span></code> to method parameter.</p>
-<p>For convenience <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> supports both naming variants of <code class="docutils literal notranslate"><span class="pre">mapAsync</span></code>: camelCase <code class="docutils literal notranslate"><span class="pre">mapAsync</span></code> and snake_case <code class="docutils literal notranslate"><span class="pre">map_async</span></code>.</p>
+<p>Also, we can see that our channel structure is already build on top of <code class="docutils literal notranslate"><span class="pre">F[_]</span></code>, so it is not necessary to pass <code class="docutils literal notranslate"><span class="pre">F</span></code> to method parameter.</p>
+<p>For convenience, <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> supports both naming variants of <code class="docutils literal notranslate"><span class="pre">mapAsync</span></code>: camelCase <code class="docutils literal notranslate"><span class="pre">mapAsync</span></code> and snake_case <code class="docutils literal notranslate"><span class="pre">map_async</span></code>.</p>
 <p>We propose to use the following convention when naming such methods:</p>
 <ul class="simple">
 <li><p>use <code class="docutils literal notranslate"><span class="pre">method_async</span></code> when the async method will unlikely be called directly by the programmer and will be used only for substitution in high-order function;</p></li>
-<li><p>use <code class="docutils literal notranslate"><span class="pre">methodAsync</span></code> when we expect that developer can use this method directly along with cps substitution.</p></li>
+<li><p>use <code class="docutils literal notranslate"><span class="pre">methodAsync</span></code> when we expect that the developer can use this method directly along with cps substitution.</p></li>
 </ul>
 </section>
 <section id="async-high-order-functional-interfaces">
@@ -283,7 +283,7 @@ Also, we have the method <a class="reference external" href="https://github.com/
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>
