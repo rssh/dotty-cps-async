@@ -47,7 +47,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         Compile / doc / scalacOptions := Seq("-groups",  
                 "-source-links:shared=github://rssh/dotty-cps-async/master#shared",
                 "-source-links:jvm=github://rssh/dotty-cps-async/master#jvm"),
-        libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
+        libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
         mimaPreviousArtifacts := Set("com.github.rssh" %% "dotty-cps-async" % "0.9.9")
     ).jsSettings(
         scalaJSUseMainModuleInitializer := true,
