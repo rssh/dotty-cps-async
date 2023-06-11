@@ -1,6 +1,7 @@
 package cpstest
 
-import cps._
+import scala.annotation.experimental
+import cps.*
 import cps.monads.{*,given}
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -9,6 +10,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.ScheduledExecutorService
 
 
+@experimental
 object Test11m0 {
 
 

@@ -1,5 +1,6 @@
 package cpstest
 
+import scala.annotation.experimental
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -7,6 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import cps.*
 import cps.monads.{ *, given }
 
+@experimental
 object Test8m1 {
   
   def syncLoop(url: String)(using CpsDirect[Future]): String =

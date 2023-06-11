@@ -2,11 +2,12 @@ package cpstest
 
 import cps.*
 import cps.monads.{*,given}
+import scala.annotation.experimental
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
 
-
+@experimental
 object Example3 {
 
     def fetch(x:String)(using CpsDirect[Future]): String =

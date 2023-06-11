@@ -1,13 +1,15 @@
 package cpstest
 
+
 import cps._
+import scala.annotation.experimental
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import java.util.concurrent.ScheduledExecutorService
 
-
+@experimental
 object Test11m1 {
 
   val scheduledExecutorService = ScheduledExecutorService.newScheduledThreadPool(1)

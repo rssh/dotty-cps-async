@@ -2,7 +2,9 @@ package cpstest.s4.m1
 
 import cps._
 import cps.monads.{*,given}
+import scala.annotation.experimental
 
+@experimental
 object Test4m1 {
 
   def pure2[F[_]](x:Int)(using CpsDirect[F]): Int =

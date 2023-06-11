@@ -1,11 +1,13 @@
 package cpstest
 
+import scala.annotation.experimental
 import cps.*
 import cps.monads.{*,given}
 
 import testUtil.*
 
 
+@experimental
 object Test9m5_2 {
 
   var finallyWasRun=false

@@ -1,5 +1,6 @@
 package cpstest
 
+import scala.annotation.experimental
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -7,7 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import cps.*
 import cps.monads.{*,given}
 
-
+@experimental
 object Test6m1 {
 
   def fetch(url: String, errFlag: Boolean)(using CpsDirect[Future]): String =

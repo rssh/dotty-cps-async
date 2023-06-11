@@ -1,5 +1,6 @@
 package cpstest
 
+import scala.annotation.experimental
 import cps.*
 import cps.monads.{*,given}
 import cps.plugin.annotation.CpsDebugLevel
@@ -7,6 +8,7 @@ import cps.plugin.annotation.CpsDebugLevel
 import testUtil.*
 
 //@CpsDebugLevel(20)
+@experimental
 object Test10m1 {
 
   def fun1(x:String)(using CpsDirect[FreeMonad]): Int = {

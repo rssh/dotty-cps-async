@@ -1,7 +1,7 @@
 package cpstest
 
-
-import cps._
+import scala.annotation.*
+import cps.*
 
 sealed trait MyList[+A] {
 
@@ -37,6 +37,7 @@ import cps._
 import cps.monads.{*,given}
 
 
+@experimental
 object MyListExample {
 
   object network {

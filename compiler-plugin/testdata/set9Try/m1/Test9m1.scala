@@ -1,10 +1,12 @@
 package cpstest
 
+import scala.annotation.experimental
 import cps.*
 import cps.monads.{*,given}
 
 import testUtil.*
 
+@experimental
 object Test9m1 {
 
   def simpleTry(x:String)(using CpsDirect[FreeMonad]):Either[String,Int] = {

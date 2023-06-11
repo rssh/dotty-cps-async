@@ -1,11 +1,13 @@
 package cpstest
 
+import scala.annotation.experimental
 import cps.*
 import cps.monads.{*,given}
 import cps.plugin.annotation.CpsDebugLevel
 
 import testUtil.*
 
+@experimental
 @CpsDebugLevel(20)
 object Test10m2 {
 

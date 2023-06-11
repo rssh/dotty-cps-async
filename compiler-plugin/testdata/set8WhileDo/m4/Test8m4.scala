@@ -1,5 +1,6 @@
 package cpstest
 
+import scala.annotation.*
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -7,7 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import cps.*
 import cps.monads.{ *, given }
 
-
+@experimental
 object Test8m4 {
   
   def asyncCheck(i: Int)(using CpsDirect[Future]): Boolean = i < 3

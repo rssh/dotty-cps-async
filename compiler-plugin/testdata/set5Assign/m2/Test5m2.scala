@@ -1,5 +1,6 @@
 package cpstest
 
+import scala.annotation.*
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,6 +11,7 @@ import cps.monads.{*,given}
 
 //@cps.plugin.annotation.CpsDebugLevel(15)
 //TODO:  the samw with some code in testFun after assingment.
+@experimental
 object Test5m2 {
 
   class X{

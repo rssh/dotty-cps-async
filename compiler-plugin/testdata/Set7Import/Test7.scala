@@ -1,5 +1,6 @@
 package cpstest
 
+import scala.annotation.experimental
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -11,6 +12,7 @@ object Hidded {
   val x = 1
 }
 
+@experimental
 object Test7 {
 
   def direct[F[_],A](a:A)(using CpsDirect[F]):A = a

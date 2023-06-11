@@ -1,8 +1,12 @@
 package cpstest.s4.m2
 
+import scala.annotation.experimental
+
 import cps._
 import cps.monads.{*,given}
 
+
+@experimental
 object Test4m2 {
 
   def direct1[A,F[_]](a:A): CpsDirect[F] ?=> A = a

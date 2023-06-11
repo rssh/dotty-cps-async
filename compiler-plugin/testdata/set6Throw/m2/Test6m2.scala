@@ -1,5 +1,6 @@
 package cpstest
 
+import scala.annotation.experimental
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -8,6 +9,7 @@ import cps.*
 import cps.monads.{*,given}
 
 
+@experimental
 object Test6m2 {
 
   def directMessage(using CpsDirect[Future]): String =
