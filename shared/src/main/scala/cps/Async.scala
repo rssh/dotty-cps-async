@@ -17,6 +17,19 @@ import scala.compiletime._
 def await[F[_],T,G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMonadConversion[F,G]): T = ???
 
 /**
+ * Pseudofunction, which can be used inside async block or in function with CpsDirect[F] context parameter, to 'asynchronize computation' (i.e. receive value of `F[T]` from `t:FT`).
+ * The main usage is in direct mode, where all computations are 'awaited' by default. Inside async block can be viewed as empty wrapper.
+ * @param t - expression in direct mode
+ * @param ctx - Monad context
+ * @tparam F - monad
+ * @tparam T - type of expression
+ * @return - <code>t</code> expression represented in monadic form
+ */
+@compileTimeOnly("asynchronized should be inside async block")
+def asynchronized[F[_],T](t: T)(using ctx: CpsMonadContext[F]): F[T] = ???
+
+
+/**
  * async block, which can contains awaits.
  * better look on this as the first part of the next signature:
  * ```
@@ -27,9 +40,6 @@ def await[F[_],T,G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMo
  **/
 transparent inline def async[F[_]](using am: CpsMonad[F]) =
    macros.Async.InferAsyncArg(using am)
-
-//transparent inline def async[F[_]](using am: CpsTryMonad[F]) =
-//   macros.Async.InferAsyncArg1(using am)
 
 
 /**
@@ -44,3 +54,6 @@ transparent inline def reify[F[_]](using am: CpsMonad[F]) =
 transparent inline def reflect[F[_],T,G[_]](f: F[T])(using inline ctx: CpsMonadContext[G], inline conv: CpsMonadConversion[F,G]): T =
    await[F,T,G](f)
 
+
+transparent inline def reifed[F[_],T](t: T)(using inline ctx: CpsMonadContext[F]): F[T] =
+   asynchronized[F,T](t)

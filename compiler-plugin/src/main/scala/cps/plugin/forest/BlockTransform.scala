@@ -18,14 +18,16 @@ object BlockTransform {
       case Block((ddef: DefDef)::Nil, closure: Closure)  if ddef.symbol == closure.meth.symbol =>
         // TODO:
         //   if we here, this is not an argument of function.
+        Log.trace(s"BlockTransform: lambda",nesting)
         val cpsBody = {
           val ddefCtx = summon[Context].withOwner(ddef.symbol)
           val tctx = summon[CpsTopLevelContext]
           val ddefRhs = ddef.rhs(using ddefCtx)
-          RootTransform(ddefRhs, ddef.symbol, nesting+1)(using ddefCtx, tctx.copy(settings = tctx.settings.copy(debugLevel = 15)))
+          RootTransform(ddefRhs, ddef.symbol, nesting+1)(using ddefCtx, tctx)
         }
         LambdaCpsTree(term, owner, ddef, cpsBody)
       case Block(Nil, last) =>
+        Log.trace(s"BlockTransform: empty block",nesting)
         val lastCps = RootTransform(last, owner,  nesting+1)
         val inBlock = lastCps.unpure match
           case None =>

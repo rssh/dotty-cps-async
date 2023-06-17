@@ -158,12 +158,82 @@ object InlinedTransform {
 
   }
 
+  object InlinedAsyncCall {
+
+    def unapply(tree:Inlined)(using Context, CpsTopLevelContext): Option[Tree] = {
+      // This can depends from the compiler implementation.
+      //  Note, that expected naive Inlined(Apply(TypeApply("async"),...) is not here.
+      tree.call match
+        case id: Ident =>
+           if (id.symbol == Symbols.requiredClass("cps.macros.Async$"))
+             tree.expansion match
+               case Apply(TypeApply(sel@Select(obj@Select(Ident(inferArgCn), amCn),method), targs), args)
+                 if (method == "apply".toTermName  &&
+                   inferArgCn == "InferAsyncArg_this".toTermName &&
+                   amCn == "am".toTermName
+                 ) =>
+                 println("sel.symbol.fullName="+sel.symbol.fullName)
+                 println("obj.symbol.fullName="+obj.symbol.fullName)
+                 obj.tpe.widen match
+                   case AppliedType(tfun, targs) =>
+                     println(s"InlinedAsyncCall: obj.tpe.widen is AppliedType")
+                     val cpsMonadModule = Symbols.requiredModule("cps.CpsMonad")
+                     val auxMember = cpsMonadModule.requiredType("Aux")
+                     println(s"InlinedAsyncCall: auxMember=${auxMember}")
+                     println(s"InlinedAsyncCall: tsym.symbol==CpsMonad_d.Aux =${tfun.typeSymbol == Symbols.requiredClass("cps.CpsMonad$.Aux")}")
+                     println(s"InlinedAsyncCall: obj.tpe.widen.typeSymbol = ${obj.tpe.widen.typeSymbol}")
+                     println(s"InlinedAsyncCall: obj.tpe.widen.typeSymbol.owner = ${obj.tpe.widen.typeSymbol.owner}")
+                     println(s"InlinedAsyncCall: obj.tpe.widen.isAux = ${obj.tpe.widen.typeSymbol == auxMember}")
+
+                     println(s"InlinedAsyncCall: tfun.typeSymbol==Aux = ${tfun.typeSymbol == auxMember}")
+                     if (tfun.typeSymbol == auxMember) {
+                       // TODO:  check types
+                       val internalMonadType = targs(0)
+                       val internalContextType = targs(1)
+                       if !(internalMonadType =:= summon[CpsTopLevelContext].monadType) then
+                         throw CpsTransformException(s"Type mismatch - nested async should share one monad, we have ${internalMonadType.show} and ${summon[CpsTopLevelContext].monadType.show}", tree.srcPos)
+                       Some(tree.expansion)
+                     } else
+                       None
+                   case _ =>
+                     None
+               case Block((ddef: DefDef)::Nil, closure: Closure)  if ddef.symbol == closure.meth.symbol =>
+                 println(s"InlinedAsyncCall: Lambda in expansion")
+                 None
+               case _ =>
+                 None
+           else {
+             None
+           }
+        case _ => None
+    }
+
+  }
+
+  object ContextLambda {
+
+    def unapply(tree:Tree)(using Context): Option[DefDef] = tree match
+      case Inlined(call,Nil,expansion) =>
+        unapply(expansion)
+      case Block((ddef: DefDef)::Nil, closure: Closure)  if ddef.symbol == closure.meth.symbol =>
+        Some(ddef)
+      case _ => None
+
+  }
+
   def apply(inlinedTerm: Inlined, owner: Symbol,  nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
-     if (inlinedTerm.bindings.isEmpty) {
-        RootTransform(inlinedTerm.expansion, owner, nesting+1)
-     } else {
-        applyNonemptyBindings(inlinedTerm, owner,  nesting)
-     }
+    Log.trace(s"InlinedTransform: inlinedTerm.call=${inlinedTerm.call.show}",nesting)
+    Log.trace(s"InlinedTransform: inlinedTerm.call.tree=${inlinedTerm.call}", nesting)
+    inlinedTerm match
+       case InlinedAsyncCall(tree) =>
+          // by definition of async, which return F[T]
+          Log.trace(s"InlinedTransform: inlinedTerm.call handled, result=${inlinedTerm.show}",nesting)
+          CpsTree.pure(inlinedTerm,owner,inlinedTerm)
+       case _ =>
+        if (inlinedTerm.bindings.isEmpty) then
+            RootTransform(inlinedTerm.expansion, owner, nesting+1)  // TODO: add inlined to reporting ? .withSpan(inlinedTerm.span)
+        else
+            applyNonemptyBindings(inlinedTerm, owner,  nesting)
   }
 
   def applyNonemptyBindings(inlinedTerm: Inlined, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
