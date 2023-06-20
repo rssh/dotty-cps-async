@@ -31,17 +31,17 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSym
   //}
 
   override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = {
-     //println(s"transformTemplate: ${tree.symbol.name}, ${tree.symbol.name.mangledString}, ${tree.symbol.name.debugString}")
-
-     var newMethods = List.empty[DefDef]
-     for(tree <- tree.body if tree.symbol.is(Flags.Method) /*&& isHightOrder() && generateCps */) {
+    // println(s"transformTemplate: ${tree.symbol.name}, ${tree.symbol.name.mangledString}, ${tree.symbol.name.debugString}")
+    val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
+    var newMethods      = List.empty[DefDef]
+    for (
+      tree <- tree.body
+      if tree.symbol.is(Flags.Method) /*&& isHightOrder() && generateCps */
+    )
        tree match
-         case fun: DefDef if (!fun.symbol.isAnonymousFunction)  =>
-           //println(s"  ${fun.symbol.name}   ${tree.symbol.fullName}")
-           if (fun.symbol.name.debugString == "myFun") {
-             // do something
-             println("we see myFun, so let's add new method")
-             val newFunName = (fun.symbol.name.debugString+"$cps").toTermName
+        case fun: DefDef
+            if (!fun.symbol.isAnonymousFunction &&
+              !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
              val newFunSymbol =
                Symbols.newSymbol(fun.symbol.owner, newFunName,
                                 fun.symbol.flags|Flags.Synthetic,
