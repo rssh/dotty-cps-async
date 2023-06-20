@@ -1,5 +1,5 @@
 // CPS Transform expression building block
-// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021
+// (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021, 2022, 2023
 package cps.macros
 
 import scala.quoted._

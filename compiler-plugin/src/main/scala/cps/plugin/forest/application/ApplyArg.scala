@@ -23,6 +23,7 @@ sealed trait ApplyArg {
 
     def isAsync: Boolean
     def isLambda: Boolean
+    def isAsyncLambda: Boolean
     def isDirectContext: Boolean
 
     def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)]
@@ -57,6 +58,7 @@ object ApplyArg {
                 println(s"Failed term: ${expr}")
             throw ex
         }
+        Log.trace(s"ApplyArg: ${expr.show} => ${cpsExpr.show}", nesting)
         if (isByName) then
           ByNameApplyArg(paramName, paramType, cpsExpr, isDirectContext)
         else
@@ -76,7 +78,7 @@ object ApplyArg {
                     val optRhs =  cpsExpr.unpure
                     val valDef =  ValDef(sym.asTerm, optRhs.getOrElse(EmptyTree).changeOwner(cpsExpr.owner, sym))
                     PlainApplyArg(paramName,paramType.widen,cpsExpr,Some(valDef), isDirectContext)
-    Log.trace(s"creating arg for expr: ${expr.show}, resut=${retval}", nesting)
+    Log.trace(s"creating arg for expr: ${expr.show}, resut=${retval.show}", nesting)
     retval
   }
 
@@ -93,6 +95,10 @@ sealed trait ExprApplyArg extends ApplyArg {
   override def isLambda = expr.asyncKind match
                             case AsyncKind.AsyncLambda(internal) => true
                             case _ => false
+
+  override def isAsyncLambda: Boolean = expr.asyncKind match
+    case AsyncKind.AsyncLambda(internal) => internal != AsyncKind.Sync
+    case _ => false
 
 }
 
@@ -121,15 +127,11 @@ case class PlainApplyArg(
    **/
    override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree =
     import AsyncKind.*
-    println(s"!exprInCall(${expr}), callMode=${callMode}")
-    expr match
-      case LambdaCpsTree(origin,owner,originDefDef,cpsBody) =>
-        println(s"!exprInCall: origin=${origin.show}")
-        println(s"!exprInCall: originDefDef=${originDefDef.show}")
-      case _ =>
+    println(s"!exprInCall(${expr.show}), callMode=${callMode}")
     expr.asyncKind match
       case Sync => expr.unpure match
-        case Some(tree) => 
+        case Some(tree) =>
+          println(s"!exprInCall: unpure=${tree.show}")
           // TODO:
           tree
         case None => throw CpsTransformException("Impossibke: syn expression without unpure",expr.origin.srcPos)
@@ -138,19 +140,22 @@ case class PlainApplyArg(
         if (callMode == ApplyArgCallMode.ASYNC_SHIFT) then
           expr.transformed
         else
-          optRuntimeAwait match
-            case Some(runtimeAwait) =>
-              val withRuntimeAwait = expr.applyRuntimeAwait(runtimeAwait)
-              withRuntimeAwait.unpure match
-                case Some(tree) => tree
+          expr.unpure match
+            case Some(tree) => tree
+            case None =>
+              optRuntimeAwait match
+                case Some(runtimeAwait) =>
+                  val withRuntimeAwait = expr.applyRuntimeAwait(runtimeAwait)
+                  withRuntimeAwait.unpure match
+                    case Some(tree) => tree
+                    case None =>
+                      throw CpsTransformException(s"Can't transform function via RuntimeAwait",expr.origin.srcPos)
                 case None =>
-                  throw CpsTransformException(s"Can't transform function via RuntimeAwait",expr.origin.srcPos)
-            case None => 
-              throw CpsTransformException(s"Can't transform function (both shioft and runtime-awaif for ${summon[CpsTopLevelContext].monadType} are not found)", expr.origin.srcPos)
+                  throw CpsTransformException(s"Can't transform function (both shioft and runtime-awaif for ${summon[CpsTopLevelContext].monadType} are not found)", expr.origin.srcPos)
 
 
   override def show(using Context): String = {
-    s"Plain(${expr.origin.show})"
+    s"Plain(${expr.show})"
   }
 
 }
@@ -166,6 +171,8 @@ case class RepeatApplyArg(
   override def isAsync = elements.exists(_.isAsync)
 
   override def isLambda = elements.exists(_.isLambda)
+
+  override def isAsyncLambda: Boolean = elements.exists(_.isAsyncLambda)
 
   override def isDirectContext: Boolean = elements.exists(_.isDirectContext)
 
@@ -202,6 +209,8 @@ case class ByNameApplyArg(
 ) extends ExprApplyArg  {
 
   override def isLambda = true
+
+  override def isAsyncLambda: Boolean = expr.asyncKind != AsyncKind.Sync
 
   override def flatMapsBeforeCall(using Context) = Seq.empty
 
@@ -285,6 +294,9 @@ case class ErasedApplyArg(
    
   def isLambda: Boolean =
     false
+
+  override def isAsyncLambda: Boolean =
+     false
 
   def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] =
     Seq.empty

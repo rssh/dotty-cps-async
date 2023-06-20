@@ -25,7 +25,7 @@ case class ApplyTermArgList(
   args: List[ApplyArg]
 ) extends ApplyArgList {
   override def isAsync = args.exists(_.isAsync)
-  override def containsAsyncLambda = args.exists(_.isLambda)
+  override def containsAsyncLambda = args.exists(_.isAsyncLambda)
   override def containsDirectContext = args.exists(_.isDirectContext)
   override def origin = originApplyTerm
 

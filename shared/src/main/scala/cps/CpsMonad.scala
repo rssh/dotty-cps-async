@@ -1,7 +1,7 @@
 /*
  * dotty-cps-async: https://github.com/rssh/dotty-cps-async
  *
- * (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, Kyiv, 2020, 2021, 2022
+ * (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, Kyiv, 2020, 2021, 2022, 2023
  */
 package cps
 
@@ -50,7 +50,8 @@ trait CpsMonad[F[_]]  {
     *  create monadic expression according to the 
     *  choosen monad types.
     *  (i.e. delaing for effect monads,  
-    *    starting for eager monand, pure by defiault)
+    *    starting for eager monand, 
+    *    pure by default)
     **/
    def lazyPure[T](op: =>T):F[T] =
       map(pure(())){ _ => op}
@@ -463,10 +464,10 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
    type Spawned[A] = F[A]
 
    /**
-    * representation of spawnEffect as immediate operation.
+    * representation of spawnEffect as lazy suspension of immediate operation.
     **/
    def spawnEffect[A](op: => F[A]): F[F[A]] =
-         pure(spawn(op))
+         lazyPure(spawn(op))
 
    /**
     * join spawned immediate monad means to receive those spawing monad.

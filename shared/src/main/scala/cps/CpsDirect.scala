@@ -1,6 +1,7 @@
 package cps
 
 import scala.annotation.experimental
+import scala.util.NotGiven
 
 
 /**

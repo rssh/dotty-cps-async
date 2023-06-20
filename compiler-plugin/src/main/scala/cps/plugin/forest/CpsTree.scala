@@ -257,15 +257,15 @@ case class PureCpsTree(
     }
   }
 
-  override def typed(origin: Typed)(using Context, CpsTopLevelContext): CpsTree = {
-    if (isOriginEqSync && (origin.expr eq this.origin))
-      val r = CpsTree.unchangedPure(origin, owner)
-      if (owner eq origin.symbol.owner)
+  override def typed(originTyped: Typed)(using Context, CpsTopLevelContext): CpsTree = {
+    if (isOriginEqSync && (originTyped.expr eq this.origin))
+      val r = CpsTree.unchangedPure(originTyped, owner)
+      if (owner eq originTyped.symbol.owner)
         r
       else
-        r.changeOwner(origin.symbol.owner)
+        r.changeOwner(originTyped.symbol.owner)
     else
-      super.typed(origin)
+      super.typed(originTyped)
   }
 
   override def typeApply(origin: TypeApply)(using Context, CpsTopLevelContext): CpsTree =
@@ -677,15 +677,18 @@ case class LambdaCpsTree(
       case None => None
       case Some(unpureBody) =>
         origin match
-          case b:Block if b.stats.head eq originDefDef =>
+          case b:Block if (b.stats.head eq originDefDef) && cpsBody.isOriginEqSync =>
             Some(origin)
           case _ =>
-            val tpe = createUnshiftedType()
+            val tpe =  createUnshiftedType()
+            println(s"LambdaCpsTree.unpure:  tpe=${tpe.show}  origin.tpe.widen=${origin.tpe.widen.show}")
+
             val meth = Symbols.newAnonFun(owner,tpe)
             val closure = Closure(meth, tss => TransformUtil.substParams(unpureBody, originParams, tss.head)
                                                             .changeOwner(cpsBody.owner, meth)
                           )
-            Some(closure)
+            val typedClosure = if (tpe =:= origin.tpe.widen) then closure else Typed(closure, TypeTree(origin.tpe.widen))
+            Some(typedClosure)
   }
     
 

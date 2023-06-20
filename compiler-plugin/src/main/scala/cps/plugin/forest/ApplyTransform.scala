@@ -37,9 +37,16 @@ object ApplyTransform {
                           )
 
   def apply(term: Apply, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
-      Log.trace(s"Apply: origin=${term.show}", nesting)
+    Log.trace(s"Apply: origin=${term.show}", nesting)
 
-      val cpsTree = term match
+    term match
+        case Apply(Apply(TypeApply(fAsynchronizedCm,List(tf,ta)),List(a)),List(fctx)) =>
+          Log.trace("cps.asynchronized form", nesting)
+          if (fAsynchronizedCm.symbol == Symbols.requiredMethod("cps.asynchronized"))
+            println("cps.asynchronized symbol")
+        case _ =>
+
+    val cpsTree = term match
         case Apply(Apply(TypeApply(fCpsAwaitCn,List(tf,ta,tg)),List(fa)), List(gc,gcn)) =>
              Log.trace(s"cpsAwait form at : ${term.show},  symbol=${fCpsAwaitCn.symbol}", nesting)
              if fCpsAwaitCn.symbol == Symbols.requiredMethod("cps.cpsAwait") ||
@@ -50,6 +57,12 @@ object ApplyTransform {
              else
                Log.trace(s"cpsAwait not recognized",nesting)
                applyMArgs(term, owner, nesting, Nil)
+        case Apply(Apply(TypeApply(fAsynchronizedCm,List(tf,ta)),List(a)),List(fctx))
+                         if (fAsynchronizedCm.symbol == Symbols.requiredMethod("cps.asynchronized")) =>
+              println("is cps.asynchronized")
+              Log.trace(s"asynchronized at : ${term.show}", nesting)
+              AsynchronizedTransform.fromApply(term, owner, nesting, tf, ta, a, fctx)
+
         case Apply(cnThrow, List(_)) if (cnThrow.symbol == defn.throwMethod) =>
              ThrowTransform(term, owner, nesting)
         case _ =>
@@ -105,8 +118,8 @@ object ApplyTransform {
   }
 
   def parseMethodCall(appTerm: Apply, owner: Symbol, nesting: Int, obj: Tree, sel: Select, optTypeApply:Option[TypeApply], argss: List[ApplyArgList])(using Context, CpsTopLevelContext): CpsTree = {
-
     val cpsObj = RootTransform(obj,owner, nesting+1)
+    Log.trace(s"parseMethodCall: cpsObj=${cpsObj.show}, kind=${cpsObj.asyncKind}, argss=${argss.map(_.show)}", nesting)
     val retval = cpsObj.asyncKind match
       case AsyncKind.Sync =>
         val syncFun = optTypeApply match
@@ -158,7 +171,7 @@ object ApplyTransform {
           //  TODO:  implement andThen .. etc
           throw CpsTransformException("Only apply is supported for async lambda now", appTerm.srcPos)
         }
-    Log.trace(s"cpsObj.parseMethodCall result: ${retval.show}", nesting)
+    Log.trace(s"ApplyTransform.parseMethodCall result: ${retval.show}", nesting)
     retval
   }
 
@@ -253,11 +266,18 @@ object ApplyTransform {
           case ApplyTypeArgList(orig,args) =>
             TypeApply(s,args).withSpan(orig.span)
           case ApplyTermArgList(orig,args) =>
-            Apply(s,args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))).withSpan(orig.span)
+            Log.trace(s"parseSyncFunPureApplication.fold,  s=${s.show}, args=${args.map(_.show)}", nesting)
+            val exprsInCalls = args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))
+            Log.trace(s"parseSyncFunPureApplication.fold,  exprsInCalls=${exprsInCalls.map(_.show)}", nesting)
+            val s1 = Apply(s,exprsInCalls).withSpan(orig.span)
+            Log.trace(s"parseSyncFunPureApplication.fold,  s1=${s1.show}", nesting)
+            s1
      }
      val fullOrigin = if (argss.isEmpty) origin else argss.last.origin
-
-     adoptCallMode(fullOrigin, plainTree, owner, argss, callMode)
+     Log.trace(s"parseSyncFunPureApplication: plainTree=${plainTree.show}", nesting)
+     val retval = adoptCallMode(fullOrigin, plainTree, owner, argss, callMode)
+     Log.trace(s"parseSyncFunPureApplication: retval=${retval.show}", nesting)
+     retval
   }
 
   def adoptCallMode(origin: Tree, plainTree: Tree, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {

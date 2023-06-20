@@ -53,13 +53,23 @@ trait CpsTryMonadContext[F[_]] extends CpsThrowMonadContext[F] {
 
 }
 
+trait CpsConcurrentMonadContext[F[_]] extends CpsTryMonadContext[F] {
+
+  /**
+   * @return instance of cps-monad which should supports concurrent operations.
+   */
+  override def monad: CpsConcurrentMonad[F]
+
+}
 
 object CpsMonadContext {
 
   @experimental
-  given monadContext[F[_]](using direct:CpsDirect[F]): CpsMonadContext[F] = direct.context
+  given monadContext[F[_]](using direct:CpsDirect[F]): CpsTryMonadContext[F] =
+     direct.context
 
 }
+
 
 
 
@@ -127,6 +137,7 @@ class CpsTryMonadInstanceContextBody[F[_]](val m: CpsTryMonadInstanceContext[F])
 
 }
 
+
 /**
  * Minimal monad context, which provides an instance of CpsTryMonad.
  * Use it if your monad supports throw and try/catch operations.
@@ -140,6 +151,7 @@ trait CpsTryMonadInstanceContext[F[_]] extends CpsTryMonad[F] {
       op(CpsTryMonadInstanceContextBody(this))
 
 }
+
 
 /**
  * @Deprecated  Use instead one of

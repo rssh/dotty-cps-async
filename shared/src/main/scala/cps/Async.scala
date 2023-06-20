@@ -1,13 +1,15 @@
 /*
  * dotty-cps-async: https://github.com/rssh/dotty-cps-async
  *
- * (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, Kyiv, 2020, 2021, 2022
+ * (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, Kyiv, 2020, 2021, 2022, 2023
  */
 package cps
 
 import scala.annotation._
 import scala.quoted._
 import scala.compiletime._
+
+import cps.plugin.annotation.CpsNotChange
 
 
 /**
@@ -24,9 +26,13 @@ def await[F[_],T,G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMo
  * @tparam F - monad
  * @tparam T - type of expression
  * @return - <code>t</code> expression represented in monadic form
+ * @todo - currently attempt to makr t context-dependend(i.e. pss to asynchronized t: CpsMonadContext[F] ?=>T) leads to error during typing.
+ *       Need to investigate and submit bug to dotty.
  */
 @compileTimeOnly("asynchronized should be inside async block")
-def asynchronized[F[_],T](t: T)(using ctx: CpsMonadContext[F]): F[T] = ???
+@experimental
+@CpsNotChange
+def asynchronized[F[_],T](t: CpsDirect[F] ?=> T)(using ctx: CpsDirect[F]): F[T] = ???
 
 
 /**
@@ -55,5 +61,7 @@ transparent inline def reflect[F[_],T,G[_]](f: F[T])(using inline ctx: CpsMonadC
    await[F,T,G](f)
 
 
-transparent inline def reifed[F[_],T](t: T)(using inline ctx: CpsMonadContext[F]): F[T] =
-   asynchronized[F,T](t)
+//@experimental
+//@CpsNotChange
+//transparent inline def reifed[F[_],T](t: T)(using inline ctx: CpsDirect[F]): F[T] =
+//   asynchronized[F,T](t)

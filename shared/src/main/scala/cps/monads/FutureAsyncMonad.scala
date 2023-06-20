@@ -29,7 +29,7 @@ class FutureContext(m: FutureAsyncMonadAPI) extends CpsTryMonadContext[Future] w
 /**
  * Default CpsMonad implementation for `Future`
  **/
-class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Future] with CpsContextMonad[Future, FutureContext] {
+class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Future] with CpsTryContextMonad[Future, FutureContext] {
 
    type F[+T] = Future[T]
 
