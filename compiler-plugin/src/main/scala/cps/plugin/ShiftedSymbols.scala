@@ -26,6 +26,8 @@ class ShiftedSymbols {
 
 }
 
-case class AsyncShiftRecord(originSymbol: Symbol, shiftedSymbol: Symbol, monads: Set[Type])
-
-
+class AsyncShiftRecord(
+    val originSymbol:  Symbol,
+    val shiftedSymbol: Symbol,
+    val monads:        Set[Type]
+)
