@@ -1,35 +1,42 @@
 package cps.plugin
 
-
 import dotty.tools.dotc.*
 import core.*
 import core.Contexts.*
 import core.Constants.*
+import core.Annotations.*
 import core.Decorators.*
+import core.Symbols.*
+import core.Types.*
 import ast.tpd.*
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Types.TypeRef
 import plugins.*
-import transform.{Erasure, Inlining, Pickler, PruneErasedDefs}
+import transform.{ Erasure, Inlining, Pickler, PruneErasedDefs }
 
-
-
-class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase {
+class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSymbols)
+    extends PluginPhase {
 
   override val phaseName = PhaseCpsAsyncShift.name
 
   // strange -
   override def allowsImplicitSearch = true
-  override val runsAfter  = Set(PhaseCps.name)
-  override val runsBefore = Set(Erasure.name, PhaseCpsChangeSymbols.name)
+  override val runsAfter            = Set(PhaseCps.name)
+  override val runsBefore           = Set(Erasure.name, PhaseCpsAsyncReplace.name)
 
-  //override def run(using Context): Unit = {
-    // TODO:
-    //  check what async-shift needed in the current compilation unit
-    //   -- generate one in the special class
-    //   -- update the global cache, setting as key - signature of function or method, value - async tree
-  //}
+  // override def run(using Context): Unit = {
+  // TODO:
+  //  check what async-shift needed in the current compilation unit
+  //   -- generate one in the special class
+  //   -- update the global cache, setting as key - signature of function or method, value - async tree
+  // }
 
+  /**
+   * looks for annotated functions, changes them and add to shiftedSymbols
+   * @param tree
+   * @param Context
+   * @return
+   */
   override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = {
     // println(s"transformTemplate: ${tree.symbol.name}, ${tree.symbol.name.mangledString}, ${tree.symbol.name.debugString}")
     val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
@@ -38,25 +45,25 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSym
       tree <- tree.body
       if tree.symbol.is(Flags.Method) /*&& isHightOrder() && generateCps */
     )
-       tree match
+      tree match
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
           val newFunName   = (fun.symbol.name.debugString + "$cps").toTermName
-             val newFunSymbol =
+          val newFunSymbol =
             Symbols.newSymbol(
               fun.symbol.owner,
               newFunName,
               fun.symbol.flags | Flags.Synthetic,
               fun.symbol.info // let be the same type for now
-                                )
+            )
           // TODO: change param symbol
           val paramSymbol  = Symbols.newSymbol(
-                newFunSymbol,
+            newFunSymbol,
             "x".toTermName,
             Flags.Param,
             Symbols.defn.IntType
-              )
+          )
           val ctx1: Context = summon[Context].withOwner(newFunSymbol)
           val transformedRhs = transformFunctionBody(fun.rhs)
           val nRhs           = Block(Nil, transformedRhs)(using ctx1)
@@ -65,17 +72,17 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSym
 
           // TODO: add to ShiftedSymbols
 
-              newMethods = newMethod :: newMethods
+          newMethods = newMethod :: newMethods
 
-     val retval = if (newMethods.isEmpty) {
-       tree
-     } else {
-       //tree
-       cpy.Template(tree)(body = tree.body ++ newMethods)
-     }
-     //super.transformTemplate(tree)
-     //println(s"after CpsAsyncShift, retval: ${retval.show}")
-     retval
+    val retval = if (newMethods.isEmpty) {
+      tree
+    } else {
+      // tree
+      cpy.Template(tree)(body = tree.body ++ newMethods)
+    }
+    // super.transformTemplate(tree)
+    // println(s"after CpsAsyncShift, retval: ${retval.show}")
+    retval
   }
 
   /**
@@ -85,11 +92,16 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSym
    * @return
    */
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
-    if (selectedNodes.getDefDefRecord(tree.symbol).isDefined) {
-      println(s"cpsAsyncShift::transformDefDef: ${tree.symbol.name}, ${tree.symbol.info.show}")
-    }
+    println(
+      s"cpsAsyncShift::transformDefDef: ${tree.symbol.name}, ${tree.symbol.info.show}"
+    )
     tree
   }
+
+  def transformFunctionBody(tree: tpd.Tree): tpd.Tree =
+    // println(s"tparams: ${tree.tparams}")
+    // println(s"vparams: ${tree.vparamss}")
+    tree
 
 }
 
