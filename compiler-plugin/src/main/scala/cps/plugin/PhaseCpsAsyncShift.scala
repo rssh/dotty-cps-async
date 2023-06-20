@@ -42,24 +42,31 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSym
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
+          val newFunName   = (fun.symbol.name.debugString + "$cps").toTermName
              val newFunSymbol =
-               Symbols.newSymbol(fun.symbol.owner, newFunName,
-                                fun.symbol.flags|Flags.Synthetic,
-                                fun.symbol.info, //let be the same type for now
+            Symbols.newSymbol(
+              fun.symbol.owner,
+              newFunName,
+              fun.symbol.flags | Flags.Synthetic,
+              fun.symbol.info // let be the same type for now
                                 )
-              val paramSymbol = Symbols.newSymbol(newFunSymbol, "x".toTermName, Flags.Param, Symbols.defn.IntType)
-              val newMethod = DefDef(
+          // TODO: change param symbol
+          val paramSymbol  = Symbols.newSymbol(
                 newFunSymbol,
-                List(List(paramSymbol)),
-                fun.tpt.tpe,
-                Block( Nil,
-                  //Throw(New(Symbols.requiredClassRef("java.lang.RuntimeException"), List(Literal(Constant("not implemented")))))
-                  Throw(New(Symbols.requiredClassRef("java.lang.RuntimeException"), List()))
-                ).withSpan(fun.rhs.span)
+            "x".toTermName,
+            Flags.Param,
+            Symbols.defn.IntType
               )
+          val ctx1: Context = summon[Context].withOwner(newFunSymbol)
+          val transformedRhs = transformFunctionBody(fun.rhs)
+          val nRhs           = Block(Nil, transformedRhs)(using ctx1)
+          val newMethod      =
+            DefDef(newFunSymbol, List(List(paramSymbol)), fun.tpt.tpe, nRhs)
+
+          // TODO: add to ShiftedSymbols
+
               newMethods = newMethod :: newMethods
-           }
-     }
+
      val retval = if (newMethods.isEmpty) {
        tree
      } else {
