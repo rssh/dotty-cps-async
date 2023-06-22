@@ -10,6 +10,13 @@ class ShiftedSymbols {
 
   private val storage: MutableSymbolMap[AsyncShiftRecord] = new MutableSymbolMap()
 
+  def addAsyncShift(originSym: Symbol, shiftedSym: Symbol): Unit =
+    storage.get(originSym) match
+      case Some(r) =>
+        throw IllegalStateException(s"defDef already exists: ${originSym}")
+      case None =>
+        storage.update(originSym, AsyncShiftRecord(originSym, shiftedSym))
+
   def translateShiftedCall(sym: Symbol): Symbol =
     // TODO: create symbol of the same type with the same owner
     ???
@@ -20,8 +27,4 @@ class ShiftedSymbols {
 
 }
 
-class AsyncShiftRecord(
-    val originSymbol:  Symbol,
-    val shiftedSymbol: Symbol,
-    val monads:        Set[Type]
-)
+class AsyncShiftRecord(val originSymbol: Symbol, val shiftedSymbol: Symbol)
