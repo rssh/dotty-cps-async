@@ -58,19 +58,23 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
               fun.symbol.info // let be the same type for now
             )
           // TODO: change param symbol
-          val paramSymbol  = Symbols.newSymbol(
-            newFunSymbol,
-            "x".toTermName,
-            Flags.Param,
-            Symbols.defn.IntType
-          )
+          // val paramSymbol  = Symbols.newSymbol(
+          //   newFunSymbol,
+          //   "x".toTermName,
+          //   Flags.Param,
+          //   Symbols.defn.IntType
+          // )
+          // val newParamss = List(List(paramSymbol))
+          val newParamss   =
+            fun.paramss.map(ps => ps.map(p => changeOwner(p.symbol, newFunSymbol)))
           val ctx1: Context = summon[Context].withOwner(newFunSymbol)
           val transformedRhs = transformFunctionBody(fun.rhs)
           val nRhs           = Block(Nil, transformedRhs)(using ctx1)
           val newMethod      =
-            DefDef(newFunSymbol, List(List(paramSymbol)), fun.tpt.tpe, nRhs)
+            DefDef(newFunSymbol, newParamss, fun.tpt.tpe, nRhs)
 
           // TODO: add to ShiftedSymbols
+          shiftedSymbols.addAsyncShift(fun.symbol, newFunSymbol)
 
           newMethods = newMethod :: newMethods
 
@@ -97,6 +101,9 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     )
     tree
   }
+
+  def changeOwner(param: Symbol, newOwner: Symbol)(using Context): Symbol =
+    param.copy(owner = newOwner)
 
   def transformFunctionBody(tree: tpd.Tree): tpd.Tree =
     // println(s"tparams: ${tree.tparams}")
