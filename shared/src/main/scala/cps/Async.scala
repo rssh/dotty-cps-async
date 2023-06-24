@@ -61,7 +61,7 @@ transparent inline def reflect[F[_],T,G[_]](f: F[T])(using inline ctx: CpsMonadC
    await[F,T,G](f)
 
 
-//@experimental
-//@CpsNotChange
-//transparent inline def reifed[F[_],T](t: T)(using inline ctx: CpsDirect[F]): F[T] =
-//   asynchronized[F,T](t)
+@experimental
+@CpsNotChange
+transparent inline def reifed[F[_],T](t: CpsDirect[F] ?=> T)(using inline ctx: CpsDirect[F]): F[T] =
+   asynchronized[F,T](t)

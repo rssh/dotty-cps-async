@@ -23,6 +23,13 @@ class UseLoomAwait
 object UseLoomAwait extends UseLoomAwait
 
 /**
+ * if implicit object is defined, than macro delegate cps transformation to compiler plugin.
+ **/
+class UseCompilerPlugin
+object UseCompilerPlugin extends UseCompilerPlugin
+
+
+/**
  * Use this flag for debugging of async transformation process.
  *
  * ```

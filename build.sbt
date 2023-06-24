@@ -60,8 +60,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         //scalaVersion := "3.1.2",
         libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
         libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
-        addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full) 
-
+        addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
     )
 
 lazy val CpsJVM = config("cps.jvm")
@@ -118,4 +117,41 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
                               //},
                               Test/fork := true
                            )
+
+lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+                           .in(file("compiler-plugin-tests"))
+                           .dependsOn(cps)
+                           .settings(sharedSettings)
+                           .settings(
+                              name := "dotty-cps-compiler-plugin-tests",
+                              libraryDependencies ++= Seq(
+                                  "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
+                                  "com.novocode" % "junit-interface" % "0.11" % Test,
+                              ),
+                              Compile / unmanagedSourceDirectories := Seq(),
+                              Test / unmanagedSourceDirectories ++= Seq(
+                               baseDirectory.value / ".." / ".." / "shared" / "src" / "test" / "scala",
+                              ),
+                           ).jvmSettings(
+                              libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
+                              Test / unmanagedSourceDirectories ++= Seq(
+                                baseDirectory.value / ".." / ".." / "jvm" / "src" / "test" / "scala",
+                              )
+                           ).jsSettings(
+                              scalaJSUseMainModuleInitializer := true,
+                              libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
+                              mimaFailOnNoPrevious := false,
+                              Test / unmanagedSourceDirectories ++= Seq(
+                                  baseDirectory.value / ".." / "jvm" / "src" / "test" / "scala",
+                              )
+                           ).nativeSettings(
+                              libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
+                              libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
+                              addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full),
+                              Test / unmanagedSourceDirectories ++= Seq(
+                                  baseDirectory.value / ".." / "native" / "src" / "test" / "scala"
+                              )
+                           )
+
+
 

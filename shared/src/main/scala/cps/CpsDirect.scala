@@ -30,3 +30,4 @@ object CpsDirect {
   given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] = new CpsDirect[F](context)
 
 }
+

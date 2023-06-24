@@ -6,14 +6,13 @@
 package cps.macros
 
 import scala.language.implicitConversions
-
-import scala.quoted._
-import scala.compiletime._
+import scala.quoted.*
+import scala.compiletime.*
 import scala.util.control.NonFatal
-
 import cps.*
 import cps.macros.*
 import cps.macros.common.*
+import cps.macros.flags.UseCompilerPlugin
 import cps.macros.forest.*
 import cps.macros.misc.*
 import cps.macros.observatory.*
@@ -23,10 +22,12 @@ object Async {
 
   class InferAsyncArg[F[_],C<:CpsMonadContext[F]](using val am:CpsMonad.Aux[F,C]) {
 
-       transparent inline def apply[T](inline expr: C ?=> T) =
-            //transform[F,T](using am)(expr)
-            //   
-            am.apply(transformContextLambda(expr))
+       transparent inline def apply[T](inline expr: C ?=> T) = ${
+         inferAsyncArgApplyImpl[F, T, C]('am, 'expr)
+       }
+
+            //
+            //am.apply(transformContextLambda(expr))
             //am.apply(x =>
             //   transform[F,T,C](expr,x)
             //)
@@ -44,15 +45,31 @@ object Async {
       transparent inline def apply[T](inline expr: C ?=> T) =
             am.apply(transformContextLambda(expr))
 
-
-
   }
 
   transparent inline def async[F[_]](using am:CpsMonad[F]) =
           new InferAsyncArg(using am)
-     
 
-  transparent inline def transformContextLambda[F[_],T,C<:CpsMonadContext[F]](inline expr: C ?=> T)(using m: CpsMonad[F]): C => F[T] =
+  def inferAsyncArgApplyImpl[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](am: Expr[CpsMonad.Aux[F,C]], expr: Expr[C ?=> T])(using Quotes): Expr[F[T]] = {
+    import quotes.reflect._
+    val usePlugin = Expr.summon[UseCompilerPlugin.type].isDefined // ||CompilationInfo.XmacroSettings.find(_ == "cps:plugin").isDefined
+    // Problem: XmacroSettings still experimental
+    if (usePlugin) {
+      Apply(
+        TypeApply(
+          Ref(Symbol.requiredMethod("cps.plugin.cpsAsyncApply")),
+          List(Inferred(TypeRepr.of[F]), Inferred(TypeRepr.of[T]), Inferred(TypeRepr.of[C]))
+        ),
+        List(am.asTerm, expr.asTerm)
+      ).asExprOf[F[T]]
+    } else {
+      val fun = transformContextLambdaImpl(expr)
+      '{  ${am}.apply($fun) }
+    }
+
+  }
+
+  transparent inline def transformContextLambda[F[_],T,C<:CpsMonadContext[F]](inline expr: C ?=> T): C => F[T] =
      ${
         Async.transformContextLambdaImpl[F,T,C]('expr)
      } 
@@ -304,39 +321,40 @@ object Async {
                       cpsCtx.nesting+1, Some(cpsCtx))
 
 
-  def transformContextLambdaImpl[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cexpr: Expr[C ?=> T])(using Quotes): Expr[C => F[T]] =
-      import quotes.reflect._
+  def transformContextLambdaImpl[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cexpr: Expr[C ?=> T])(using Quotes): Expr[C => F[T]] = {
+    import quotes.reflect._
 
-      def inInlined(t: Term, f: Term => Term): Term =
-         t match
-            case Inlined(call, bindings, body) => Inlined(call, bindings, f(body))
-            case other => other
+    def inInlined(t: Term, f: Term => Term): Term =
+      t match
+        case Inlined(call, bindings, body) => Inlined(call, bindings, f(body))
+        case other => other
 
-      def extractLambda(f:Term): (List[ValDef], Term, Term => Term ) =
-         f match
-            case Inlined(call, bindings, body) =>
-               val inner = extractLambda(body)
-               (inner._1, inner._2, t => Inlined(call, bindings, t) )   
-            case Lambda(params,body) =>
-               params match
-                  case List(vd) => (params, body, identity)
-                  case _ => report.errorAndAbort(s"lambda with one argument expected, we have ${params}",cexpr)
-            case Block(Nil,nested@Lambda(params,body)) => extractLambda(nested)
-            case _ =>
-               report.errorAndAbort(s"lambda expected, have: ${f}", cexpr)
-      
-      def transformNotInlined(t: Term): Term =
-         val (oldParams, body, nestFun) = extractLambda(t)
-         val oldValDef = oldParams.head
-         val transformed = transformImpl[F,T,C](body.changeOwner(Symbol.spliceOwner).asExprOf[T], Ref(oldValDef.symbol).asExprOf[C])
-         val mt = MethodType(List(oldValDef.name))( _ => List(oldValDef.tpt.tpe), _ => TypeRepr.of[F[T]])
-         val nLambda = Lambda(Symbol.spliceOwner, mt, (owner, params) => {
-            TransformUtil.substituteLambdaParams( oldParams, params, transformed.asTerm, owner ).changeOwner(owner)
-         })
-         nestFun(nLambda)
+    def extractLambda(f: Term): (List[ValDef], Term, Term => Term) =
+      f match
+        case Inlined(call, bindings, body) =>
+          val inner = extractLambda(body)
+          (inner._1, inner._2, t => Inlined(call, bindings, t))
+        case Lambda(params, body) =>
+          params match
+            case List(vd) => (params, body, identity)
+            case _ => report.errorAndAbort(s"lambda with one argument expected, we have ${params}", cexpr)
+        case Block(Nil, nested@Lambda(params, body)) => extractLambda(nested)
+        case _ =>
+          report.errorAndAbort(s"lambda expected, have: ${f}", cexpr)
 
-      val retval = inInlined(cexpr.asTerm, transformNotInlined).asExprOf[C => F[T]]
-      retval
+    def transformNotInlined(t: Term): Term =
+      val (oldParams, body, nestFun) = extractLambda(t)
+      val oldValDef = oldParams.head
+      val transformed = transformImpl[F, T, C](body.changeOwner(Symbol.spliceOwner).asExprOf[T], Ref(oldValDef.symbol).asExprOf[C])
+      val mt = MethodType(List(oldValDef.name))(_ => List(oldValDef.tpt.tpe), _ => TypeRepr.of[F[T]])
+      val nLambda = Lambda(Symbol.spliceOwner, mt, (owner, params) => {
+        TransformUtil.substituteLambdaParams(oldParams, params, transformed.asTerm, owner).changeOwner(owner)
+      })
+      nestFun(nLambda)
+
+    val retval = inInlined(cexpr.asTerm, transformNotInlined).asExprOf[C => F[T]]
+    retval
+  }
 
 
   //TODO: find usage and remove if not used
