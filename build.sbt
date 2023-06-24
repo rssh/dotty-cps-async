@@ -121,6 +121,9 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
 lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatform)
                            .in(file("compiler-plugin-tests"))
                            .dependsOn(cps)
+                           .jvmConfigure(_.dependsOn(compilerPlugin))
+                           .jsConfigure(_.dependsOn(compilerPlugin))
+                           .nativeConfigure(_.dependsOn(compilerPlugin))
                            .settings(sharedSettings)
                            .settings(
                               name := "dotty-cps-compiler-plugin-tests",
@@ -132,6 +135,13 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                               Test / unmanagedSourceDirectories ++= Seq(
                                baseDirectory.value / ".." / ".." / "shared" / "src" / "test" / "scala",
                               ),
+                              Test / scalacOptions ++= {
+                                  val jar = (compilerPlugin / Compile / packageBin).value
+                                  Seq(s"-Xplugin:${jar.getAbsolutePath}", s"-Jdummy=${jar.lastModified}",
+                                       "-color:never",
+                                       "-explain"
+                                     )
+                              }
                            ).jvmSettings(
                               libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
                               Test / unmanagedSourceDirectories ++= Seq(

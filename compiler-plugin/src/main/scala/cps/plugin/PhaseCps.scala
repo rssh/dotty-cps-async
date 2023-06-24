@@ -139,6 +139,11 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
               List(applyMArg)
             )
             nApply
+      case Apply(
+            TypeApply( cpsAsyncApplyCn, List(fType, tType, cType) ),
+            List( am, expr )
+           )  if (cpsAsyncApplyCn.symbol == Symbols.requiredMethod("cps.plugin.cpsAsyncApply")) =>
+        ???
       case _ => super.transformApply(tree)
 
  
