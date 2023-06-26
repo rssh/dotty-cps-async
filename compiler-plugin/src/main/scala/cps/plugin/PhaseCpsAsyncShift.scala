@@ -57,16 +57,25 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
               fun.symbol.owner,
               newFunName,
               fun.symbol.flags | Flags.Synthetic,
-              fun.symbol.info // let be the same type for now
+              fun.symbol.info.widen // let be the same type for now
             )
           // create new rhs
           val ctx1: Context = summon[Context].withOwner(newFunSymbol)
           val transformedRhs = transformFunctionBody(fun.rhs)
           val nRhs           = Block(Nil, transformedRhs)(using ctx1)
           val newMethod      =
-            DefDef(newFunSymbol, newParamss, fun.tpt.tpe, nRhs)
-
-          // TODO: add to ShiftedSymbols
+            DefDef(
+              newFunSymbol,
+              // create new paramss
+              newParamss =>
+                TransformUtil
+                  .substParams(
+                    nRhs,
+                    fun.paramss.head.asInstanceOf[List[ValDef]],
+                    newParamss.head
+                  )
+                  .changeOwner(fun.symbol, newFunSymbol)
+            )
           shiftedSymbols.addAsyncShift(fun.symbol, newFunSymbol)
           newMethods = newMethod :: newMethods
         case _ => ()
