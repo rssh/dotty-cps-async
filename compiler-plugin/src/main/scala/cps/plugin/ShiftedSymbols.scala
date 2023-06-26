@@ -22,7 +22,7 @@ class ShiftedSymbols {
     ???
 
   // called from phase cpsAsyncShift
-  def checkUsage(origin: Symbol): Option[AsyncShiftRecord] =
+  def getRecord(origin: Symbol): Option[AsyncShiftRecord] =
     storage.get(origin)
 
 }

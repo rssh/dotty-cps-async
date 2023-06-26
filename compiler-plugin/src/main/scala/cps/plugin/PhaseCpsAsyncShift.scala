@@ -38,7 +38,9 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @return
    */
   override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = {
-    // println(s"transformTemplate: ${tree.symbol.name}, ${tree.symbol.name.mangledString}, ${tree.symbol.name.debugString}")
+    println(
+      s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.symbol.info.show}"
+    )
     val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
     var newMethods      = List.empty[DefDef]
     for (
@@ -49,24 +51,15 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
-          val newFunName   = (fun.symbol.name.debugString + "$cps").toTermName
-          val newFunSymbol =
+          val newFunName     = (fun.symbol.name.debugString + "$cps").toTermName
+          val newFunSymbol   =
             Symbols.newSymbol(
               fun.symbol.owner,
               newFunName,
               fun.symbol.flags | Flags.Synthetic,
               fun.symbol.info // let be the same type for now
             )
-          // TODO: change param symbol
-          // val paramSymbol  = Symbols.newSymbol(
-          //   newFunSymbol,
-          //   "x".toTermName,
-          //   Flags.Param,
-          //   Symbols.defn.IntType
-          // )
-          // val newParamss = List(List(paramSymbol))
-          val newParamss   =
-            fun.paramss.map(ps => ps.map(p => changeOwner(p.symbol, newFunSymbol)))
+          // create new rhs
           val ctx1: Context = summon[Context].withOwner(newFunSymbol)
           val transformedRhs = transformFunctionBody(fun.rhs)
           val nRhs           = Block(Nil, transformedRhs)(using ctx1)
@@ -75,8 +68,8 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
 
           // TODO: add to ShiftedSymbols
           shiftedSymbols.addAsyncShift(fun.symbol, newFunSymbol)
-
           newMethods = newMethod :: newMethods
+        case _ => ()
 
     val retval = if (newMethods.isEmpty) {
       tree
@@ -95,12 +88,11 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @param Context
    * @return
    */
-  override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
-    println(
-      s"cpsAsyncShift::transformDefDef: ${tree.symbol.name}, ${tree.symbol.info.show}"
-    )
+  override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree =
+    // println(
+    // s"cpsAsyncShift::transformDefDef: ${tree.symbol.name}, ${tree.symbol.info.show}"
+    // )
     tree
-  }
 
   def changeOwner(param: Symbol, newOwner: Symbol)(using Context): Symbol =
     param.copy(owner = newOwner)
