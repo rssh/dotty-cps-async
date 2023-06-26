@@ -120,6 +120,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
   }
 
   def transformApplyInternal(tree: Apply)(using Context):Tree = {
+
     tree match
       case Apply(
             TypeApply(Select(inferAsyncArg,applyCn),List(aCnd)),
@@ -141,13 +142,32 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
             nApply
       case Apply(
             TypeApply( cpsAsyncApplyCn, List(fType, tType, cType) ),
-            List( am, expr )
+            List( am, ctxFun )
            )  if (cpsAsyncApplyCn.symbol == Symbols.requiredMethod("cps.plugin.cpsAsyncApply")) =>
-        ???
+        val (ddef, closure) = ctxFun match
+          case Inlined(call, List(), Block((ddef: DefDef)::Nil, closure: Closure)) =>
+            println(s"transformApplyInternal: Inlined found ddef.symbol=${ddef.symbol.showFullName}")
+            (ddef, closure)
+          case Block((ddef: DefDef)::Nil, closure: Closure) =>
+            println(s"transform Apply: found ddef.symbol=${ddef.symbol.showFullName}")
+            (ddef, closure)
+          case _ =>
+            throw CpsTransformException(s"excepted that second argument of cpsAsyncApply is closure, we have $ctxFun", tree.srcPos)
+        val nDefDef = transformDefDefInsideAsync(ddef, tree)
+        val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
+        val applyArg = Block(nDefDef::Nil, nClosure).withSpan(ctxFun.span)
+        val nApply = cpy.Apply(tree)(
+          TypeApply(Select(am, "apply".toTermName), List(tType)),
+          List(applyArg)
+        )
+        nApply
       case _ => super.transformApply(tree)
 
  
   }
+
+
+
 
   private def transformDefDefInsideAsync(ddef: DefDef, asyncCallTree: Tree)(using ctx:Context): DefDef = {
     val cpsMonadContext = ddef.paramss.head.head

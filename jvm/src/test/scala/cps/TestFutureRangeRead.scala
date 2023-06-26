@@ -23,7 +23,10 @@ class TestFutureRangeReader:
   import cps.monads.{*,given}
  
 
-  @Test def tryFewRangeLoops(): Unit = 
+  @Test def tryFewRangeLoops(): Unit =
+     //implicit val printCode = cps.macros.flags.PrintCode
+     //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
+
      val ch1 = new ASChannel[Future,Int]()
      val ch2 = new ASChannel[Future,Int]()
 

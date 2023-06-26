@@ -1,5 +1,6 @@
-//val dottyVersion = "3.3.1-RC1-bin-SNAPSHOT"
+//val dottyVersion = "3.3.2-RC1-bin-SNAPSHOT"
 val dottyVersion = "3.3.0"
+
 
 ThisBuild/version := "0.9.18-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
@@ -40,6 +41,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
                             "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types",
                             "-Ydebug", "-uniqid", "-Xcheck-macros", "-Ycheck:macro", "-Yprint-syms",
                             "-Ysafe-init",
+                            "-explain",
                              ),
                              // -explain
                              // -Ydebug-error

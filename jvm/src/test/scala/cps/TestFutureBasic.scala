@@ -19,7 +19,10 @@ class TestFutureBasic:
 
   import scala.concurrent.ExecutionContext.Implicits.global 
 
-  @Test def futureBasic1(): Unit = 
+
+  @Test def futureBasic1(): Unit =
+     //implicit val printCode = cps.macros.flags.PrintCode
+     //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
      val p = Promise[Int]()
      val c = async[Future]{ 
        await(p.future) + 1

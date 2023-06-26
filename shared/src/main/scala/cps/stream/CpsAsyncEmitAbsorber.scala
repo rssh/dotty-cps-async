@@ -89,7 +89,8 @@ object CpsAsyncStreamMacro:
                      val lambda2 = Lambda(owner, mt2, {(owner, args) =>
                         val emitterTerm = args.head.asInstanceOf[Term]
                         val nBody = cps.macros.common.TransformUtil.substituteLambdaParams(
-                                          List(param,context), List(args.head, contextArgs.head), body, owner) 
+                                          List(param,context), List(args.head, contextArgs.head), body, owner)
+                        // TODO: move to cpsAsync
                         val asyncBody = cps.macros.Async.transformMonad[F,Unit,C](nBody.asExprOf[Unit],
                                                                                  '{ ${absorber}.asyncMonad },
                                                                                  contextTerm.asExprOf[C] 

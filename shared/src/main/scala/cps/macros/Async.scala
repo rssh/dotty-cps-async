@@ -32,7 +32,7 @@ object Async {
             //   transform[F,T,C](expr,x)
             //)
 
-        transparent inline def in[T](mc: CpsMonadContextProvider[F])(inline expr: mc.Context ?=> T): F[T] =
+       transparent inline def in[T](mc: CpsMonadContextProvider[F])(inline expr: mc.Context ?=> T): F[T] =
             //  TODO: compile-time check instead instance-om.
             //  Promblem,  that it should be implemented at the top level
             mc.contextualize(am.asInstanceOf[CpsTryMonad.Aux[F,C]], transformContextLambda(expr))

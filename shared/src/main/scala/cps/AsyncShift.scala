@@ -47,28 +47,55 @@ import scala.collection.immutable
  **/
 trait AsyncShift[T]
 
+trait AsyncShiftLowPriority0 {
+
+  import cps.runtime.*
+
+  transparent inline given shiftedCpsMonad[F[_], M <: CpsMonad[F]](using CpsMonad[F]): CpsMonadSelfAsyncShift[F, M] =
+    new cps.runtime.CpsMonadSelfAsyncShift[F, M]
+
+
+  transparent inline given shiftedIterable[A, CA <: Iterable[A]]: IterableAsyncShift[A, CA] =
+    cps.runtime.IterableAsyncShift[A, CA]()
+
+
+}
+
+trait AsyncShiftLowPriority1 extends AsyncShiftLowPriority0 {
+
+  import cps.runtime.*
+
+  transparent inline given shiftedIterableOps[A, C[X] <: Iterable[X] & IterableOps[X, C, C[X]]]: IterableOpsAsyncShift[A, C, C[A]] =
+    cps.runtime.IterableOpsAsyncShift[A, C, C[A]]()
+
+
+}
+
+trait AsyncShiftLowPriority2 extends AsyncShiftLowPriority1 {
+
+  import cps.runtime.*
+
+  transparent inline given shiftedSeqOps[A, C[X] <: Seq[X] & SeqOps[X, C, C[X]]]: SeqAsyncShift[A, C, C[A]] =
+    cps.runtime.SeqAsyncShift[A, C, C[A]]()
+
+}
+
 
 /**
  *Companion object where defined given AsyncShift instances for Scala standard library objects.
  *
  *@see [cps.AsyncShift] 
  **/
-object AsyncShift {
+object AsyncShift extends AsyncShiftLowPriority2 {
 
- transparent inline given shiftedIterable[A,CA <: Iterable[A] ]: AsyncShift[CA] =
-      cps.runtime.IterableAsyncShift[A,CA]()
+ import cps.runtime.*
 
- transparent inline given shiftedIterableOps[A,C[X] <: Iterable[X] & IterableOps[X,C,C[X]] ]: AsyncShift[C[A]] =
-      cps.runtime.IterableOpsAsyncShift[A,C,C[A]]()
-
- transparent inline given shiftedRange[CA <: Range]: AsyncShift[CA] =
+ transparent inline given shiftedRange[CA <: Range] : RangeAsyncShift[CA] =
         cps.runtime.RangeAsyncShift[CA]()
 
- transparent inline given shiftedArrayOps[A]: AsyncShift[scala.collection.ArrayOps[A]] =
-      new cps.runtime.ArrayOpsAsyncShift[A]()
+ transparent inline given shiftedArrayOps[A]: ArrayOpsAsyncShift[A] =
+      new ArrayOpsAsyncShift[A]()
 
- transparent inline given shiftedSeqOps[A,C[X] <: Seq[X] & SeqOps[X,C,C[X]] ]: AsyncShift[C[A]] =
-      cps.runtime.SeqAsyncShift[A,C,C[A]]()
 
  transparent inline given shiftedIndexedSeqOps[A,C[X] <: IndexedSeq[X] & IndexedSeqOps[X,C,C[X]] ]: AsyncShift[C[A]] =
       cps.runtime.IndexedSeqAsyncShift[A,C,C[A]]()
@@ -85,9 +112,6 @@ object AsyncShift {
  inline given shiftedList[A]: cps.runtime.ListAsyncShift[A] =
        cps.runtime.ListAsyncShift[A]()
 
-
- transparent inline given shiftedCpsMonad[F[_], M <: CpsMonad[F]](using CpsMonad[F]): AsyncShift[M] = new cps.runtime.CpsMonadSelfAsyncShift[F,M]
-
  transparent inline given shiftedOption[A]: AsyncShift[Option[A]] =
       new cps.runtime.OptionAsyncShift[A]()
 
@@ -102,7 +126,6 @@ object AsyncShift {
 
  transparent inline given shiftedTryModule: AsyncShift[scala.util.Try.type] =
       cps.runtime.util.TryModuleAsyncShift
-
 
  transparent inline given shiftedUsing: AsyncShift[scala.util.Using.type] =
        cps.runtime.util.UsingAsyncShift
