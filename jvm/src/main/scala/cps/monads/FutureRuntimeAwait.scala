@@ -12,4 +12,5 @@ object FutureRuntimeAwait extends LoomRuntimeAwait[Future] {
 
 }
 
-given CpsRuntimeAwait[Future] = FutureRuntimeAwait
+// TODO: enable after JVM-2.1
+given futureRuntimeAwait(using cps.macros.flags.UseLoomAwait):CpsRuntimeAwait[Future] = FutureRuntimeAwait
