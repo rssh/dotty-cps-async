@@ -97,8 +97,8 @@ object AsyncShift extends AsyncShiftLowPriority2 {
       new ArrayOpsAsyncShift[A]()
 
 
- transparent inline given shiftedIndexedSeqOps[A,C[X] <: IndexedSeq[X] & IndexedSeqOps[X,C,C[X]] ]: AsyncShift[C[A]] =
-      cps.runtime.IndexedSeqAsyncShift[A,C,C[A]]()
+ transparent inline given shiftedIndexedSeqOps[A,C[X] <: IndexedSeq[X] & IndexedSeqOps[X,C,C[X]] ]: IndexedSeqAsyncShift[A,C,C[A]] =
+      new IndexedSeqAsyncShift[A,C,C[A]]()
 
  transparent inline given shiftedMapOps[K,V,CC[K,V] <: MapOps[K,V,CC,CC[K,V]] with Iterable[(K,V)]]: AsyncShift[CC[K,V]] =
       cps.runtime.MapOpsAsyncShift[K,V,CC,Iterable,CC[K,V]]()

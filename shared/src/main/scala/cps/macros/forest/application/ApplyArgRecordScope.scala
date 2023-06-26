@@ -117,7 +117,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
          TypeApply(Select.unique(runtimeAwait, "await"),List(Inferred(resultType))),
          List(arg)
        ),
-       List(m,mc)
+       List(mc)
       )
 
 
