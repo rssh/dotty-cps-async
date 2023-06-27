@@ -129,10 +129,17 @@ object DotcInvocations {
     )
   }
 
+
   case class InvocationArgs(
                            extraDotcArgs: List[String] = List.empty,
                            silent: Boolean = false
                            )
+
+  def compileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Unit = {
+    val dotcInvocations = new DotcInvocations(invocationArgs.silent)
+    dotcInvocations.compileFilesInDir(dir,dir,invocationArgs.extraDotcArgs)
+    checkReporter(dotcInvocations.reporter)
+  }
 
   def compileAndRunFilesInDirAndCheckResult(
                                   dir: String,
@@ -146,13 +153,8 @@ object DotcInvocations {
 
     val reporter = dotcInvocations.reporter
     println("summary: " + reporter.summary)
-    if (!reporter.allErrors.isEmpty) {
-      for(err <- reporter.allErrors)  {
-        println(err)
-      }
-    }
+    checkReporter(reporter)
 
-    assert(reporter.allErrors.isEmpty, "There should be no errors")
     //println(s"output=${output}")
     assert(output == expectedOutput, s"The output should be '$expectedOutput', we have '$output''")
 
@@ -166,6 +168,15 @@ object DotcInvocations {
          compileAndRunFilesInDirAndCheckResult(r.inputDir,r.mainClass,r.expectedOutput,dotcArgs)
        }
     }
+  }
+
+  private def checkReporter(reporter: Reporter): Unit = {
+    if (!reporter.allErrors.isEmpty) {
+      for(err <- reporter.allErrors)  {
+        println(s"${err.msg} at ${err.pos.source}:${err.pos.line}:${err.pos.column}")
+      }
+    }
+    assert(reporter.allErrors.isEmpty, "There should be no errors")
   }
 
 }

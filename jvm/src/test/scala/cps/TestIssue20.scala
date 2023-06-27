@@ -25,6 +25,8 @@ class TestIssue20:
  
 
   def runFutureFull(h: EffectHolder): Future[String] =
+    implicit val printCode = cps.macros.flags.PrintCode
+    implicit val debugLevel = cps.macros.flags.DebugLevel(20)
     async[Future]{
       try
         val s = await(Future("hello"))

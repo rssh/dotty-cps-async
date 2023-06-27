@@ -89,6 +89,7 @@ trait AsyncShiftLowPriority2 extends AsyncShiftLowPriority1 {
 object AsyncShift extends AsyncShiftLowPriority2 {
 
  import cps.runtime.*
+ import cps.runtime.concurrent.*
 
  transparent inline given shiftedRange[CA <: Range] : RangeAsyncShift[CA] =
         cps.runtime.RangeAsyncShift[CA]()
@@ -141,6 +142,9 @@ object AsyncShift extends AsyncShiftLowPriority2 {
 
  transparent inline given shiftedBoundary: cps.runtime.util.BoundaryAsyncShift.type =
      cps.runtime.util.BoundaryAsyncShift
+
+ transparent inline given shiftedFutureCM: FutureCMAsyncShift =
+     cps.runtime.concurrent.FutureCMAsyncShift
 
 }
 

@@ -62,7 +62,7 @@ class TestIssue51:
     val f1 = toFutureConversion[CompletableFuture, Unit](a1)
     Await.ready(f1, 1.second)
     assert( f1.value.get.isFailure )
-    val Some(Failure(ex1)) = f1.value
+    //val Some(Failure(ex1)) = f1.value
 
   }
 
