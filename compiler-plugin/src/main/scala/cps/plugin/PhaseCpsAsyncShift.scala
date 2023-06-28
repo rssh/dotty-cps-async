@@ -76,7 +76,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
                   )
                   .changeOwner(fun.symbol, newFunSymbol)
             )
-          shiftedSymbols.addAsyncShift(fun.symbol, newFunSymbol)
+          shiftedSymbols.addAsyncShift(fun.symbol, newMethod)
           newMethods = newMethod :: newMethods
         case _ => ()
 
