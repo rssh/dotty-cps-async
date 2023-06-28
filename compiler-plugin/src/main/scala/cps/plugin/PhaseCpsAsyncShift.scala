@@ -86,25 +86,9 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
       // tree
       cpy.Template(tree)(body = tree.body ++ newMethods)
     }
-    // super.transformTemplate(tree)
     // println(s"after CpsAsyncShift, retval: ${retval.show}")
     retval
   }
-
-  /**
-   * just print symbol info to check - is it changed in phascCps
-   * @param tree
-   * @param Context
-   * @return
-   */
-  override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree =
-    // println(
-    // s"cpsAsyncShift::transformDefDef: ${tree.symbol.name}, ${tree.symbol.info.show}"
-    // )
-    tree
-
-  def changeOwner(param: Symbol, newOwner: Symbol)(using Context): Symbol =
-    param.copy(owner = newOwner)
 
   def transformFunctionBody(tree: tpd.Tree): tpd.Tree =
     // println(s"tparams: ${tree.tparams}")
