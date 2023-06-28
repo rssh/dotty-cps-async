@@ -61,12 +61,14 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
             )
           // create new rhs
           val ctx1: Context = summon[Context].withOwner(newFunSymbol)
+          // TODO: write transformation of func body and tests
           val transformedRhs = transformFunctionBody(fun.rhs)
           val nRhs           = Block(Nil, transformedRhs)(using ctx1)
           val newMethod      =
             DefDef(
               newFunSymbol,
               // create new paramss
+              // TODO: transform all paramss
               newParamss =>
                 TransformUtil
                   .substParams(
