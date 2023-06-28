@@ -44,10 +44,10 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
     var newMethods      = List.empty[DefDef]
     for (
-      tree <- tree.body
-      if tree.symbol.is(Flags.Method) /*&& isHightOrder() && generateCps */
+      bodyTree <- tree.body
+      if bodyTree.symbol.is(Flags.Method) /*&& isHightOrder() && generateCps */
     )
-      tree match
+      bodyTree match
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
@@ -78,7 +78,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
             )
           shiftedSymbols.addAsyncShift(fun.symbol, newMethod)
           newMethods = newMethod :: newMethods
-        case _ => ()
+        case _ => super.transformTemplate(tree)
 
     val retval = if (newMethods.isEmpty) {
       tree
