@@ -49,7 +49,7 @@ trait CpsMonad[F[_]]  {
     * Lazy variant of pure, which by default -
     *  create monadic expression according to the 
     *  choosen monad types.
-    *  (i.e. delaing for effect monads,  
+    *  (i.e. delaying for effect monads,  
     *    starting for eager monand, 
     *    pure by default)
     **/
