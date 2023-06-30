@@ -70,8 +70,9 @@ class TestCBS1ShiftTryMonad:
          )
          await(q)
      }
-     val Success(v) = c.run()
-     assert(v.endsWith("!!!"))
+     c.run() match
+       case Success(v) => assert(v.endsWith("!!!"))
+       case Failure(ex) => assert(false)
 
   @Test def testWithAction(): Unit = 
      val c = async[ComputationBound]{

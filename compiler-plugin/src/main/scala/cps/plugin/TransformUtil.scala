@@ -32,6 +32,16 @@ object TransformUtil {
                      map.get(tree.symbol) match
                         case Some(value) => value
                         case None => tree
+                  case tt: TypeTree =>
+                     tt.tpe match
+                        case tr: TermRef =>
+                           map.get(tr.symbol) match
+                              case Some(value) =>
+                                 TypeTree(value.symbol.termRef)
+                              case None =>
+                                 super.transform(tt)
+                        case _ =>
+                           super.transform(tt)
                   case _ =>
                      super.transform(tree)
             }

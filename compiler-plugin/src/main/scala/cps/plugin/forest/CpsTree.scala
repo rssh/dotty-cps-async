@@ -760,7 +760,7 @@ case class LambdaCpsTree(
   private def createUnshiftedType()(using Context): Type = {
     val params = originDefDef.termParamss.head
     val paramNames = params.map(_.name)
-    val paramTypes = params.map(_.tpe)
+    val paramTypes = params.map(_.tpe.widen)
     MethodType(paramNames)(
       x => paramTypes,
       x => cpsBody.originType

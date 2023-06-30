@@ -97,9 +97,16 @@ sealed trait ExprApplyArg extends ApplyArg {
                             case _ => false
 
   override def isAsyncLambda: Boolean = expr.asyncKind match
-    case AsyncKind.AsyncLambda(internal) => internal != AsyncKind.Sync
+    case AsyncKind.AsyncLambda(internal) =>
+      checkInternalAsyncLambda(internal)
     case _ => false
 
+  def checkInternalAsyncLambda(kind: AsyncKind): Boolean =
+    kind match
+      case AsyncKind.AsyncLambda(internal) =>
+         checkInternalAsyncLambda(internal)
+      case AsyncKind.Async(internal) => true
+      case AsyncKind.Sync => false
 }
 
 
@@ -127,12 +134,9 @@ case class PlainApplyArg(
    **/
    override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree =
     import AsyncKind.*
-    println(s"!exprInCall(${expr.show}), callMode=${callMode}")
     expr.asyncKind match
       case Sync => expr.unpure match
         case Some(tree) =>
-          println(s"!exprInCall: unpure=${tree.show}")
-          // TODO:
           tree
         case None => throw CpsTransformException("Impossibke: syn expression without unpure",expr.origin.srcPos)
       case Async(_) => ref(optIdentValDef.get.symbol)

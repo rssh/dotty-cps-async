@@ -1,16 +1,16 @@
 package cps.stream
 
-import scala.util._
+import scala.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.CancellationException
-import java.util.concurrent.atomic._
-
-import scala.quoted._
-import scala.concurrent._
-
-import cps.{*,given}
+import java.util.concurrent.atomic.*
+import scala.quoted.*
+import scala.concurrent.*
+import cps.{*, given}
 import cps.macros.common.*
+import cps.macros.flags.UseCompilerPlugin
 import cps.macros.misc.*
+import cps.plugin.*
 
 
 /**
@@ -69,8 +69,16 @@ object CpsAsyncStreamMacro:
     def transform[R:Type, F[_]:Type, C<:CpsMonadContext[F]:Type, T:Type](f: Expr[ C ?=> CpsAsyncEmitter[F,T] => Unit], 
                                              absorber: Expr[CpsAsyncEmitAbsorber.Aux[R,F,C,T]])(using Quotes): Expr[R] = {
           import quotes.reflect._
-          val r = transformTree[R,F,C,T](f.asTerm, absorber)
-          r.asExprOf[R]
+          Expr.summon[UseCompilerPlugin] match
+            case Some(_) =>
+              val refCpsAsyncStreamAppky = Ref(Symbol.requiredMethod("cps.plugin.cpsAsyncStreamApply"))
+              Apply(
+                TypeApply( refCpsAsyncStreamAppky, List(TypeTree.of[R], TypeTree.of[F], TypeTree.of[T], TypeTree.of[C])),
+                List(absorber.asTerm, f.asTerm)
+              ).asExprOf[R]
+            case None =>
+              val r = transformTree[R,F,C,T](f.asTerm, absorber)
+              r.asExprOf[R]
     }
           
     def transformTree[R:Type, F[_]:Type, C<:CpsMonadContext[F]:Type, T:Type](using qctx: Quotes)(

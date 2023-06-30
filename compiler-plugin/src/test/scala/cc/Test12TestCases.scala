@@ -7,10 +7,14 @@ import org.junit.Test
  */
 class Test12TestCases {
 
-  @Test
-  def testCompileBaseFutureTest(): Unit = {
-    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m1")
-  }
+  //@Test
+  //def testCompileBaseFutureTest(): Unit = {
+  //  DotcInvocations.compileFilesInDir("testdata/set12TestCases/m1")
+  //}
 
+  @Test
+  def testCompileAsyncListStress(): Unit = {
+    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m2")
+  }
 
 }

@@ -151,9 +151,12 @@ class TestСBS1Try:
      }
      val r = c.run()
      assert(r.isFailure)
-     val Failure(ex) = r
-     assert(ex.getMessage == "BBB")
-     assert(x == 2)
+     r match
+       case Failure(ex) =>
+         assert(ex.getMessage == "BBB")
+         assert(x == 2)
+       case _ =>
+         assert(false)
 
 
   @Test def tryAsyncInFinalizer(): Unit = 

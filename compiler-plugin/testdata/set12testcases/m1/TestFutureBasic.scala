@@ -11,6 +11,10 @@ import scala.concurrent.duration.*
 import cps.*
 import cps.monads.{*,given}
 
+import cps.macros.flags.*
+
+given UseCompilerPlugin.type = UseCompilerPlugin
+
 
 
 class TestFutureBasic:

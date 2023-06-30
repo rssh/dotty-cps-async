@@ -130,7 +130,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
               applyCn.mangledString == "apply"
            =>
 
-            val nDefDef = transformDefDefInsideAsync(ddef, tree)
+            val nDefDef = transformDefDefInsideAsync(ddef, tree, true)
             val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
 
             val applyMArg = Block(nDefDef::Nil, nClosure).withSpan(ctxFun.span)
@@ -153,7 +153,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
             (ddef, closure)
           case _ =>
             throw CpsTransformException(s"excepted that second argument of cpsAsyncApply is closure, we have $ctxFun", tree.srcPos)
-        val nDefDef = transformDefDefInsideAsync(ddef, tree)
+        val nDefDef = transformDefDefInsideAsync(ddef, tree, false)
         val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
         val applyArg = Block(nDefDef::Nil, nClosure).withSpan(ctxFun.span)
         val nApply = cpy.Apply(tree)(
@@ -161,6 +161,11 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
           List(applyArg)
         )
         nApply
+      case Apply(
+             TypeApply( cpsAsyncStreamApplyCn, List(rType, fType, tType, cType)  ),
+             List(absorber, ctxFun)
+           ) if (cpsAsyncStreamApplyCn.symbol == Symbols.requiredMethod("cps.plugin.cpsAsyncStreamApply")) =>
+        transformCpsAsyncStreamApply(tree,absorber,ctxFun)
       case _ => super.transformApply(tree)
 
  
@@ -169,11 +174,15 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
 
 
 
-  private def transformDefDefInsideAsync(ddef: DefDef, asyncCallTree: Tree)(using ctx:Context): DefDef = {
+  private def transformDefDefInsideAsync(ddef: DefDef, asyncCallTree: Tree, contextual: Boolean)(using ctx:Context): DefDef = {
     val cpsMonadContext = ddef.paramss.head.head
     val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, CpsTransformHelper.cpsMonadContextClassSymbol, asyncCallTree.srcPos)
     val nRhsType = CpsTransformHelper.cpsTransformedType(ddef.rhs.tpe.widen, monadType)
-    val mt = ContextualMethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.symbol.info), _ => nRhsType)
+    val mt = if (contextual) {
+      ContextualMethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
+    } else {
+      MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
+    }
     val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
     val nDefDef = DefDef(newSym, paramss => {
       given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
@@ -187,21 +196,93 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
   }
 
 
+  /**
+   * '''
+   * *  cpsAsyncStreamApply[R,F[_],T,C](absorber, { CtxContext ?=> (Emitter => (body: Unit)) })
+   * '''
+   *
+   * will be transformed to:
+   *
+   * ```
+   *  ${absorber}.eval(CtxContext => (Emitter => cpsTransform(body):F[Unit]))
+   * ```
+   * */
+  private def transformCpsAsyncStreamApply(origin: Apply, absorber: Tree, funfun: Tree)(using ctx:Context): Tree = {
+     Apply(
+       Select(absorber, "eval".toTermName),
+       List(
+          transformDefDef1InsideCpsAsyncStreamApply(funfun, ctx.owner)
+       )
+     ).withSpan(origin.span)
+  }
+
+  private def transformDefDef1InsideCpsAsyncStreamApply(funfun: Tree, owner: Symbol)(using ctx: Context): Tree = {
+    funfun match
+      case Inlined(call, env, body) =>
+        if (env.isEmpty) {
+          transformDefDef1InsideCpsAsyncStreamApply(body, owner)
+        } else {
+          Inlined(call, env, transformDefDef1InsideCpsAsyncStreamApply(body, owner))
+        }
+      case Block((ddef: DefDef)::Nil, closure: Closure) =>
+        val ctxValDef = ddef.paramss.head.head
+        val ctxRef = ref(ctxValDef.symbol)
+        val nInternalLambda = transformDefDef2InsideCpsAsyncStreamApply(ddef.rhs, ctxRef)(using ctx.withOwner(ddef.symbol))
+        val mt = MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.typeOpt.widen), _ => nInternalLambda.tpe.widen)
+        println(s"transformDefDef1InsideCpsAsyncStreamApply: mt=$mt, ddef.params=${ddef.paramss.head.map(_.show)}")
+        val newSym = Symbols.newAnonFun(owner, mt, ddef.span)
+        val nDefDef = DefDef(newSym, { paramss =>
+          println(s"transformDefDef1InsideCpsAsyncStreamApply: nInternalLambda=${nInternalLambda.show}")
+          val retval = TransformUtil.substParams(nInternalLambda,ddef.paramss.head.asInstanceOf[List[ValDef]],paramss.head).changeOwner(ddef.symbol, newSym)
+          println(s"transformDefDef1InsideCpsAsyncStreamApply: substParamsResult=${retval.show}")
+          retval
+        })
+        val nClosure = Closure(closure.env, ref(newSym), EmptyTree).withSpan(closure.span)
+        val nBlock = Block(nDefDef::Nil, nClosure).withSpan(funfun.span)
+        nBlock
+  }
+
+  private def transformDefDef2InsideCpsAsyncStreamApply(fun:Tree, ctxRef: Tree)(using ctx: Context): Tree = {
+    fun match
+      case Inlined(call, env, body) =>
+        Inlined(call, env, transformDefDef2InsideCpsAsyncStreamApply(body, ctxRef))
+      case Block((ddef: DefDef)::Nil, closure: Closure) if (ddef.symbol == closure.meth.symbol) =>
+        //val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, CpsTransformHelper.cpsMonadContextClassSymbol, asyncCallTree.srcPos)
+        val tctx = makeCpsTopLevelContext(ctxRef, ddef.symbol, ddef.rhs.srcPos, DebugSettings.make(ddef), CpsTransformHelper.cpsMonadContextClassSymbol)
+        val ddefContext = ctx.withOwner(ddef.symbol)
+        val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefContext, tctx)
+        val nRhs = Block(tctx.cpsMonadValDef::Nil, nRhsCps.transformed(using ddefContext, tctx))
+        val mt = MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.typeOpt.widen), _ => nRhs.tpe.widen)
+        println(s"transformDefDef2InsideCpsAsyncStreamApply: mt=$mt, ddef.params=${ddef.paramss.head.map(_.show)}")
+        val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
+        val nDefDef = DefDef(newSym, { paramss =>
+            println(s"transformDefDef2InsideCpsAsyncStreamApply: nRhs=${nRhs.show}, paramms.head=${paramss.head.map(_.show)}")
+            println(s"transformDefDef2InsideCpsAsyncStreamApply: nRhs.tree=${nRhs}")
+            val retval = TransformUtil.substParams(nRhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head).changeOwner(ddef.symbol, newSym)
+            println(s"transformDefDef2InsideCpsAsyncStreamApply: substParamsResult=${retval.show}")
+            retval
+        })
+        val nClosure = Closure(closure.env, ref(newSym), EmptyTree).withSpan(closure.span)
+        val nBlock = Block(nDefDef::Nil, nClosure).withSpan(fun.span)
+        nBlock
+  }
+
+
 
   /**
    * create cps top-level context for transformation.
-   * @param cpsDirectContext - reference to cpsMonadContext.
+   * @param cpsDirectOrSimpleContext - reference to cpsMonadContext.
    * @param srcPos - position whre show monadInit
    **/
-  private def makeCpsTopLevelContext(cpsDirectContext: Tree, owner:Symbol, srcPos: SrcPos, debugSettings:DebugSettings, wrapperSym: ClassSymbol)(using Context): CpsTopLevelContext =  {
-    println(s"mekeCpsTopLevelContext: cpsDirectContext=${cpsDirectContext}")
-    cpsDirectContext match
+  private def makeCpsTopLevelContext(cpsDirectOrSimpleContext: Tree, owner:Symbol, srcPos: SrcPos, debugSettings:DebugSettings, wrapperSym: ClassSymbol)(using Context): CpsTopLevelContext =  {
+    println(s"mekeCpsTopLevelContext: cpsDirectContext=${cpsDirectOrSimpleContext}")
+    cpsDirectOrSimpleContext match
       case vd: ValDef =>
         println("!! - found incorrect makeCpsTopLevelContext")
         throw CpsTransformException("incorrect makeCpsTopLevelContext", srcPos)
       case _ =>
-    val monadInit = Select(cpsDirectContext, "monad".toTermName).withSpan(srcPos.span)
-    val monadType = CpsTransformHelper.extractMonadType(cpsDirectContext.tpe.widen, wrapperSym, srcPos)
+    val monadInit = Select(cpsDirectOrSimpleContext, "monad".toTermName).withSpan(srcPos.span)
+    val monadType = CpsTransformHelper.extractMonadType(cpsDirectOrSimpleContext.tpe.widen, wrapperSym, srcPos)
     val optRuntimeAwait = if(settings.useLoom) CpsTransformHelper.findRuntimeAwait(monadType, srcPos.span) else None
     val monadValDef = SyntheticValDef("m".toTermName, monadInit)(using summon[Context].fresh.setOwner(owner))
     println(s"monadValDef=${monadValDef.show}")
@@ -214,7 +295,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
                           else if (runsAfter.contains(Inlining.name)) { false }
                           else
                              throw new CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
-    val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectContext,
+    val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectOrSimpleContext,
                                 optRuntimeAwait, optThrowSupport, optTrySupport,
                                 debugSettings, isBeforeInliner)
     tc

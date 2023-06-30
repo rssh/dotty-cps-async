@@ -543,7 +543,7 @@ object ApplyTransform {
               report.error("Can't find async-shifted method or implicit AsyncShift for "+obj.show, fun.srcPos)
               report.error(s" method search: $err", fun.srcPos)
               report.error(s" implicit AsyncShifg object search: $err1", fun.srcPos)
-              throw CpsTransformException("Cn't find async-shifted method or implicit AsyncShift for "+obj.show, fun.srcPos)
+              throw CpsTransformException(s"Cn't find async-shifted method or implicit AsyncShift for ${obj.show}, method ${methodName}", fun.srcPos)
         case Right(methodsWithShape) =>
           methodsWithShape.headOption match
             case Some((sym,shape)) =>
