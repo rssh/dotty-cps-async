@@ -268,19 +268,14 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
    * @param srcPos - position whre show monadInit
    **/
   private def makeCpsTopLevelContext(cpsDirectOrSimpleContext: Tree, owner:Symbol, srcPos: SrcPos, debugSettings:DebugSettings, wrapperSym: ClassSymbol)(using Context): CpsTopLevelContext =  {
-    println(s"mekeCpsTopLevelContext: cpsDirectContext=${cpsDirectOrSimpleContext}")
     cpsDirectOrSimpleContext match
       case vd: ValDef =>
-        println("!! - found incorrect makeCpsTopLevelContext")
         throw CpsTransformException("incorrect makeCpsTopLevelContext", srcPos)
       case _ =>
     val monadInit = Select(cpsDirectOrSimpleContext, "monad".toTermName).withSpan(srcPos.span)
     val monadType = CpsTransformHelper.extractMonadType(cpsDirectOrSimpleContext.tpe.widen, wrapperSym, srcPos)
     val optRuntimeAwait = if(settings.useLoom) CpsTransformHelper.findRuntimeAwait(monadType, srcPos.span) else None
     val monadValDef = SyntheticValDef("m".toTermName, monadInit)(using summon[Context].fresh.setOwner(owner))
-    println(s"monadValDef=${monadValDef.show}")
-    //val monadValDef = monadValDef0.changeOwner(monadValDef0.symbol.owner, tree.symbol)
-    //println(s"!! monadVaDef0.owner.id=${monadValDef0.symbol.owner.id}, monadValDef.owner.id=${monadValDef.symbol.owner.id}, tree.symbol.id=${tree.symbol.id}")
     val monadRef = ref(monadValDef.symbol)
     val optThrowSupport = CpsTransformHelper.findCpsThrowSupport(monadType, srcPos.span)
     val optTrySupport = CpsTransformHelper.findCpsTrySupport(monadType, srcPos.span)

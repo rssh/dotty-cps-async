@@ -240,8 +240,11 @@ class TestСBS1Try:
       }
       val r = c.run()
       assert(r.isFailure)
-      val Failure(ex) = r
-      assert(ex.isInstanceOf[Ex2])
+      r match
+        case Failure(ex) =>
+          assert(ex.isInstanceOf[Ex2])
+        case _ =>
+          assert(false)
   }
      
 
