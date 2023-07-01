@@ -163,50 +163,35 @@ object InlinedTransform {
     def unapply(tree:Inlined)(using Context, CpsTopLevelContext): Option[Tree] = {
       // This can depends from the compiler implementation.
       //  Note, that expected naive Inlined(Apply(TypeApply("async"),...) is not here.
+      println(s"InlinedTransform: checkInline, tree.call.symbol.id=${tree.call.symbol.id}, asynsSymbol.id=${Symbols.requiredClass("cps.macros.Async$").id}")
+      println(s"InlinedTransform: checkInline, tree.call.symbol == asyncSymbol = ${tree.call.symbol == Symbols.requiredClass("cps.macros.Async$")}")
       tree.call match
-        case id: Ident =>
-           if (id.symbol == Symbols.requiredClass("cps.macros.Async$"))
+        case id if (id.symbol == Symbols.requiredClass("cps.macros.Async$")) =>
              tree.expansion match
-               case Apply(TypeApply(sel@Select(obj@Select(Ident(inferArgCn), amCn),method), targs), args)
-                 if (method == "apply".toTermName  &&
-                   inferArgCn == "InferAsyncArg_this".toTermName &&
-                   amCn == "am".toTermName
-                 ) =>
-                 println("sel.symbol.fullName="+sel.symbol.fullName)
-                 println("obj.symbol.fullName="+obj.symbol.fullName)
-                 obj.tpe.widen match
-                   case AppliedType(tfun, targs) =>
-                     println(s"InlinedAsyncCall: obj.tpe.widen is AppliedType")
-                     val cpsMonadModule = Symbols.requiredModule("cps.CpsMonad")
-                     val auxMember = cpsMonadModule.requiredType("Aux")
-                     println(s"InlinedAsyncCall: auxMember=${auxMember}")
-                     println(s"InlinedAsyncCall: tsym.symbol==CpsMonad_d.Aux =${tfun.typeSymbol == Symbols.requiredClass("cps.CpsMonad$.Aux")}")
-                     println(s"InlinedAsyncCall: obj.tpe.widen.typeSymbol = ${obj.tpe.widen.typeSymbol}")
-                     println(s"InlinedAsyncCall: obj.tpe.widen.typeSymbol.owner = ${obj.tpe.widen.typeSymbol.owner}")
-                     println(s"InlinedAsyncCall: obj.tpe.widen.isAux = ${obj.tpe.widen.typeSymbol == auxMember}")
-
-                     println(s"InlinedAsyncCall: tfun.typeSymbol==Aux = ${tfun.typeSymbol == auxMember}")
-                     if (tfun.typeSymbol == auxMember) {
-                       // TODO:  check types
-                       val internalMonadType = targs(0)
-                       val internalContextType = targs(1)
-                       if !(internalMonadType =:= summon[CpsTopLevelContext].monadType) then
-                         throw CpsTransformException(s"Type mismatch - nested async should share one monad, we have ${internalMonadType.show} and ${summon[CpsTopLevelContext].monadType.show}", tree.srcPos)
-                       Some(tree.expansion)
-                     } else
-                       None
-                   case _ =>
-                     None
-               case Block((ddef: DefDef)::Nil, closure: Closure)  if ddef.symbol == closure.meth.symbol =>
-                 println(s"InlinedAsyncCall: Lambda in expansion")
-                 None
+               case InferAsyncArgMonadApplyCall(tree) =>
+                 Some(tree)
                case _ =>
-                 None
-           else {
-             None
-           }
+                 report.warning(s"InlinedAsyncCall/cps.macro.Asygn: unparsed stuff in expansion:${tree.expansion.show}")
+                 report.warning(s"InlinedAsyncCall/cps.macro.Asygn: unparsed tree:${tree.expansion}")
+                 //
+                 Some(tree.expansion)
         case _ => None
     }
+
+  }
+
+  object InferAsyncArgMonadApplyCall {
+
+    def unapply(tree:Tree)(using Context): Option[Tree] = tree match
+      case Inlined(call,Nil,expansion) =>
+        unapply(expansion)
+      case Apply(TypeApply(sel@Select(obj, method), targs), args) =>
+        val monadType = Symbols.requiredClass("cps.CpsMonad")
+        val objIsMonad = obj.tpe.baseType(monadType) != NoType
+        if (objIsMonad && sel.symbol.name == "apply".toTermName)
+          Some(tree)
+        else None
+      case _ => None
 
   }
 

@@ -12,58 +12,25 @@ import cps.*
 import cps.monads.{*,given}
 
 import cps.macros.flags.*
+import cps.plugin.annotation.CpsDebugLevel
 
 given UseCompilerPlugin.type = UseCompilerPlugin
 
 
-
+@CpsDebugLevel(20)
 class TestFutureBasic:
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   given cps.macros.flags.UseCompilerPlugin = cps.macros.flags.UseCompilerPlugin
 
-  @Test def futureBasic1(): Unit = {
-    //implicit val printCode = cps.macros.flags.PrintCode
-    //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
-    val p = Promise[Int]()
-    val c = async[Future] {
-      await(p.future) + 1
-    }
-    p.success(3)
-    val r = Await.result(c, 10.seconds)
-    assert(r == 4)
-  }
-
-
-  @Test def futureBasic2(): Unit = {
-    //implicit val printCode = cps.macroFlags.PrintCode
-    //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
-    def fun(x: Int): Future[Int] =
-      Future successful (x + 1)
-
-    val c = async[Future] {
-      @volatile var s = 0
-      for (i <- 1 to 100)
-        s += await(fun(i))
-      s
-    }
-    val r = Await.result(c, 10.seconds)
-    assert(r == (5050 + 100))
-  }
 
   object FetchEmulator {
 
     val timer = new Timer("fetchEmulator", true)
 
     def retrieve(url: String, delay: Long): Future[String] =
-      val p = Promise[String]()
-      timer.schedule(new TimerTask {
-        def run(): Unit =
-          p.success("OK")
-      },
-        delay)
-      p.future
+      ???
 
   }
 

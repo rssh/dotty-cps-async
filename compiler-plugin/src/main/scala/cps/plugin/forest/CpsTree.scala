@@ -241,12 +241,7 @@ case class PureCpsTree(
 
   override def select(origin: Select)(using Context, CpsTopLevelContext): CpsTree = {
     if (isOriginEqSync && (origin.qualifier eq this.origin)) {
-      val r = CpsTree.unchangedPure(origin, owner)
-      if (owner eq origin.symbol.owner) {
-        r
-      } else {
-        r.changeOwner(origin.symbol.owner)
-      }
+      CpsTree.unchangedPure(origin, owner)
     } else {
       CpsTree.pure(origin,owner,Select(term,Types.TermRef(term.tpe,origin.symbol)))
       //super.select(origin)

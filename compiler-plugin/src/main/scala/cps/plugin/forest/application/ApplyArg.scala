@@ -10,6 +10,7 @@ import core.Types.*
 import ast.tpd.*
 import cps.plugin.*
 import cps.plugin.forest.*
+import dotty.tools.dotc.ast.tpd
 
 import scala.util.control.NonFatal
 
@@ -20,6 +21,7 @@ enum ApplyArgCallMode {
 sealed trait ApplyArg {
     def name: TermName
     def tpe:  Type
+    def origin: Tree
 
     def isAsync: Boolean
     def isLambda: Boolean
@@ -87,6 +89,8 @@ object ApplyArg {
 sealed trait ExprApplyArg extends ApplyArg {
 
   def expr: CpsTree
+
+  override def origin: tpd.Tree = expr.origin
 
   override def isAsync = expr.asyncKind match
                             case AsyncKind.Async(_) => true
@@ -169,7 +173,7 @@ case class RepeatApplyArg(
   override val tpe: Type,
   elements: Seq[ApplyArg],
   elementTpt: Tree,
-  origin: Tree,
+  override val origin: Tree,
 ) extends ApplyArg {
 
   override def isAsync = elements.exists(_.isAsync)
@@ -292,6 +296,8 @@ case class ErasedApplyArg(
            val exprTree: Tree,
   override val isDirectContext: Boolean
 ) extends ApplyArg {
+
+  override def origin: tpd.Tree = exprTree
 
   def isAsync: Boolean =
     false

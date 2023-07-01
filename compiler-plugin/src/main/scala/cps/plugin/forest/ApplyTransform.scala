@@ -57,6 +57,12 @@ object ApplyTransform {
              else
                Log.trace(s"cpsAwait not recognized",nesting)
                applyMArgs(term, owner, nesting, Nil)
+        case Apply(TypeApply(adoptCpsedCallCn,List(tf,ta)),List(a))
+                  if (adoptCpsedCallCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")) =>
+             //  this means that we walk over nesting async.
+             //  leave one unchanged
+             Log.trace(s"adoptCpsedCall form at : ${term.show}", nesting)
+             CpsTree.unchangedPure(term, owner)
         case Apply(Apply(TypeApply(fAsynchronizedCm,List(tf,ta)),List(a)),List(fctx))
                          if (fAsynchronizedCm.symbol == Symbols.requiredMethod("cps.asynchronized")) =>
               println("is cps.asynchronized")
@@ -269,6 +275,7 @@ object ApplyTransform {
             Log.trace(s"parseSyncFunPureApplication.fold,  s=${s.show}, args=${args.map(_.show)}", nesting)
             val exprsInCalls = args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))
             Log.trace(s"parseSyncFunPureApplication.fold,  exprsInCalls=${exprsInCalls.map(_.show)}", nesting)
+            Log.trace(s"parseSyncFunPureApplication.fold,  exprsInCalls==args: ${exprsInCalls == args.map(_.origin)}",nesting)
             val s1 = Apply(s,exprsInCalls).withSpan(orig.span)
             Log.trace(s"parseSyncFunPureApplication.fold,  s1=${s1.show}", nesting)
             s1
