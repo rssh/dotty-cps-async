@@ -229,12 +229,9 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         val ctxRef = ref(ctxValDef.symbol)
         val nInternalLambda = transformDefDef2InsideCpsAsyncStreamApply(ddef.rhs, ctxRef)(using ctx.withOwner(ddef.symbol))
         val mt = MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.typeOpt.widen), _ => nInternalLambda.tpe.widen)
-        println(s"transformDefDef1InsideCpsAsyncStreamApply: mt=$mt, ddef.params=${ddef.paramss.head.map(_.show)}")
         val newSym = Symbols.newAnonFun(owner, mt, ddef.span)
         val nDefDef = DefDef(newSym, { paramss =>
-          println(s"transformDefDef1InsideCpsAsyncStreamApply: nInternalLambda=${nInternalLambda.show}")
           val retval = TransformUtil.substParams(nInternalLambda,ddef.paramss.head.asInstanceOf[List[ValDef]],paramss.head).changeOwner(ddef.symbol, newSym)
-          println(s"transformDefDef1InsideCpsAsyncStreamApply: substParamsResult=${retval.show}")
           retval
         })
         val nClosure = Closure(closure.env, ref(newSym), EmptyTree).withSpan(closure.span)
@@ -253,13 +250,9 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefContext, tctx)
         val nRhs = Block(tctx.cpsMonadValDef::Nil, nRhsCps.transformed(using ddefContext, tctx))
         val mt = MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.typeOpt.widen), _ => nRhs.tpe.widen)
-        println(s"transformDefDef2InsideCpsAsyncStreamApply: mt=$mt, ddef.params=${ddef.paramss.head.map(_.show)}")
         val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
         val nDefDef = DefDef(newSym, { paramss =>
-            println(s"transformDefDef2InsideCpsAsyncStreamApply: nRhs=${nRhs.show}, paramms.head=${paramss.head.map(_.show)}")
-            println(s"transformDefDef2InsideCpsAsyncStreamApply: nRhs.tree=${nRhs}")
             val retval = TransformUtil.substParams(nRhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head).changeOwner(ddef.symbol, newSym)
-            println(s"transformDefDef2InsideCpsAsyncStreamApply: substParamsResult=${retval.show}")
             retval
         })
         val nClosure = Closure(closure.env, ref(newSym), EmptyTree).withSpan(closure.span)

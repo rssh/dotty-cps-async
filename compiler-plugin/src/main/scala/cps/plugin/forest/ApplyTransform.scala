@@ -276,7 +276,12 @@ object ApplyTransform {
             val exprsInCalls = args.map(_.exprInCall(ApplyArgCallMode.SYNC,None))
             Log.trace(s"parseSyncFunPureApplication.fold,  exprsInCalls=${exprsInCalls.map(_.show)}", nesting)
             Log.trace(s"parseSyncFunPureApplication.fold,  exprsInCalls==args: ${exprsInCalls == args.map(_.origin)}",nesting)
-            val s1 = Apply(s,exprsInCalls).withSpan(orig.span)
+            // workarrond for https://github.com/lampepfl/dotty/issues/18113
+            val s1 = s match
+              case Block(head::tail,fun) =>
+                Apply(Inlined(s,List.empty,s),exprsInCalls).withSpan(orig.span)
+              case _ =>
+                Apply(s,exprsInCalls).withSpan(orig.span)
             Log.trace(s"parseSyncFunPureApplication.fold,  s1=${s1.show}", nesting)
             s1
      }
@@ -322,7 +327,13 @@ object ApplyTransform {
         case ApplyTypeArgList(origin, targs) =>
           TypeApply(fun, targs).withSpan(origin.span)
         case ApplyTermArgList(origin, args) =>
-          Apply(fun, args.map(f)).withSpan(origin.span)
+          // workarrond for https://github.com/lampepfl/dotty/issues/18113
+          val fun1 = fun match
+            case Block(head::tail,fun) =>
+               Inlined(fun,List.empty,fun)
+            case _ =>
+                fun
+          Apply(fun1, args.map(f)).withSpan(origin.span)
       tree
     }
 
