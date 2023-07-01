@@ -248,10 +248,6 @@ case class PureCpsTree(
         r.changeOwner(origin.symbol.owner)
       }
     } else {
-      println(s"PureTransform:select,  origion.type=${origin.tpe.show}")
-      println(s"PureTransform:select,  term.type=${term.tpe.show}")
-      println(s"PureTransform:select,  term.select1=${term.select(origin.symbol)}")
-      println(s"PureTransform:select,  term.select2=${Select(term,Types.TermRef(term.tpe,origin.symbol))}")
       CpsTree.pure(origin,owner,Select(term,Types.TermRef(term.tpe,origin.symbol)))
       //super.select(origin)
     }
@@ -763,7 +759,7 @@ case class LambdaCpsTree(
     val paramTypes = params.map(_.tpe.widen)
     MethodType(paramNames)(
       x => paramTypes,
-      x => cpsBody.originType
+      x => cpsBody.originType.widen
     )    
   }
 
