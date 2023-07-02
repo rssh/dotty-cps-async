@@ -17,6 +17,8 @@ sealed trait ApplyArgList {
   def containsDirectContext: Boolean
   def show(using Context):String
   def origin: Tree
+  def isTypeParams: Boolean
+  def isPlainParams: Boolean
 }
 
 
@@ -28,6 +30,8 @@ case class ApplyTermArgList(
   override def containsAsyncLambda = args.exists(_.isAsyncLambda)
   override def containsDirectContext = args.exists(_.isDirectContext)
   override def origin = originApplyTerm
+  override def isTypeParams = false
+  override def isPlainParams = true
 
   override def show(using Context): String = {
     s"ApplyTermArgList(${args.map(_.show)})"
@@ -46,6 +50,8 @@ case class ApplyTypeArgList(
   override def show(using Context): String = {
     s"ApplyTypeArgList(${args})"
   }
+  override def isTypeParams = true
+  override def isPlainParams = false
 }
 
 

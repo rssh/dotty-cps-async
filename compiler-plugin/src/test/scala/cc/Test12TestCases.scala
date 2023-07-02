@@ -17,4 +17,52 @@ class Test12TestCases {
     DotcInvocations.compileFilesInDir("testdata/set12TestCases/m2")
   }
 
+
+  def compileCommon(): Unit = {
+    if (!Test12TestCases.commonCompiled) {
+      DotcInvocations.compileFilesInDir("testdata/set12TestCases/common")
+      Test12TestCases.commonCompiled = true
+      println("-----finish common compilation-----")
+    }
+  }
+
+  @Test
+  def testCompileCBS1Apply(): Unit = {
+    compileCommon()
+    val classpath = s"testdata/set12TestCases/common:${System.getProperty("java.class.path")}"
+    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
+    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m3", secondInvokationArgs)
+  }
+
+  @Test
+  def testCompileCBS1ApplyMin(): Unit = {
+    compileCommon()
+    val classpath = s"testdata/set12TestCases/common:${System.getProperty("java.class.path")}"
+    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
+  }
+
+  @Test
+  def testCompileCBS1ApplyMin2(): Unit = {
+    compileCommon()
+    val classpath = s"testdata/set12TestCases/common:${System.getProperty("java.class.path")}"
+    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
+    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m3_min2", secondInvokationArgs)
+  }
+
+  @Test
+  def testCompileCBS1ApplyMin3(): Unit = {
+    compileCommon()
+    val classpath = s"testdata/set12TestCases/common:${System.getProperty("java.class.path")}"
+    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
+    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m3_min3", secondInvokationArgs)
+  }
+
+}
+
+
+object Test12TestCases {
+
+  // Hack
+  var commonCompiled = false
+
 }

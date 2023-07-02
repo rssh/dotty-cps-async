@@ -17,7 +17,7 @@ import cps.plugin.annotation.CpsDebugLevel
 given UseCompilerPlugin.type = UseCompilerPlugin
 
 
-@CpsDebugLevel(20)
+//@CpsDebugLevel(20)
 class TestFutureBasic:
 
   import scala.concurrent.ExecutionContext.Implicits.global

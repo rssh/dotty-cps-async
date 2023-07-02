@@ -163,8 +163,6 @@ object InlinedTransform {
     def unapply(tree:Inlined)(using Context, CpsTopLevelContext): Option[Tree] = {
       // This can depends from the compiler implementation.
       //  Note, that expected naive Inlined(Apply(TypeApply("async"),...) is not here.
-      println(s"InlinedTransform: checkInline, tree.call.symbol.id=${tree.call.symbol.id}, asynsSymbol.id=${Symbols.requiredClass("cps.macros.Async$").id}")
-      println(s"InlinedTransform: checkInline, tree.call.symbol == asyncSymbol = ${tree.call.symbol == Symbols.requiredClass("cps.macros.Async$")}")
       tree.call match
         case id if (id.symbol == Symbols.requiredClass("cps.macros.Async$")) =>
              tree.expansion match
