@@ -36,18 +36,26 @@ object ValDefTransform {
                                     CpsTree.unit(owner)
                               )
                         )
-                  case rhsFun: AsyncKind.AsyncLambda =>
+                  case rhsFunJind: AsyncKind.AsyncLambda =>
                         // here value is a function.
-                        tctx.optRuntimeAwait match
-                              case Some(runtimeAwait) => 
-                                    val newLambda = cpsRhs.applyRuntimeAwait(runtimeAwait).unpure.get
-                                    val nValDef = cpy.ValDef(term)(term.name,term.tpt,rhs=newLambda)
-                                    CpsTree.pure(term,owner,nValDef)
+                        cpsRhs.unpure match
+                              case Some(rhs) =>
+                                    if (cpsRhs.isOriginEqSync) then
+                                          CpsTree.unchangedPure(term,owner)
+                                    else
+                                          val nValDef = cpy.ValDef(term)(term.name,term.tpt,rhs)
+                                          CpsTree.pure(term,owner,nValDef)
                               case None =>
-                                    //we can't change types in plugin,
-                                    // Theoretically it's possible to track usage of ValDef and fix xhanged,
-                                    //  but let think about this after an initial release
-                                    throw CpsTransformException(s"Functional variable trasnfrom is not supported",term.srcPos)
+                                    tctx.optRuntimeAwait match
+                                          case Some(runtimeAwait) =>
+                                                val newLambda = cpsRhs.applyRuntimeAwait(runtimeAwait).unpure.get
+                                                val nValDef = cpy.ValDef(term)(term.name,term.tpt,rhs=newLambda)
+                                                CpsTree.pure(term,owner,nValDef)
+                                          case None =>
+                                                //we can't change types in plugin,
+                                                // Theoretically it's possible to track usage of ValDef and fix xhanged,
+                                                //  but let think about this after an initial release
+                                                throw CpsTransformException(s"Functional variable trasnfrom is not supported",term.srcPos)
 
 
       }
