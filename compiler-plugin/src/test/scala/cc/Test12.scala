@@ -10,7 +10,7 @@ class Test12 {
     DotcInvocations.compileAndRunFilesInDirAndCheckResult(
       "testdata/set12/m1",
       "cpstest.Test12m1",
-      "myurl\n"
+      "myurltransformed\n"
     )
     val reporter        = dotcInvocations.reporter
     println("summary: " + reporter.summary)
