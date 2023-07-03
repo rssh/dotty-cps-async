@@ -63,7 +63,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
           val ctx1: Context = summon[Context].withOwner(newFunSymbol)
           // TODO: write transformation of func body and tests
           val transformedRhs = transformFunctionBody(fun.rhs)
-          val nRhs           = Block(Nil, transformedRhs)(using ctx1)
+          // val nRhs           = Block(Nil, transformedRhs)(using ctx1)
           val newMethod      =
             DefDef(
               newFunSymbol,
@@ -72,7 +72,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
               newParamss =>
                 TransformUtil
                   .substParams(
-                    nRhs,
+                    transformedRhs,
                     fun.paramss.head.asInstanceOf[List[ValDef]],
                     newParamss.head
                   )
@@ -92,10 +92,12 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     retval
   }
 
-  def transformFunctionBody(tree: tpd.Tree): tpd.Tree =
-    // println(s"tparams: ${tree.tparams}")
-    // println(s"vparams: ${tree.vparamss}")
-    tree
+  def transformFunctionBody(tree: tpd.Tree)(using Context): tpd.Tree =
+    val transformed =
+      ref(tree.symbol)
+        .select(defn.String_+)
+        .appliedTo(tpd.Literal(Constant("transformed")))
+    transformed
 
 }
 
