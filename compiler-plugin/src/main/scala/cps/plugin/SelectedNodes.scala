@@ -84,6 +84,18 @@ object SelectedNodes {
 
 
   /**
+   * determinate kind
+   */
+  def detectDefDefSelectKind(tree: DefDef)(using Context): Option[DefDefSelectKind] = {
+    val optKind = SelectedNodes.checkAndProcessDefDef(tree) {
+      (tree, monadContext) => Some(DefDefSelectKind.USING_CONTEXT_PARAM(monadContext))
+    } {
+      (tree, kind) => Some(DefDefSelectKind.RETURN_CONTEXT_FUN(kind))
+    }
+    optKind
+  }
+
+  /**
    *
    * @param tree: tree to process
    * @param f: (defDef(selected function),  Tree: (CpsMonadContext parameter)) => Option[A] is called

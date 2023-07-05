@@ -25,11 +25,7 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
         tree
       else
         val topTree = tree
-        val optKind = SelectedNodes.checkAndProcessDefDef(tree){
-            (tree, monadContext) => Some(USING_CONTEXT_PARAM(monadContext))
-        } {
-            (tree, kind) => Some(DefDefSelectKind.RETURN_CONTEXT_FUN(kind))
-        }
+        val optKind = SelectedNodes.detectDefDefSelectKind(tree)
         optKind.foreach{kind =>
           selectedNodes.addDefDef(tree.symbol,kind)
           println(s"phaseSelect, addDefDef for ${tree.symbol}, symbol.id= ${tree.symbol.id}")

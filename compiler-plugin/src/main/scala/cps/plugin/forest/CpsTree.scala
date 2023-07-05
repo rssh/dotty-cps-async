@@ -30,6 +30,7 @@ import dotty.tools.dotc.ast.tpd
  *    |- BlockBoundsCpsTree
  *    |- SelectTypeApplyTypedCpsTree
  *    |- InlinedCpsTree
+ *    |- DefinitionCpsTree
  *
  **/
 sealed trait CpsTree {
@@ -169,6 +170,7 @@ object CpsTree {
   def lambda(origin:Tree, owner: Symbol, ddef: DefDef, transformedBody: CpsTree): CpsTree =
      LambdaCpsTree(origin, owner, ddef, transformedBody)
 
+  // TODO: add optional inpure
   def opaqueAsyncLambda(origin: Tree, owner: Symbol, changed: Tree, bodyKind: AsyncKind): OpaqueAsyncLambdaTermCpsTree =
       OpaqueAsyncLambdaTermCpsTree(origin, owner, changed, bodyKind)
 
@@ -1191,6 +1193,21 @@ object InlinedCpsTree {
                                       newBindings: List[MemberDef],
                                       substitutions: Map[Symbol,Tree]
                                       )
+
+
+}
+
+
+/**
+ * Definition cps tree,
+ * @param origin
+ * @param changed
+ */
+case class MemberDefCpsTree(
+                              override val origin: MemberDef,
+                              override val owner: Symbol,
+                              definition: MemberDef) extends CpsTree {
+
 
 
 }
