@@ -5,23 +5,23 @@ import org.junit.Test
 /**
  * Some test-cases from big test-case, running and minimized separately.
  */
-class Test12TestCases {
+class Test13TestCases {
 
   @Test
   def testCompileBaseFutureTest(): Unit = {
-    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m1")
+    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
   }
 
   @Test
   def testCompileAsyncListStress(): Unit = {
-    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m2")
+    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m2")
   }
 
 
   def compileCommon(): Unit = {
-    if (!Test12TestCases.commonCompiled) {
-      DotcInvocations.compileFilesInDir("testdata/set12TestCases/common")
-      Test12TestCases.commonCompiled = true
+    if (!Test13TestCases.commonCompiled) {
+      DotcInvocations.compileFilesInDir("testdata/set13TestCases/common")
+      Test13TestCases.commonCompiled = true
       println("-----finish common compilation-----")
     }
   }
@@ -29,38 +29,38 @@ class Test12TestCases {
   @Test
   def testCompileCBS1Apply(): Unit = {
     compileCommon()
-    val classpath = s"testdata/set12TestCases/common:${System.getProperty("java.class.path")}"
+    val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
-    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m3", secondInvokationArgs)
+    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m3", secondInvokationArgs)
   }
 
   @Test
   def testCompileCBS1ApplyMin(): Unit = {
     compileCommon()
-    val classpath = s"testdata/set12TestCases/common:${System.getProperty("java.class.path")}"
+    val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
   }
 
   @Test
   def testCompileCBS1ApplyMin2(): Unit = {
     compileCommon()
-    val classpath = s"testdata/set12TestCases/common:${System.getProperty("java.class.path")}"
+    val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
-    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m3_min2", secondInvokationArgs)
+    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m3_min2", secondInvokationArgs)
   }
 
   @Test
   def testCompileCBS1ApplyMin3(): Unit = {
     compileCommon()
-    val classpath = s"testdata/set12TestCases/common:${System.getProperty("java.class.path")}"
+    val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
-    DotcInvocations.compileFilesInDir("testdata/set12TestCases/m3_min3", secondInvokationArgs)
+    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m3_min3", secondInvokationArgs)
   }
 
 }
 
 
-object Test12TestCases {
+object Test13TestCases {
 
   // Hack
   var commonCompiled = false
