@@ -43,6 +43,22 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
                     }
                   case None =>
                     traverseChildren(tree)
+              case Block(List(ddef:DefDef), closure:Closure) if ddef.symbol == closure.meth.symbol =>
+                traverseChildren(tree)
+              case Block(List(ddef:DefDef), Typed(closure:Closure, tp)) if ddef.symbol == closure.meth.symbol =>
+                traverseChildren(tree)
+              case Block(stats, expr) =>
+                // don't mark local function definitions and templates as internal
+                for(s <- stats) {
+                  s match
+                    case defDef: DefDef  =>
+                        //traverse(defDef)
+                    case tdef: TypeDef =>
+                        // do nothing
+                    case other =>
+                        traverse(other)
+                }
+                traverse(expr)
               case _ =>
                 traverseChildren(tree)
           }

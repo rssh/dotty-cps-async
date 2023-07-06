@@ -62,7 +62,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
   }
 
   def transformDefDefInternal(tree: DefDef, selectRecord: DefDefSelectRecord, optTopLevelContext:Option[CpsTopLevelContext]=None)(using Context): DefDef = {
-    val debugSettings = optTopLevelContext.map(_.settings).getOrElse(DebugSettings.make(tree))
+    val debugSettings = optTopLevelContext.map(_.debugSettings).getOrElse(DebugSettings.make(tree))
     selectRecord.debugLevel = debugSettings.debugLevel
     println(s"transformDefDef ${tree.symbol.showFullName}, (${tree.symbol.id}) starting at${tree.srcPos.startPos.show}, selectRecord.kind=${selectRecord.kind}")
     if (debugSettings.printCode) then
@@ -285,7 +285,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
                              throw new CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
     val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectOrSimpleContext,
                                 optRuntimeAwait, optThrowSupport, optTrySupport,
-                                debugSettings, isBeforeInliner)
+                                debugSettings, settings, isBeforeInliner)
     tc
   }
 

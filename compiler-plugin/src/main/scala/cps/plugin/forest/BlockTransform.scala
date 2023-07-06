@@ -48,23 +48,12 @@ object BlockTransform {
                  case v: ValDef =>
                    val cpsV: CpsTree = ValDefTransform(v, owner, nesting + 1)
                    s.appendInBlock(cpsV)
-                 case ddef: DefDef =>
-                   // local function definition
-                   val nDefDef = DefDefTransform(ddef, owner, nesting+1)
-                   s.appendInBlock(nDefDef)
-                 case tdef: TypeDef =>
-                   // templates will be processed py compiler plugin in own,
-                   //  we just will skip local templates from
-                   // (TODO: this can be changed for generated HOF functions, if the function will be generated
-                   //    locally,  that local classes defined in it will not be vissible outside of function)
-                   // so, looks like we will transform tdef here after HOF generation will be implemented.
-                   // for now - keep it simple.
-                   val nTDef = MemberDefCpsTree(tdef, owner, tdef)
+                 case mDef =>
+                   // templates and local function definitions will be processed py compiler plugin in own,
+                   //  we just will not skip local templates and local function definitions during select phase as internal.
+                   val nTDef = MemberDefCpsTree(mDef, owner, mDef)
                    val r = s.appendInBlock(nTDef)
                    r
-                 case _ =>
-                   throw CpsTransformException(s"Unsupported member definition ${d}", d.srcPos)
-
              case importTree: Import =>
                // ignore imports,
                //   (TODO:  is it correct?)  FirstTransform deleted all non-language imports, but what with language

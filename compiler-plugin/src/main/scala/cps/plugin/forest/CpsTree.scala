@@ -1200,14 +1200,37 @@ object InlinedCpsTree {
 
 /**
  * Definition cps tree,
+ *   Can be only in block and can't be last in block. (TODO: checked by BlockBoundsCpsTree)
  * @param origin
  * @param changed
  */
 case class MemberDefCpsTree(
-                              override val origin: MemberDef,
+                              override val origin: Tree,
                               override val owner: Symbol,
                               definition: MemberDef) extends CpsTree {
 
+  override def asyncKind = AsyncKind.Sync
+
+  override def withOrigin(term: Tree): CpsTree = copy(origin = term)
+
+  override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext) = {
+    throw CpsTransformException(s"MemberDefCpsTree can't be in position which reuire casting", definition.srcPos)
+  }
+
+  override def transformed(using Context, CpsTopLevelContext): Tree = {
+    definition
+  }
+
+  override def unpure(using Context, CpsTopLevelContext) = {
+    Some(definition)
+  }
+
+  override def applyRuntimeAwait(runtimeAwait: Tree)(using Context, CpsTopLevelContext): CpsTree = this
+
+  override def show(using Context): String = origin.show
+
+  override def changeOwner(newOwner: Symbol)(using Context): CpsTree =
+    copy(owner = newOwner, definition = definition.changeOwner(owner, newOwner))
 
 
 }
