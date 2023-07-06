@@ -12,3 +12,6 @@ metals.sbt
 #idea
 
 .idea/
+
+#vscode
+.vscode/
