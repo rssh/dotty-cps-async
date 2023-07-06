@@ -1,5 +1,7 @@
 package cps
 
+import cps.runtime.util.UsingAsyncShift
+
 import scala.collection.ArrayOps
 import scala.collection.IterableOps
 import scala.collection.SeqOps
@@ -90,6 +92,7 @@ object AsyncShift extends AsyncShiftLowPriority2 {
 
  import cps.runtime.*
  import cps.runtime.concurrent.*
+ import cps.runtime.util.*
 
  transparent inline given shiftedRange[CA <: Range] : RangeAsyncShift[CA] =
         cps.runtime.RangeAsyncShift[CA]()
@@ -111,40 +114,40 @@ object AsyncShift extends AsyncShiftLowPriority2 {
  //     cps.runtime.ListAsyncShift[A]()
 
  inline given shiftedList[A]: cps.runtime.ListAsyncShift[A] =
-       cps.runtime.ListAsyncShift[A]()
+      ListAsyncShift[A]()
 
- transparent inline given shiftedOption[A]: AsyncShift[Option[A]] =
-      new cps.runtime.OptionAsyncShift[A]()
+ transparent inline given shiftedOption[A]: OptionAsyncShift[A] =
+      cps.runtime.OptionAsyncShift[A]()
 
- transparent inline given shiftedFunction1[A,B]: AsyncShift[Function1[A,B]] =
-      cps.runtime.Function1AsyncShift[A,B]()
+ transparent inline given shiftedFunction1[A,B]: Function1AsyncShift[A,B] =
+      Function1AsyncShift[A,B]()
 
- transparent inline given shiftedPartialFunction[A,B]: AsyncShift[PartialFunction[A,B]] =
-      cps.runtime.PartialFunctionAsyncShift[A,B]()
+ transparent inline given shiftedPartialFunction[A,B]: PartialFunctionAsyncShift[A,B] =
+      PartialFunctionAsyncShift[A,B]()
 
- transparent inline given shiftedTry[A]: AsyncShift[scala.util.Try[A]] =
-      new cps.runtime.util.TryAsyncShift[A]()
+ transparent inline given shiftedTry[A]: TryAsyncShift[A] =
+      TryAsyncShift[A]()
 
- transparent inline given shiftedTryModule: AsyncShift[scala.util.Try.type] =
-      cps.runtime.util.TryModuleAsyncShift
+ transparent inline given shiftedTryModule: TryModuleAsyncShift.type =
+      TryModuleAsyncShift
 
- transparent inline given shiftedUsing: AsyncShift[scala.util.Using.type] =
-       cps.runtime.util.UsingAsyncShift
+ transparent inline given shiftedUsing: UsingAsyncShift.type =
+       UsingAsyncShift
 
- transparent inline given shiftedEither[A,B]: AsyncShift[Either[A,B]] =
-      cps.runtime.util.EitherAsyncShift[A,B]()
+ transparent inline given shiftedEither[A,B]: EitherAsyncShift[A,B] =
+      EitherAsyncShift[A,B]()
 
- transparent inline given shiftedEitherLeftProjection[A,B]: AsyncShift[Either.LeftProjection[A,B]] =
+ transparent inline given shiftedEitherLeftProjection[A,B]: EitherLeftProjectionAsyncShift[A,B] =
       cps.runtime.util.EitherLeftProjectionAsyncShift[A,B]()
 
  transparent inline given shiftedNonLocalReturns: cps.runtime.util.control.NonLocalReturnsAsyncShift.type =
      cps.runtime.util.control.NonLocalReturnsAsyncShift     
 
- transparent inline given shiftedBoundary: cps.runtime.util.BoundaryAsyncShift.type =
-     cps.runtime.util.BoundaryAsyncShift
+ transparent inline given shiftedBoundary: BoundaryAsyncShift.type =
+     BoundaryAsyncShift
 
  transparent inline given shiftedFutureCM: FutureCMAsyncShift =
-     cps.runtime.concurrent.FutureCMAsyncShift
+     FutureCMAsyncShift
 
 }
 
