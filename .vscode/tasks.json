@@ -1,0 +1,71 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "sbt cpsJVM/compile",
+            "type": "shell",
+            "command": "sbt cpsJVM/compile",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "sbt cpsJVM/test",
+            "type": "shell",
+            "command": "sbt cpsJVM/test",
+            "problemMatcher": [],
+            "group": {
+                "kind": "test"
+            }
+        },
+        {
+            "label": "sbt cpsJS/compile",
+            "type": "shell",
+            "command": "sbt cpsJS/compile",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+            }
+        },
+        {
+            "label": "sbt cpsJS/test",
+            "type": "shell",
+            "command": "sbt cpsJS/test",
+            "problemMatcher": [],
+            "group": {
+                "kind": "test"
+            }
+        },
+        {
+            "label": "sbt cpsNative/compile",
+            "type": "shell",
+            "command": "sbt cpsNative/compile",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+            }
+        },
+        {
+            "label": "sbt cpsNative/test",
+            "type": "shell",
+            "command": "sbt cpsNative/test",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+            }
+        },
+        {
+            "label": "sbt compilerPlugin/compile",
+            "type": "shell",
+            "command": "sbt compilerPlugin/compile",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+            }
+        }
+    ]
+}

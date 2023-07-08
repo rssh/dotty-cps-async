@@ -23,9 +23,9 @@ sealed trait ApplyArg {
     def tpe:  Type
     def origin: Tree
 
-    def isAsync: Boolean
-    def isLambda: Boolean
-    def isAsyncLambda: Boolean
+    def isAsync(using Context, CpsTopLevelContext): Boolean
+    def isLambda(using Context, CpsTopLevelContext): Boolean
+    def isAsyncLambda(using Context, CpsTopLevelContext): Boolean
     def isDirectContext: Boolean
 
     def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)]
@@ -92,15 +92,16 @@ sealed trait ExprApplyArg extends ApplyArg {
 
   override def origin: tpd.Tree = expr.origin
 
-  override def isAsync = expr.asyncKind match
+  override def isAsync(using Context, CpsTopLevelContext) = expr.asyncKind match
                             case AsyncKind.Async(_) => true
                             case _ =>false
 
-  override def isLambda = expr.asyncKind match
-                            case AsyncKind.AsyncLambda(internal) => true
-                            case _ => false
+  override def isLambda(using Context, CpsTopLevelContext) =
+    expr.asyncKind match
+      case AsyncKind.AsyncLambda(internal) => true
+      case _ => false
 
-  override def isAsyncLambda: Boolean = expr.asyncKind match
+  override def isAsyncLambda(using Context, CpsTopLevelContext): Boolean = expr.asyncKind match
     case AsyncKind.AsyncLambda(internal) =>
       checkInternalAsyncLambda(internal)
     case _ => false
@@ -176,11 +177,11 @@ case class RepeatApplyArg(
   override val origin: Tree,
 ) extends ApplyArg {
 
-  override def isAsync = elements.exists(_.isAsync)
+  override def isAsync(using Context, CpsTopLevelContext) = elements.exists(_.isAsync)
 
-  override def isLambda = elements.exists(_.isLambda)
+  override def isLambda(using Context, CpsTopLevelContext) = elements.exists(_.isLambda)
 
-  override def isAsyncLambda: Boolean = elements.exists(_.isAsyncLambda)
+  override def isAsyncLambda(using Context, CpsTopLevelContext): Boolean = elements.exists(_.isAsyncLambda)
 
   override def isDirectContext: Boolean = elements.exists(_.isDirectContext)
 
@@ -216,9 +217,9 @@ case class ByNameApplyArg(
   override val isDirectContext: Boolean,
 ) extends ExprApplyArg  {
 
-  override def isLambda = true
+  override def isLambda(using Context, CpsTopLevelContext) = true
 
-  override def isAsyncLambda: Boolean = expr.asyncKind != AsyncKind.Sync
+  override def isAsyncLambda(using Context, CpsTopLevelContext): Boolean = expr.asyncKind != AsyncKind.Sync
 
   override def flatMapsBeforeCall(using Context) = Seq.empty
 
@@ -267,10 +268,10 @@ case class InlineApplyArg(
 ) extends ExprApplyArg {
 
 
-  override def isAsync: Boolean =
+  override def isAsync(using Context, CpsTopLevelContext): Boolean =
     throwNotHere
      
-  override def isLambda: Boolean =
+  override def isLambda(using Context, CpsTopLevelContext): Boolean =
     throwNotHere
 
   def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] =
@@ -299,13 +300,13 @@ case class ErasedApplyArg(
 
   override def origin: tpd.Tree = exprTree
 
-  def isAsync: Boolean =
+  override def isAsync(using Context, CpsTopLevelContext): Boolean =
     false
    
-  def isLambda: Boolean =
+  override def isLambda(using Context, CpsTopLevelContext): Boolean =
     false
 
-  override def isAsyncLambda: Boolean =
+  override def isAsyncLambda(using Context, CpsTopLevelContext): Boolean =
      false
 
   def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] =

@@ -14,7 +14,8 @@ import cps.plugin.forest.*
 
 class CpsCases(val cases: List[CpsCaseDef]) {
 
-  lazy val collectAsyncKind: AsyncKind =
+
+  def collectAsyncKind(using Context, CpsTopLevelContext): AsyncKind =
     cases.foldLeft(None:Option[AsyncKind]) { (acc, c) =>
       acc match
         case None => Some(c.cpsBody.asyncKind)

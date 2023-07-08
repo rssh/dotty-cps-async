@@ -15,7 +15,7 @@ class Function1AsyncShift[T,R] extends AsyncShift[Function1[T,R]]:
 
 class Function1AndThenCallChainSubst[F[_],A,B,C](f: A=>B, g: B=>F[C], m:CpsMonad[F]) extends CallChainAsyncShiftSubst[F,A=>C, A=>F[C]]:
 
-   def _finishChain: A=>F[C] = f.andThen(g)
+   override def _finishChain: A=>F[C] = f.andThen(g)
 
    def apply(x:A): F[C] =
          g(f(x))

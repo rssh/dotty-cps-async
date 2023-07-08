@@ -22,7 +22,7 @@ object InlinedTransform {
 
     def newBinding: Option[MemberDef]
 
-    def generateFlatMap(tail: CpsTree)(using Context): Option[CpsTree]
+    def generateFlatMap(tail: CpsTree)(using Context, CpsTopLevelContext): Option[CpsTree]
 
     def substitute(tree: Tree, treeMap: BinginsTreeMap, ctx:Context)(using CpsTopLevelContext): Option[Tree]
 
@@ -34,7 +34,7 @@ object InlinedTransform {
     def newBinding: Option[MemberDef] = {
       Some(origin)
     }
-    def generateFlatMap(tail: CpsTree)(using Context): Option[CpsTree] = None
+    def generateFlatMap(tail: CpsTree)(using Context, CpsTopLevelContext): Option[CpsTree] = None
     def substitute(tree: Tree,  treeMap: BinginsTreeMap, ctx: Context)(using CpsTopLevelContext): Option[Tree] = None
   }
 
@@ -42,7 +42,7 @@ object InlinedTransform {
     def newBinding: Option[MemberDef] = {
       Some(newValDef)
     }
-    def generateFlatMap(tail:CpsTree)(using Context): Option[CpsTree] = None
+    def generateFlatMap(tail:CpsTree)(using Context, CpsTopLevelContext): Option[CpsTree] = None
     override def substitute(tree: Tree, treeMap: BinginsTreeMap, ctx: Context)(using CpsTopLevelContext): Option[Tree] = {
       given Context = ctx
       if (origin.symbol == newValDef.symbol)
@@ -89,7 +89,7 @@ object InlinedTransform {
         asyncLambdaValDef
     }
 
-    def generateFlatMap(tail: CpsTree)(using Context): Option[CpsTree] = {
+    override def generateFlatMap(tail: CpsTree)(using Context, CpsTopLevelContext): Option[CpsTree] = {
         val retval = tail.asyncKind match
           case AsyncKind.Sync =>
             MapCpsTree(origin.rhs, adoptedRhs.owner, adoptedRhs,

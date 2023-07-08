@@ -9,6 +9,7 @@ enum AsyncKind  {
   case Async(internalKind:AsyncKind) extends AsyncKind
   case AsyncLambda(bodyKind: AsyncKind) extends AsyncKind
 
+
   def unify(other: AsyncKind): Either[(AsyncKind,AsyncKind),AsyncKind] =
     (this,other) match
       case (Sync, Sync) => Right(Sync)
