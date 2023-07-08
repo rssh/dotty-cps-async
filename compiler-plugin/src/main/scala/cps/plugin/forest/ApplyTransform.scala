@@ -20,6 +20,8 @@ import cps.{CpsMonadContext, CpsMonadConversion}
 import inlines.Inlines
 import transform.Inlining
 
+import scala.util.control.NonFatal
+
 
 object ApplyTransform {
 
@@ -276,7 +278,14 @@ object ApplyTransform {
           case None =>
             if (fun.denot != NoDenotation) {
                   // check -- can we add shifted version of fun
-                  val newFun = retrieveShiftedFun(origin,fun,owner)
+                  val newFun = try{
+                    retrieveShiftedFun(origin,fun,owner)
+                  } catch {
+                    case NonFatal(ex) =>
+                      println(s"catching shiftedFun, fun=${fun.show}  argss=${argss.map(x => x.show+":"+x.containsAsyncLambda).mkString(",")}")
+                      println(s"ex.medsage=${ex.getMessage}")
+                      throw ex;
+                  }
                   val newFunType = newFun.tree.tpe.widen
                   // TOOD: anylize newFunType and deduce preliminaryReturnType from it.
                   println(s"shiftedFunType: ${newFunType.show}")
@@ -592,8 +601,12 @@ object ApplyTransform {
         else
           Left(s"Can't match parameters in ${originMethod} and ${candidateMethod}")
       else if (candidateMethod.paramSymss.length == originMethod.paramSymss.length + 1)
-        //  with extra type-arg and arglist wich pass monad
-        Right(ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM)
+        val candidateTpArgs = candidateMethod.paramSymss.head.filter(_.isType)
+        if (candidateTpArgs.length == originTpArgs.length + 1) then
+            //  with extra type-arg and arglist wich pass monad
+            Right(ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM)
+        else
+           Left(s"Can't match parameters in ${originMethod} and ${candidateMethod}, tpParams lenght mismatch")
       else
         Left(s"Can't match parameters in ${originMethod} and ${candidateMethod}")
     }
@@ -660,10 +673,14 @@ object ApplyTransform {
               }
               prepareAsyncShiftedMethodCall(fun.symbol, obj, mbInlinedObj, methods, targs)
             case Left(err1) =>
-              report.error("Can't find async-shifted method or implicit AsyncShift for "+obj.show, fun.srcPos)
-              report.error(s" method search: $inPlaceErrors", fun.srcPos)
-              report.error(s" implicit AsyncShifg object search: $err1", fun.srcPos)
-              throw CpsTransformException(s"Cn't find async-shifted method or implicit AsyncShift for ${obj.show}, method ${methodName}", fun.srcPos)
+              val msg =
+                s"""
+                 |Can't find async-shifted method or implicit AsyncShift for ${obj.show}
+                 |method search: $inPlaceErrors
+                 |implicit AsyncShifg object search: $err1
+                 """.stripMargin('|')
+              report.error(msg, fun.srcPos)
+              throw CpsTransformException(msg, fun.srcPos)
         case Right(methodsWithShape) =>
           methodsWithShape.headOption match
             case Some((sym,shape)) =>

@@ -80,6 +80,10 @@ trait AsyncShiftLowPriority2 extends AsyncShiftLowPriority1 {
   transparent inline given shiftedSeqOps[A, C[X] <: Seq[X] & SeqOps[X, C, C[X]]]: SeqAsyncShift[A, C, C[A]] =
     cps.runtime.SeqAsyncShift[A, C, C[A]]()
 
+  transparent inline given shiftedMapOps[K, V, CC[K, V] <: MapOps[K, V, CC, CC[K, V]] with Iterable[(K, V)]]: MapOpsAsyncShift[K, V, CC, Iterable, CC[K, V]] =
+    MapOpsAsyncShift[K, V, CC, Iterable, CC[K, V]]()
+
+
 }
 
 
@@ -104,11 +108,9 @@ object AsyncShift extends AsyncShiftLowPriority2 {
  transparent inline given shiftedIndexedSeqOps[A,C[X] <: IndexedSeq[X] & IndexedSeqOps[X,C,C[X]] ]: IndexedSeqAsyncShift[A,C,C[A]] =
       new IndexedSeqAsyncShift[A,C,C[A]]()
 
- transparent inline given shiftedMapOps[K,V,CC[K,V] <: MapOps[K,V,CC,CC[K,V]] with Iterable[(K,V)]]: AsyncShift[CC[K,V]] =
-      cps.runtime.MapOpsAsyncShift[K,V,CC,Iterable,CC[K,V]]()
 
- transparent inline given shiftedImmutableMapOps[K,V,CC[K,V] <: MapOps[K,V,CC,CC[K,V]] with immutable.Iterable[(K,V)]]: AsyncShift[CC[K,V]] =
-      cps.runtime.MapOpsAsyncShift[K,V,CC,immutable.Iterable,CC[K,V]]()
+ transparent inline given shiftedImmutableMapOps[K,V,CC[K,V] <: MapOps[K,V,CC,CC[K,V]] with immutable.Iterable[(K,V)]]: MapOpsAsyncShift[K,V,CC,immutable.Iterable,CC[K,V]] =
+      MapOpsAsyncShift[K,V,CC,immutable.Iterable,CC[K,V]]()
 
  //transparent inline given shiftedList[A]: AsyncShift[scala.collection.immutable.List[A]] =
  //     cps.runtime.ListAsyncShift[A]()

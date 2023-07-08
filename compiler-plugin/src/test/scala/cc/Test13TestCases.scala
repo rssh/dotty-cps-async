@@ -7,7 +7,7 @@ import org.junit.Test
  */
 class Test13TestCases {
 
-  /*
+
   @Test
   def testCompileBaseFutureTest(): Unit = {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
@@ -17,7 +17,6 @@ class Test13TestCases {
   def testCompileAsyncListStress(): Unit = {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m2")
   }
-  */
 
 
   def compileCommon(): Unit = {
@@ -28,7 +27,7 @@ class Test13TestCases {
     }
   }
 
-  /*
+
   @Test
   def testCompileCBS1Apply(): Unit = {
     compileCommon()
@@ -59,7 +58,7 @@ class Test13TestCases {
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m3_min3", secondInvokationArgs)
   }
-  */
+
 
   @Test
   def testCompileCBS1DShiftedFunctionM4min1(): Unit = {
