@@ -10,8 +10,8 @@ target/
 metals.sbt
 
 #idea
-
 .idea/
 
 #vscode
 .vscode/
+
