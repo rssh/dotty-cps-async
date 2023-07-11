@@ -1,7 +1,6 @@
 package cps.plugin
 
 import scala.annotation.tailrec
-
 import dotty.tools.dotc.*
 import ast.tpd.*
 import core.*
@@ -9,6 +8,7 @@ import core.Contexts.*
 import core.Decorators.*
 import core.Symbols.*
 import core.Types.*
+import dotty.tools.dotc.typer.ProtoTypes
 import util.SrcPos
 import util.Spans.Span
 
@@ -37,6 +37,8 @@ object CpsTransformHelper {
   }
 
   /**
+   * Extract monad type from context function type.
+   * TODO:  Type-lambda monads case,  now we think that this is F[_].
    *@param contextFunctionArgType is CpsDirect[F] or CpsMonadContext[F]
    *@param wrapperSymbol: naked symbol of wrapper. i.e. requiredClass("cps.CpsDirect") or requiredClass("cps.CpsMonadContext")
    *@return F
@@ -147,6 +149,43 @@ object CpsTransformHelper {
             retval
   }
 
+  def asyncKindFromTransformedType(tpe: Type, ft: Type)(using Context): AsyncKind = {
+    tpe match
+      case AppliedType(tycon,args) if tycon =:= ft =>
+        AsyncKind.Async(asyncKindFromTransformedType(args.head,ft))
+      case AppliedType(tycon,args) if (defn.isFunctionType(tycon)) =>
+        AsyncKind.AsyncLambda(asyncKindFromTransformedType(args.last,ft))
+      case mt: MethodType =>
+        AsyncKind.AsyncLambda(asyncKindFromTransformedType(mt.resType,ft))
+      case pt: PolyType =>
+        AsyncKind.AsyncLambda(asyncKindFromTransformedType(pt.resType,ft))
+      case other =>
+        ft match
+          case HKTypeLambda(List(paramBound), resType) =>
+            val withAny = ft.appliedTo(WildcardType)
+            if (other <:< withAny) then
+              // we can't determinate internal kind without running own type unfication,
+              //  so,  approximate it with Sync
+              AsyncKind.Async(AsyncKind.Sync)
+            else
+              AsyncKind.Sync
+          case _ =>
+             AsyncKind.Sync
+  }
+
+  /*
+  def unwrappTypeFromMonad(ftExpr: Tree, ft: Type,  srcPos: SrcPos)(using Context): Type = {
+    //TIDO: check
+    //val (tl, tv) = ProtoTypes.constrained(ft,t)
+    //tv.head
+    t.widen.dealias match
+      case AppliedType(tycon,args) if tycon =:= ft =>
+        args.head
+      case other =>
+        throw CpsTransformException(s"can't extract type from ${other.show} as monad ${ft.show}", srcPos)
+
+  }*/
+
   def findImplicitInstance(tpe: Type, span: Span)(using ctx:Context): Option[Tree] = {
     val searchResult = ctx.typer.inferImplicitArg(tpe,span)
     searchResult.tpe match
@@ -172,7 +211,6 @@ object CpsTransformHelper {
       val tpe = AppliedType(cpsTrySupport, List(monadType))
       findImplicitInstance(tpe, span)
   }
-
 
 
 }

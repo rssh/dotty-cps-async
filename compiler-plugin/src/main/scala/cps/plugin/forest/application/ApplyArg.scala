@@ -1,5 +1,6 @@
 package cps.plugin.forest.application
 
+import scala.annotation.tailrec
 import dotty.tools.dotc.*
 import core.*
 import core.Contexts.*
@@ -7,6 +8,7 @@ import core.Decorators.*
 import core.Names.*
 import core.Symbols.*
 import core.Types.*
+import ast.*
 import ast.tpd.*
 import cps.plugin.*
 import cps.plugin.forest.*
@@ -38,7 +40,8 @@ sealed trait ApplyArg {
 object ApplyArg {
 
 
-  def apply(expr: Tree, paramName: TermName, paramType: Type, isByName: Boolean, isDirectContext: Boolean,
+  def apply(expr: Tree, paramName: TermName, paramType: Type,
+            isByName: Boolean, isDirectContext: Boolean,
             owner: Symbol,
             dependFromLeft: Boolean, nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
     val retval = expr match
@@ -74,6 +77,7 @@ object ApplyArg {
                   case AsyncKind.Sync if !dependFromLeft =>
                     PlainApplyArg(paramName,paramType,cpsExpr,None,isDirectContext)
                   case AsyncKind.AsyncLambda(_) =>
+
                     PlainApplyArg(paramName,paramType,cpsExpr,None,isDirectContext)
                   case _ =>
                     val sym = newSymbol(owner,paramName,Flags.EmptyFlags,paramType.widen,NoSymbol)
@@ -101,10 +105,32 @@ sealed trait ExprApplyArg extends ApplyArg {
       case AsyncKind.AsyncLambda(internal) => true
       case _ => false
 
+
   override def isAsyncLambda(using Context, CpsTopLevelContext): Boolean = expr.asyncKind match
     case AsyncKind.AsyncLambda(internal) =>
-      checkInternalAsyncLambda(internal)
+      checkInternalAsyncLambda(internal) && !lambdaCanBeUnshifted
     case _ => false
+
+  def lambdaCanBeUnshifted(using Context, CpsTopLevelContext): Boolean = {
+
+    def isAsync(tp: Type): Boolean = {
+      tp.baseType(summon[CpsTopLevelContext].monadType.typeSymbol) != NoType
+    }
+
+    @tailrec
+    def canBeUnshifted(tp: Type): Boolean = {
+      tp match
+        case tp: MethodOrPoly => isAsync(tp.resType) || canBeUnshifted(tp.resType)
+        case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+          val tp = targs.last
+          isAsync(tp) || canBeUnshifted(tp)
+        case _ => false
+    }
+
+    canBeUnshifted(tpe.widen)
+
+  }
+
 
   def checkInternalAsyncLambda(kind: AsyncKind): Boolean =
     kind match
@@ -112,6 +138,8 @@ sealed trait ExprApplyArg extends ApplyArg {
          checkInternalAsyncLambda(internal)
       case AsyncKind.Async(internal) => true
       case AsyncKind.Sync => false
+
+
 }
 
 
@@ -120,7 +148,7 @@ case class PlainApplyArg(
   override val tpe: Type,
   override val expr: CpsTree,  
   val optIdentValDef: Option[ValDef],
-  val isDirectContext: Boolean
+  val isDirectContext: Boolean,
 ) extends ExprApplyArg  {
 
   override def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] = {
@@ -152,20 +180,107 @@ case class PlainApplyArg(
           expr.unpure match
             case Some(tree) => tree
             case None =>
-              optRuntimeAwait match
-                case Some(runtimeAwait) =>
-                  val withRuntimeAwait = expr.applyRuntimeAwait(runtimeAwait)
-                  withRuntimeAwait.unpure match
-                    case Some(tree) => tree
-                    case None =>
-                      throw CpsTransformException(s"Can't transform function via RuntimeAwait",expr.origin.srcPos)
-                case None =>
-                  throw CpsTransformException(s"Can't transform function (both shioft and runtime-awaif for ${summon[CpsTopLevelContext].monadType} are not found)", expr.origin.srcPos)
+              if (lambdaCanBeUnshifted) then
+                unshiftLambdaAsTree
+              else
+                optRuntimeAwait match
+                  case Some(runtimeAwait) =>
+                    val withRuntimeAwait = expr.applyRuntimeAwait(runtimeAwait)
+                    withRuntimeAwait.unpure match
+                      case Some(tree) => tree
+                      case None =>
+                        throw CpsTransformException(s"Can't transform function via RuntimeAwait",expr.origin.srcPos)
+                  case None =>
+                    throw CpsTransformException(s"Can't transform function (both shioft and runtime-awaif for ${summon[CpsTopLevelContext].monadType} are not found)", expr.origin.srcPos)
 
 
   override def show(using Context): String = {
     s"Plain(${expr.show})"
   }
+
+
+  def unshiftLambda(expr:CpsTree)(using Context, CpsTopLevelContext): CpsTree = {
+    expr match
+      case LambdaCpsTree(origin,owner,originDefDef, cpsBody) =>
+        //cpsBody.unpure match
+        //  case Some(tree) =>
+        //    val nCpsBody = CpsTree.impure(origin,owner,tree,AsyncKind.Sync)
+        //    LambdaCpsTree(origin,owner,originDefDef,nCpsBody)
+        /*
+        val unwrapped = CpsTransformHelper.unwrappTypeFromMonad(tpe, summon[CpsTopLevelContext].monadType)
+        val nCpsBody = Apply(
+                         TypeApply(
+                           Select(summon[CpsTopLevelContext].cpsMonadRef,"flatten".toTermName),
+                           List(TypeTree(unwrapped))
+                         ),
+                         List(cpsBody.transformed)
+        )
+        */
+        val tctx = summon[CpsTopLevelContext]
+        val monadRef = tctx.cpsMonadRef
+        val nCpsBodyTree = ctx.typer.typed(untpd.Apply(
+          untpd.Select(untpd.TypedSplice(monadRef), "flatten".toTermName),
+          List( untpd.TypedSplice(cpsBody.transformed) )
+        ))
+        val nCpsBody = CpsTree.impure(origin,owner,nCpsBodyTree,expr.asyncKind)
+        val newLambda = LambdaCpsTree(origin,owner,originDefDef, nCpsBody)
+        newLambda
+      case opl@OpaqueAsyncLambdaTermCpsTree(origin, owner, transformedTree, bodyKind) =>
+        unshiftLambda(opl.toLambdaCpsTree)
+      case BlockBoundsCpsTree(internal) =>
+        // TODO: eta-expansion
+        BlockBoundsCpsTree(unshiftLambda(internal))
+      case SeqCpsTree(origin,owner,prevs,last) =>
+        SeqCpsTree(origin,owner,prevs,unshiftLambda(last))
+      case _ =>
+        // remaining CpsTrees are not lambda, so we can't unshift them.
+        throw CpsTransformException(s"Can't unshift lambda from ${expr.show}", expr.origin.srcPos)
+  }
+
+  /**
+   * prerequisities:  kind == AsyncLambda
+   * @param Context
+   * @param CpsTopLevelContext
+   * @return
+   */
+  def unshiftLambdaAsTree(using Context, CpsTopLevelContext): Tree = {
+
+    def applyFlatten(tree: Tree): Tree = {
+        val tctx = summon[CpsTopLevelContext]
+        val monadRef = tctx.cpsMonadRef
+        val nTree = summon[Context].typer.typed(untpd.Apply(
+          untpd.Select(untpd.TypedSplice(monadRef), "flatten".toTermName),
+          List(untpd.TypedSplice(tree))
+        ))
+        nTree
+    }
+
+    expr match
+        case LambdaCpsTree(origin, owner, originDefDef, cpsBody) =>
+          val meth = Symbols.newAnonFun(owner,originDefDef.tpe.widen)
+          val nBody = applyFlatten(cpsBody.transformed)
+          val closure = Closure(meth, { tss =>
+            val oldParams = originDefDef.paramss.head.asInstanceOf[List[ValDef]]
+            TransformUtil.substParams(nBody,oldParams,tss.head).changeOwner(originDefDef.symbol,meth)
+          })
+          closure
+        case _ =>
+          val lambdaTree = expr.transformed
+          TransformUtil.methodTypeFromFunctionType(tpe,origin.srcPos) match
+            case Some(mt) =>
+              val meth = Symbols.newAnonFun(expr.owner,mt)
+              val ctx = summon[Context]
+              val closure = Closure(meth, { tss =>
+                 given Context = ctx.withOwner(meth)
+                 val unflattenCall = Apply(lambdaTree,tss.head)
+                 applyFlatten(unflattenCall).changeOwner(expr.owner,meth)
+              })
+              closure
+            case None =>
+              throw CpsTransformException(s"Can't extract methd type from ${tpe.show}", expr.origin.srcPos)
+
+  }
+
 
 }
 

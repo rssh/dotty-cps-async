@@ -56,11 +56,14 @@ trait CpsMonad[F[_]]  {
    def lazyPure[T](op: =>T):F[T] =
       map(pure(())){ _ => op}
 
+   def flatten[T](ffa: F[F[T]]): F[T] =
+      flatMap(ffa)(x => x)
 }
 
 object CpsMonad {
 
   type Aux[F[_],C<:CpsMonadContext[F]] = CpsMonad[F] { type Context = C }
+
 
 }
 

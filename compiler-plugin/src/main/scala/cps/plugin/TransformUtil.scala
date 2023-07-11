@@ -7,6 +7,7 @@ import core.Contexts.*
 import core.Names.*
 import core.Symbols.*
 import core.Types.*
+import dotty.tools.dotc.util.SrcPos
 import ast.tpd.*
 
 
@@ -86,6 +87,54 @@ object TransformUtil {
       }
       gather(Nil,tree)
    }
+
+   def methodTypeFromFunctionType(candidate: Type, srcPos: SrcPos)(using Context): Option[MethodType] = {
+      candidate match
+         case mt: MethodType =>
+            Some(mt)
+         case AppliedType(tycon, targs) if (defn.isFunctionType(tycon)) =>
+            val paramNames = (1 to targs.length-1).map(i => ("arg"+i).toTermName).toList
+            val paramTypes = targs.dropRight(1)
+            val resultType = targs.last
+            Some(MethodType(paramNames)(_ => paramTypes, _ => resultType))
+         case _ =>
+            if (candidate.baseType(defn.Function0).exists) then
+               Some(MethodType(Nil)(x => Nil, x => candidate))
+            else if (candidate.baseType(defn.Function1).exists) then
+                val fun = candidate.baseType(defn.Function1)
+                fun match
+                   case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+                      methodTypeFromFunctionType(fun, srcPos)
+                   case _ =>
+                      None
+            else if (candidate.baseType(defn.Function2).exists) then
+                val fun = candidate.baseType(defn.Function2)
+                fun match
+                   case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+                      methodTypeFromFunctionType(fun, srcPos)
+                   case _ =>
+                      None
+            else
+               val maxArity = 22
+               var found = false
+               var i = 3
+               var fun: Type = NoType
+               while(!found && i < maxArity) {
+                  if (candidate.baseType(defn.FunctionSymbol(i)).exists) then
+                     val fun = candidate.baseType(defn.FunctionSymbol(i))
+                     found = true
+                  i = i + 1
+               }
+               if (found) then
+                    fun match
+                      case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+                          methodTypeFromFunctionType(fun, srcPos)
+                      case _ =>
+                          throw CpsTransformException(s"internal error: $fun expected to be AppliedType", srcPos)
+               else
+                    None
+   }
+
 
    final val COMMA = ","
 

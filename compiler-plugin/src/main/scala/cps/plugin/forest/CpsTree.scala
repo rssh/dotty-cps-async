@@ -184,7 +184,7 @@ sealed trait SyncCpsTree extends CpsTree  {
 
   def getUnpure(using Context, CpsTopLevelContext): Tree
 
-  def unpure(using Context, CpsTopLevelContext): Option[Tree] = Some(getUnpure)
+  override def unpure(using Context, CpsTopLevelContext): Option[Tree] = Some(getUnpure)
 
   override def transformed(using Context, CpsTopLevelContext): Tree = {
     val pureName = "pure".toTermName
@@ -301,23 +301,48 @@ case class SeqCpsTree(
     last.castOriginType(ntpe)
 
   override def unpure(using Context, CpsTopLevelContext) = {
-    last.asyncKind match
-      case AsyncKind.Sync =>
-        val stats = prevs.map{ t =>
-           t.unpure.get.changeOwner(t.owner,owner)
-        }.toList
-        Some(Block( stats, last.unpure.get.changeOwner(last.owner,owner) ))
-      case _ =>
-        None
+    if (prevs.isEmpty) then
+      last.unpure
+    else
+      last.asyncKind match
+        case AsyncKind.Sync =>
+          val stats = prevs.map{ t =>
+             t.unpure.get.changeOwner(t.owner,owner)
+          }.toList
+          Some(Block( stats, last.unpure.get.changeOwner(last.owner,owner) ))
+        case AsyncKind.AsyncLambda(_) =>
+          last.unpure.map(etaExpand)
+        case _ =>
+          None
   }
+
+
 
   override def transformed(using Context, CpsTopLevelContext): Tree = {
     if (prevs.length == 0) then
       last.transformed
     else
-      val tstats = prevs.map(t => t.unpure.get.changeOwner(t.owner,owner))
-      val tlast = last.transformed.changeOwner(last.owner,owner)
-      Block(tstats.toList,tlast)
+      asyncKind match
+        case AsyncKind.AsyncLambda(_) =>
+          etaExpand(last.transformed)
+        case _ =>
+          val tstats = prevs.map(t => t.unpure.get.changeOwner(t.owner,owner))
+          val tlast = last.transformed.changeOwner(last.owner,owner)
+          Block(tstats.toList,tlast)
+  }
+
+  private def etaExpand(tLast: Tree)(using Context, CpsTopLevelContext): Tree = {
+    TransformUtil.methodTypeFromFunctionType(tLast.tpe.widen, last.origin.srcPos) match
+      case Some(mt) =>
+        val meth = Symbols.newAnonFun(owner, mt)
+        val closure = Closure(meth, tss => {
+           val stats = prevs.map( t => t.transformed.changeOwner(t.owner,meth) ).toList
+           val lastTransformed = Apply(tLast.changeOwner(last.owner,meth), tss.head)
+           Block(stats, lastTransformed)
+        })
+        closure
+      case None =>
+        throw CpsTransformException(s"Can't convert ${tLast.tpe} to method type", last.origin.srcPos)
   }
   
   // TODO: add span for error reporing
@@ -375,7 +400,6 @@ sealed trait AsyncCpsTree extends CpsTree {
   override def asyncKind(using Context, CpsTopLevelContext) = AsyncKind.Async(internalAsyncKind)
 
   override def unpure(using Context, CpsTopLevelContext) = None
-
 
 
   override def applyRuntimeAwait(runtimeAwait: Tree)(using Context, CpsTopLevelContext): CpsTree =
@@ -783,9 +807,6 @@ case class OpaqueAsyncLambdaTermCpsTree(
 
   override def transformed(using Context, CpsTopLevelContext): Tree = transformedTree
 
-  override def appendInBlock(next: CpsTree)(using Context, CpsTopLevelContext): CpsTree = {
-    SeqCpsTree(EmptyTree,owner,IndexedSeq(this),next.changeOwner(owner))
-  }
 
   override def applyRuntimeAwait(runtimeAwait: tpd.Tree)(using Context, CpsTopLevelContext): CpsTree = {
     val tpe = transformedTree.tpe.widen.dealias
@@ -855,6 +876,34 @@ case class OpaqueAsyncLambdaTermCpsTree(
   override def show(using Context): String = {
     s"OpaqueAsyncLambdaTermCpsTree(${transformedTree.show})"
   }
+
+  def toLambdaCpsTree(using Context, CpsTopLevelContext): LambdaCpsTree = {
+    // check trivial casw where transformed tree is lambda itself
+    transformedTree match
+      case lambda@Block(List(ddef: DefDef), closure: Closure) if closure.meth.symbol == ddef.symbol  =>
+        val Kind = CpsTransformHelper.asyncKindFromTransformedType(ddef.rhs.tpe.widen.dealias, summon[CpsTopLevelContext].monadType)
+        LambdaCpsTree(origin, owner, ddef, CpsTree.impure(ddef.rhs, ddef.symbol, ddef.rhs, asyncKind))
+      case _ =>
+        TransformUtil.methodTypeFromFunctionType(transformedTree.tpe.widen.dealias, origin.srcPos) match
+          case Some(mt) =>
+            val sym = Symbols.newAnonFun(owner,mt)
+            val lambda = DefDef(sym, tss => {
+              val nBody = Apply(
+                Select(transformedTree,"apply".toTermName),
+                tss.head
+              )
+              nBody
+            })
+            val cpsBody = bodyKind match
+              case AsyncKind.Sync => CpsTree.pure(EmptyTree,owner,lambda.rhs)
+              case AsyncKind.Async(internalKind) => CpsTree.impure(EmptyTree,owner,lambda.rhs,internalKind)
+              case AsyncKind.AsyncLambda(bodyKind) => CpsTree.opaqueAsyncLambda(EmptyTree,owner,lambda.rhs,bodyKind)
+            LambdaCpsTree(origin, owner, lambda, cpsBody)
+          case None =>
+            throw CpsTransformException(s"Can't convert ${transformedTree.tpe.show} to method type", origin.srcPos)
+  }
+
+
 
 }
 
@@ -1215,11 +1264,9 @@ case class MemberDefCpsTree(
 
   override def asyncKind(using Context, CpsTopLevelContext) = AsyncKind.Sync
 
+
   override def withOrigin(term: Tree): CpsTree = copy(origin = term)
 
-  override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext) = {
-    throw CpsTransformException(s"MemberDefCpsTree can't be in position which reuire casting", definition.srcPos)
-  }
 
   override def transformed(using Context, CpsTopLevelContext): Tree = {
     definition
@@ -1227,6 +1274,10 @@ case class MemberDefCpsTree(
 
   override def unpure(using Context, CpsTopLevelContext) = {
     Some(definition)
+  }
+
+  override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree = {
+    throw CpsTransformException(s"MemberDefCpsTree  can't be in position which require cast", origin.srcPos)
   }
 
   override def applyRuntimeAwait(runtimeAwait: Tree)(using Context, CpsTopLevelContext): CpsTree = this
