@@ -153,13 +153,15 @@ object CpsTransformHelper {
     tpe match
       case AppliedType(tycon,args) if tycon =:= ft =>
         AsyncKind.Async(asyncKindFromTransformedType(args.head,ft))
-      case AppliedType(tycon,args) if (defn.isFunctionType(tycon)) =>
+      case AppliedType(tycon,args) if (defn.isFunctionSymbol(tycon.typeSymbol) || defn.isContextFunctionClass(tycon.typeSymbol)) =>
         AsyncKind.AsyncLambda(asyncKindFromTransformedType(args.last,ft))
       case mt: MethodType =>
         AsyncKind.AsyncLambda(asyncKindFromTransformedType(mt.resType,ft))
       case pt: PolyType =>
         AsyncKind.AsyncLambda(asyncKindFromTransformedType(pt.resType,ft))
       case other =>
+        // TODO: use inferImplcit
+        //summon[Context].typer.inferImplicit()
         ft match
           case HKTypeLambda(List(paramBound), resType) =>
             val withAny = ft.appliedTo(WildcardType)

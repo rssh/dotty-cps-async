@@ -92,7 +92,7 @@ object TransformUtil {
       candidate match
          case mt: MethodType =>
             Some(mt)
-         case AppliedType(tycon, targs) if (defn.isFunctionType(tycon)) =>
+         case AppliedType(tycon, targs) if (defn.isFunctionSymbol(tycon.typeSymbol)) =>
             val paramNames = (1 to targs.length-1).map(i => ("arg"+i).toTermName).toList
             val paramTypes = targs.dropRight(1)
             val resultType = targs.last
@@ -103,14 +103,14 @@ object TransformUtil {
             else if (candidate.baseType(defn.Function1).exists) then
                 val fun = candidate.baseType(defn.Function1)
                 fun match
-                   case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+                   case AppliedType(tycon, targs) if defn.isFunctionSymbol(tycon.typeSymbol) =>
                       methodTypeFromFunctionType(fun, srcPos)
                    case _ =>
                       None
             else if (candidate.baseType(defn.Function2).exists) then
                 val fun = candidate.baseType(defn.Function2)
                 fun match
-                   case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+                   case AppliedType(tycon, targs) if defn.isFunctionSymbol(tycon.typeSymbol) =>
                       methodTypeFromFunctionType(fun, srcPos)
                    case _ =>
                       None
@@ -127,7 +127,9 @@ object TransformUtil {
                }
                if (found) then
                     fun match
-                      case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+                      case at: AnnotatedType => methodTypeFromFunctionType(at.parent, srcPos)
+                      case rt: RefinedType => methodTypeFromFunctionType(rt.parent, srcPos)
+                      case AppliedType(tycon, targs) if defn.isFunctionSymbol(tycon.typeSymbol) =>
                           methodTypeFromFunctionType(fun, srcPos)
                       case _ =>
                           throw CpsTransformException(s"internal error: $fun expected to be AppliedType", srcPos)

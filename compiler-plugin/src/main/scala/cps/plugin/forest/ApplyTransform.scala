@@ -269,9 +269,9 @@ object ApplyTransform {
 
   def parseSyncFunApplication(origin: Apply, owner:Symbol, nesting: Int, fun: Tree, argss:List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
       val tctx = summon[CpsTopLevelContext]
-      val containsAsyncLambda = argss.exists(_.containsAsyncLambda)
+      val runShiftAsyncLambda = argss.exists(_.containsNotUnshiftableAsyncLambda)
       val containsAsync = argss.exists(_.isAsync)
-      val retval = if (containsAsyncLambda) {
+      val retval = if (runShiftAsyncLambda) {
         tctx.optRuntimeAwait match
           case Some(runtimeAwait) =>
             genApplication(origin,owner,nesting,MbShiftedFun(fun,false, ShiftedArgumentsShape.same),argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait)), callMode)
@@ -727,7 +727,11 @@ object ApplyTransform {
             case mt: MethodOrPoly =>
               extractFinalResultType(mt.resType, fun, tail)
             case AppliedType(tycon, targs) =>
-              if (defn.isFunctionType(tycon)) then
+              if (defn.isFunctionType(funType)) then
+                extractFinalResultType(targs.last, fun, tail)
+              else if (defn.isContextFunctionType(funType)) then
+                extractFinalResultType(targs.last, fun, tail)
+              else if (defn.isErasedFunctionType(funType)) then
                 extractFinalResultType(targs.last, fun, tail)
               else
                 throw CpsTransformException(s"Can't extract final result type from ${funType.show}", fun.srcPos)

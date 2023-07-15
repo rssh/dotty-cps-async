@@ -13,6 +13,7 @@ import cps.plugin.forest.*
 
 sealed trait ApplyArgList {
   def isAsync(using Context, CpsTopLevelContext): Boolean
+  def containsNotUnshiftableAsyncLambda(using Context, CpsTopLevelContext): Boolean
   def containsAsyncLambda(using Context, CpsTopLevelContext): Boolean
   def containsDirectContext: Boolean
   def show(using Context):String
@@ -28,6 +29,8 @@ case class ApplyTermArgList(
 ) extends ApplyArgList {
   override def isAsync(using Context, CpsTopLevelContext) = args.exists(_.isAsync)
   override def containsAsyncLambda(using Context, CpsTopLevelContext) = args.exists(_.isAsyncLambda)
+  override def containsNotUnshiftableAsyncLambda(using Context, CpsTopLevelContext) =
+    args.exists(x => x.isAsyncLambda && !x.lambdaCanBeUnshifted )
   override def containsDirectContext = args.exists(_.isDirectContext)
   override def origin = originApplyTerm
   override def isTypeParams = false
@@ -45,6 +48,7 @@ case class ApplyTypeArgList(
 ) extends ApplyArgList {
   override def isAsync(using Context, CpsTopLevelContext) = false
   override def containsAsyncLambda(using Context, CpsTopLevelContext) = false
+  override def containsNotUnshiftableAsyncLambda(using Context, CpsTopLevelContext) = false
   override def containsDirectContext = false
   override def origin = originApplyTerm
   override def show(using Context): String = {

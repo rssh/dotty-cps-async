@@ -28,6 +28,7 @@ sealed trait ApplyArg {
     def isAsync(using Context, CpsTopLevelContext): Boolean
     def isLambda(using Context, CpsTopLevelContext): Boolean
     def isAsyncLambda(using Context, CpsTopLevelContext): Boolean
+    def lambdaCanBeUnshifted(using Context, CpsTopLevelContext): Boolean
     def isDirectContext: Boolean
 
     def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)]
@@ -112,6 +113,7 @@ sealed trait ExprApplyArg extends ApplyArg {
     case _ => false
 
   def lambdaCanBeUnshifted(using Context, CpsTopLevelContext): Boolean = {
+    println(s"checking lambdaCanBeUnshifted for ${tpe.show}")
 
     def isAsync(tp: Type): Boolean = {
       tp.baseType(summon[CpsTopLevelContext].monadType.typeSymbol) != NoType
@@ -119,15 +121,45 @@ sealed trait ExprApplyArg extends ApplyArg {
 
     @tailrec
     def canBeUnshifted(tp: Type): Boolean = {
-      tp match
+      /*
+      val wtpe = tp.widen
+      if (defn.isFunctionType(wtpe)) {
+        println(s"defn.isFunctionType fro ${wtpe.show}")
+        // how
+      }
+      println(s"defn.isFunctionType fro ${wtpe.show} = ${defn.isFunctionType(wtpe)}")
+      println(s"defn.isFunctionType fro ${tp.show} = ${defn.isFunctionType(tp)}")
+      val contextFunction = defn.FunctionType(2,true).appliedTo(List(defn.IntType,defn.IntType))
+      println(s"defn.isFunctionType for ContextFunction ${contextFunction.show} = ${defn.isFunctionType(contextFunction)}")
+      val mt = MethodType(List("x".toTermName),List(defn.IntType),defn.IntType)
+      println(s"defn.isFunctionType for MethodType ${mt.show} = ${defn.isFunctionType(mt)}")
+      val polyType = PolyType(List("T".toTypeName))(
+        (pt => List(TypeBounds.empty )),
+        (pt => MethodType(List("x".toTermName),List(defn.IntType),pt.paramRefs(0)))
+      )
+      println(s"defn.isFunctionType for PolyType ${polyType.show} = ${defn.isFunctionType(polyType)}")
+      */
+      tp.widen match
         case tp: MethodOrPoly => isAsync(tp.resType) || canBeUnshifted(tp.resType)
-        case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
-          val tp = targs.last
-          isAsync(tp) || canBeUnshifted(tp)
-        case _ => false
+        case AppliedType(tycon, targs) =>
+          if (defn.isFunctionSymbol(tycon.typeSymbol)) then
+            val tp = targs.last
+            println("determinated function type")
+            isAsync(tp) || canBeUnshifted(tp)
+          else if (defn.isContextFunctionClass(tycon.typeSymbol))
+            val tp = targs.last
+            isAsync(tp) || canBeUnshifted(tp)
+          else
+            println(s"${tycon.show} is not function type, for all-type: ${defn.isFunctionType(tp)}")
+            false
+        case _ =>
+          println(s"unchecked type for LambdaCanBeUnshifted: ${tp}")
+          false
     }
 
-    canBeUnshifted(tpe.widen)
+    val result = canBeUnshifted(tpe.widen)
+    println(s"lanbdaCanBeUnshifted for ${tpe.show} is ${result}")
+    result
 
   }
 
@@ -300,6 +332,8 @@ case class RepeatApplyArg(
 
   override def isDirectContext: Boolean = elements.exists(_.isDirectContext)
 
+  override def lambdaCanBeUnshifted(using Context, CpsTopLevelContext) = elements.exists(_.lambdaCanBeUnshifted)
+
 
   override def flatMapsBeforeCall(using Context) = 
     elements.foldLeft(IndexedSeq.empty[(CpsTree,ValDef)]){ (s,e) =>
@@ -338,6 +372,10 @@ case class ByNameApplyArg(
 
   override def flatMapsBeforeCall(using Context) = Seq.empty
 
+  override def lambdaCanBeUnshifted(using Context, CpsTopLevelContext) = {
+      tpe.baseType(summon[CpsTopLevelContext].monadType.typeSymbol) != NoType
+  }
+
   override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree = {
     callMode match
       case ApplyArgCallMode.ASYNC_SHIFT =>
@@ -354,15 +392,27 @@ case class ByNameApplyArg(
       case _ =>
         expr.unpure match
           case Some(tree) => tree
-          case None => 
-            optRuntimeAwait match
-              case Some(runtimeAwait) => 
-                expr.applyRuntimeAwait(runtimeAwait).unpure match
-                  case Some(tree) => tree
-                  case None =>
-                    throw CpsTransformException("Invalid result of RuntimeAwait",expr.origin.srcPos)
-              case None =>
-                throw CpsTransformException("Can't trandform arg call to sync form without runtimeAwait",expr.origin.srcPos)   
+          case None =>
+            if (lambdaCanBeUnshifted) then
+              unshiftLambdaTree
+            else
+              optRuntimeAwait match
+                case Some(runtimeAwait) =>
+                  expr.applyRuntimeAwait(runtimeAwait).unpure match
+                    case Some(tree) => tree
+                    case None =>
+                      throw CpsTransformException("Invalid result of RuntimeAwait",expr.origin.srcPos)
+                case None =>
+                  throw CpsTransformException("Can't trandform arg call to sync form without runtimeAwait",expr.origin.srcPos)
+  }
+
+  def unshiftLambdaTree(using Context, CpsTopLevelContext): Tree = {
+    val monadRef = summon[CpsTopLevelContext].cpsMonadRef
+    val select = Select(monadRef,"flatten".toTermName)
+    ctx.typer.typed(untpd.Apply(
+      untpd.TypedSplice(select),
+      List(untpd.TypedSplice(expr.transformed))
+    ))
   }
 
   override def show(using Context): String = {
@@ -422,6 +472,9 @@ case class ErasedApplyArg(
     false
 
   override def isAsyncLambda(using Context, CpsTopLevelContext): Boolean =
+     false
+
+  override def lambdaCanBeUnshifted(using Context, CpsTopLevelContext): Boolean =
      false
 
   def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] =
