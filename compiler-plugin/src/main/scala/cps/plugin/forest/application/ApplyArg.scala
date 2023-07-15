@@ -8,11 +8,10 @@ import core.Decorators.*
 import core.Names.*
 import core.Symbols.*
 import core.Types.*
-import ast.*
+import ast.{tpd, *}
 import ast.tpd.*
 import cps.plugin.*
 import cps.plugin.forest.*
-import dotty.tools.dotc.ast.tpd
 
 import scala.util.control.NonFatal
 
@@ -30,11 +29,28 @@ sealed trait ApplyArg {
     def isAsyncLambda(using Context, CpsTopLevelContext): Boolean
     def lambdaCanBeUnshifted(using Context, CpsTopLevelContext): Boolean
     def isDirectContext: Boolean
+    def named: Option[TermName]
 
     def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)]
-    def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree
 
-    //def dependencyFromLeft: Boolean
+    def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait: Option[Tree])(using Context, CpsTopLevelContext): Tree = {
+      named match
+        case Some(paramName) =>
+          if (name != paramName)
+            report.warning(
+            s"""
+               |We assume that at this stage named arguments will be seen an tree un position appropriate to position members,
+               |but looks its not true. Please report bug-report.
+               | name=${name}, paramName=${paramName},
+               |""".stripMargin, origin.srcPos)
+          NamedArg(paramName, exprInCallNotNamed(callMode, optRuntimeAwait))
+        case None =>
+          exprInCallNotNamed(callMode, optRuntimeAwait)
+    }
+
+    def exprInCallNotNamed(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree
+
+  //def dependencyFromLeft: Boolean
     def show(using Context): String
 }
 
@@ -44,13 +60,15 @@ object ApplyArg {
   def apply(expr: Tree, paramName: TermName, paramType: Type,
             isByName: Boolean, isDirectContext: Boolean,
             owner: Symbol,
-            dependFromLeft: Boolean, nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
+            dependFromLeft: Boolean,
+            named: Option[TermName],
+            nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
     val retval = expr match
       case Typed(sq@SeqLiteral(elems,elemtpt),rtp) if isRepeatedParamType(rtp) =>
         RepeatApplyArg(paramName, paramType, elems.zipWithIndex.map{ (p,i) =>
           val newName = (paramName.toString + i.toString).toTermName
-          ApplyArg(p,newName,elemtpt.tpe,isByName, isDirectContext, owner, dependFromLeft,  nesting)
-        },  elemtpt,  expr)
+          ApplyArg(p,newName,elemtpt.tpe,isByName, isDirectContext, owner, dependFromLeft, None, nesting)
+        },  elemtpt,  expr, named)
       case _ =>
         val cpsExpr = try{
           RootTransform(expr, owner, nesting+1)
@@ -66,25 +84,24 @@ object ApplyArg {
         }
         Log.trace(s"ApplyArg: ${expr.show} => ${cpsExpr.show}", nesting)
         if (isByName) then
-          ByNameApplyArg(paramName, paramType, cpsExpr, isDirectContext)
+          ByNameApplyArg(paramName, paramType, cpsExpr, isDirectContext, named)
         else
           paramType match
             case AnnotatedType(tp, an) if an.symbol == defn.InlineParamAnnot =>
-                InlineApplyArg(paramName,tp,cpsExpr,isDirectContext)
+                InlineApplyArg(paramName,tp,cpsExpr,isDirectContext,named)
             case AnnotatedType(tp, an) if an.symbol == defn.ErasedParamAnnot =>
-                ErasedApplyArg(paramName,tp,expr,isDirectContext)
+                ErasedApplyArg(paramName,tp,expr,isDirectContext, named)
             case _ =>
                 cpsExpr.asyncKind match
                   case AsyncKind.Sync if !dependFromLeft =>
-                    PlainApplyArg(paramName,paramType,cpsExpr,None,isDirectContext)
+                    PlainApplyArg(paramName,paramType,cpsExpr,None,isDirectContext, named)
                   case AsyncKind.AsyncLambda(_) =>
-
-                    PlainApplyArg(paramName,paramType,cpsExpr,None,isDirectContext)
+                    PlainApplyArg(paramName,paramType,cpsExpr,None,isDirectContext, named)
                   case _ =>
                     val sym = newSymbol(owner,paramName,Flags.EmptyFlags,paramType.widen,NoSymbol)
                     val optRhs =  cpsExpr.unpure
                     val valDef =  ValDef(sym.asTerm, optRhs.getOrElse(EmptyTree).changeOwner(cpsExpr.owner, sym))
-                    PlainApplyArg(paramName,paramType.widen,cpsExpr,Some(valDef), isDirectContext)
+                    PlainApplyArg(paramName,paramType.widen,cpsExpr,Some(valDef), isDirectContext, named)
     Log.trace(s"creating arg for expr: ${expr.show}, resut=${retval.show}", nesting)
     retval
   }
@@ -118,6 +135,8 @@ sealed trait ExprApplyArg extends ApplyArg {
     def isAsync(tp: Type): Boolean = {
       tp.baseType(summon[CpsTopLevelContext].monadType.typeSymbol) != NoType
     }
+
+
 
     @tailrec
     def canBeUnshifted(tp: Type): Boolean = {
@@ -172,6 +191,10 @@ sealed trait ExprApplyArg extends ApplyArg {
       case AsyncKind.Sync => false
 
 
+
+  def exprInCallNotNamed(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree
+
+
 }
 
 
@@ -181,6 +204,7 @@ case class PlainApplyArg(
   override val expr: CpsTree,  
   val optIdentValDef: Option[ValDef],
   val isDirectContext: Boolean,
+  val named: Option[TermName]
 ) extends ExprApplyArg  {
 
   override def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] = {
@@ -188,16 +212,16 @@ case class PlainApplyArg(
   }
 
   /**
-   *  Output the expression inside call
-   *    this can 
+   * Output the expression inside call
+   * this can
    *
-   *  //Are we change symbol when do changeOwner to tree ?
-   *  If yes, we should be extremally careful with different refs to
-   *  optIdentSym.  Maybe better do expr function from sym ?
+   * //Are we change symbol when do changeOwner to tree ?
+   * If yes, we should be extremally careful with different refs to
+   * optIdentSym.  Maybe better do expr function from sym ?
    *
-   *  TODO:  dependFromLeft
-   **/
-   override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree =
+   * TODO:  dependFromLeft
+   * */
+   override def exprInCallNotNamed(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree =
     import AsyncKind.*
     expr.asyncKind match
       case Sync => expr.unpure match
@@ -322,6 +346,7 @@ case class RepeatApplyArg(
   elements: Seq[ApplyArg],
   elementTpt: Tree,
   override val origin: Tree,
+  named: Option[TermName]
 ) extends ApplyArg {
 
   override def isAsync(using Context, CpsTopLevelContext) = elements.exists(_.isAsync)
@@ -340,7 +365,15 @@ case class RepeatApplyArg(
        s ++ e.flatMapsBeforeCall
     }
 
-  override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext) =
+  override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait: Option[tpd.Tree])(using Context, CpsTopLevelContext) =
+    named match
+      case Some(name) =>
+        NamedArg(name, exprInCallNotNamed(callMode,optRuntimeAwait))
+      case _ =>
+        exprInCallNotNamed(callMode,optRuntimeAwait)
+
+
+  def exprInCallNotNamed(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext) =
     val trees = elements.foldLeft(IndexedSeq.empty[Tree]){ (s,e) =>
       s.appended(e.exprInCall(callMode,optRuntimeAwait))
     }
@@ -364,6 +397,7 @@ case class ByNameApplyArg(
   override val tpe: Type,
   override val expr: CpsTree,
   override val isDirectContext: Boolean,
+  override val named: Option[TermName],
 ) extends ExprApplyArg  {
 
   override def isLambda(using Context, CpsTopLevelContext) = true
@@ -376,7 +410,7 @@ case class ByNameApplyArg(
       tpe.baseType(summon[CpsTopLevelContext].monadType.typeSymbol) != NoType
   }
 
-  override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree = {
+  override def exprInCallNotNamed(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree = {
     callMode match
       case ApplyArgCallMode.ASYNC_SHIFT =>
         // make lambda
@@ -429,7 +463,8 @@ case class InlineApplyArg(
   override val name: TermName,
   override val tpe: Type,
   override val expr: CpsTree,
-  override val isDirectContext: Boolean
+  override val isDirectContext: Boolean,
+  override val named: Option[TermName],
 ) extends ExprApplyArg {
 
 
@@ -442,7 +477,7 @@ case class InlineApplyArg(
   def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] =
     throwNotHere
 
-  def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree =
+  def exprInCallNotNamed(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree =
     throwNotHere
 
   def throwNotHere: Nothing =
@@ -460,7 +495,8 @@ case class ErasedApplyArg(
   override val name: TermName,
   override val tpe: Type,
            val exprTree: Tree,
-  override val isDirectContext: Boolean
+  override val isDirectContext: Boolean,
+  override val named: Option[TermName],
 ) extends ApplyArg {
 
   override def origin: tpd.Tree = exprTree
@@ -480,7 +516,7 @@ case class ErasedApplyArg(
   def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)] =
     Seq.empty
 
-  def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree =
+  def exprInCallNotNamed(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree =
     exprTree
 
   override def show(using Context): String = {

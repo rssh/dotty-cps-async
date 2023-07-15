@@ -585,10 +585,11 @@ object ApplyTransform {
 
     def resolveAsyncShiftedObject(obj: Tree): Either[String,Tree] = {
       val asyncShift = ref(requiredClass("cps.AsyncShift")).tpe
-      val tpe = AppliedType(asyncShift, List(obj.tpe.widen))
+      //val tpe = AppliedType(asyncShift, List(obj.tpe.widen))
+      val tpe = asyncShift.appliedTo(obj.tpe.widen)
       val searchResult = ctx.typer.inferImplicitArg(tpe, fun.span)
       searchResult.tpe match
-        case failure : typer.Implicits.SearchFailureType => Left(failure.explanation)
+        case failure : typer.Implicits.SearchFailureType => Left(s"search ${tpe.show} fail :${failure.explanation}")
         case success => Right(searchResult)
     }
 
@@ -677,7 +678,7 @@ object ApplyTransform {
                 s"""
                  |Can't find async-shifted method or implicit AsyncShift for ${obj.show}
                  |method search: $inPlaceErrors
-                 |implicit AsyncShifg object search: $err1
+                 |implicit AsyncShift  object search: $err1
                  """.stripMargin('|')
               report.error(msg, fun.srcPos)
               throw CpsTransformException(msg, fun.srcPos)
