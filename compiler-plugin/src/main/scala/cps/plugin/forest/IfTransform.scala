@@ -65,8 +65,8 @@ object IfTransform {
                   MapCpsTreeArgument(Some(valDef), CpsTree.pure(ifTerm,owner,newIf))
                 )
               case _ =>
-                if (cpsIfTrue.asyncKind != cpsIfFalse.asyncKind) then
-                   throw CpsTransformException("Different async kind in if branches",ifTerm.srcPos) 
+                if (!cpsIfTrue.asyncKind.isCompatible(cpsIfFalse.asyncKind)) then
+                   throw CpsTransformException(s"Different async kind in if branches ${cpsIfTrue.asyncKind} and ${cpsIfFalse.asyncKind}",ifTerm.srcPos)
                 val newIf = If(ref(sym),cpsIfTrue.transformed,cpsIfFalse.transformed)
                               .withSpan(ifTerm.span)        
                 val cpsNewIf = AsyncTermCpsTree(ifTerm, owner, newIf, cpsIfTrue.asyncKind)
