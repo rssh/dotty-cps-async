@@ -39,6 +39,7 @@ object ApplyTransform {
   case class FunCallMode(
                           funKind: AsyncKind,
                           preliminaryResultKind: AsyncKind,
+                          argCallMode: ApplyArgCallMode,
                           asyncLambdaApplication: Boolean,
                           addMonadToFirstArgList: Boolean,
                           fromCallChain: Boolean
@@ -146,7 +147,7 @@ object ApplyTransform {
         val syncFun = optTypeApply match
           case Some(ta) => cpsObj.select(sel).typeApply(ta)
           case None => cpsObj.select(sel)
-        val callMode = FunCallMode(AsyncKind.Sync, AsyncKind.Sync, false, false, fromCallChain)
+        val callMode = FunCallMode(AsyncKind.Sync, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
         parseSyncFunApplication(appTerm, owner, nesting, syncFun.unpure.get, argss, callMode)
       case AsyncKind.Async(internalKind) =>
         val valDefSym = newSymbol(owner, "xApplySelect".toTermName, Flags.EmptyFlags,
@@ -157,7 +158,7 @@ object ApplyTransform {
         val syncFun = optTypeApply match
           case Some(ta) => TypeApply(synFun0,ta.args)
           case None => synFun0
-        val callMode = FunCallMode(cpsObj.asyncKind, AsyncKind.Sync,  false, false, fromCallChain)
+        val callMode = FunCallMode(cpsObj.asyncKind, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
         val appCpsTree = parseSyncFunApplication(appTerm, owner, nesting, syncFun, argss, callMode)
         val retval = appCpsTree match
           case CallChainSubstCpsTree(origin, owner, call) =>
@@ -191,7 +192,7 @@ object ApplyTransform {
                 case Some(ta) => cpsObj.select(sel).typeApply(ta).unpure.get
                 case None => cpsObj.select((sel)).unpure.get
             }
-            val callMode = FunCallMode(AsyncKind.Sync, AsyncKind.Sync, false, false, fromCallChain)
+            val callMode = FunCallMode(AsyncKind.Sync, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
             parseSyncFunApplication(appTerm, owner, nesting, syncFun, argss, callMode)
           case None =>
             if (sel.name == nme.apply) {
@@ -209,7 +210,7 @@ object ApplyTransform {
                   Log.trace(s"ApplyTransform.parseApplication, nLambda=${nLambda.show}", nesting)
                   Log.trace(s"ApplyTransform.parseApplication, nLambda.tree=${nLambda}", nesting)
                   val nFun = Select(nLambda, nme.apply).withSpan(appTerm.span)
-                  val callMode = FunCallMode(AsyncKind.Sync, bodyKind, true, false, fromCallChain)
+                  val callMode = FunCallMode(AsyncKind.Sync, bodyKind, ApplyArgCallMode.SYNC, true, false, fromCallChain)
                   parseSyncFunApplication(appTerm, owner, nesting, nFun, argss, callMode)
                 case AsyncKind.AsyncLambda(bodyKind2) =>
                   throw CpsTransformException("Shape (async labda which returns async lambda) is notsupported yet", appTerm.srcPos)
@@ -229,7 +230,7 @@ object ApplyTransform {
         (call , true)
       case _ =>
         (cpsApplicantNoChain,false)
-    val callMode = FunCallMode(cpsApplicant.asyncKind, AsyncKind.Sync, false, false, fromCallChain)
+    val callMode = FunCallMode(cpsApplicant.asyncKind, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
     parseApplicationCpsFun(appTerm, owner, nesting, cpsApplicant, argss, callMode)
   }
 
@@ -302,7 +303,7 @@ object ApplyTransform {
                   }
                   println(s"preliminaryAsyncKind: ${preliminaryAsyncKind}" )
 
-                  val newCallMode = FunCallMode(AsyncKind.Sync, preliminaryAsyncKind, false,
+                  val newCallMode = FunCallMode(AsyncKind.Sync, preliminaryAsyncKind, ApplyArgCallMode.ASYNC_SHIFT, false,
                      newFun.shape.p == ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM,
                      callMode.fromCallChain)
 
@@ -377,7 +378,8 @@ object ApplyTransform {
   def adoptResultKind(origin:Tree, newApply: Tree, owner: Symbol, callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
     callMode.preliminaryResultKind match
       case AsyncKind.Sync =>
-        if (newApply.tpe.baseType(Symbols.requiredClass("cps.runtime.CallChainAsyncShiftSubst"))!=NoType) {
+        if ((callMode.argCallMode == ApplyArgCallMode.ASYNC_SHIFT || callMode.fromCallChain)
+          && newApply.tpe.baseType(Symbols.requiredClass("cps.runtime.CallChainAsyncShiftSubst"))!=NoType) {
           CallChainSubstCpsTree(origin, owner, CpsTree.pure(origin, owner, newApply))
         } else if (callMode.fromCallChain) {
           //TODO: determiante kinf with lambda-s from result type
