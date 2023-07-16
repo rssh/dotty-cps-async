@@ -22,7 +22,7 @@ class Test13TestCases {
     DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
   }
 
-  /*
+
   @Test
   def testCompileBaseFutureTest(): Unit = {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
@@ -33,13 +33,7 @@ class Test13TestCases {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m2")
   }
 
-
-
-  @Test
-  def testCompileAsyncListStress(): Unit = {
-    compileAfterCommon("testdata/set13TestCases/m2")
-  }
-
+  
   @Test
   def testCompileCBS1ApplyMin(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m3")
@@ -60,7 +54,7 @@ class Test13TestCases {
   def testCompileCBS1DShiftedFunctionM4min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m4_min1")
   }
-  */
+
 
   @Test
   def testCompileCBS1DShiftedFunctionM4min2(): Unit = {
@@ -68,12 +62,12 @@ class Test13TestCases {
   }
 
 
-  /*
+
   @Test
   def testCommpileCBS1ShiftTryMonadM5min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m5_min1")
   }
-  */
+
 
 
 
