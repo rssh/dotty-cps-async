@@ -1340,6 +1340,7 @@ case class CallChainSubstCpsTree(override val origin: Tree,
 
   def finishChain()(using Context, CpsTopLevelContext): CpsTree = {
      println(s"before _finishChain, call = ${call.show}")
+     Thread.dumpStack()
      val finishChainSelect = call.select(Select(call.origin,"_finishChain".toTermName))
      val finishChainType = finishChainSelect.originType.widen
      if (finishChainType <:< defn.NothingType) then

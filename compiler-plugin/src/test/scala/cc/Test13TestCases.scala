@@ -23,6 +23,7 @@ class Test13TestCases {
   }
 
 
+  
   @Test
   def testCompileBaseFutureTest(): Unit = {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
@@ -33,7 +34,7 @@ class Test13TestCases {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m2")
   }
 
-  
+
   @Test
   def testCompileCBS1ApplyMin(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m3")
@@ -66,6 +67,12 @@ class Test13TestCases {
   @Test
   def testCommpileCBS1ShiftTryMonadM5min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m5_min1")
+  }
+
+
+  @Test
+  def testCompileCBS1ShiftWithFilterM6min1(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m6_min1")
   }
 
 

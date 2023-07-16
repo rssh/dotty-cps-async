@@ -89,8 +89,8 @@ object ApplyTransform {
             }else {
               applyMArgs(term, owner, nesting, Nil)
             }
-      Log.trace(s" Apply result: ${cpsTree.show}", nesting)
-      cpsTree
+    Log.trace(s" Apply result: ${cpsTree.show}", nesting)
+    cpsTree
   }
 
 
@@ -391,9 +391,11 @@ object ApplyTransform {
         } else {
           PureCpsTree(origin, owner, newApply)
         }
-      case AsyncKind.Async(internalKind) => CpsTree.impure(origin, owner, newApply, internalKind)
+      case AsyncKind.Async(internalKind) =>
+
+        CpsTree.impure(origin, owner, newApply, internalKind)
       case AsyncKind.AsyncLambda(bodyKind) =>
-             CpsTree.opaqueAsyncLambda(origin, owner, newApply, bodyKind)
+        CpsTree.opaqueAsyncLambda(origin, owner, newApply, bodyKind)
   }
 
   def genApplication(origin:Apply, owner: Symbol, nesting: Int, fun: MbShiftedFun, argss: List[ApplyArgList], f: ApplyArg => Tree, callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
@@ -630,7 +632,7 @@ object ApplyTransform {
              val tree = shape match
                case ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM_LIST =>
                    Apply(
-                     TypeApply(nSelect, List(TypeTree(fType))),
+                     TypeApply(nSelect, List(TypeTree(fType.widen))),
                      List(obj, tctx.cpsMonadRef)
                    ).withSpan(fun.span)
                case ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM =>

@@ -49,18 +49,19 @@ object AwaitTransform {
       case AsyncKind.Sync =>
           CpsTree.impure(term,owner,convertToGMonad(internalCpsTree.unpure.get), AsyncKind.Sync)
       case ik@AsyncKind.Async(_) =>
-        // x.flatMap(identity) = x.flatMap(a=>a)
-        val newFlatMapArgSym = Symbols.newSymbol(owner, "argAwait".toTermName, Flags.Synthetic, aType.tpe.widen)
-        val valDefArg = ValDef(newFlatMapArgSym)
-        val refArg = ref(newFlatMapArgSym)
+        // x.flatten
+        //val newFlatMapArgSym = Symbols.newSymbol(owner, "argAwait".toTermName, Flags.Synthetic, aType.tpe.widen)
+        //val valDefArg = ValDef(newFlatMapArgSym)
+        //val refArg = ref(newFlatMapArgSym)
         val gInternalCpsTree = if (fMonadType.tpe =:= gMonadType.tpe) then {
           internalCpsTree
         } else {
           CpsTree.impure(term,owner,convertToGMonad(internalCpsTree.transformed), AsyncKind.Async(ik))
         }
-        FlatMapCpsTree(term, owner, gInternalCpsTree,
-          FlatMapCpsTreeArgument(Some(valDefArg),
-            CpsTree.pure(refArg, owner, refArg)))
+        //FlatMapCpsTree(term, owner, gInternalCpsTree,
+        //  FlatMapCpsTreeArgument(Some(valDefArg),
+        //    CpsTree.pure(refArg, owner, refArg)))
+        gInternalCpsTree
       case AsyncKind.AsyncLambda(_) =>
         throw CpsTransformException("cpsAwait is not supported for async lambdas", term.srcPos)
 
