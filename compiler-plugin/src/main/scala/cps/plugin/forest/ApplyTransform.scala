@@ -135,7 +135,7 @@ object ApplyTransform {
 
     val cpsObjOrChain = RootTransform(obj,owner, nesting+1)
 
-    Log.trace(s"parseMethodCall: cpsObjOrChain=${cpsObjOrChain.show},  argss=${argss.map(_.show)}", nesting)
+    Log.trace(s"parseMethodCall: cpsObjOrChain=${cpsObjOrChain.show},  argss=${argss.map(_.show)}, optTypeApply=${optTypeApply.map(_.show)}", nesting)
     val (cpsObj, fromCallChain) = cpsObjOrChain match
       case CallChainSubstCpsTree(origin, owner, call) =>
         (call, true)
@@ -302,10 +302,10 @@ object ApplyTransform {
                   }
                   println(s"preliminaryAsyncKind: ${preliminaryAsyncKind}" )
 
-
                   val newCallMode = FunCallMode(AsyncKind.Sync, preliminaryAsyncKind, false,
                      newFun.shape.p == ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM,
                      callMode.fromCallChain)
+
                   val r = genApplication(origin, owner, nesting, newFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), newCallMode)
                   println(s"application of shifted function: ${r.show},  newFun=${newFun.tree.show}")
                   println(s"origin=${origin.show}")
@@ -420,6 +420,8 @@ object ApplyTransform {
                Inlined(fun,List.empty,fun)
             case _ =>
                 fun
+          println("GenOneLastPureApply: fun: "+fun.show +", fun.tpe="+fun.tpe.show)
+          println("GenOneLastPureApply: nArgs: "+nArgs.map(_.show).mkString(","))
           Apply(fun1, nArgs).withSpan(origin.span)
       tree
     }
@@ -588,6 +590,7 @@ object ApplyTransform {
       //val tpe = AppliedType(asyncShift, List(obj.tpe.widen))
       val tpe = asyncShift.appliedTo(obj.tpe.widen)
       val searchResult = ctx.typer.inferImplicitArg(tpe, fun.span)
+      //val searchResult = ctx.typer.implicitArgTree(tpe, fun.span)
       searchResult.tpe match
         case failure : typer.Implicits.SearchFailureType => Left(s"search ${tpe.show} fail :${failure.explanation}")
         case success => Right(searchResult)
@@ -692,7 +695,10 @@ object ApplyTransform {
               val funWithoutTypeapply = Select(obj,TermRef(obj.tpe,sym)).withSpan(fun.span)
               val tree = shape.tp match
                 case ShiftedArgumentsTypeParamsShape.SAME_TYPEPARAMS =>
-                  funWithoutTypeapply
+                  if (targs.isEmpty)
+                    funWithoutTypeapply
+                  else
+                    TypeApply(funWithoutTypeapply, targs).withSpan(fun.span)
                 case ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM =>
                   val tctx = summon[CpsTopLevelContext]
                   val retval = TypeApply(funWithoutTypeapply, TypeTree(tctx.monadType) :: targs).withSpan(fun.span)

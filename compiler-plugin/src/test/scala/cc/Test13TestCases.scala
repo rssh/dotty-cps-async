@@ -62,11 +62,19 @@ class Test13TestCases {
   }
   */
 
+  @Test
+  def testCompileCBS1DShiftedFunctionM4min2(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m4_min2")
+  }
 
+
+  /*
   @Test
   def testCommpileCBS1ShiftTryMonadM5min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m5_min1")
   }
+  */
+
 
 
 }
