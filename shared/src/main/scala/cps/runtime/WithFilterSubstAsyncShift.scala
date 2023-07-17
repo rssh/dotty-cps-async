@@ -7,10 +7,22 @@ import scala.collection.mutable.ArrayBuilder
 import scala.collection.mutable.Builder
 
 
+/**
+ * WithFilter should be handled in a special way, because it is impossible to access underlaying collection
+ * from withFilter,  so it's impossible to write async version of withFilter functions, because they require
+ * eration over original collection.
+ * @param ca original colleaction
+ * @param p predicate
+ * @param csf Asy
+ * @tparam A
+ * @tparam C
+ * @tparam CA
+ */
 class WithFilterSubstAsyncShift[A, C[X] <: Iterable[X] & IterableOps[X,C,C[X]], CA <: C[A]]( 
                                                                  ca: CA,
                                                                  p: A=>Boolean,
-                                                                 csf: IterableOpsAsyncShift[A,C,CA]) {
+                                                                 csf: IterableOpsAsyncShift[A,C,CA])
+                                      {
 
   def foreach[F[_],U](m: CpsMonad[F])(f: A => F[U]): F[Unit] = 
     csf.foreach(ca,m){ v =>

@@ -11,7 +11,8 @@ import cps.macros.flags.UseCompilerPlugin
 given UseCompilerPlugin.type = UseCompilerPlugin
 
 
-@CpsDebugLevel(20)
+//@CpsDebugLevel(20)
+//@CpsDebugLevel(20)
 class TestCBS1ShiftWithFilterM6min1:
 
 

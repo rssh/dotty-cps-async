@@ -68,15 +68,18 @@ class Test13TestCases {
   def testCommpileCBS1ShiftTryMonadM5min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m5_min1")
   }
-  */
+
 
   @Test
   def testCompileCBS1ShiftWithFilterM6min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m6_min1")
   }
+   */
 
-
-
+  @Test
+  def testFutureRangeWithFilterShiftM7min1(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m7_min1")
+  }
 
 }
 

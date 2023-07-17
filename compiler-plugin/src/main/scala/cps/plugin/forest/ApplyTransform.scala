@@ -3,7 +3,7 @@ package cps.plugin.forest
 import scala.annotation.tailrec
 import dotty.tools.dotc.*
 import ast.tpd.*
-import core.*
+import core.{Symbols, *}
 import core.Contexts.*
 import core.Decorators.*
 import core.Names.*
@@ -132,7 +132,10 @@ object ApplyTransform {
     }
   }
 
+
+
   def parseMethodCall(appTerm: Apply, owner: Symbol, nesting: Int, obj: Tree, sel: Select, optTypeApply:Option[TypeApply], argss: List[ApplyArgList])(using Context, CpsTopLevelContext): CpsTree = {
+
 
     val cpsObjOrChain = RootTransform(obj,owner, nesting+1)
 
@@ -511,6 +514,61 @@ object ApplyTransform {
 
 
   /**
+   * @param origin
+   * @param fun - fun,  which can be withFilter invocation.
+   * @param owner
+   * @param Context
+   * @param CpsTopLevelContext
+   * @return
+   */
+  def retrieveShiftedFun(origin: Tree,  fun:Tree, owner: Symbol)(using Context, CpsTopLevelContext): MbShiftedFun = {
+
+    val withFilterType = Symbols.requiredClassRef("scala.collection.WithFilter").appliedTo(List(WildcardType, WildcardType))
+
+    object WithFilterCall {
+      def unapply(tree: Tree): Option[(Tree,TermName,List[Tree])] = tree match
+        case Select(obj,methodName) if obj.tpe <:< withFilterType && !(obj.tpe =:= defn.NothingType) =>
+          Some((obj,methodName.toTermName,List.empty))
+        case TypeApply(Select(obj,methodName),targs) if obj.tpe <:< withFilterType && !(obj.tpe =:= defn.NothingType) =>
+          Some((obj,methodName.toTermName,targs))
+        case _ => None
+    }
+
+
+    println("retrieveShiftedFun: "+fun)
+
+    fun match
+      case WithFilterCall(obj,methodName,methodTypeParams) =>
+        // With filter is a special case , because it is impossible to rertieve underlaying collection from WithFilter instance.
+        // So, we trying to find it.withFilter invocation and substitute it with own shifted implementation
+        obj match
+          case Apply(Select(itObj,withFilterCn),List(predicate)) if withFilterCn == "withFilter".toTermName =>
+            resolveAsyncShiftedObject(itObj) match
+              case Right(itShiftedObj) =>
+                //val withFilterSubstDenot = itShiftedObj.tpe.member("_cpsWithFilterSubst".toTermName)
+                val withFilterSubstSelect = Select(maybeInlineObject(itShiftedObj), "_cpsWithFilterSubst".toTermName)
+                val newQual = Apply(withFilterSubstSelect, List(itObj, predicate))
+                //val newDenont = itShiftedObj.tpe.member(methodName)
+                println(s"!!!newQual=${newQual.show}")
+                val newSelect = Select(newQual, methodName)
+                val newFun0 = if (methodTypeParams.isEmpty) {
+                  newSelect
+                } else {
+                  TypeApply(newSelect, TypeTree(summon[CpsTopLevelContext].monadType) :: methodTypeParams)
+                }
+                val newFun = Apply(newFun0,List(summon[CpsTopLevelContext].cpsMonadRef)).withSpan(fun.span)
+                println(s"!!!newFun=${newFun.show}")
+                MbShiftedFun(newFun, false, ShiftedArgumentsShape.same )
+              case Left(error) =>
+                throw CpsTransformException(s"Can't resolve shifted object for withFilter: ${error}", fun.srcPos)
+          case _ =>
+            //TODO: expand set of possible withFilter consturctors
+            throw CpsTransformException("Can't retrieve underlaying collection from WithFilter instance", fun.srcPos)
+      case _ => retrieveShiftedFunNoSpecial(origin, fun, owner)
+  }
+
+
+    /**
    * retrieve shifted function or throw exception.
    * @param fun
    * @param owner
@@ -518,7 +576,7 @@ object ApplyTransform {
    * @param CpsTopLevelContext
    * @return  new function (with type arguments and additional parameter list if needed)
    */
-  def retrieveShiftedFun(origin: Tree,  fun:Tree, owner: Symbol)(using Context, CpsTopLevelContext): MbShiftedFun = {
+  def retrieveShiftedFunNoSpecial(origin: Tree,  fun:Tree, owner: Symbol)(using Context, CpsTopLevelContext): MbShiftedFun = {
 
     val tctx = summon[CpsTopLevelContext]
 
@@ -589,16 +647,6 @@ object ApplyTransform {
     }
 
 
-    def resolveAsyncShiftedObject(obj: Tree): Either[String,Tree] = {
-      val asyncShift = ref(requiredClass("cps.AsyncShift")).tpe
-      //val tpe = AppliedType(asyncShift, List(obj.tpe.widen))
-      val tpe = asyncShift.appliedTo(obj.tpe.widen)
-      val searchResult = ctx.typer.inferImplicitArg(tpe, fun.span)
-      //val searchResult = ctx.typer.implicitArgTree(tpe, fun.span)
-      searchResult.tpe match
-        case failure : typer.Implicits.SearchFailureType => Left(s"search ${tpe.show} fail :${failure.explanation}")
-        case success => Right(searchResult)
-    }
 
     def checkAsyncShiftedMethod(originMethod: Symbol, candidateMethod: SymDenotation): Either[String,ShiftedArgumentsShiftedObjectShape] = {
       val originTpArgs = originMethod.paramSymss.head.filter(_.isType)
@@ -666,19 +714,7 @@ object ApplyTransform {
                 report.error(s"nObj.tpe=${nObj.tpe.show},  neeedInlining = ${ctx.compilationUnit.needsInlining}")
                 throw CpsTransformException(s"Can't find async-shifted method ${methodName} in ${nObj.show}", fun.srcPos)
               // TODO: collect previous errors to pass as parameter
-              val isInlined = nObj.symbol.denot.is(Flags.Inline)
-              val mbInlinedObj = if (isInlined) {
-                if (tctx.isBeforeInliner) then
-                  ctx.compilationUnit.needsInlining=true
-                  nObj
-                else
-                  atPhase(inliningPhase) {
-                    Inlines.inlineCall(nObj)
-                  }
-              } else {
-                println(s"shiftedObject is not inline")
-                nObj
-              }
+              val mbInlinedObj = maybeInlineObject(nObj)
               prepareAsyncShiftedMethodCall(fun.symbol, obj, mbInlinedObj, methods, targs)
             case Left(err1) =>
               val msg =
@@ -750,7 +786,30 @@ object ApplyTransform {
               throw CpsTransformException(s"Can't extract final result type from ${funType.show}, expect MethodOrPoly or AppliedType", fun.srcPos)
   }
 
+  def resolveAsyncShiftedObject(obj: Tree)(using Context): Either[String, Tree] = {
+    val asyncShift = ref(requiredClass("cps.AsyncShift")).tpe
+    //val tpe = AppliedType(asyncShift, List(obj.tpe.widen))
+    val tpe = asyncShift.appliedTo(obj.tpe.widen)
+    val searchResult = ctx.typer.inferImplicitArg(tpe, obj.span)
+    //val searchResult = ctx.typer.implicitArgTree(tpe, fun.span)
+    searchResult.tpe match
+      case failure: typer.Implicits.SearchFailureType => Left(s"search ${tpe.show} fail :${failure.explanation}")
+      case success => Right(searchResult)
+  }
 
+  def maybeInlineObject(obj:Tree)(using Context, CpsTopLevelContext): Tree = {
+        val isInlined = obj.symbol.denot.is(Flags.Inline)
+        if (isInlined) then
+          if (summon[CpsTopLevelContext].isBeforeInliner) then
+            ctx.compilationUnit.needsInlining=true
+            obj
+          else
+            atPhase(inliningPhase) {
+              Inlines.inlineCall(obj)
+            }
+        else
+          obj
+  }
 
 
 }
