@@ -23,11 +23,12 @@ class Test13TestCases {
   }
 
 
-  /*
+
   @Test
   def testCompileBaseFutureTest(): Unit = {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
   }
+
 
   @Test
   def testCompileAsyncListStress(): Unit = {
@@ -74,12 +75,20 @@ class Test13TestCases {
   def testCompileCBS1ShiftWithFilterM6min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m6_min1")
   }
-   */
+
 
   @Test
   def testFutureRangeWithFilterShiftM7min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m7_min1")
   }
+  
+
+  @Test
+  def test59M8min1(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m8_min1")
+  }
+
+
 
 }
 

@@ -251,6 +251,8 @@ case class PureCpsTree(
     }
   }
 
+
+
   override def typed(originTyped: Typed)(using Context, CpsTopLevelContext): CpsTree = {
     if (isOriginEqSync && (originTyped.expr eq this.origin))
       val r = CpsTree.unchangedPure(originTyped, owner)
@@ -261,6 +263,8 @@ case class PureCpsTree(
     else
       super.typed(originTyped)
   }
+
+
 
   override def typeApply(origin: TypeApply)(using Context, CpsTopLevelContext): CpsTree =
     if (isOriginEqSync && origin.fun.eq(this.origin))
@@ -336,9 +340,13 @@ case class SeqCpsTree(
       case Some(mt) =>
         val meth = Symbols.newAnonFun(owner, mt)
         val closure = Closure(meth, tss => {
-           val stats = prevs.map( t => t.transformed.changeOwner(t.owner,meth) ).toList
-           val lastTransformed = Apply(tLast.changeOwner(last.owner,meth), tss.head)
-           Block(stats, lastTransformed)
+           val stats = prevs.map(_.unpure.get).toList
+           val lastTransformed = tLast match
+             case Block(List(ddef),closure) =>
+               Apply(Select(tLast, "apply".toTermName), tss.head)
+             case _ =>
+               Apply(tLast, tss.head)
+           Block(stats, lastTransformed).changeOwner(owner,meth)
         })
         closure
       case None =>
@@ -432,7 +440,7 @@ case class AsyncTermCpsTree(
     vInternalAsyncKind
 
   override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree = {
-    if (ntpe =:= origin.tpe) then
+    if (origin.tpe =:= ntpe) then
       this
     else  
       typed(Typed(origin,TypeTree(ntpe)))
@@ -708,7 +716,11 @@ case class LambdaCpsTree(
             val closure = Closure(meth, tss => TransformUtil.substParams(unpureBody, originParams, tss.head)
                                                             .changeOwner(cpsBody.owner, meth)
                           )
-            val typedClosure = if (tpe =:= origin.tpe.widen) then closure else Typed(closure, TypeTree(origin.tpe.widen))
+            val typedClosure = if (defn.isFunctionType(origin.tpe.widen) || tpe <:< origin.tpe.widen) then {
+              closure
+            } else {
+              Typed(closure, TypeTree(origin.tpe.widen))
+            }
             Some(typedClosure)
   }
     
