@@ -985,19 +985,11 @@ case class BlockBoundsCpsTree(internal:CpsTree) extends CpsTree {
 
     override def changeOwner(newOwner: Symbol)(using Context) =
       BlockBoundsCpsTree(internal.changeOwner(newOwner))
-
-    override def select(origin: Select)(using Context, CpsTopLevelContext): CpsTree = {
-      BlockBoundsCpsTree(internal.select(origin))
-    }
-
-    override def typed(origin: Typed)(using Context, CpsTopLevelContext): CpsTree = {
-      BlockBoundsCpsTree(internal.typed(origin))
-    }
-
-    override def typeApply(origin: TypeApply)(using Context, CpsTopLevelContext): CpsTree = {
-      BlockBoundsCpsTree(internal.typeApply(origin))
-    }
-
+  
+    //
+    // note, that select can't be overrided, because ( Select({ statements,  x }, "&&") will create unexpected 
+    //  not-eta expanded tree.
+  
     override def show(using Context):String = {
       s"BlockBoundsCpsTree(${internal.show})"
     }  

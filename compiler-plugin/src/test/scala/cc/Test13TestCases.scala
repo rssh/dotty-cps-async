@@ -89,6 +89,11 @@ class Test13TestCases {
   }
 
 
+  @Test
+  def testCBBooleanOpShortCircuits(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m9_m1")
+  }
+
 
 }
 

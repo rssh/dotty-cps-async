@@ -113,7 +113,7 @@ object DotcInvocations {
   val defaultCompileOpts: List[String] = {
     List("-Ycheck:all",
       //"-Ydebug-error",
-      "--unique-id",
+      //"--unique-id",
       //"-Yprint-syms",
       //List("-Yprint-debug") ++
       //List("-Yshow-tree-ids") ++

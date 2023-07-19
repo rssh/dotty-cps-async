@@ -142,7 +142,7 @@ object ApplyTransform {
 
     val cpsObjOrChain = RootTransform(obj,owner, nesting+1)
 
-    Log.trace(s"parseMethodCall: cpsObjOrChain=${cpsObjOrChain.show},  argss=${argss.map(_.show)}, optTypeApply=${optTypeApply.map(_.show)}", nesting)
+    Log.trace(s"parseMethodCall: cpsObjOrChain=${cpsObjOrChain.show}, sel.name=${sel.name}  argss=${argss.map(_.show)}, optTypeApply=${optTypeApply.map(_.show)}", nesting)
     val (cpsObj, fromCallChain) = cpsObjOrChain match
       case CallChainSubstCpsTree(origin, owner, call) =>
         (call, true)

@@ -87,6 +87,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
       tree
     } else {
       // tree
+      println("cpsAsyncShift::transformTemplate: added new methods: " + newMethods.map(_.name).mkString(","))
       cpy.Template(tree)(body = tree.body ++ newMethods)
     }
     // println(s"after CpsAsyncShift, retval: ${retval.show}")
