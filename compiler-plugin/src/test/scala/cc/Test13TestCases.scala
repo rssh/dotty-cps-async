@@ -81,7 +81,7 @@ class Test13TestCases {
   def testFutureRangeWithFilterShiftM7min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m7_min1")
   }
-  
+
 
   @Test
   def test59M8min1(): Unit = {

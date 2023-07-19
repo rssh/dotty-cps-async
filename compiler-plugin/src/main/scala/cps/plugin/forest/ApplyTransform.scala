@@ -80,6 +80,9 @@ object ApplyTransform {
 
         case Apply(cnThrow, List(_)) if (cnThrow.symbol == defn.throwMethod) =>
              ThrowTransform(term, owner, nesting)
+        case Apply(TypeApply(nonLocalRecturnCn, List(targ)), List(arg))
+                         if (nonLocalRecturnCn.symbol == Symbols.requiredMethod("scala.util.control.NonLocalReturns.returning")) =>
+             NonLocalReturnsTransform.apply(term, owner, nesting, targ, arg)
         case _ =>
             if (summon[CpsTopLevelContext].isBeforeInliner && atPhase(inliningPhase)(Inlines.needsInlining(term))) {
               // we should inline themself, because in inlined pickkle annotation we have non-cpsed code,
