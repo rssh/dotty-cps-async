@@ -30,7 +30,7 @@ import dotty.tools.dotc.ast.tpd
  *    |- BlockBoundsCpsTree
  *    |- SelectTypeApplyTypedCpsTree
  *    |- InlinedCpsTree(can-be-deleted)
- *    |- DefinitionCpsTree
+ *    |- MemberDefCpsTree
  *    |- CallChainSubstCpsTree
  *
  **/
