@@ -302,7 +302,7 @@ case class SeqCpsTree(
     last.originType
 
   override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree =
-    last.castOriginType(ntpe)
+    SeqCpsTree(origin, owner, prevs, last.castOriginType(ntpe))
 
   override def unpure(using Context, CpsTopLevelContext) = {
     if (prevs.isEmpty) then
@@ -323,7 +323,7 @@ case class SeqCpsTree(
 
 
   override def transformed(using Context, CpsTopLevelContext): Tree = {
-    if (prevs.length == 0) then
+    if (prevs.isEmpty) then
       last.transformed
     else
       asyncKind match

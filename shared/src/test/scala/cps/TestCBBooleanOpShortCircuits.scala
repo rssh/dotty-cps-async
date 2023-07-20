@@ -19,7 +19,7 @@ class TestCBBooleanOpShortCircuits {
      var y = false
      var xCalled = false
      var yCalled = false 
-     val c = async[ComputationBound] {
+     val c = async[ComputationBound]  {
         { xCalled=true; x } && { yCalled=true; y } 
      }
      val r = c.run()

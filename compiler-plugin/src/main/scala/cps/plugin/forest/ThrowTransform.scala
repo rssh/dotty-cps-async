@@ -46,15 +46,28 @@ object ThrowTransform {
 
   def genMonadError(origin: Apply, tree: Tree)(using Context, CpsTopLevelContext): Tree =
     val tctx = summon[CpsTopLevelContext]
-    val throwSupport = tctx.optThrowSupport.getOrElse(
-      throw CpsTransformException(s"throw is not supported for ${tctx.monadType}", origin.srcPos)
-    )
+
+
+    val throwMonad = {
+      if (tctx.cpsMonadRef.tpe <:<  AppliedType(Symbols.requiredClassRef("cps.CpsThrowMonad"),List(WildcardType))) {
+          tctx.cpsMonadRef
+      } else if (tctx.cpsMonadContextRef.tpe <:< AppliedType(Symbols.requiredClassRef("cps.CpsDirect"),List(WildcardType))) {
+          Select(tctx.cpsMonadContextRef, "throwMonad".toTermName)
+      } else if (tctx.cpsMonadContextRef.tpe <:< AppliedType(Symbols.requiredClassRef("cps.CpsThrowMonadContext"),List(WildcardType))) {
+          Select(tctx.cpsMonadContextRef, "monad".toTermName)
+      } else {
+        // TODO: lool at throw support ?
+        throw CpsTransformException(s"throw is not supported for such monad ${tctx.cpsMonadRef.tpe.widen.show}", origin.srcPos)
+      }
+    }
+
     Apply(
       TypeApply(
-        Select(throwSupport, "error".toTermName),
+        Select(throwMonad, "error".toTermName),
         List(TypeTree(origin.tpe.widen))
       ),
       List(tree)
     ).withSpan(origin.span)
+
 
 }

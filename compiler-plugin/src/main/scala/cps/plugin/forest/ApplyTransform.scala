@@ -781,8 +781,8 @@ object ApplyTransform {
                 extractFinalResultType(targs.last, fun, tail)
               else if (defn.isContextFunctionType(funType)) then
                 extractFinalResultType(targs.last, fun, tail)
-              else if (defn.isErasedFunctionType(funType)) then
-                extractFinalResultType(targs.last, fun, tail)
+              //else if (defn.isErasedFunctionType(funType)) then
+              //  extractFinalResultType(targs.last, fun, tail)
               else
                 throw CpsTransformException(s"Can't extract final result type from ${funType.show}", fun.srcPos)
             case _ =>

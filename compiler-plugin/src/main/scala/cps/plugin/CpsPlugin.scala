@@ -27,7 +27,7 @@ class CpsPlugin extends StandardPlugin {
        new PhaseSelect(selectedNodes),
        new PhaseCps(settings,selectedNodes,shiftedSymbols),
        new PhaseCpsAsyncShift(selectedNodes, shiftedSymbols),
-      new PhaseCpsAsyncReplace(selectedNodes, shiftedSymbols),
+       new PhaseCpsAsyncReplace(selectedNodes, shiftedSymbols),
       new PhaseCpsChangeSymbols(selectedNodes, shiftedSymbols)
      )
   }
