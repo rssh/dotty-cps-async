@@ -13,6 +13,7 @@ import ast.tpd.*
 import cps.plugin.*
 import cps.plugin.forest.*
 
+import scala.:+
 import scala.util.control.NonFatal
 
 enum ApplyArgCallMode {
@@ -32,6 +33,8 @@ sealed trait ApplyArg {
     def named: Option[TermName]
 
     def flatMapsBeforeCall(using Context): Seq[(CpsTree,ValDef)]
+
+    def enclosingInlined: Seq[Inlined] = Seq.empty
 
     def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait: Option[Tree])(using Context, CpsTopLevelContext): Tree = {
       named match
@@ -56,6 +59,41 @@ sealed trait ApplyArg {
 
 object ApplyArg {
 
+  case class SeqLiteralMbInlined(enclosingInlined: Seq[Inlined], seqLiteral: SeqLiteral)
+
+  object CheckSeqLiteral{
+
+    def unapply(tree:Tree): Option[SeqLiteralMbInlined] =
+      tree match
+        case sq@SeqLiteral(elems,elemtpt) =>
+          Some(SeqLiteralMbInlined(Nil,sq))
+        case Inlined(call, Nil, expansion) => unapply(expansion)
+        case inlined@Inlined(call, bindings, expansion) =>
+          expansion match
+            case CheckSeqLiteral(internal) =>
+               Some(SeqLiteralMbInlined(enclosingInlined = inlined +: internal.enclosingInlined, seqLiteral=internal.seqLiteral))
+            case _ => None
+        case _ => None
+  }
+
+
+  object CheckRepeated {
+    def unapply(tree:Tree)(using Context): Option[(SeqLiteralMbInlined, Tree)] =
+      tree match
+        case Inlined(call, Nil, expansion) => unapply(expansion)
+        case inlined@Inlined(call, bindings, expansion) =>
+          expansion match
+            case CheckRepeated(internal, elemtpt) =>
+               Some((SeqLiteralMbInlined(enclosingInlined = inlined +: internal.enclosingInlined, seqLiteral=internal.seqLiteral), elemtpt))
+            case _ => None
+        case Typed(seqLiteralCandidate,tpt) if isRepeatedParamType(tpt) =>
+            seqLiteralCandidate match
+              case CheckSeqLiteral(seqLiteralMbInlined: SeqLiteralMbInlined) =>
+                Some((seqLiteralMbInlined, tpt))
+              case _ => None
+        case _ => None
+
+  }
 
   def apply(expr: Tree, paramName: TermName, paramType: Type,
             isByName: Boolean, isDirectContext: Boolean,
@@ -64,11 +102,15 @@ object ApplyArg {
             named: Option[TermName],
             nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
     val retval = expr match
-      case Typed(sq@SeqLiteral(elems,elemtpt),rtp) if isRepeatedParamType(rtp) =>
+      //case Typed(sq@SeqLiteral(elems,elemtpt),rtp) if isRepeatedParamType(rtp) =>
+      case CheckRepeated(seqLiteralMbInlined, rtp) =>
+        val elems = seqLiteralMbInlined.seqLiteral.elems
+        val elemtpt = seqLiteralMbInlined.seqLiteral.elemtpt
+        val enclosingInlined = seqLiteralMbInlined.enclosingInlined
         RepeatApplyArg(paramName, paramType, elems.zipWithIndex.map{ (p,i) =>
           val newName = (paramName.toString + i.toString).toTermName
           ApplyArg(p,newName,elemtpt.tpe,isByName, isDirectContext, owner, dependFromLeft, None, nesting)
-        },  elemtpt,  expr, named)
+        },  elemtpt,  expr, named, enclosingInlined)
       case _ =>
         val cpsExpr = try{
           RootTransform(expr, owner, nesting+1)
@@ -105,6 +147,8 @@ object ApplyArg {
     Log.trace(s"creating arg for expr: ${expr.show}, resut=${retval.show}", nesting)
     retval
   }
+
+
 
 }
 
@@ -228,7 +272,7 @@ case class PlainApplyArg(
         case Some(tree) =>
           tree
         case None => throw CpsTransformException("Impossibke: syn expression without unpure",expr.origin.srcPos)
-      case Async(_) => ref(optIdentValDef.get.symbol)
+      case Async(_) => ref(optIdentValDef.get.symbol).withSpan(expr.origin.span)
       case AsyncLambda(internal) =>
         if (callMode == ApplyArgCallMode.ASYNC_SHIFT) then
           expr.transformed
@@ -307,7 +351,7 @@ case class PlainApplyArg(
         val nTree = summon[Context].typer.typed(untpd.Apply(
           untpd.Select(untpd.TypedSplice(monadRef), "flatten".toTermName),
           List(untpd.TypedSplice(tree))
-        ))
+        )).withSpan(tree.span)
         nTree
     }
 
@@ -346,7 +390,8 @@ case class RepeatApplyArg(
   elements: Seq[ApplyArg],
   elementTpt: Tree,
   override val origin: Tree,
-  named: Option[TermName]
+  named: Option[TermName],
+  override val enclosingInlined: Seq[Inlined]
 ) extends ApplyArg {
 
   override def isAsync(using Context, CpsTopLevelContext) = elements.exists(_.isAsync)
@@ -360,9 +405,9 @@ case class RepeatApplyArg(
   override def lambdaCanBeUnshifted(using Context, CpsTopLevelContext) = elements.exists(_.lambdaCanBeUnshifted)
 
 
-  override def flatMapsBeforeCall(using Context) = 
-    elements.foldLeft(IndexedSeq.empty[(CpsTree,ValDef)]){ (s,e) =>
-       s ++ e.flatMapsBeforeCall
+  override def flatMapsBeforeCall(using Context): Seq[(CpsTree, ValDef)] =
+    elements.foldLeft(IndexedSeq.empty[(CpsTree, ValDef)]) { (s, e) =>
+      s ++ e.flatMapsBeforeCall
     }
 
   override def exprInCall(callMode: ApplyArgCallMode, optRuntimeAwait: Option[tpd.Tree])(using Context, CpsTopLevelContext) =
@@ -384,13 +429,14 @@ case class RepeatApplyArg(
         (elemTpt, AppliedTypeTree(TypeTree(defn.RepeatedParamType), List(elemTpt)))
       case _ => (elementTpt, TypeTree(tpe))
     // todo - return orign if nothing was changed
-    Typed(SeqLiteral(trees.toList,nElemTpt),nRtp).withSpan(origin.span)
+    Typed(SeqLiteral(trees.toList,nElemTpt).withSpan(origin.span) ,nRtp).withSpan(origin.span)
 
   override def show(using Context): String = {
     s"Repeated(${elements.map(_.show)})"
   }
 
 }
+
 
 case class ByNameApplyArg(
   override val name: TermName,

@@ -313,9 +313,9 @@ case class SeqCpsTree(
           val stats = prevs.map{ t =>
              t.unpure.get.changeOwner(t.owner,owner)
           }.toList
-          Some(Block( stats, last.unpure.get.changeOwner(last.owner,owner) ))
+          Some(Block( stats, last.unpure.get.changeOwner(last.owner,owner) ).withSpan(origin.span))
         case AsyncKind.AsyncLambda(_) =>
-          last.unpure.map(etaExpand)
+          last.unpure.map(etaExpand).map(_.withSpan(origin.span))
         case _ =>
           None
   }
@@ -328,11 +328,11 @@ case class SeqCpsTree(
     else
       asyncKind match
         case AsyncKind.AsyncLambda(_) =>
-          etaExpand(last.transformed)
+          etaExpand(last.transformed).withSpan(origin.span)
         case _ =>
           val tstats = prevs.map(t => t.unpure.get.changeOwner(t.owner,owner))
           val tlast = last.transformed.changeOwner(last.owner,owner)
-          Block(tstats.toList,tlast)
+          Block(tstats.toList,tlast).withSpan(origin.span)
   }
 
   private def etaExpand(tLast: Tree)(using Context, CpsTopLevelContext): Tree = {
@@ -422,7 +422,7 @@ sealed trait AsyncCpsTree extends CpsTree {
         tctx.cpsMonadRef,
         tctx.cpsMonadContextRef
       )
-    )
+    ).withSpan(origin.span)
     CpsTree.pure(origin,owner,tree)
 
 
@@ -443,7 +443,7 @@ case class AsyncTermCpsTree(
     if (origin.tpe =:= ntpe) then
       this
     else  
-      typed(Typed(origin,TypeTree(ntpe)))
+      typed(Typed(origin,TypeTree(ntpe)).withSpan(origin.span))
   }
 
   override def asyncKind(using Context, CpsTopLevelContext): AsyncKind =
@@ -569,7 +569,7 @@ case class MapCpsTreeArgument(
             val sym = newSymbol(owner, "_unused".toTermName, Flags.EmptyFlags, 
                               mapCpsTree.mapSource.originType.widen, Symbols.NoSymbol)
             ValDef(sym,EmptyTree)
-        TransformUtil.makeLambda(List(param), body.originType.widen, owner, syncBody, body.owner)
+        TransformUtil.makeLambda(List(param), body.originType.widen, owner, syncBody, body.owner).withSpan(body.origin.span)
   }  
   
   def show(using Context): String = {
@@ -664,7 +664,7 @@ case class FlatMapCpsTreeArgument(
       ValDef(sym,EmptyTree)
     }
     val transformedBody = body.transformed(using summon[Context].withOwner(body.owner), summon[CpsTopLevelContext])
-    TransformUtil.makeLambda(List(param),body.transformedType,owner,transformedBody, body.owner)
+    TransformUtil.makeLambda(List(param),body.transformedType,owner,transformedBody, body.owner).withSpan(body.origin.span)
   }
 
   def show(using Context):String =

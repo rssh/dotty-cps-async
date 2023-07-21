@@ -26,10 +26,10 @@ object ValDefTransform {
                               val newValDef = cpy.ValDef(term)(name=term.name, tpt=term.tpt, rhs=cpsRhs.unpure.get)
                               CpsTree.pure(term,owner,newValDef)
                   case AsyncKind.Async(_) =>
-                        val mapCpsTreeArgument = if (term.symbol.flags.is(Flags.Mutable)) then
+                        val mapCpsTreeArgument = if (true && term.symbol.flags.is(Flags.Mutable)) then
                               val paramSym = Symbols.newSymbol(owner, ("p"+term.name).toTermName, Flags.EmptyFlags, term.tpt.tpe.widen, coord = term.symbol.coord)
                               val paramValDef = ValDef(paramSym, EmptyTree)
-                              val nValDef = cpy.ValDef(term)(term.name,term.tpt, ref(paramValDef.symbol))
+                              val nValDef = cpy.ValDef(term)(term.name,term.tpt, ref(paramValDef.symbol).withSpan(term.span))
                               MapCpsTreeArgument(
                                     Some(paramValDef),
                                     MemberDefCpsTree(term,owner,nValDef)

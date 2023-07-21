@@ -31,14 +31,15 @@ object TransformUtil {
                tree match
                   case tree: Ident if (tree.isTerm) =>
                      map.get(tree.symbol) match
-                        case Some(value) => value
+                        case Some(value) =>
+                          if (value.span.exists) then value else value.withSpan(tree.span)
                         case None => tree
                   case tt: TypeTree =>
                      tt.tpe match
                         case tr: TermRef =>
                            map.get(tr.symbol) match
                               case Some(value) =>
-                                 TypeTree(value.symbol.termRef)
+                                 TypeTree(value.symbol.termRef).withSpan(tt.span)
                               case None =>
                                  super.transform(tt)
                         case _ =>

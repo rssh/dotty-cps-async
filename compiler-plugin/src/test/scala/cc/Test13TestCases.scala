@@ -22,8 +22,6 @@ class Test13TestCases {
     DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
   }
 
-
-  /*
   @Test
   def testCompileBaseFutureTest(): Unit = {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
@@ -100,13 +98,17 @@ class Test13TestCases {
   def testCollectionMonads(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m10_m1")
   }
-  */
+
 
    @Test
    def testFM2(): Unit = {
       compileAfterCommon("testdata/set13TestCases/m11_m1")
    }
 
+  @Test
+  def testUtestLike(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m12_m1")
+  }
 
 
 }

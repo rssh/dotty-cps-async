@@ -444,34 +444,42 @@ object ApplyTransform {
 
     def genOneApplyPrefix(origin: Tree, args:List[ApplyArg], tailCpsTree:CpsTree): CpsTree =
         args.foldRight(tailCpsTree) { (e,s) =>
-          e.flatMapsBeforeCall.foldRight(s){ (pre ,tail) =>
-            val (prefixCpsTree, prefixVal) = pre
-            Log.trace(s"genApplication: oneApplyPrefix for ${e.show}", nesting)
+          if (e.flatMapsBeforeCall.isEmpty) then
+            s
+          else
+            val withPrevArgs = e.flatMapsBeforeCall.foldRight(s) { (pre, tail) =>
+              val (prefixCpsTree, prefixVal) = pre
+              Log.trace(s"genApplication: oneApplyPrefix for ${e.show}", nesting)
 
-            Log.trace(s"genApplication: oneApplyPrefix prefixCpsTree=${prefixCpsTree.show}", nesting)
-            Log.trace(s"genApplication: oneApplyPrefix prefixCpsTree.transformed=${prefixCpsTree.transformed.show}", nesting)
-            Log.trace(s"genApplication: oneApplyPrefix prefixVal=${prefixVal.show}", nesting)
-            e match
-              case plain: PlainApplyArg =>
+              Log.trace(s"genApplication: oneApplyPrefix prefixCpsTree=${prefixCpsTree.show}", nesting)
+              Log.trace(s"genApplication: oneApplyPrefix prefixCpsTree.transformed=${prefixCpsTree.transformed.show}", nesting)
+              Log.trace(s"genApplication: oneApplyPrefix prefixVal=${prefixVal.show}", nesting)
+              e match
+                case plain: PlainApplyArg =>
                   Log.trace(s"genApplication: oneApplyPrefix e.expr=${plain.expr.show}", nesting)
                   Log.trace(s"genApplication: oneApplyPrefix e.expr.transformed=${plain.expr.transformed.show}", nesting)
                   Log.trace(s"genApplication: oneApplyPrefix e.expr.kind=${plain.expr.asyncKind}", nesting)
-                  Log.trace(s"e.expr.origin=${plain.expr.origin.show}",nesting)
+                  Log.trace(s"e.expr.origin=${plain.expr.origin.show}", nesting)
                   Log.trace(s"e.expr.originType=${plain.expr.originType.show}", nesting)
-              case _ =>
+                case _ =>
 
-            // TODO: optimise.
-            //  (mb - introduce flaMap as operations, which automatically do optimizations)
-            FlatMapCpsTree(
-              origin,
-              owner,
-              prefixCpsTree,
-              FlatMapCpsTreeArgument(
-                Some(prefixVal),
-                tail
+              // TODO: optimise.
+              //  (mb - introduce flaMap as operations, which automatically do optimizations)
+              FlatMapCpsTree(
+                origin,
+                owner,
+                prefixCpsTree,
+                FlatMapCpsTreeArgument(
+                  Some(prefixVal),
+                  tail
+                )
               )
-            )
-          }
+            }
+            if (e.enclosingInlined.isEmpty) then
+                withPrevArgs
+            else
+                wrapInInlined(e.enclosingInlined, withPrevArgs)
+
         }
 
     def genPrefixes(argss:List[ApplyArgList], tailCpsTree:CpsTree): CpsTree =
@@ -812,6 +820,30 @@ object ApplyTransform {
             }
         else
           obj
+  }
+
+  private def wrapInInlined(enclosingInlined: Seq[Inlined], cpsTree: CpsTree)(using Context, CpsTopLevelContext):CpsTree = {
+     cpsTree.asyncKind match
+       case AsyncKind.Sync =>
+         CpsTree.pure(wrapTreeInInlined(enclosingInlined, cpsTree.unpure.get), cpsTree.owner, cpsTree.unpure.get)
+       case AsyncKind.Async(internalKind) =>
+         CpsTree.impure(wrapTreeInInlined(enclosingInlined, cpsTree.unpure.get), cpsTree.owner, cpsTree.unpure.get, internalKind)
+       case AsyncKind.AsyncLambda(bodyKind) =>
+         cpsTree match
+           case LambdaCpsTree(origin, owner, originDefDef, cpsBody) =>
+             val newCpsBody = wrapInInlined(enclosingInlined, cpsBody)
+             LambdaCpsTree(origin, owner, originDefDef, newCpsBody)
+           case BlockBoundsCpsTree(internal) =>
+             BlockBoundsCpsTree(wrapInInlined(enclosingInlined, internal))
+           case _ =>
+             // TODO:check for unpure existence
+              CpsTree.opaqueAsyncLambda(cpsTree.origin, cpsTree.owner, wrapTreeInInlined(enclosingInlined, cpsTree.transformed), bodyKind)
+  }
+
+  private def wrapTreeInInlined(enclosingInlined: Seq[Inlined], tree: Tree)(using Context): Tree = {
+    enclosingInlined.foldLeft(tree){ (s,e) =>
+      Inlined(e.call, e.bindings, s).withSpan(e.span)
+    }
   }
 
 
