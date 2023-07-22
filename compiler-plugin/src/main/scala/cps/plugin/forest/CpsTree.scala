@@ -753,7 +753,9 @@ case class LambdaCpsTree(
          // (where is impossible to create context function)
           NoType
        } else {
-          throw CpsTransformException(s"Can't shift SAM type ${originClosureType.show}",origin.srcPos)
+          //we alse have Conversion, ...
+          NoType
+          //throw CpsTransformException(s"Can't shift SAM type ${originClosureType.show}",origin.srcPos)
        }
     } else {
        NoType

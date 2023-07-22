@@ -51,7 +51,7 @@ class TestPEPartialMemoizing:
      FutureCompleter(future)
 
 
-  @Test def testPartialMixed() = 
+  @Test def testPartialMixed(): Unit =
      import cps.automaticColoring.{*,given}
      var ref1 = PEIntRef.make(0)
      val logger1 = new PEToyLogger()
