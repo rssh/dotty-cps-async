@@ -830,9 +830,9 @@ object ApplyTransform {
          CpsTree.impure(wrapTreeInInlined(enclosingInlined, cpsTree.unpure.get), cpsTree.owner, cpsTree.unpure.get, internalKind)
        case AsyncKind.AsyncLambda(bodyKind) =>
          cpsTree match
-           case LambdaCpsTree(origin, owner, originDefDef, cpsBody) =>
+           case LambdaCpsTree(origin, owner, originDefDef, closureType, cpsBody) =>
              val newCpsBody = wrapInInlined(enclosingInlined, cpsBody)
-             LambdaCpsTree(origin, owner, originDefDef, newCpsBody)
+             LambdaCpsTree(origin, owner, originDefDef, closureType, newCpsBody)
            case BlockBoundsCpsTree(internal) =>
              BlockBoundsCpsTree(wrapInInlined(enclosingInlined, internal))
            case _ =>

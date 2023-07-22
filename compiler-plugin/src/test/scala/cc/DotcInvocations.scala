@@ -13,25 +13,26 @@ import scala.util.matching.Regex
 
 class DotcInvocations(silent: Boolean = false) {
 
-  def compileFiles(files: List[String], outDir: String, extraArgs: List[String]=List.empty): Reporter = {
+  def compileFiles(files: List[String], outDir: String, extraArgs: List[String]=List.empty, checkAll: Boolean = true): Reporter = {
     val outPath = Path(outDir)
     if (!outPath.exists) outPath.createDirectory()
     val args = List("-d", outDir) ++
              List("-Xplugin:src/main/resources", "-usejavacp") ++
              extraArgs ++
              DotcInvocations.defaultCompileOpts ++
+             (if (checkAll) List("-Ycheck:all") else List.empty) ++
              files
     val filledReporter = Main.process(args.toArray, reporter, callback)
     filledReporter
   }
 
-  def compileFilesInDirs(dirs: List[String], outDir: String, extraArgs: List[String] = List.empty): Reporter = {
+  def compileFilesInDirs(dirs: List[String], outDir: String, extraArgs: List[String] = List.empty, checkAll: Boolean = true): Reporter = {
     val files = dirs.flatMap { dir => scalaFilesIn(Path(dir)) }
-    compileFiles(files, outDir, extraArgs)
+    compileFiles(files, outDir, extraArgs, checkAll)
   }
 
-  def compileFilesInDir(dir: String, outDir: String, extraArgs: List[String]=List.empty): Reporter = {
-    compileFilesInDirs(List(dir), outDir, extraArgs)
+  def compileFilesInDir(dir: String, outDir: String, extraArgs: List[String]=List.empty, checkAll:Boolean = true): Reporter = {
+    compileFilesInDirs(List(dir), outDir, extraArgs, checkAll)
   }
 
   def compileAndRunFilesInDirs(dirs: List[String], outDir: String, mainClass:String = "Main", extraArgs: List[String] = List.empty): (Int,String) = {
@@ -111,7 +112,7 @@ object DotcInvocations {
   import org.junit.Assert.*
 
   val defaultCompileOpts: List[String] = {
-    List("-Ycheck:all",
+    List(//"-Ycheck:all",
       //"-Ydebug-error",
       //"--unique-id",
       //"-Yprint-syms",
@@ -132,12 +133,13 @@ object DotcInvocations {
 
   case class InvocationArgs(
                            extraDotcArgs: List[String] = List.empty,
-                           silent: Boolean = false
+                           silent: Boolean = false,
+                           checkAll: Boolean = true
                            )
 
   def compileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Unit = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
-    dotcInvocations.compileFilesInDir(dir,dir,invocationArgs.extraDotcArgs)
+    dotcInvocations.compileFilesInDir(dir,dir,invocationArgs.extraDotcArgs,invocationArgs.checkAll)
     checkReporter(dotcInvocations.reporter)
   }
 

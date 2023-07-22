@@ -1,5 +1,6 @@
-//val dottyVersion = "3.3.2-RC1-bin-SNAPSHOT"
-val dottyVersion = "3.3.0"
+val dottyVersion = "3.3.2-RC1-bin-SNAPSHOT"
+//val dottyVersion = "3.3.1-RC4"
+//val dottyVersion = "3.3.0"
 
 
 ThisBuild/version := "0.9.18-SNAPSHOT"
@@ -86,7 +87,7 @@ lazy val cpsLoomJVM = project.in(file("jvm-loom"))
                              baseDirectory.value / ".." / "jvm" / "src" / "test" / "scala",
                              baseDirectory.value / ".." / "shared" / "src" / "test" / "scala",
                         ),
-                        libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
+                        libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
                         Test/fork := true,
                         //for macos
                         Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
@@ -107,7 +108,7 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
                               name := "dotty-cps-compiler-plugin",
                               libraryDependencies ++= Seq(
                                   "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
-                                  "com.novocode" % "junit-interface" % "0.11" % Test,
+                                  "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
                               ),
                               // TODO: split test into subdirectories.
                               //Test/scalacOptions ++= {
@@ -131,7 +132,7 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                               name := "dotty-cps-compiler-plugin-tests",
                               libraryDependencies ++= Seq(
                                   "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
-                                  "com.novocode" % "junit-interface" % "0.11" % Test,
+                                  "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
                               ),
                               Compile / unmanagedSourceDirectories := Seq(),
                               Test / unmanagedSourceDirectories ++= Seq(

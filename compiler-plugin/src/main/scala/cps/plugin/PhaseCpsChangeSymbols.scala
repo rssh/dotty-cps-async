@@ -83,7 +83,6 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
 
 
   override def transformDefDef(tree: DefDef)(using Contexts.Context): Tree = {
-    println(s"phashCpsChangeSymbols: transformDefDef:  ${tree.symbol} (${tree.symbol.id})) ")
 
     def reportErrorWithTree(msg: String, tree: Tree)(using Context): Unit = {
       report.error(msg, tree.srcPos)

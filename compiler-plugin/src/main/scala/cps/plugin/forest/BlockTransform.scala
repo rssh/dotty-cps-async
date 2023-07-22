@@ -25,7 +25,7 @@ object BlockTransform {
           val ddefRhs = ddef.rhs(using ddefCtx)
           RootTransform(ddefRhs, ddef.symbol, nesting+1)(using ddefCtx, tctx)
         }
-        LambdaCpsTree(term, owner, ddef, cpsBody)
+        LambdaCpsTree(term, owner, ddef, closure.tpe.widen, cpsBody)
       case Block(Nil, last) =>
         Log.trace(s"BlockTransform: empty block",nesting)
         val lastCps = RootTransform(last, owner,  nesting+1)

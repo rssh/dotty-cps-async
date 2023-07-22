@@ -168,8 +168,8 @@ object CpsTree {
   def unit(owner: Symbol)(using Context): SyncCpsTree =
      UnitCpsTree(Literal(Constant(())), owner)
 
-  def lambda(origin:Tree, owner: Symbol, ddef: DefDef, transformedBody: CpsTree): CpsTree =
-     LambdaCpsTree(origin, owner, ddef, transformedBody)
+  def lambda(origin:Tree, owner: Symbol, ddef: DefDef, closure: Closure, transformedBody: CpsTree): CpsTree =
+     LambdaCpsTree(origin, owner, ddef, closure.tpt.tpe, transformedBody)
 
   // TODO: add optional inpure
   def opaqueAsyncLambda(origin: Tree, owner: Symbol, changed: Tree, bodyKind: AsyncKind): OpaqueAsyncLambdaTermCpsTree =
@@ -680,6 +680,7 @@ case class LambdaCpsTree(
                           override val origin: Tree,
                           override val owner: Symbol,
                           val originDefDef: DefDef,
+                          val originClosureType: Type, // closure type,  can be partial function or SAM type
                           val cpsBody: CpsTree
 )  extends CpsTree {
 
@@ -693,9 +694,12 @@ case class LambdaCpsTree(
         case AppliedType(ntpfun, ntpargs) =>
           // TODO: check that params are the same.
           val nResType = ntpargs.last
-          copy(cpsBody = cpsBody.castOriginType(nResType))
+          copy(cpsBody = cpsBody.castOriginType(nResType), originClosureType = NoType)
         case _ =>
           throw CpsTransformException(s"Can't cast lambda to type ${ntpe.show}: expected AppliedType but have ${ntpe}",origin.srcPos)
+    else if (ntpe <:< defn.PartialFunctionOf(WildcardType,WildcardType)) then
+      // TODO: make this forany SAM type
+      LambdaCpsTree(origin, owner, originDefDef, ntpe, cpsBody)
     else
       throw CpsTransformException(s"Can't cast lambda to type ${ntpe.show}: expected function type",origin.srcPos)
 
@@ -713,9 +717,14 @@ case class LambdaCpsTree(
             println(s"LambdaCpsTree.unpure:  tpe=${tpe.show}  origin.tpe.widen=${origin.tpe.widen.show}")
 
             val meth = Symbols.newAnonFun(owner,tpe)
-            val closure = Closure(meth, tss => TransformUtil.substParams(unpureBody, originParams, tss.head)
-                                                            .changeOwner(cpsBody.owner, meth)
-                          )
+            val closure = Closure(meth,
+              { tss =>
+                TransformUtil.substParams(unpureBody, originParams, tss.head)
+                  .changeOwner(cpsBody.owner, meth)
+              },
+              Nil,
+              originClosureType
+            )
             val typedClosure = if (defn.isFunctionType(origin.tpe.widen) || tpe <:< origin.tpe.widen) then {
               closure
             } else {
@@ -730,7 +739,23 @@ case class LambdaCpsTree(
     val meth = Symbols.newAnonFun(owner,tpe)
     // here cpsBody is received in other context
     // .  TODO:  check ownitu in cpsBody.transformed
-    Closure(meth, tss => TransformUtil.substParams(cpsBody.transformed, originParams, tss.head).changeOwner(cpsBody.owner, meth))
+    val newClosureType = if (originClosureType.exists) {
+       if (originClosureType <:< defn.PartialFunctionOf(WildcardType,WildcardType)) {
+           val targs = originClosureType.baseType(defn.PartialFunctionClass) match
+             case AppliedType(_,args) => args
+             case _ => throw CpsTransformException(s"Can't extract type arguments from ${originClosureType.show}",origin.srcPos)
+           defn.PartialFunctionOf(targs.head, cpsBody.transformedType.widen)
+       } else {
+          throw CpsTransformException(s"Can't shift SAM type ${originClosureType.show}",origin.srcPos)
+       }
+    } else {
+       NoType
+    }
+    Closure(meth,
+      { tss => TransformUtil.substParams(cpsBody.transformed, originParams, tss.head).changeOwner(cpsBody.owner, meth)},
+      Nil,
+      newClosureType
+    )
   }
 
   override def appendInBlock(next: CpsTree)(using Context, CpsTopLevelContext): CpsTree = {
@@ -783,21 +808,30 @@ case class LambdaCpsTree(
     val params = originDefDef.termParamss.head
     val paramNames = params.map(_.name)
     val paramTypes = params.map(_.tpe.widen)
-    val retval = MethodType(paramNames)(
-      x => paramTypes,
-      x => cpsBody.transformedType.widen,
-    )
+
+    val retval = if (originDefDef.tpe <:< defn.PartialFunctionOf(WildcardType,WildcardType)) {
+                      println("orifinDefDef.tpe <:< PartialFunctionOf")
+                      println(s"orifinDefDef.tpe = ${originDefDef.tpe}, show=${originDefDef.tpe.show}")
+                      ???
+                  } else
+                      MethodType(paramNames)(
+                         x => paramTypes,
+                         x => cpsBody.transformedType.widen,
+                      )
     retval
   }
 
   private def createUnshiftedType()(using Context): Type = {
+    originDefDef.tpe.widen
+    /*
     val params = originDefDef.termParamss.head
     val paramNames = params.map(_.name)
     val paramTypes = params.map(_.tpe.widen)
     MethodType(paramNames)(
       x => paramTypes,
       x => cpsBody.originType.widen
-    )    
+    )
+    */
   }
 
 }
@@ -894,7 +928,7 @@ case class OpaqueAsyncLambdaTermCpsTree(
     transformedTree match
       case lambda@Block(List(ddef: DefDef), closure: Closure) if closure.meth.symbol == ddef.symbol  =>
         val Kind = CpsTransformHelper.asyncKindFromTransformedType(ddef.rhs.tpe.widen.dealias, summon[CpsTopLevelContext].monadType)
-        LambdaCpsTree(origin, owner, ddef, CpsTree.impure(ddef.rhs, ddef.symbol, ddef.rhs, asyncKind))
+        LambdaCpsTree(origin, owner, ddef, closure.tpt.tpe, CpsTree.impure(ddef.rhs, ddef.symbol, ddef.rhs, asyncKind))
       case _ =>
         TransformUtil.methodTypeFromFunctionType(transformedTree.tpe.widen.dealias, origin.srcPos) match
           case Some(mt) =>
@@ -910,7 +944,7 @@ case class OpaqueAsyncLambdaTermCpsTree(
               case AsyncKind.Sync => CpsTree.pure(EmptyTree,owner,lambda.rhs)
               case AsyncKind.Async(internalKind) => CpsTree.impure(EmptyTree,owner,lambda.rhs,internalKind)
               case AsyncKind.AsyncLambda(bodyKind) => CpsTree.opaqueAsyncLambda(EmptyTree,owner,lambda.rhs,bodyKind)
-            LambdaCpsTree(origin, owner, lambda, cpsBody)
+            LambdaCpsTree(origin, owner, lambda, lambda.tpe.widen, cpsBody)
           case None =>
             throw CpsTransformException(s"Can't convert ${transformedTree.tpe.show} to method type", origin.srcPos)
   }

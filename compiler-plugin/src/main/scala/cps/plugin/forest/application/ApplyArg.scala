@@ -134,6 +134,9 @@ object ApplyArg {
             case AnnotatedType(tp, an) if an.symbol == defn.ErasedParamAnnot =>
                 ErasedApplyArg(paramName,tp,expr,isDirectContext, named)
             case _ =>
+                //if (paramType <:< defn.PartialFunctionOf(WildcardType,WildcardType)) {
+                //  ???
+                //}
                 cpsExpr.asyncKind match
                   case AsyncKind.Sync if !dependFromLeft =>
                     PlainApplyArg(paramName,paramType,cpsExpr,None,isDirectContext, named)
@@ -301,7 +304,7 @@ case class PlainApplyArg(
 
   def unshiftLambda(expr:CpsTree)(using Context, CpsTopLevelContext): CpsTree = {
     expr match
-      case LambdaCpsTree(origin,owner,originDefDef, cpsBody) =>
+      case LambdaCpsTree(origin,owner,originDefDef, closureType, cpsBody) =>
         //cpsBody.unpure match
         //  case Some(tree) =>
         //    val nCpsBody = CpsTree.impure(origin,owner,tree,AsyncKind.Sync)
@@ -323,7 +326,7 @@ case class PlainApplyArg(
           List( untpd.TypedSplice(cpsBody.transformed) )
         ))
         val nCpsBody = CpsTree.impure(origin,owner,nCpsBodyTree,expr.asyncKind)
-        val newLambda = LambdaCpsTree(origin,owner,originDefDef, nCpsBody)
+        val newLambda = LambdaCpsTree(origin,owner,originDefDef, closureType, nCpsBody)
         newLambda
       case opl@OpaqueAsyncLambdaTermCpsTree(origin, owner, transformedTree, bodyKind) =>
         unshiftLambda(opl.toLambdaCpsTree)
@@ -356,13 +359,16 @@ case class PlainApplyArg(
     }
 
     expr match
-        case LambdaCpsTree(origin, owner, originDefDef, cpsBody) =>
+        case LambdaCpsTree(origin, owner, originDefDef, closureType, cpsBody) =>
           val meth = Symbols.newAnonFun(owner,originDefDef.tpe.widen)
           val nBody = applyFlatten(cpsBody.transformed)
           val closure = Closure(meth, { tss =>
-            val oldParams = originDefDef.paramss.head.asInstanceOf[List[ValDef]]
-            TransformUtil.substParams(nBody,oldParams,tss.head).changeOwner(originDefDef.symbol,meth)
-          })
+              val oldParams = originDefDef.paramss.head.asInstanceOf[List[ValDef]]
+              TransformUtil.substParams(nBody,oldParams,tss.head).changeOwner(originDefDef.symbol,meth)
+            },
+            Nil,
+            closureType
+          )
           closure
         case _ =>
           val lambdaTree = expr.transformed
@@ -371,10 +377,10 @@ case class PlainApplyArg(
               val meth = Symbols.newAnonFun(expr.owner,mt)
               val ctx = summon[Context]
               val closure = Closure(meth, { tss =>
-                 given Context = ctx.withOwner(meth)
-                 val unflattenCall = Apply(lambdaTree,tss.head)
-                 applyFlatten(unflattenCall).changeOwner(expr.owner,meth)
-              })
+                    given Context = ctx.withOwner(meth)
+                    val unflattenCall = Apply(lambdaTree,tss.head)
+                    applyFlatten(unflattenCall).changeOwner(expr.owner,meth)
+                 }, Nil, NoType)
               closure
             case None =>
               throw CpsTransformException(s"Can't extract methd type from ${tpe.show}", expr.origin.srcPos)
