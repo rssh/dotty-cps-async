@@ -741,10 +741,17 @@ case class LambdaCpsTree(
     // .  TODO:  check ownitu in cpsBody.transformed
     val newClosureType = if (originClosureType.exists) {
        if (originClosureType <:< defn.PartialFunctionOf(WildcardType,WildcardType)) {
-           val targs = originClosureType.baseType(defn.PartialFunctionClass) match
-             case AppliedType(_,args) => args
-             case _ => throw CpsTransformException(s"Can't extract type arguments from ${originClosureType.show}",origin.srcPos)
-           defn.PartialFunctionOf(targs.head, cpsBody.transformedType.widen)
+         val targs = originClosureType.baseType(defn.PartialFunctionClass) match
+           case AppliedType(_, args) => args
+           case _ => throw CpsTransformException(s"Can't extract type arguments from ${originClosureType.show}", origin.srcPos)
+         defn.PartialFunctionOf(targs.head, cpsBody.transformedType.widen)
+       } else if (defn.isFunctionType(originClosureType)) {
+         // can use NoType [TODO:  try to find example where this is matter and better use transformed function type]
+         NoType
+       } else if (defn.isContextFunctionType(originClosureType)) {
+         // context type mapped to simple function type in transformed version, because of compability with macro variabt
+         // (where is impossible to create context function)
+          NoType
        } else {
           throw CpsTransformException(s"Can't shift SAM type ${originClosureType.show}",origin.srcPos)
        }

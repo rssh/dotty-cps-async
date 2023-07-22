@@ -22,7 +22,7 @@ class Test13TestCases {
     DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
   }
 
-  /*
+
   @Test
   def testCompileBaseFutureTest(): Unit = {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
@@ -110,7 +110,7 @@ class Test13TestCases {
   def testUtestLike(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m12_m1")
   }
-  */
+
 
   @Test
   def testMiniGopherW1(): Unit = {
