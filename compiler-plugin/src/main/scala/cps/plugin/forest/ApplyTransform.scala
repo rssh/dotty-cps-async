@@ -48,12 +48,6 @@ object ApplyTransform {
   def apply(term: Apply, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
     Log.trace(s"Apply: origin=${term.show}", nesting)
 
-    term match
-        case Apply(Apply(TypeApply(fAsynchronizedCm,List(tf,ta)),List(a)),List(fctx)) =>
-          Log.trace("cps.asynchronized form", nesting)
-          if (fAsynchronizedCm.symbol == Symbols.requiredMethod("cps.asynchronized"))
-            println("cps.asynchronized symbol")
-        case _ =>
 
     val cpsTree = term match
         case Apply(Apply(TypeApply(fCpsAwaitCn,List(tf,ta,tg)),List(fa)), List(gc,gcn)) =>
@@ -307,7 +301,6 @@ object ApplyTransform {
                   } else {
                     AsyncKind.Sync
                   }
-                  println(s"preliminaryAsyncKind: ${preliminaryAsyncKind}" )
 
                   val newCallMode = FunCallMode(AsyncKind.Sync, preliminaryAsyncKind, ApplyArgCallMode.ASYNC_SHIFT, false,
                      newFun.shape.p == ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM,
@@ -545,9 +538,6 @@ object ApplyTransform {
         case _ => None
     }
 
-
-    println("retrieveShiftedFun: "+fun)
-
     fun match
       case WithFilterCall(obj,methodName,methodTypeParams) =>
         // With filter is a special case , because it is impossible to rertieve underlaying collection from WithFilter instance.
@@ -611,23 +601,23 @@ object ApplyTransform {
             val tp = ShiftedArgumentsTypeParamsShape.SAME_TYPEPARAMS
             Right(tp)
           else
-            Left(s"${candidateSym.name} have wrong number of type arguments")
+            Left(s"${candidateSym.name} have wrong number of type arguments, origin: ${originTpArgs.length}, candidate:  ${candidateTpArgs.length}")
         else if (originTypeParamss.length+1 == candidateTypeParamSymms.length) then
           Right(ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM_LIST)
         else
           Left(s"${candidateSym.name} have wrong number of type arguments (shoule be ${originTypeParamss.length} or ${originTypeParamss.length+1})")
 
-      def checkPlainArgss(originPlainParamss: List[List[Symbol]], candidatePlainParams: List[List[Symbol]]): Either[String, ShiftedArgumentsPlainParamsShape] =
-        if (originPlainParamss.length == candidatePlainParams.length) then
+      def checkPlainArgss(originPlainParamss: List[List[Symbol]], candidatePlainParamss: List[List[Symbol]]): Either[String, ShiftedArgumentsPlainParamsShape] =
+        if (originPlainParamss.length == candidatePlainParamss.length) then
           val originPlainArgs = originPlainParamss.head
-          val candidatePlainArgs = candidatePlainParams.head
+          val candidatePlainArgs = candidatePlainParamss.head
           if (candidatePlainArgs.length == originPlainArgs.length+1) then
             Right(ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM)
           else if (candidatePlainArgs.length == originPlainArgs.length) then
             Right(ShiftedArgumentsPlainParamsShape.SAME_PARAMS)
           else
             Left(s"${candidateSym.name} have wrong number of arguments")
-        else if (originPlainParamss.length+1 == candidatePlainParams.length) then
+        else if (originPlainParamss.length+1 == candidatePlainParamss.length) then
           Right(ShiftedArgumentsPlainParamsShape.EXTRA_PARAM_LIST)
         else
           Left(s"${candidateSym.name} have wrong number of arguments (shoule be ${originPlainParamss.length} or ${originPlainParamss.length+1})")
@@ -657,25 +647,92 @@ object ApplyTransform {
         Right( pos.mapValues(_.right.get).toMap )
     }
 
+    def showParamss(paramss:List[List[Symbol]])(using Context): String = {
+      paramss.map{ params =>
+         val isType = params.exists(_.isType)
+         if (isType) {
+            params.map(_.name).mkString("[",",","]")
+          } else {
+            params.map(_.name).mkString("(",",",")")
+         }
+      }.mkString("")
+    }
+
+    def showMethod(denotation:SymDenotation)(using Context): String = {
+      s"${denotation.name}: ${denotation.info.widen.show}"
+    }
 
 
     def checkAsyncShiftedMethod(originMethod: Symbol, candidateMethod: SymDenotation): Either[String,ShiftedArgumentsShiftedObjectShape] = {
+
+      def approxCompatibleTypes(origin: Type, candidate:Type): Boolean = {
+        if (defn.isFunctionType(origin) || defn.isContextFunctionType(origin)) {
+           defn.isFunctionType(candidate)  //  mb in futuer check arguments for real approximation
+        } else if (defn.isFunctionType(candidate)) {
+           true // by name parameters are shifted as functions.
+        } else {
+           origin match
+             case AppliedType(orTycon,orTargs) =>
+               candidate match
+                 case AppliedType(cnTycon, cnTargs) =>
+                   approxCompatibleTypes(orTycon,cnTycon) &&
+                    (orTargs zip cnTargs).forall{ (pair) =>
+                        approxCompatibleTypes(pair._1, pair._2)
+                    }
+             case _: TermRef =>
+               origin =:= candidate
+             case _ =>
+               true
+        }
+      }
+
+      def checkSameParameters(originNonTypeParams: List[Symbol], candidateNonTypeParamss: List[Symbol]): Either[String, Boolean] = {
+        if (originNonTypeParams.length == candidateNonTypeParamss.length) then
+          val zipped = originNonTypeParams.zip(candidateNonTypeParamss)
+          var retval: Either[String,Boolean] = Right(true)
+          zipped.exists { pair =>
+             if (!approxCompatibleTypes(pair._1.info.widen, pair._2.info.widen)) {
+               retval = Left(s"mismatch in parameter ${pair._1}, type ${pair._1.info.widen} and ${pair._2.info.widen}")
+               true
+             } else false
+          }
+          retval
+        else
+          Left(s"Can't match parameters in  and ${candidateMethod} - different length")
+      }
+
+      def checkSameParameterss(originNonTypeParamss: List[List[Symbol]], originIndex:Int,  candidateNonTypeParamss: List[List[Symbol]], candidateIndex:Int): Either[String,Boolean] =  {
+         originNonTypeParamss match
+           case Nil =>
+             if candidateNonTypeParamss.isEmpty then Right(true) else Left("different number of parameter lists")
+           case head::tail =>
+             checkSameParameters(head,candidateNonTypeParamss.head) match
+               case Left(err) => Left(err)
+               case Right(_) => checkSameParameterss(tail, originIndex+1, candidateNonTypeParamss.tail, candidateIndex+1)
+      }
+
+
       val originTpArgs = originMethod.paramSymss.head.filter(_.isType)
       if (originTpArgs.isEmpty) then
         if (candidateMethod.paramSymss.length == originMethod.paramSymss.length + 2)
           //  with extra type-arg and arglist wich pass monad
-          Right(ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM_LIST)
+          checkSameParameterss(originMethod.paramSymss, 0, candidateMethod.paramSymss.tail.tail,2) match
+            case Left(err) =>
+              Left(err)
+            case Right(_) => Right(ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM_LIST)
         else
           Left(s"Can't match parameters in ${originMethod} and ${candidateMethod}")
       else if (candidateMethod.paramSymss.length == originMethod.paramSymss.length + 1)
         val candidateTpArgs = candidateMethod.paramSymss.head.filter(_.isType)
         if (candidateTpArgs.length == originTpArgs.length + 1) then
             //  with extra type-arg and arglist wich pass monad
-            Right(ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM)
+            checkSameParameterss(originMethod.paramSymss.tail, 1, candidateMethod.paramSymss.tail.tail, 2) match
+              case Left(err) => Left(err)
+              case Right(_) => Right(ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM)
         else
-           Left(s"Can't match parameters in ${originMethod} and ${candidateMethod}, tpParams lenght mismatch")
+           Left(s"Can't match parameters in ${showMethod(originMethod)} and ${showMethod(candidateMethod)}, tpParams lenght mismatch")
       else
-        Left(s"Can't match parameters in ${originMethod} and ${candidateMethod}")
+        Left(s"Can't match parameters in ${showMethod(originMethod)} and ${showMethod(candidateMethod)}")
     }
 
 
@@ -686,7 +743,9 @@ object ApplyTransform {
        else {
          val candidateMethod = methods.head
          checkAsyncShiftedMethod(originMethod, candidateMethod) match
-           case Left(err) => prepareAsyncShiftedMethodCall(originMethod, obj, nObj, methods.tail, targs)
+           case Left(err) =>
+             println(s"failed for method ${candidateMethod.show}: ${err}")
+             prepareAsyncShiftedMethodCall(originMethod, obj, nObj, methods.tail, targs)
            case Right(shape) =>
              val nSelect = nObj.select(candidateMethod)
              val fType = summon[CpsTopLevelContext].monadType
@@ -726,6 +785,7 @@ object ApplyTransform {
                 throw CpsTransformException(s"Can't find async-shifted method ${methodName} in ${nObj.show}", fun.srcPos)
               // TODO: collect previous errors to pass as parameter
               val mbInlinedObj = maybeInlineObject(nObj)
+              println(s"checking AsyncShiftedMetod for ${mbInlinedObj.show}")
               prepareAsyncShiftedMethodCall(fun.symbol, obj, mbInlinedObj, methods, targs)
             case Left(err1) =>
               val msg =

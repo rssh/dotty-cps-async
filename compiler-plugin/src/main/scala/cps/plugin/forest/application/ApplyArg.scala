@@ -101,6 +101,7 @@ object ApplyArg {
             dependFromLeft: Boolean,
             named: Option[TermName],
             nesting: Int)(using Context, CpsTopLevelContext): ApplyArg = {
+    Log.trace(s"creating arg for param ${paramName} expr: ${expr.show}, byName = ${isByName}", nesting)
     val retval = expr match
       //case Typed(sq@SeqLiteral(elems,elemtpt),rtp) if isRepeatedParamType(rtp) =>
       case CheckRepeated(seqLiteralMbInlined, rtp) =>
@@ -463,6 +464,7 @@ case class ByNameApplyArg(
   }
 
   override def exprInCallNotNamed(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree = {
+    println("ByNameApplyArg.exprInCallNotNamed: ${expr.show}, callMode=${callMode}")
     callMode match
       case ApplyArgCallMode.ASYNC_SHIFT =>
         // make lambda

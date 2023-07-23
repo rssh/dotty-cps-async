@@ -51,21 +51,22 @@ class TestPEPartialMemoizing:
      FutureCompleter(future)
 
 
-  @Test def testPartialMixed(): Unit =
-     import cps.automaticColoring.{*,given}
-     var ref1 = PEIntRef.make(0)
-     val logger1 = new PEToyLogger()
-     val code = 
-     """
+  @Test def testPartialMixed(): Unit = {
+    import cps.automaticColoring.{*, given}
+    var ref1 = PEIntRef.make(0)
+    val logger1 = new PEToyLogger()
+    val code =
+      """
       async[PureEffect] {
          val v = effect(ref1, logger1)
          doSomething(v, logger1)
          doTenTimes(v)
       }
      """
-     val errors = compiletime.testing.typeCheckErrors(code)
-     //println(s"errors: $errors")
-     assert(!compiletime.testing.typeChecks(code))
+    val errors = compiletime.testing.typeCheckErrors(code)
+    println(s"errors: $errors")
+    assert(!compiletime.testing.typeChecks(code))
+  }
 
 
 

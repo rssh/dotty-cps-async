@@ -84,7 +84,7 @@ object ApplyTermArgList {
           named,
           nesting
         )
-        s.copy(revApplyArgs = nApplyArg::s.revApplyArgs, symbols = s.symbols ++ depResult.syms)
+        s.copy(revApplyArgs = nApplyArg::s.revApplyArgs, symbols = s.symbols ++ depResult.syms, index = s.index+1)
      }
      ApplyTermArgList(term, s.revApplyArgs.reverse)
   }
