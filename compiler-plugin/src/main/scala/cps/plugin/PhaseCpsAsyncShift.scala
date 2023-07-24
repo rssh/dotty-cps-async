@@ -94,6 +94,42 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     retval
   }
 
+
+  //Hight-level description of generation of async-shofted version of dunction
+  //  val typeParams = if (haveTypeParams) paramss.head else Nil
+  //  val normalArgs = if (haveTypeParams) args.tail else args
+  //  Apply(
+  //    TypeApply(
+  //          ref(Symbols.requiredMetod("cps.cpsAsyncApply")),
+  //          List[
+  //            task - proint amd look.
+  //            TypeTree(F[_],TypeParam,),
+  //          ]
+  //    ),
+  //      Tadk:  add parameter to alreadu existing function.
+  //    List(
+  //      ValDef(am, TypeTree(,,,)),
+  //      ValDef(f, TypeTree(AppliedType(defn.ContextFunctionSymbol,))
+  //    )
+  //  )
+  //
+  //   map[A,B](collection:List[A])(f: A => B): List[B] =  doSpmetjong
+  //   map[F[_],C <: CpsMonadContext[F],A,B](am: CpsMonad.Aux[F,C])(collection:List[A])(f: A => B): F[List[B]] = {
+  //      cpsAsyncApply[F,List[B],C](am,
+  //           mt = ContextMethodType(....)
+  //           Lambda(mt, tss => transfomrdBody(f) )
+  //      )
+  //   }
+
+  //   tranfromedBody(f) = {
+  //      Apply(f, ...)  =>  await[[F,result-typr-of-apply,F]](f, ....)
+  //
+  //
+  //  ???
+
+  //  DefDef( ....   rhs = cpsAsyncShift ....  )
+  //
+
   def transformFunctionBody(tree: tpd.Tree)(using Context): tpd.Tree =
     println("transformFunctionBody: tree.symbol=${tree.symbol}, tree=${tree.show}")
 
@@ -105,6 +141,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         .select(defn.String_+)
         .appliedTo(tpd.Literal(Constant("transformed")))
     transformed
+
 
 }
 
