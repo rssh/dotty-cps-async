@@ -37,7 +37,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @param Context
    * @return
    */
-  override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = {
+  override def transformTemplate(tree: Template)(using Context): Tree = {
     println(
       s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.symbol.info.show}"
     )
@@ -51,8 +51,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
-          println(s"after match case $fun")
-          // TODO: write a high-order check
           if !isHighOrder(fun) then
             throw CpsTransformException(
               "Object has to be a high-order function",
@@ -89,7 +87,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     val retval = if (newMethods.isEmpty) {
       tree
     } else {
-      // tree
       cpy.Template(tree)(body = tree.body ++ newMethods)
     }
     // println(s"after CpsAsyncShift, retval: ${retval.show}")
