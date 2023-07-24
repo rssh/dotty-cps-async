@@ -45,12 +45,19 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     var newMethods      = List.empty[DefDef]
     for (
       bodyTree <- tree.body
-      if bodyTree.symbol.is(Flags.Method) /*&& isHightOrder() && generateCps */
+      if bodyTree.symbol.is(Flags.Method) /*&& generateCps */
     )
       bodyTree match
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
+          println(s"after match case $fun")
+          // TODO: write a high-order check
+          if !isHighOrder(fun) then
+            throw CpsTransformException(
+              "Object has to be a high-order function",
+              bodyTree.srcPos
+            )
           val newFunName     = (fun.symbol.name.debugString + "$cps").toTermName
           val newFunSymbol   =
             Symbols.newSymbol(
@@ -96,8 +103,28 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     val transformed =
       ref(tree.symbol)
         .select(defn.String_+)
-        .appliedTo(tpd.Literal(Constant("transformed")))
-    transformed
+  def isHighOrder(tree: DefDef)(using Context): Boolean =
+    // check all input params
+    val params     = tree.paramss.flatten[ValDef | TypeDef]
+    val funcParams = params.filter { p =>
+      val paramType = p match
+        case v: ValDef => v.tpt.tpe
+        case d: TypeDef => d.rhs.tpe
+      isFunc(paramType)
+    }
+    if !funcParams.isEmpty then return true
+    // check the return type
+    isFunc(tree.rhs.tpe.finalResultType)
+
+  def isFunc(t: Type)(using Context): Boolean =
+    t match
+      case _: AppliedType
+          if (defn.isFunctionType(t) ||
+            defn.isContextFunctionType(t)) =>
+        true
+      case _: MethodType => true
+      case _: PolyType => true
+      case _ => false
 
 }
 
