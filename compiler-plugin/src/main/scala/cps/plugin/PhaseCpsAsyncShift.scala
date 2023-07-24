@@ -67,10 +67,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
               fun.symbol.info.widen // let be the same type for now
             )
           // create new rhs
-          val ctx1: Context = summon[Context].withOwner(newFunSymbol)
-          // TODO: write transformation of func body and tests
-          val transformedRhs = transformFunctionBody(fun.rhs)
-          // val nRhs           = Block(Nil, transformedRhs)(using ctx1)
+          val transformedRhs = transformFunсBody(fun.rhs)
           val newMethod      =
             DefDef(
               newFunSymbol,
@@ -99,10 +96,36 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     retval
   }
 
-  def transformFunctionBody(tree: tpd.Tree)(using Context): tpd.Tree =
-    val transformed =
-      ref(tree.symbol)
+  /**
+   * transform rhs of the annotated function
+   * @param tree
+   * @param Context
+   * @return
+   */
+  def transformFunсBody(tree: Tree)(using Context): Tree =
+    val finalResType = tree.tpe.finalResultType
+    if isFunc(finalResType) then transformInnerFunction(tree)
+    else
+      tree
         .select(defn.String_+)
+        .appliedTo(Literal(Constant("transformed")))
+
+  /**
+   * transform a function which is returned from the high-order annotated
+   * function
+   */
+  def transformInnerFunction(tree: Tree)(using Context): Tree =
+    tree match
+      case Block((innerFunc: DefDef) :: Nil, expr) => // unpack inner function
+        Block(List(transformInnerFunction(innerFunc)), expr)
+      case t: DefDef => // create a transformed copy of original inner function
+        val rhs            = t.rhs
+        val transformedRHS = transformInnerFunction(rhs)
+        cpy.DefDef(t)(t.name, t.paramss, t.tpt, transformedRHS)
+      case Block(stats, expr: Apply) => // transform inner function
+        val newExpr = transformFunсBody(expr)
+        Block(stats, newExpr)
+
   def isHighOrder(tree: DefDef)(using Context): Boolean =
     // check all input params
     val params     = tree.paramss.flatten[ValDef | TypeDef]
