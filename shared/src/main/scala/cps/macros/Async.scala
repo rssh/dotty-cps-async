@@ -137,7 +137,7 @@ object Async {
                   else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then
                      '{ ${dm.asExprOf[CpsSchedulingMonad[F]]}.spawnSync(${transformed}) }
                   else  
-                     '{  ${dm}.lazyPure(${transformed}) }
+                     '{  ${dm}.wrap(${transformed}) }
                else
                   report.errorAndAbort(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Async, runtimeAwait = ${cpsRuntimeAwait.show}")
               } else {

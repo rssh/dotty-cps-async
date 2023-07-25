@@ -189,7 +189,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
       val nctx = ctx.withOwner(newSym)
       val nBody = TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head).changeOwner(ddef.symbol, newSym)
       val nRhsCps = RootTransform(nBody, newSym, 0)(using nctx, tctx)
-      val nRhs = nRhsCps.transformed
+      val nRhs = wrapTopLevelCpsTree(nRhsCps)(using nctx, tctx)
       Block(tctx.cpsMonadValDef::Nil, nRhs)
     } ).withSpan(ddef.span)
     nDefDef
@@ -261,6 +261,30 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
   }
 
 
+  def wrapTopLevelCpsTree(cpsTree: CpsTree)(using Context, CpsTopLevelContext): Tree = {
+    val tctx = summon[CpsTopLevelContext]
+    cpsTree.unpure match
+      case Some(unpure) =>
+        Apply(
+          TypeApply(
+            Select(tctx.cpsMonadRef, "wrap".toTermName),
+            List(TypeTree(cpsTree.originType.widen))
+          ),
+          List(unpure)
+        ).withSpan(cpsTree.origin.span)
+      case None =>
+        cpsTree.asyncKind match
+          case AsyncKind.Async(AsyncKind.Sync) =>
+            Apply(
+              TypeApply(
+                Select(tctx.cpsMonadRef, "flatWrap".toTermName),
+                List(TypeTree(cpsTree.originType.widen))
+              ),
+              List(cpsTree.transformed)
+            ).withSpan(cpsTree.origin.span)
+          case _ =>
+            throw CpsTransformException(s"unsupported type for top-level wrap, asyncKind=${cpsTree.asyncKind}", cpsTree.origin.srcPos)
+  }
 
   /**
    * create cps top-level context for transformation.

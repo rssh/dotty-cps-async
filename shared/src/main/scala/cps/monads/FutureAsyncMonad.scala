@@ -100,7 +100,7 @@ class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Fut
        val ctx = new FutureContext(this)
        spawn(f(ctx))  
    }
-
+  
   
    def executionContext = summon[ExecutionContext]
 

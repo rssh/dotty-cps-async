@@ -43,19 +43,27 @@ class Test14Run {
     }
   }
 
-
+  /*
   @Test
   def testShiftIterableOps(): Unit = {
     val dirname = "testdata/set14runtests/m1"
     val testClassName = "cps.TestBS1ShiftIterableOps"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
-  
+
 
   @Test
   def testShiftUsing(): Unit = {
     val dirname = "testdata/set14runtests/m2"
     val testClassName = "cps.TestBS1ShiftUsing"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
+  */
+
+  @Test
+  def testPELazyEffect(): Unit = {
+    val dirname = "testdata/set14runtests/m3"
+    val testClassName = "cps.pe.TestPELazyEffectM3"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
 

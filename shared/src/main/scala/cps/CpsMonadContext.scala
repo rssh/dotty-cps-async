@@ -148,7 +148,7 @@ trait CpsTryMonadInstanceContext[F[_]] extends CpsTryMonad[F] {
     override type Context = CpsTryMonadInstanceContextBody[F]
 
     override def apply[T](op: Context => F[T]): F[T] =
-      op(CpsTryMonadInstanceContextBody(this))
+        op(CpsTryMonadInstanceContextBody(this))
 
 }
 
