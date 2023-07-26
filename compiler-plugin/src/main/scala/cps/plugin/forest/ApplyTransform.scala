@@ -343,6 +343,7 @@ object ApplyTransform {
             Log.trace(s"parseSyncFunPureApplication.fold,  exprsInCalls=${exprsInCalls.map(_.show)}", nesting)
             Log.trace(s"parseSyncFunPureApplication.fold,  exprsInCalls==args: ${exprsInCalls == args.map(_.origin)}",nesting)
             // workarrond for https://github.com/lampepfl/dotty/issues/18113
+            //  TODO: eliminate after implementing eta-expansion
             val s1 = s match
               case Block(head::tail,fun) =>
                 Apply(Inlined(s,List.empty,s),exprsInCalls).withSpan(orig.span)
@@ -368,7 +369,11 @@ object ApplyTransform {
       //  TODO:  separate this case.
       //  throw CpsTransformException(s"Impure call in combination of callign context functon is not supported yet", origin.srcPos)
       //}
-      CpsTree.impure(origin, owner, adoptedTree, callMode.preliminaryResultKind)
+      val internalKind = callMode.preliminaryResultKind match
+        case AsyncKind.Sync => AsyncKind.Sync
+        case AsyncKind.Async(internalKind) => internalKind
+        case AsyncKind.AsyncLambda(bodyKind) => AsyncKind.Sync
+      CpsTree.impure(origin, owner, adoptedTree, internalKind)
     } else {
       adoptResultKind(origin, plainTree, owner, callMode)
     }

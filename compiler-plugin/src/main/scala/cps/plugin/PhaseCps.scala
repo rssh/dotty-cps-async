@@ -263,28 +263,55 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
 
   def wrapTopLevelCpsTree(cpsTree: CpsTree)(using Context, CpsTopLevelContext): Tree = {
     val tctx = summon[CpsTopLevelContext]
+
+    def makeSync(unpure: Tree): Tree = {
+      Apply(
+        TypeApply(
+          Select(tctx.cpsMonadRef, "wrap".toTermName),
+          List(TypeTree(cpsTree.originType.widen))
+        ),
+        List(unpure)
+      ).withSpan(cpsTree.origin.span)
+    }
+
+    def makeAsync(transformed: Tree) = {
+      Apply(
+        TypeApply(
+          Select(tctx.cpsMonadRef, "flatWrap".toTermName),
+          List(TypeTree(cpsTree.originType.widen))
+        ),
+        List(transformed)
+      ).withSpan(cpsTree.origin.span)
+    }
+
+    /**
+     * Just for correct diagnosting, aboput applying normalization
+     * (which we want to eliminate to normalize 'on fly')
+     * @param cpsTree
+     * @return
+     */
+    def tryNormalize(cpsTree: CpsTree): CpsTree = {
+      cpsTree.asyncKind match
+        case AsyncKind.Sync => cpsTree
+        case AsyncKind.Async(AsyncKind.Sync) => cpsTree
+        case AsyncKind.AsyncLambda(bodyKind) =>
+          throw CpsTransformException(s"unsupported lambda in top level wrap: ${cpsTree.show}", cpsTree.origin.srcPos)
+        case _ =>
+          report.warning(s"Unnormalized cpsTree: ${cpsTree.show}", cpsTree.origin.srcPos)
+          cpsTree.normalizeAsyncKind
+    }
+
     cpsTree.unpure match
-      case Some(unpure) =>
-        Apply(
-          TypeApply(
-            Select(tctx.cpsMonadRef, "wrap".toTermName),
-            List(TypeTree(cpsTree.originType.widen))
-          ),
-          List(unpure)
-        ).withSpan(cpsTree.origin.span)
+      case Some(unpure) => makeSync(unpure)
       case None =>
-        cpsTree.asyncKind match
+        tryNormalize(cpsTree).asyncKind match
           case AsyncKind.Async(AsyncKind.Sync) =>
-            Apply(
-              TypeApply(
-                Select(tctx.cpsMonadRef, "flatWrap".toTermName),
-                List(TypeTree(cpsTree.originType.widen))
-              ),
-              List(cpsTree.transformed)
-            ).withSpan(cpsTree.origin.span)
+            makeAsync(cpsTree.transformed)
           case _ =>
+            println(s"CpsTree with non-standard async kind: ${cpsTree.show}")
             throw CpsTransformException(s"unsupported type for top-level wrap, asyncKind=${cpsTree.asyncKind}", cpsTree.origin.srcPos)
   }
+
 
   /**
    * create cps top-level context for transformation.
