@@ -82,6 +82,7 @@ class Test13TestCases {
   }
 
 
+
   @Test
   def test59M8min1(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m8_min1")
@@ -106,10 +107,12 @@ class Test13TestCases {
       compileAfterCommon("testdata/set13TestCases/m11_m1")
    }
 
+
   @Test
   def testUtestLike(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m12_m1")
   }
+
 
 
   @Test
@@ -121,6 +124,7 @@ class Test13TestCases {
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath), checkAll = false)
     DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
   }
+  
 
 }
 

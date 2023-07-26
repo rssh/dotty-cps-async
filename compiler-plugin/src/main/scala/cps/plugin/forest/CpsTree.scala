@@ -498,7 +498,7 @@ case class AsyncTermCpsTree(
   }  
 
   override def show(using Context): String = {
-    s"AsyncTermCpsTree(t=${transformedTree.show})"
+    s"AsyncTermCpsTree(t=${transformedTree.show}, k=Async(${vInternalAsyncKind}))"
   }
 
 }
