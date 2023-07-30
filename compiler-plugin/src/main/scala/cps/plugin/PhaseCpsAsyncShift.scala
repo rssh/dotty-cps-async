@@ -99,12 +99,12 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @return
    */
   def transformFunсBody(tree: Tree)(using Context): Tree =
-    val finalResType = tree.tpe.finalResultType
-    if isFunc(finalResType) then transformInnerFunction(tree)
-    else
-      tree
-        .select(defn.String_+)
-        .appliedTo(Literal(Constant("transformed")))
+    // val finalResType = tree.tpe.finalResultType
+    // if isFunc(finalResType) then transformInnerFunction(tree)
+    // else
+    tree
+      .select(defn.String_+)
+      .appliedTo(Literal(Constant("transformed")))
 
   /**
    * transform a function which is returned from the high-order annotated
@@ -129,6 +129,13 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
     if !funcParams.isEmpty then return true
     // check the return type
+    // TODO: write implementation for this special case
+    if isFunc(tree.rhs.tpe.finalResultType) then
+      throw CpsTransformException(
+        "Unsupported type of function. The return type must not be a function",
+        tree.srcPos
+      )
+    else false
 
   def filterParams(params: List[ParamClause]): List[ValDef] =
     val ps = params.flatten[ValDef | TypeDef]
