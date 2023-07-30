@@ -113,8 +113,13 @@ trait CpsTrySupport[F[_]] extends CpsThrowSupport[F] {
 
    def fromTry[A](ta: Try[A]): F[A]
 
-   def withAsyncFinalizer[A](fa: F[A])(f: => F[Unit]):F[A] = {
-      flatMapTry(fa){ r =>
+   def withAsyncFinalizer[A](fa: =>F[A])(f: => F[Unit]):F[A] = {
+      flatMapTry{
+        try fa
+        catch
+          case NonFatal(ex) =>
+            error(ex)
+      }{ r =>
          try
            flatMapTry(f){ finR =>
              finR match
@@ -136,8 +141,15 @@ trait CpsTrySupport[F[_]] extends CpsThrowSupport[F] {
       }
    }
 
-   def withAsyncErrorHandler[A](fa: F[A])(f: Throwable => F[A]):F[A] = {
-      flatMapTry(fa){ r => r match
+   // TODO: think, mb switch to non-lazy eval and wrapo fa in try/catch during code generation
+   def withAsyncErrorHandler[A](fa: =>F[A])(f: Throwable => F[A]):F[A] = {
+      flatMapTry{
+        try fa
+        catch
+          case NonFatal(ex) =>
+            error(ex)
+      }{ r =>
+        r match
           case Failure(ex) => f(ex)
           case _ => fromTry(r)
       }
