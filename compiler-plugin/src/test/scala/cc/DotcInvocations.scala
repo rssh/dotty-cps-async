@@ -112,11 +112,12 @@ object DotcInvocations {
   import org.junit.Assert.*
 
   val defaultCompileOpts: List[String] = {
-    List(//"-Ycheck:all",
+    // note, that -Ycheck:all is not included here, because it is added conditionally
+    List(
       //"-Ydebug-error",
       //"--unique-id",
       //"-Xcheck-macros",
-      "-Ydebug",
+      //"-Ydebug",
       //"-Yprint-syms",
       //List("-Yprint-debug") ++
       //List("-Yshow-tree-ids") ++

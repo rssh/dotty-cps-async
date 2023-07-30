@@ -184,14 +184,44 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
   private def transformDefDefInsideAsync(ddef: DefDef, asyncCallTree: Tree, contextual: Boolean)(using ctx:Context): DefDef = {
     val cpsMonadContext = ddef.paramss.head.head
     val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, CpsTransformHelper.cpsMonadContextClassSymbol, asyncCallTree.srcPos)
-    val nRhsType = CpsTransformHelper.cpsTransformedType(ddef.rhs.tpe.widen, monadType)
+
+    //val nRhsType = CpsTransformHelper.cpsTransformedType(ddef.rhs.tpe.widen, monadType)
+    //val mt = if (contextual) {
+    //  ContextualMethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
+    //} else {
+    //  MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
+    //}
+    //val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
+
+    val contextParam = cpsMonadContext match
+      case vd: ValDef => ref(vd.symbol)
+      case _ => throw CpsTransformException(s"excepted that cpsMonadContext is ValDef, but we have ${cpsMonadContext.show}", asyncCallTree.srcPos)
+    val tctx = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
+    val ddefCtx = ctx.withOwner(ddef.symbol)
+    val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefCtx, tctx)
+    val nRhsTerm = wrapTopLevelCpsTree(nRhsCps)(using ddefCtx, tctx)
+    val nRhsType = nRhsTerm.tpe.widen
     val mt = if (contextual) {
       ContextualMethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
     } else {
       MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
     }
     val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
+    val nDefDef = DefDef(newSym, paramss => {
+      implicit val nctx = ctx.withOwner(newSym)
+      val monadValDef = tctx.cpsMonadValDef
+      val body = Block(monadValDef::Nil, nRhsTerm).withSpan(ddef.rhs.span)
+      val nBody = TransformUtil.substParams(body, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head)
+        .changeOwner(ddef.symbol, newSym)
+        //  note, that changeOwner should be last, because otherwise substParams will not see origin params.
+      nBody
+    }).withSpan(ddef.span)
     println(s"transformDefDefInsideAsync: newSym=${newSym.hashCode()}, old ddef.sym=${ddef.symbol.hashCode()}, ctx.owner=${ctx.owner.hashCode()}")
+    println(s"old defdef type: ${ddef.tpe.widen.show}")
+    println(s"new defdef type: ${nDefDef.tpe.widen.show}")
+
+
+    /*
     val nDefDef = DefDef(newSym, paramss => {
       given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
       val nctx = ctx.withOwner(newSym)
@@ -203,13 +233,11 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         case Some(tree) => println(s"err::symbol still have old owner:  ${tree.show}")
         case None =>
       val nRhsCps = RootTransform(nBody, newSym, 0)(using nctx, tctx)
-      //println("adter root transform:")
-      //TransformUtil.findSubtermWithOwner(nBody, ddef.symbol) match
-      //  case Some(tree) => println(s"err::symbol  still have old owner:  ${tree.show}")
-      //  case None =>
       val nRhs = wrapTopLevelCpsTree(nRhsCps)(using nctx, tctx)
       Block(tctx.cpsMonadValDef::Nil, nRhs)(using nctx)
     } ).withSpan(ddef.span)
+
+     */
     nDefDef
   }
 

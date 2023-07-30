@@ -47,7 +47,7 @@ class Test14Run {
     }
   }
 
-  /*
+  
   @Test
   def testShiftIterableOps(): Unit = {
     val dirname = "testdata/set14runtests/m1"
@@ -87,12 +87,21 @@ class Test14Run {
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
 
-   */
+
 
   @Test
   def tesCBReturning2(): Unit = {
     val dirname = "testdata/set14runtests/m5_2"
     val testClassName = "cpstest.TestCBSReturning"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
+
+
+
+  @Test
+  def tesCBS1Select(): Unit = {
+    val dirname = "testdata/set14runtests/m6"
+    val testClassName = "cps.TestCBS1Select"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
 
