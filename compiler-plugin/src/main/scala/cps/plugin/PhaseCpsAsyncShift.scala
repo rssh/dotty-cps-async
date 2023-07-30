@@ -70,13 +70,12 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
             DefDef(
               newFunSymbol,
               // create new paramss
-              // TODO: transform all paramss
               newParamss =>
                 TransformUtil
                   .substParams(
                     transformedRhs,
-                    fun.paramss.head.asInstanceOf[List[ValDef]],
-                    newParamss.head
+                    filterParams(fun.paramss),
+                    newParamss.flatten
                   )
                   .changeOwner(fun.symbol, newFunSymbol)
             )
@@ -124,17 +123,15 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         Block(stats, newExpr)
 
   def isHighOrder(tree: DefDef)(using Context): Boolean =
-    // check all input params
-    val params     = tree.paramss.flatten[ValDef | TypeDef]
-    val funcParams = params.filter { p =>
-      val paramType = p match
-        case v: ValDef => v.tpt.tpe
-        case d: TypeDef => d.rhs.tpe
-      isFunc(paramType)
-    }
+    // check ValDef input params
+    val valDefs: List[ValDef] = filterParams(tree.paramss)
+    val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
     if !funcParams.isEmpty then return true
     // check the return type
-    isFunc(tree.rhs.tpe.finalResultType)
+
+  def filterParams(params: List[ParamClause]): List[ValDef] =
+    val ps = params.flatten[ValDef | TypeDef]
+    ps.collect { case v: ValDef => v }
 
   def isFunc(t: Type)(using Context): Boolean =
     t match
