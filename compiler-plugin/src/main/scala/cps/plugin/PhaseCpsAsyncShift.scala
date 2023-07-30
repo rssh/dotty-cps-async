@@ -81,10 +81,10 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
             )
           shiftedSymbols.addAsyncShift(fun.symbol, newMethod)
           newMethods = newMethod :: newMethods
-        case _ => super.transformTemplate(tree)
+        case _ => ()
 
     val retval = if (newMethods.isEmpty) {
-      tree
+      super.transformTemplate(tree)
     } else {
       cpy.Template(tree)(body = tree.body ++ newMethods)
     }
@@ -112,6 +112,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    */
   def transformInnerFunction(tree: Tree)(using Context): Tree =
     tree match
+      // TODO: create a check for inline function
       case Block((innerFunc: DefDef) :: Nil, expr) => // unpack inner function
         Block(List(transformInnerFunction(innerFunc)), expr)
       case t: DefDef => // create a transformed copy of original inner function
