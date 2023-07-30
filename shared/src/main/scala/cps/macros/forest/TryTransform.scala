@@ -70,7 +70,7 @@ class TryTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: Transfor
      def makeRestoreExpr(): Expr[Throwable => F[T]]  =
         val nCaseDefs = makeAsyncCaseDefs()
         //val otherSym = Symbol.newBind(Symbol.spliceOwner,"other",Flags.Empty,TypeRepr.of[Throwable])
-        val rethrowOther = (x: Expr[Throwable]) => CaseDef(Wildcard(), None, { val r = '{throw $x}.asTerm; println(s"!!throw=$r"); r } )
+        //val rethrowOther = (x: Expr[Throwable]) => CaseDef(Wildcard(), None, { val r = '{throw $x}.asTerm; r } )
         val restoreExpr = '{ (ex: Throwable) => ${
           Match('ex.asTerm, 
                 nCaseDefs.appended(CaseDef(Wildcard(),None, '{ $errorMonad.error[T](ex) }.asTerm ))

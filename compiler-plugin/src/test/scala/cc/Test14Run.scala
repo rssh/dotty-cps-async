@@ -78,11 +78,20 @@ class Test14Run {
     val testClassName = "cpstest.TestReturningExamples"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
+
+
+  @Test
+  def tesCBReturning1(): Unit = {
+    val dirname = "testdata/set14runtests/m5_1"
+    val testClassName = "cpstest.TestCBSReturning"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
+
    */
 
   @Test
-  def tesCBReturning(): Unit = {
-    val dirname = "testdata/set14runtests/m5_1"
+  def tesCBReturning2(): Unit = {
+    val dirname = "testdata/set14runtests/m5_2"
     val testClassName = "cpstest.TestCBSReturning"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
