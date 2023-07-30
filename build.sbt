@@ -1,3 +1,4 @@
+//val dottyVersion = "3.4.0-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.3.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.3.1-RC4"
 val dottyVersion = "3.3.0"

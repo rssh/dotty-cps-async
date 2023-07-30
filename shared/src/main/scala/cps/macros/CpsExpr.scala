@@ -44,7 +44,7 @@ trait CpsExpr[F[_]:Type,T:Type](monad:Expr[CpsMonad[F]], prev: Seq[ExprTreeGen])
      else
 
        val lastTerm = fLast.asTerm 
-       val lastOwners = TransformUtil.findOtherOwnersIn(lastTerm)
+       val lastOwners = TransformUtil.findAllOwnersIn(lastTerm)
 
        val prevTerms = prev.map(_.extract).toList
 

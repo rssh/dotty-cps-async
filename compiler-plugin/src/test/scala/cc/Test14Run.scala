@@ -37,6 +37,10 @@ class Test14Run {
           throw new RuntimeException(s"Process $cmd failed")
         }
       } else {
+        val output = scala.io.Source.fromInputStream(process.getInputStream).mkString
+        val errorOutput = scala.io.Source.fromInputStream(process.getErrorStream).mkString
+        println(s"output=${output}")
+        println(s"error=${errorOutput}")
         process.destroy()
         throw new RuntimeException(s"Process $cmd timed out")
       }
@@ -58,7 +62,7 @@ class Test14Run {
     val testClassName = "cps.TestBS1ShiftUsing"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
-  */
+
 
   @Test
   def testPELazyEffect(): Unit = {
@@ -66,6 +70,23 @@ class Test14Run {
     val testClassName = "cps.pe.TestPELazyEffectM3"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
+
+
+  @Test
+  def tesReturingExamples(): Unit = {
+    val dirname = "testdata/set14runtests/m4"
+    val testClassName = "cpstest.TestReturningExamples"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
+   */
+
+  @Test
+  def tesCBReturning(): Unit = {
+    val dirname = "testdata/set14runtests/m5_1"
+    val testClassName = "cpstest.TestCBSReturning"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
+
 
 }
 

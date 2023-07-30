@@ -55,13 +55,22 @@ object Async {
     val usePlugin = Expr.summon[UseCompilerPlugin.type].isDefined // ||CompilationInfo.XmacroSettings.find(_ == "cps:plugin").isDefined
     // Problem: XmacroSettings still experimental
     if (usePlugin) {
-      Apply(
+      val retval = Apply(
         TypeApply(
           Ref(Symbol.requiredMethod("cps.plugin.cpsAsyncApply")),
           List(Inferred(TypeRepr.of[F]), Inferred(TypeRepr.of[T]), Inferred(TypeRepr.of[C]))
         ),
         List(am.asTerm, expr.asTerm)
       ).asExprOf[F[T]]
+      TransformUtil.findDefinitionWithoutSymbol(retval.asTerm) match
+        case Some(tree) =>
+          println(s"!! inferAsyncArgApplyImpl:found definition without symbol ${tree.show}")
+        case None =>
+          // do nothing
+      val owners = TransformUtil.findAllOwnersIn(retval.asTerm)
+      if (owners.size > 1) then
+        println(s"!! inferAsyncArgApplyImpl: more than one owner: ${owners.mkString("\n")}")
+      retval
     } else {
       val fun = transformContextLambdaImpl(expr)
       '{  ${am}.apply($fun) }

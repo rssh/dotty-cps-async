@@ -154,6 +154,13 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
           case _ =>
             throw CpsTransformException(s"excepted that second argument of cpsAsyncApply is closure, we have $ctxFun", tree.srcPos)
         val nDefDef = transformDefDefInsideAsync(ddef, tree, false)
+        if (ddef.symbol.owner != ctx.owner) {
+          println(s"transformApplyInternal: ddef.symbol.owner != ctx.owner  ddef.symbol.owner=${ddef.symbol.owner.showFullName}, ctx.owner=${ctx.owner.showFullName}")
+        }
+        if (ddef.symbol.hashCode() == 41394) {
+          println(s"transformApplyInternal: 41394 found: ddef.symbol=${ddef.symbol.showFullName}")
+          println(s"nDedDef.symbol = {nDefDef.symbol} (${nDefDef.symbol.hashCode()})")
+        }
         val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
         val applyArg = Block(nDefDef::Nil, nClosure).withSpan(ctxFun.span)
         val nApply = cpy.Apply(tree)(
@@ -184,13 +191,24 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
       MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
     }
     val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
+    println(s"transformDefDefInsideAsync: newSym=${newSym.hashCode()}, old ddef.sym=${ddef.symbol.hashCode()}, ctx.owner=${ctx.owner.hashCode()}")
     val nDefDef = DefDef(newSym, paramss => {
       given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
       val nctx = ctx.withOwner(newSym)
+      TransformUtil.findSubtermWithOtherOwner(ddef.rhs, ddef.symbol) match
+        case Some(tree) => println(s"err::symbol have other owner then ddef:  ${tree.show} with owner ${tree.symbol.owner.hashCode()}")
+        case None =>
       val nBody = TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head).changeOwner(ddef.symbol, newSym)
+      TransformUtil.findSubtermWithOwner(nBody, ddef.symbol) match
+        case Some(tree) => println(s"err::symbol still have old owner:  ${tree.show}")
+        case None =>
       val nRhsCps = RootTransform(nBody, newSym, 0)(using nctx, tctx)
+      //println("adter root transform:")
+      //TransformUtil.findSubtermWithOwner(nBody, ddef.symbol) match
+      //  case Some(tree) => println(s"err::symbol  still have old owner:  ${tree.show}")
+      //  case None =>
       val nRhs = wrapTopLevelCpsTree(nRhsCps)(using nctx, tctx)
-      Block(tctx.cpsMonadValDef::Nil, nRhs)
+      Block(tctx.cpsMonadValDef::Nil, nRhs)(using nctx)
     } ).withSpan(ddef.span)
     nDefDef
   }

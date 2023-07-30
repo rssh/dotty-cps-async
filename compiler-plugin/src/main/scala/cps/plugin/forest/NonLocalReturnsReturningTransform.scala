@@ -10,7 +10,7 @@ import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.core.Symbols.*
 
 
-object NonLocalReturnsTransform {
+object NonLocalReturnsReturningTransform {
 
 
   /**
@@ -39,40 +39,42 @@ object NonLocalReturnsTransform {
             val nFun = Select(nonFatalAndNotControlThrowableAsyncWrapperObj, "unapply".toTermName)
             cpy.UnApply(u)(nFun, u.implicits, u.patterns)
           //for scala-3.3.2 - add QuotePAtter  => ???
+          //case Apply()
           case _ =>
             super.transform(tree)
       }
     }
+    val nArg = substituteNonFatal.transform(arg)
 
-    arg match
+    nArg match
       //case Inlined(call, bindings, expansion) =>
       case Block((ddef:DefDef)::Nil, closure:Closure) if (closure.meth.symbol == ddef.symbol) =>
-         val cpsRhs = RootTransform(ddef.rhs, ddef.symbol, nesting+1)
-         cpsRhs.unpure match
-           case Some(syncRhs) =>
-             if (cpsRhs.isOriginEqSync) {
-               CpsTree.unchangedPure(term,owner)
-             } else {
-               val lambdaParams = ddef.paramss.head.asInstanceOf[List[ValDef]]
-               val nLambda = TransformUtil.makeLambda(lambdaParams, cpsRhs.originType.widen, owner, syncRhs, ddef.symbol)
-               val nApply = Apply(term.fun, List(nLambda)).withSpan(term.span)
-               CpsTree.pure(term,owner,nApply)
-             }
-           case None =>
-             val lambdaParams = ddef.paramss.head.asInstanceOf[List[ValDef]]
-             val nBody = substituteNonFatal.transform(cpsRhs.transformed)
-             val nLambda = TransformUtil.makeLambda(lambdaParams, cpsRhs.transformedType.widen, owner, nBody, ddef.symbol).withSpan(arg.span)
-             val nTerm = Apply(
-               Apply(
-                 TypeApply(
-                   Select(ref(nonLocalReturnsAsyncShift), "returning".toTermName ),
-                   TypeTree(summon[CpsTopLevelContext].monadType) :: targ::Nil
-                 ),
-                 List(ref(nonLocalReturns), summon[CpsTopLevelContext].cpsMonadRef )
-               ).withSpan(term.fun.span),
-               List(nLambda)
-             ).withSpan(term.span)
-             CpsTree.impure(term,owner,nTerm,AsyncKind.Sync)
+        val cpsRhs = RootTransform(ddef.rhs, ddef.symbol, nesting+1)
+        cpsRhs.unpure match
+          case Some(syncRhs) =>
+            val lambdaParams = ddef.paramss.head.asInstanceOf[List[ValDef]]
+            val nLambda = TransformUtil.makeLambda(lambdaParams, cpsRhs.originType.widen, owner, syncRhs, ddef.symbol)
+            val nFun = TypeApply(
+              Select(ref(nonLocalReturnsAsyncShift), "syncReturning".toTermName),
+              List(targ)
+            ).withSpan(term.fun.span)
+            val nApply = Apply(nFun, List(nLambda)).withSpan(term.span)
+            CpsTree.pure(term, owner, nApply)
+          case None =>
+            val lambdaParams = ddef.paramss.head.asInstanceOf[List[ValDef]]
+            val nBody = cpsRhs.transformed
+            val nLambda = TransformUtil.makeLambda(lambdaParams, cpsRhs.transformedType.widen, owner, nBody, ddef.symbol).withSpan(arg.span)
+            val nTerm = Apply(
+              Apply(
+                TypeApply(
+                  Select(ref(nonLocalReturnsAsyncShift), "returning".toTermName),
+                  TypeTree(summon[CpsTopLevelContext].monadType) :: targ :: Nil
+                ),
+                List(ref(nonLocalReturns), summon[CpsTopLevelContext].cpsMonadRef)
+              ).withSpan(term.fun.span),
+              List(nLambda)
+            ).withSpan(term.span)
+            CpsTree.impure(term, owner, nTerm, AsyncKind.Sync)
       case _ =>
         throw CpsTransformException(s"Unexpected tree as argument of NonLocalReturns.returning, should be lambda, we have ${arg}",arg.srcPos)
   }

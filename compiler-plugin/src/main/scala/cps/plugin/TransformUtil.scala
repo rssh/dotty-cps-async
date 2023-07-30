@@ -138,6 +138,82 @@ object TransformUtil {
                     None
    }
 
+   def findSubtermWithOwner(tree:Tree, owner:Symbol)(using Context): Option[Tree] = {
+      println(s"find subterm with owner ${owner.show} (${owner.hashCode()})")
+      val finder = new TreeAccumulator[Option[Tree]] {
+         def apply(x: Option[Tree], tree: Tree)(using Context): Option[Tree] =
+            if (x.isDefined) then
+               x
+            else
+               tree match
+                 case xi: Ident if xi.symbol.maybeOwner.exists =>
+                   if (xi.symbol == owner) then
+                      println("found ident with direct owner")
+                      Some(tree)
+                   else {
+                     findIndirectOwner(xi.symbol,owner,Nil) match
+                        case Some(path) =>
+                           println(s"found ident with indirect owner, path=${path}")
+                           Some(tree)
+                        case None =>
+                           //println(s"owner of ${xi.show} is ${xi.symbol.owner.show} (${xi.symbol.owner.hashCode()})")
+                           foldOver(x, tree)
+                   }
+                 case _ =>
+                    if (tree.symbol.maybeOwner == owner) then
+                       Some(tree)
+                    else
+                      findIndirectOwner(tree.symbol.maybeOwner, owner, Nil) match
+                        case Some(path) =>
+                            println(s"found tree with indirect old owner, path=${path.reverse.map(s=>s"${s}(${s.hashCode()})").mkString("->")}")
+                            Some(tree)
+                        case None =>
+                            foldOver(x, tree)
+
+         def  findIndirectOwner(x: Symbol, mbOwner:Symbol, path:List[Symbol]): Option[List[Symbol]] = {
+           if (x == mbOwner) then
+                Some(x::path)
+           else if (!x.maybeOwner.exists) then
+                None
+           else
+                findIndirectOwner(x.maybeOwner, mbOwner, x :: path)
+         }
+
+      }
+      finder(None,tree)
+   }
+
+   def findSubtermWithOtherOwner(tree:Tree, owner: Symbol)(using Context): Option[Tree] = {
+      val finder = new TreeAccumulator[Option[Tree]] {
+
+         def checkOwner(x:Symbol, owner:Symbol)(using Context): Boolean = {
+            if (x.owner == owner) {
+               true
+            } else if (x.owner.isWeakOwner) {
+              checkOwner(x.owner, owner)
+            } else if (owner.isWeakOwner) {
+              checkOwner(x, owner.owner)
+            } else {
+               false
+            }
+         }
+
+         def apply(x: Option[Tree], tree: Tree)(using Context): Option[Tree] =
+            if (x.isDefined) then
+               x
+            else
+               tree match
+                 case xdef: MemberDef =>
+                   if (!checkOwner(xdef.symbol,owner)) then
+                      Some(tree)
+                   else
+                      x
+                 case _ =>
+                      foldOver(x, tree)
+      }
+      finder(None,tree)
+   }
+
 
    final val COMMA = ","
 

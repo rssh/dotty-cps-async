@@ -23,6 +23,7 @@ class Test13TestCases {
   }
 
 
+
   @Test
   def testCompileBaseFutureTest(): Unit = {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
@@ -115,6 +116,8 @@ class Test13TestCases {
 
 
 
+
+
   @Test
   def testMiniGopherW1(): Unit = {
     //compileAfterCommon("testdata/set13TestCases/m13_m1")
@@ -124,7 +127,7 @@ class Test13TestCases {
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath), checkAll = false)
     DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
   }
-  
+
 
 }
 
