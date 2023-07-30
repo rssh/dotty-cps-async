@@ -25,7 +25,7 @@ object BlockTransform {
           val ddefRhs = ddef.rhs(using ddefCtx)
           RootTransform(ddefRhs, ddef.symbol, nesting+1)(using ddefCtx, tctx)
         }
-        LambdaCpsTree(term, owner, ddef, cpsBody)
+        LambdaCpsTree(term, owner, ddef, closure.tpe.widen, cpsBody)
       case Block(Nil, last) =>
         Log.trace(s"BlockTransform: empty block",nesting)
         val lastCps = RootTransform(last, owner,  nesting+1)
@@ -47,6 +47,7 @@ object BlockTransform {
                d match
                  case v: ValDef =>
                    val cpsV: CpsTree = ValDefTransform(v, owner, nesting + 1)
+                   Log.trace(s"adding valdef to block ${cpsV}",nesting)
                    s.appendInBlock(cpsV)
                  case mDef =>
                    // templates and local function definitions will be processed py compiler plugin in own,

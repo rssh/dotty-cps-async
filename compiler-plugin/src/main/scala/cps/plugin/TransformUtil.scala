@@ -31,14 +31,15 @@ object TransformUtil {
                tree match
                   case tree: Ident if (tree.isTerm) =>
                      map.get(tree.symbol) match
-                        case Some(value) => value
+                        case Some(value) =>
+                          if (value.span.exists) then value else value.withSpan(tree.span)
                         case None => tree
                   case tt: TypeTree =>
                      tt.tpe match
                         case tr: TermRef =>
                            map.get(tr.symbol) match
                               case Some(value) =>
-                                 TypeTree(value.symbol.termRef)
+                                 TypeTree(value.symbol.termRef).withSpan(tt.span)
                               case None =>
                                  super.transform(tt)
                         case _ =>
@@ -92,7 +93,7 @@ object TransformUtil {
       candidate match
          case mt: MethodType =>
             Some(mt)
-         case AppliedType(tycon, targs) if (defn.isFunctionType(tycon)) =>
+         case AppliedType(tycon, targs) if (defn.isFunctionSymbol(tycon.typeSymbol)) =>
             val paramNames = (1 to targs.length-1).map(i => ("arg"+i).toTermName).toList
             val paramTypes = targs.dropRight(1)
             val resultType = targs.last
@@ -103,14 +104,14 @@ object TransformUtil {
             else if (candidate.baseType(defn.Function1).exists) then
                 val fun = candidate.baseType(defn.Function1)
                 fun match
-                   case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+                   case AppliedType(tycon, targs) if defn.isFunctionSymbol(tycon.typeSymbol) =>
                       methodTypeFromFunctionType(fun, srcPos)
                    case _ =>
                       None
             else if (candidate.baseType(defn.Function2).exists) then
                 val fun = candidate.baseType(defn.Function2)
                 fun match
-                   case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+                   case AppliedType(tycon, targs) if defn.isFunctionSymbol(tycon.typeSymbol) =>
                       methodTypeFromFunctionType(fun, srcPos)
                    case _ =>
                       None
@@ -127,12 +128,90 @@ object TransformUtil {
                }
                if (found) then
                     fun match
-                      case AppliedType(tycon, targs) if defn.isFunctionType(tycon) =>
+                      case at: AnnotatedType => methodTypeFromFunctionType(at.parent, srcPos)
+                      case rt: RefinedType => methodTypeFromFunctionType(rt.parent, srcPos)
+                      case AppliedType(tycon, targs) if defn.isFunctionSymbol(tycon.typeSymbol) =>
                           methodTypeFromFunctionType(fun, srcPos)
                       case _ =>
                           throw CpsTransformException(s"internal error: $fun expected to be AppliedType", srcPos)
                else
                     None
+   }
+
+   def findSubtermWithOwner(tree:Tree, owner:Symbol)(using Context): Option[Tree] = {
+      println(s"find subterm with owner ${owner.show} (${owner.hashCode()})")
+      val finder = new TreeAccumulator[Option[Tree]] {
+         def apply(x: Option[Tree], tree: Tree)(using Context): Option[Tree] =
+            if (x.isDefined) then
+               x
+            else
+               tree match
+                 case xi: Ident if xi.symbol.maybeOwner.exists =>
+                   if (xi.symbol == owner) then
+                      println("found ident with direct owner")
+                      Some(tree)
+                   else {
+                     findIndirectOwner(xi.symbol,owner,Nil) match
+                        case Some(path) =>
+                           println(s"found ident with indirect owner, path=${path}")
+                           Some(tree)
+                        case None =>
+                           //println(s"owner of ${xi.show} is ${xi.symbol.owner.show} (${xi.symbol.owner.hashCode()})")
+                           foldOver(x, tree)
+                   }
+                 case _ =>
+                    if (tree.symbol.maybeOwner == owner) then
+                       Some(tree)
+                    else
+                      findIndirectOwner(tree.symbol.maybeOwner, owner, Nil) match
+                        case Some(path) =>
+                            println(s"found tree with indirect old owner, path=${path.reverse.map(s=>s"${s}(${s.hashCode()})").mkString("->")}")
+                            Some(tree)
+                        case None =>
+                            foldOver(x, tree)
+
+         def  findIndirectOwner(x: Symbol, mbOwner:Symbol, path:List[Symbol]): Option[List[Symbol]] = {
+           if (x == mbOwner) then
+                Some(x::path)
+           else if (!x.maybeOwner.exists) then
+                None
+           else
+                findIndirectOwner(x.maybeOwner, mbOwner, x :: path)
+         }
+
+      }
+      finder(None,tree)
+   }
+
+   def findSubtermWithOtherOwner(tree:Tree, owner: Symbol)(using Context): Option[Tree] = {
+      val finder = new TreeAccumulator[Option[Tree]] {
+
+         def checkOwner(x:Symbol, owner:Symbol)(using Context): Boolean = {
+            if (x.owner == owner) {
+               true
+            } else if (x.owner.isWeakOwner) {
+              checkOwner(x.owner, owner)
+            } else if (owner.isWeakOwner) {
+              checkOwner(x, owner.owner)
+            } else {
+               false
+            }
+         }
+
+         def apply(x: Option[Tree], tree: Tree)(using Context): Option[Tree] =
+            if (x.isDefined) then
+               x
+            else
+               tree match
+                 case xdef: MemberDef =>
+                   if (!checkOwner(xdef.symbol,owner)) then
+                      Some(tree)
+                   else
+                      x
+                 case _ =>
+                      foldOver(x, tree)
+      }
+      finder(None,tree)
    }
 
 

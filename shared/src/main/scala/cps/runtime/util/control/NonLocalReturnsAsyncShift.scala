@@ -34,6 +34,9 @@ object NonLocalReturnsAsyncShift extends AsyncShift[NonLocalReturns.type] {
             m.pure(rt.result)
           else
             m.error(ControlThrowableAsyncWrapper(ct))
+        case ex: Throwable =>
+          System.err.println(s"NonLocalReturnsAsyncShift.returning: uncatched ex=$ex, rethrowing")
+          throw ex;
    }
 
    def throwReturn[T](r:T)(rt: ReturnThrowable[T]): Nothing = {

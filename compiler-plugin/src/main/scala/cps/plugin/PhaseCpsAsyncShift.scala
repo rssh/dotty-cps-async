@@ -22,7 +22,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   // strange -
   override def allowsImplicitSearch = true
   override val runsAfter            = Set(PhaseCps.name)
-  override val runsBefore           = Set(Erasure.name, PhaseCpsAsyncReplace.name)
+  override val runsBefore           = Set(PhaseCpsAsyncReplace.name)
 
   // override def run(using Context): Unit = {
   // TODO:
@@ -86,12 +86,49 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     val retval = if (newMethods.isEmpty) {
       super.transformTemplate(tree)
     } else {
+      println("cpsAsyncShift::transformTemplate: added new methods: " + newMethods.map(_.name).mkString(","))
       cpy.Template(tree)(body = tree.body ++ newMethods)
     }
     // println(s"after CpsAsyncShift, retval: ${retval.show}")
     retval
   }
 
+
+  // Hight-level description of generation of async-shofted version of dunction
+  //  val typeParams = if (haveTypeParams) paramss.head else Nil
+  //  val normalArgs = if (haveTypeParams) args.tail else args
+  //  Apply(
+  //    TypeApply(
+  //          ref(Symbols.requiredMetod("cps.cpsAsyncApply")),
+  //          List[
+  //            task - proint amd look.
+  //            TypeTree(F[_],TypeParam,),
+  //          ]
+  //    ),
+  //      Tadk:  add parameter to alreadu existing function.
+  //    List(
+  //      ValDef(am, TypeTree(,,,)),
+  //      ValDef(f, TypeTree(AppliedType(defn.ContextFunctionSymbol,))
+  //    )
+  //  )
+  //
+  //   map[A,B](collection:List[A])(f: A => B): List[B] =  doSpmetjong
+  //   map[F[_],C <: CpsMonadContext[F],A,B](am: CpsMonad.Aux[F,C])(collection:List[A])(f: A => B): F[List[B]] = {
+  //      cpsAsyncApply[F,List[B],C](am,
+  //           mt = ContextMethodType(....)
+  //           Lambda(mt, tss => transfomrdBody(f) )
+  //      )
+  //   }
+
+  //   tranfromedBody(f) = {
+  //      Apply(f, ...)  =>  await[[F,result-typr-of-apply,F]](f, ....)
+  //
+  //
+  //  ???
+
+  //  DefDef( ....   rhs = cpsAsyncShift ....  )
+  //
+      
   /**
    * transform rhs of the annotated function
    * @param tree

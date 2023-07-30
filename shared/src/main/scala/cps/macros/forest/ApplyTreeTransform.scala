@@ -644,7 +644,8 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
     def shiftSelectTypeApplyApply(x: Select, targs: List[TypeTree]): PartialShiftedApply =
        // Looks like this code is obsolete when we have more general substitution.
-       //  TODO: recheck
+       //  (still no, because scala.collection.WithFilter not give access to the underlying collection,
+       //   so it is impossible to write async oprtations on it)
        x.qualifier match
          case qual@Apply(Select(col,"withFilter"),List(predicate)) if (
                           qual.tpe <:< TypeRepr.of[scala.collection.WithFilter[?,?]]) =>

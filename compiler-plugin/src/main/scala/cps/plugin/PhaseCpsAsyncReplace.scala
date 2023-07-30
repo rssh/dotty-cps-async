@@ -19,7 +19,7 @@ class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: Shifted
   // strange -
   override def allowsImplicitSearch = true
   override val runsAfter            = Set(PhaseCpsAsyncShift.name)
-  override val runsBefore           = Set(Erasure.name, PhaseCpsChangeSymbols.name)
+  override val runsBefore           = Set(PhaseCpsChangeSymbols.name)
 
   /**
    * replaces symbols by transformed values from shiftedSymbols
@@ -27,7 +27,14 @@ class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: Shifted
    * @param Context
    * @return
    */
-  override def transformApply(tree: Apply)(using Context): Tree =
+  override def transformApply(tree: tpd.Apply)(using Context): Tree =
+
+    //ref(term.symbol) === tree.fun naked from type-aprameters
+
+     //Apply(Plus[String,String],arg)
+     //symbol: Plus
+
+    // TODO: look for the shiftedSymbols functions application
     shiftedSymbols.getRecord(tree.fun.symbol) match
       case Some(fun) =>
         println(s"asyncReplace::transformApply::selected ${tree}")

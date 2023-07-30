@@ -46,18 +46,28 @@ trait CpsMonad[F[_]]  {
    def apply[T](op: Context => F[T]): F[T] 
 
    /**
-    * Lazy variant of pure, which by default -
-    *  create monadic expression according to the 
-    *  choosen monad types.
+    *  Create monadic expression according to the
+    *  default operation of choosen monad types.
     *  (i.e. delaying for effect monads,  
     *    starting for eager monand, 
     *    pure by default)
     **/
-   def lazyPure[T](op: =>T):F[T] =
+   def wrap[T](op: =>T):F[T] =
       map(pure(())){ _ => op}
+
+  /**
+   * Wrap and flatten of monadic expression..
+   * @param op
+   * @tparam T
+   * @return
+   */
+   def flatWrap[T](op: =>F[T]):F[T] =
+      flatMap(pure(())){ _ => op}
 
    def flatten[T](ffa: F[F[T]]): F[T] =
       flatMap(ffa)(x => x)
+
+
 }
 
 object CpsMonad {
@@ -103,8 +113,13 @@ trait CpsTrySupport[F[_]] extends CpsThrowSupport[F] {
 
    def fromTry[A](ta: Try[A]): F[A]
 
-   def withAsyncFinalizer[A](fa: F[A])(f: => F[Unit]):F[A] = {
-      flatMapTry(fa){ r =>
+   def withAsyncFinalizer[A](fa: =>F[A])(f: => F[Unit]):F[A] = {
+      flatMapTry{
+        try fa
+        catch
+          case NonFatal(ex) =>
+            error(ex)
+      }{ r =>
          try
            flatMapTry(f){ finR =>
              finR match
@@ -126,8 +141,15 @@ trait CpsTrySupport[F[_]] extends CpsThrowSupport[F] {
       }
    }
 
-   def withAsyncErrorHandler[A](fa: F[A])(f: Throwable => F[A]):F[A] = {
-      flatMapTry(fa){ r => r match
+   // TODO: think, mb switch to non-lazy eval and wrapo fa in try/catch during code generation
+   def withAsyncErrorHandler[A](fa: =>F[A])(f: Throwable => F[A]):F[A] = {
+      flatMapTry{
+        try fa
+        catch
+          case NonFatal(ex) =>
+            error(ex)
+      }{ r =>
+        r match
           case Failure(ex) => f(ex)
           case _ => fromTry(r)
       }
@@ -345,8 +367,11 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
    /**
     * synonim for delay
     **/
-   override def lazyPure[T](op: =>T):F[T] =
+   override def wrap[T](op: =>T):F[T] =
       delay(op)
+
+   override def flatWrap[T](op: =>F[T]):F[T] =
+      flatDelay(op)
 
 }
 
@@ -467,10 +492,10 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
    type Spawned[A] = F[A]
 
    /**
-    * representation of spawnEffect as lazy suspension of immediate operation.
+    * spawn the process of spawning.  Used to unify concurrent operation in lazy and eager monads.
     **/
    def spawnEffect[A](op: => F[A]): F[F[A]] =
-         lazyPure(spawn(op))
+       spawnSync(spawn(op))
 
    /**
     * join spawned immediate monad means to receive those spawing monad.
@@ -481,8 +506,11 @@ trait CpsSchedulingMonad[F[_]] extends CpsConcurrentMonad[F] {
    /**
     * spawnSync
     **/
-   override def lazyPure[T](op: =>T): F[T] =
+   override def wrap[T](op: =>T): F[T] =
       spawnSync(op)
+
+   override def flatWrap[T](op: => F[T]): F[T] =
+      spawn(op)
          
 }
 

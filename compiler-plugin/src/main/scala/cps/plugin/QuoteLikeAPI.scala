@@ -17,6 +17,7 @@ object QuoteLikeAPI:
     **/
     def unapply(tree: Tree)(using Context): Option[(List[ValDef],Tree,Symbol)] =
       tree match
+        case Block(Nil, expr) => unapply(expr)
         //case Block((ddef @ DefDef(_,ValDefs(params)::Nil,_,Some(body)))::Nil, closure: Closure) 
         case Block((ddef: DefDef)::Nil, closure: Closure) 
               if ddef.symbol == closure.meth.symbol =>

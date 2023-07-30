@@ -1,6 +1,7 @@
 package cps.plugin
 
 import cps.plugin.AsyncKind.AsyncLambda
+import dotty.tools.dotc.util.SrcPos
 
 
 enum AsyncKind  {
@@ -51,11 +52,14 @@ enum AsyncKind  {
       case Async(_) => true
       case AsyncLambda(_) => false
 
-   def isAsyncLambda: Boolean =
+  def isAsyncLambda: Boolean =
      this match
         case Sync => false
         case Async(_) => false
         case AsyncLambda(_) => true
 
+
+
 }
+
 

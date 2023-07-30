@@ -14,11 +14,12 @@ import cps.plugin.forest.*
 
 case class CpsCaseDef(origin: CaseDef, cpsBody: CpsTree) {
 
-  def transform(targetKind: AsyncKind, targetType: Type)(using Context, CpsTopLevelContext): CaseDef =
-    CaseDef(origin.pat, origin.guard, transformBody(targetKind, targetType))
+  def transform(targetKind: AsyncKind, targetType: Type, nesting: Int)(using Context, CpsTopLevelContext): CaseDef =
+    CaseDef(origin.pat, origin.guard, transformBody(targetKind, targetType, nesting))
 
-  def transformBody(targetKind: AsyncKind, originTargetType: Type)(using Context, CpsTopLevelContext): Tree = {
-    targetKind match
+  def transformBody(targetKind: AsyncKind, originTargetType: Type, nesting: Int)(using Context, CpsTopLevelContext): Tree = {
+    Log.trace(s"CpsCaseDef:transformBody, targetKind=${targetKind} cpsBody=${cpsBody.show}, cpsBody.kind=${cpsBody.asyncKind}", nesting)
+    val retval = targetKind match
       case AsyncKind.Sync =>
         cpsBody.castOriginType(originTargetType).unpure.get
       case AsyncKind.Async(internalKind) =>
@@ -44,6 +45,8 @@ case class CpsCaseDef(origin: CaseDef, cpsBody: CpsTree) {
               cpsBody.castOriginType(originTargetType).transformed
             else
               throw CpsTransformException(s"can't convert asyncLambda case to asyncLambda with different internal kind", origin.srcPos)
+    Log.trace(s"CpsCaseDef:transformBody, retval=${retval.show}", nesting)
+    retval
   }
 
 

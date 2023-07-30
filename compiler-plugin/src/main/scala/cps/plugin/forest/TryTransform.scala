@@ -37,6 +37,7 @@ object TryTransform {
     retval
   }
 
+
   def applyNoCases(tryTerm:Try, owner: Symbol, nesting:Int, cpsExpr: CpsTree, cpsFinalizer: CpsTree)(using Context, CpsTopLevelContext): CpsTree = {
     (cpsExpr.asyncKind, cpsFinalizer.asyncKind) match {
       case (AsyncKind.Sync, AsyncKind.Sync) =>
@@ -64,7 +65,7 @@ object TryTransform {
             val newTree = Try(cpsExpr.unpure.get, cases.unpureCaseDefs, EmptyTree)
             CpsTree.pure(origin, owner, newTree)
       case (AsyncKind.Sync, AsyncKind.Async(ik)) =>
-          val retval = generateWithAsyncCasesWithTry(origin, owner, cpsExpr, cases, casesAsyncKind)
+          val retval = generateWithAsyncCasesWithTry(origin, owner, cpsExpr, cases, casesAsyncKind, nesting)
           Log.trace(s"TryTransform:applyNoFinalizer return ${retval.show}", nesting)
           retval
       case _ =>
@@ -72,7 +73,7 @@ object TryTransform {
             case Left((k1,k2)) =>
               throw CpsTransformException("Incompatible async kinds of try expr and cases", origin.srcPos)
             case Right(k) => k
-          generateWithAsyncCases(origin, owner, cpsExpr, cases, targetKind)
+          generateWithAsyncCases(origin, owner, cpsExpr, cases, targetKind, nesting)
     }
   }
 
@@ -103,15 +104,11 @@ object TryTransform {
         if (il1 == il2) {
           finalizerKind match
             case AsyncKind.Sync =>
-              val nCases = cases.transformedCaseDefs(cpsExpr.asyncKind, origin.tpe.widen)
-              println("TryTransform::applyFull:(AsyncLambda,AsyncLambda,Sync)")
-              println(s"cases.cases.head.cpsBody = ${cases.cases.head.cpsBody.show}")
-              println(s"cases.cases.head.cpsBody.transformed = ${cases.cases.head.cpsBody.transformed.show}")
-              println(s"caess.cases.head.cpsBody.cast(${origin.tpe.widen.show}) = ${cases.cases.head.cpsBody.castOriginType(origin.tpe.widen).show}")
+              val nCases = cases.transformedCaseDefs(cpsExpr.asyncKind, origin.tpe.widen, nesting)
               val nTry = Try(cpsExpr.transformed, nCases, cpsFinalizer.unpure.get)
               CpsTree.opaqueAsyncLambda(origin, owner, nTry,il1)
             case AsyncKind.Async(fk) =>
-              val nTry = Try(cpsExpr.transformed, cases.transformedCaseDefs(cpsExpr.asyncKind, origin.tpe.widen), EmptyTree)
+              val nTry = Try(cpsExpr.transformed, cases.transformedCaseDefs(cpsExpr.asyncKind, origin.tpe.widen, nesting), EmptyTree)
               val expr = CpsTree.opaqueAsyncLambda(origin, owner, nTry,il1)
               generateWithAsyncFinalizerTree(origin, owner, cpsExpr.transformed, cpsExpr.transformedType,expr.asyncKind,cpsFinalizer)
             case AsyncKind.AsyncLambda(x) =>
@@ -127,7 +124,7 @@ object TryTransform {
             println(s"cases = ${cases.unpureCaseDefs.map(_.show)}  cases.kind=${casesAsyncKind} ")
             throw CpsTransformException(s"Non-compatible async shape in try exppression and handlers ${p}", origin.srcPos)
           case Right(k) =>
-            val expr1 = generateWithAsyncCases(origin, owner, cpsExpr, cases, k)
+            val expr1 = generateWithAsyncCases(origin, owner, cpsExpr, cases, k, nesting)
             val expr2 = generateWithAsyncFinalizer(origin, owner, expr1, cpsFinalizer)
             expr2
   }
@@ -185,24 +182,25 @@ object TryTransform {
           CpsTree.opaqueAsyncLambda(origin,owner,tree,bodyKind)
   }
 
-  private def generateWithAsyncCases(origin: Try, owner: Symbol, cpsExpr: CpsTree, cases: CpsCases, targetKind: AsyncKind)(using Context, CpsTopLevelContext): CpsTree = {
-     println(s"Try: generateWithAsyncCases, targetKind=${targetKind}, cpsExpr=${cpsExpr.show}")
-     val retval = generateExprWithAsyncErrorHandler(origin,owner,cpsExpr.transformed, origin.tpe.widen,  cases,targetKind)
+  private def generateWithAsyncCases(origin: Try, owner: Symbol, cpsExpr: CpsTree, cases: CpsCases, targetKind: AsyncKind, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
+     val retval = generateExprWithAsyncErrorHandler(origin,owner,cpsExpr.transformed, origin.tpe.widen,  cases,targetKind, nesting)
      retval
   }
 
-  private def generateExprWithAsyncErrorHandler(origin: Try, owner: Symbol, expr: Tree, exprUnwrappedType: Type, cases: CpsCases, targetKind: AsyncKind)(using Context, CpsTopLevelContext): CpsTree = {
+  private def generateExprWithAsyncErrorHandler(origin: Try, owner: Symbol, expr: Tree, exprUnwrappedType: Type, cases: CpsCases, targetKind: AsyncKind, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
     //
     //val sym = newSymbol(owner, "tryCases".toTermName, Flags.EmptyFlags)
     val exCasesType = targetKind match
       case AsyncKind.Sync => origin.tpe.widen
       case _ => CpsTransformHelper.cpsTransformedType(origin.tpe.widen, summon[CpsTopLevelContext].monadType)
-    val transformedCases = cases.transformedCaseDefs(targetKind, origin.tpe.widen)
+    val transformedCases = cases.transformedCaseDefs(targetKind, origin.tpe.widen, nesting)
+    // we need add default variant to handle exceptions, which are not handled by try cases,
     val lambdaResultType = transformedCases.head.body.tpe.widen
     val mt = MethodType(List("ex".toTermName), List(defn.ThrowableType), lambdaResultType)
     val lambdaSym = newAnonFun(owner,mt)
     val lambda = Closure(lambdaSym, tss => {
-         Match(tss.head.head, transformedCases).changeOwner(owner,lambdaSym)
+         val defaultCase = generateDefaultCaseDef(origin, origin.tpe.widen)(using summon[Context].withOwner(lambdaSym), summon[CpsTopLevelContext])
+         Match(tss.head.head, transformedCases :+ defaultCase).changeOwner(owner,lambdaSym)
        }
     )
     val tree = Apply(
@@ -224,23 +222,31 @@ object TryTransform {
           CpsTree.opaqueAsyncLambda(origin,owner,tree,bodyKind)
   }
 
-  private def generateWithAsyncCasesWithTry(origin: Try, owner: Symbol, expr: CpsTree, cases: CpsCases, kind: AsyncKind)(using Context, CpsTopLevelContext): CpsTree = {
-    generateExprWithAsyncErrorHandler(origin,owner,wrapPureCpsTreeInTry(origin,expr), expr.originType,  cases,kind)
+
+
+  private def generateWithAsyncCasesWithTry(origin: Try, owner: Symbol, expr: CpsTree, cases: CpsCases, kind: AsyncKind, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
+    generateExprWithAsyncErrorHandler(origin,owner,wrapPureCpsTreeInTry(origin,expr), expr.originType,  cases,kind, nesting)
   }
 
+  private def generateDefaultCaseDef(origin: Try, exprUnwrappedType: Type)(using Context, CpsTopLevelContext): CaseDef = {
+    val bindSym = Symbols.newPatternBoundSymbol("ex".toTermName, defn.ThrowableType, origin.span)
+    val nonFatalUnapplySym = Symbols.requiredMethod("scala.util.control.NonFatal.unapply")
+    // TODO:  with deprecation of NonFatal think about cactu Exception (i.e. Typed instead Unaopplu)
+    val nonFatalUnapply = Bind(bindSym, UnApply(ref(nonFatalUnapplySym), List(), List(ref(bindSym)), defn.NothingType))
+    val errorCall = Apply(
+      TypeApply(
+        Select(trySupport(origin), "error".toTermName),
+        List(TypeTree(exprUnwrappedType))
+      ),
+      List(ref(bindSym))
+    )
+    CaseDef(nonFatalUnapply, EmptyTree, errorCall)
+  }
+
+
   private def wrapPureExprTreeInTry(origin: Try, expr: Tree, exprUnwrappedType:Type)(using Context, CpsTopLevelContext): Tree = {
-        val bindSym = Symbols.newPatternBoundSymbol("ex".toTermName, defn.ThrowableType, origin.span)
-        val nonFatalUnapplySym = Symbols.requiredMethod("scala.util.control.NonFatal.unapply")
-        // TODO:  with deprecation of NonFatal think about cactu Exception (i.e. Typed instead Unaopplu)
-        val nonFatalUnapply = Bind(bindSym,UnApply(ref(nonFatalUnapplySym), List(), List(ref(bindSym)), defn.NothingType))
-        val errorCall = Apply(
-          TypeApply(
-            Select(trySupport(origin), "error".toTermName),
-            List(TypeTree(exprUnwrappedType))
-          ),
-          List(ref(bindSym))
-        )
-        Try(expr, List(CaseDef(nonFatalUnapply, EmptyTree, errorCall)), EmptyTree)
+        val wildcardCaseDef = generateDefaultCaseDef(origin, exprUnwrappedType)
+        Try(expr, List(wildcardCaseDef), EmptyTree)
   }
 
 

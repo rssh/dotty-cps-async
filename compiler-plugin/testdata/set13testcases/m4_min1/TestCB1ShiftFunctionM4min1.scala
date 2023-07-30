@@ -9,7 +9,7 @@ import cps.plugin.annotation.CpsDebugLevel
 
 given UseCompilerPlugin.type = UseCompilerPlugin
 
-@CpsDebugLevel(20)
+//@CpsDebugLevel(20)
 class TestCBS1ShiftFunctionM4min1:
 
   def qqq: Int = 3

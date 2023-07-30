@@ -20,7 +20,8 @@ object MatchTransform {
         val selectorCps = RootTransform(selector, owner, nesting+1)
         val casesCps =  CpsCases.create(cases, owner, nesting+1)
         val casesAsyncKind = casesCps.collectAsyncKind
-        val casesPrepared = casesCps.transformedCaseDefs(casesAsyncKind, term.tpe)
+        val casesPrepared = casesCps.transformedCaseDefs(casesAsyncKind, term.tpe,nesting)
+        Log.trace("MathTransform, casesPrepared: " + casesPrepared.map(_.show).mkString("\n"),nesting)
         val retval = selectorCps.asyncKind match
           case AsyncKind.Sync =>
             if (casesAsyncKind == AsyncKind.Sync  && casesCps.unchanged) then
@@ -50,7 +51,7 @@ object MatchTransform {
                   MapCpsTreeArgument(Some(nValDef), CpsTree.impure(term, owner, Match(ref(nSym), casesPrepared), casesAsyncKind)))
           case AsyncKind.AsyncLambda(internalKind) =>
             throw CpsTransformException("AsyncLambda as selector of match statement is not supported", term.srcPos)
-
+        Log.trace(s"MatchTransform, retval=${retval.show}",nesting)
         retval
       case null =>
         throw CpsTransformException("Match term expected", term.srcPos)

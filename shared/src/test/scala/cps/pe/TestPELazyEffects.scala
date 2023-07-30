@@ -12,7 +12,7 @@ import cps.util.FutureCompleter
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TestPELazyEffect:
+class TestPELazyEffectM3:
 
    
   @Test def testLazyEffectThrow() = 
@@ -25,7 +25,7 @@ class TestPELazyEffect:
      FutureCompleter(future)
 
 
-  @Test def testLazyEffectPrint(): Unit = 
+  @Test def testLazyEffectPrint() =
      val logger = new ToyLogger()
      val c = async[PureEffect]{ logger.log("W") }
      assert(logger.lines.isEmpty)

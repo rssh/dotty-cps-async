@@ -26,8 +26,8 @@ class CpsCases(val cases: List[CpsCaseDef]) {
       case Some(x) => x
       case None => throw CpsTransformException("Can't unify async shape in case branches for match", cases.head.origin.srcPos)
 
-  def  transformedCaseDefs(targedKind:AsyncKind, targetType: Type)(using Context, CpsTopLevelContext): List[CaseDef] =
-    val retval = cases.map(_.transform(targedKind, targetType))
+  def  transformedCaseDefs(targedKind:AsyncKind, targetType: Type, nesting: Int)(using Context, CpsTopLevelContext): List[CaseDef] =
+    val retval = cases.map(_.transform(targedKind, targetType, nesting))
     retval
 
   def  unpureCaseDefs(using Context, CpsTopLevelContext): List[CaseDef] =

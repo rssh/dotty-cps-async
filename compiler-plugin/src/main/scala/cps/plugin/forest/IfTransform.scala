@@ -46,11 +46,15 @@ object IfTransform {
                         |""".stripMargin
                     )
                     throw CpsTransformException("Different async kind in if branch",ifTerm.srcPos)
+                  val internalKind = cpsIfTrue.asyncKind match
+                    case  AsyncKind.Sync => AsyncKind.Sync
+                    case  AsyncKind.Async(internalKind) => internalKind
+                    case  lambda@AsyncKind.AsyncLambda(bodyKind) => lambda
                   AsyncTermCpsTree(
                     ifTerm,
                     owner,
                     cpy.If(ifTerm)(condSync, cpsIfTrue.transformed, cpsIfFalse.transformed),
-                    cpsIfTrue.asyncKind
+                    internalKind
                   )
           case None =>
             val sym = newSymbol(owner, "c".toTermName , Flags.EmptyFlags, defn.BooleanType)
@@ -65,11 +69,15 @@ object IfTransform {
                   MapCpsTreeArgument(Some(valDef), CpsTree.pure(ifTerm,owner,newIf))
                 )
               case _ =>
-                if (cpsIfTrue.asyncKind != cpsIfFalse.asyncKind) then
-                   throw CpsTransformException("Different async kind in if branches",ifTerm.srcPos) 
+                if (!cpsIfTrue.asyncKind.isCompatible(cpsIfFalse.asyncKind)) then
+                   throw CpsTransformException(s"Different async kind in if branches ${cpsIfTrue.asyncKind} and ${cpsIfFalse.asyncKind}",ifTerm.srcPos)
                 val newIf = If(ref(sym),cpsIfTrue.transformed,cpsIfFalse.transformed)
-                              .withSpan(ifTerm.span)        
-                val cpsNewIf = AsyncTermCpsTree(ifTerm, owner, newIf, cpsIfTrue.asyncKind)
+                              .withSpan(ifTerm.span)
+                val internalKind = cpsIfTrue.asyncKind match
+                  case AsyncKind.Sync => AsyncKind.Sync
+                  case AsyncKind.Async(internalKind) => internalKind
+                  case lambdaKind@AsyncKind.AsyncLambda(bodyKind) => lambdaKind
+                val cpsNewIf = AsyncTermCpsTree(ifTerm, owner, newIf, internalKind)
                 FlatMapCpsTree(
                   ifTerm,
                   owner,

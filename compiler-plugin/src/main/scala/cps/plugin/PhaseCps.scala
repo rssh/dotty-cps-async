@@ -154,6 +154,13 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
           case _ =>
             throw CpsTransformException(s"excepted that second argument of cpsAsyncApply is closure, we have $ctxFun", tree.srcPos)
         val nDefDef = transformDefDefInsideAsync(ddef, tree, false)
+        if (ddef.symbol.owner != ctx.owner) {
+          println(s"transformApplyInternal: ddef.symbol.owner != ctx.owner  ddef.symbol.owner=${ddef.symbol.owner.showFullName}, ctx.owner=${ctx.owner.showFullName}")
+        }
+        if (ddef.symbol.hashCode() == 41394) {
+          println(s"transformApplyInternal: 41394 found: ddef.symbol=${ddef.symbol.showFullName}")
+          println(s"nDedDef.symbol = {nDefDef.symbol} (${nDefDef.symbol.hashCode()})")
+        }
         val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
         val applyArg = Block(nDefDef::Nil, nClosure).withSpan(ctxFun.span)
         val nApply = cpy.Apply(tree)(
@@ -177,7 +184,23 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
   private def transformDefDefInsideAsync(ddef: DefDef, asyncCallTree: Tree, contextual: Boolean)(using ctx:Context): DefDef = {
     val cpsMonadContext = ddef.paramss.head.head
     val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, CpsTransformHelper.cpsMonadContextClassSymbol, asyncCallTree.srcPos)
-    val nRhsType = CpsTransformHelper.cpsTransformedType(ddef.rhs.tpe.widen, monadType)
+
+    //val nRhsType = CpsTransformHelper.cpsTransformedType(ddef.rhs.tpe.widen, monadType)
+    //val mt = if (contextual) {
+    //  ContextualMethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
+    //} else {
+    //  MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
+    //}
+    //val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
+
+    val contextParam = cpsMonadContext match
+      case vd: ValDef => ref(vd.symbol)
+      case _ => throw CpsTransformException(s"excepted that cpsMonadContext is ValDef, but we have ${cpsMonadContext.show}", asyncCallTree.srcPos)
+    val tctx = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
+    val ddefCtx = ctx.withOwner(ddef.symbol)
+    val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefCtx, tctx)
+    val nRhsTerm = wrapTopLevelCpsTree(nRhsCps)(using ddefCtx, tctx)
+    val nRhsType = nRhsTerm.tpe.widen
     val mt = if (contextual) {
       ContextualMethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
     } else {
@@ -185,13 +208,36 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     }
     val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
     val nDefDef = DefDef(newSym, paramss => {
+      implicit val nctx = ctx.withOwner(newSym)
+      val monadValDef = tctx.cpsMonadValDef
+      val body = Block(monadValDef::Nil, nRhsTerm).withSpan(ddef.rhs.span)
+      val nBody = TransformUtil.substParams(body, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head)
+        .changeOwner(ddef.symbol, newSym)
+        //  note, that changeOwner should be last, because otherwise substParams will not see origin params.
+      nBody
+    }).withSpan(ddef.span)
+    println(s"transformDefDefInsideAsync: newSym=${newSym.hashCode()}, old ddef.sym=${ddef.symbol.hashCode()}, ctx.owner=${ctx.owner.hashCode()}")
+    println(s"old defdef type: ${ddef.tpe.widen.show}")
+    println(s"new defdef type: ${nDefDef.tpe.widen.show}")
+
+
+    /*
+    val nDefDef = DefDef(newSym, paramss => {
       given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
       val nctx = ctx.withOwner(newSym)
+      TransformUtil.findSubtermWithOtherOwner(ddef.rhs, ddef.symbol) match
+        case Some(tree) => println(s"err::symbol have other owner then ddef:  ${tree.show} with owner ${tree.symbol.owner.hashCode()}")
+        case None =>
       val nBody = TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head).changeOwner(ddef.symbol, newSym)
+      TransformUtil.findSubtermWithOwner(nBody, ddef.symbol) match
+        case Some(tree) => println(s"err::symbol still have old owner:  ${tree.show}")
+        case None =>
       val nRhsCps = RootTransform(nBody, newSym, 0)(using nctx, tctx)
-      val nRhs = nRhsCps.transformed
-      Block(tctx.cpsMonadValDef::Nil, nRhs)
+      val nRhs = wrapTopLevelCpsTree(nRhsCps)(using nctx, tctx)
+      Block(tctx.cpsMonadValDef::Nil, nRhs)(using nctx)
     } ).withSpan(ddef.span)
+
+     */
     nDefDef
   }
 
@@ -260,6 +306,57 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         nBlock
   }
 
+
+  def wrapTopLevelCpsTree(cpsTree: CpsTree)(using Context, CpsTopLevelContext): Tree = {
+    val tctx = summon[CpsTopLevelContext]
+
+    def makeSync(unpure: Tree): Tree = {
+      Apply(
+        TypeApply(
+          Select(tctx.cpsMonadRef, "wrap".toTermName),
+          List(TypeTree(cpsTree.originType.widen))
+        ),
+        List(unpure)
+      ).withSpan(cpsTree.origin.span)
+    }
+
+    def makeAsync(transformed: Tree) = {
+      Apply(
+        TypeApply(
+          Select(tctx.cpsMonadRef, "flatWrap".toTermName),
+          List(TypeTree(cpsTree.originType.widen))
+        ),
+        List(transformed)
+      ).withSpan(cpsTree.origin.span)
+    }
+
+    /**
+     * Just for correct diagnosting, aboput applying normalization
+     * (which we want to eliminate to normalize 'on fly')
+     * @param cpsTree
+     * @return
+     */
+    def tryNormalize(cpsTree: CpsTree): CpsTree = {
+      cpsTree.asyncKind match
+        case AsyncKind.Sync => cpsTree
+        case AsyncKind.Async(AsyncKind.Sync) => cpsTree
+        case AsyncKind.AsyncLambda(bodyKind) =>
+          throw CpsTransformException(s"unsupported lambda in top level wrap: ${cpsTree.show}", cpsTree.origin.srcPos)
+        case _ =>
+          report.warning(s"Unnormalized cpsTree: ${cpsTree.show}", cpsTree.origin.srcPos)
+          cpsTree.normalizeAsyncKind
+    }
+
+    cpsTree.unpure match
+      case Some(unpure) => makeSync(unpure)
+      case None =>
+        tryNormalize(cpsTree).asyncKind match
+          case AsyncKind.Async(AsyncKind.Sync) =>
+            makeAsync(cpsTree.transformed)
+          case _ =>
+            println(s"CpsTree with non-standard async kind: ${cpsTree.show}")
+            throw CpsTransformException(s"unsupported type for top-level wrap, asyncKind=${cpsTree.asyncKind}", cpsTree.origin.srcPos)
+  }
 
 
   /**

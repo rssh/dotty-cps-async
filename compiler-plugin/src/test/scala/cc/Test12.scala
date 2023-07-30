@@ -6,6 +6,7 @@ import org.junit.Test
 
 class Test12 {
 
+
   @Test
   def testCompileAndRunM1(): Unit =
     val dotcInvocations = new DotcInvocations()

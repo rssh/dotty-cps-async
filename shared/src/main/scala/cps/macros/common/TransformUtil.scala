@@ -159,7 +159,7 @@ object TransformUtil:
          t.toString
 
 
-  def findOtherOwnersIn(using Quotes)(tree: quotes.reflect.Tree): Map[Int,quotes.reflect.Tree] =
+  def findAllOwnersIn(using Quotes)(tree: quotes.reflect.Tree): Map[Int,quotes.reflect.Tree] =
       import quotes.reflect._
       import util._
       val search = new TreeAccumulator[Map[Int, Tree]] {
@@ -186,6 +186,29 @@ object TransformUtil:
       }
       search.foldTree(Map.empty,tree)(Symbol.spliceOwner)
 
+  def findDefinitionWithoutSymbol(using Quotes)(tree: quotes.reflect.Tree): Option[quotes.reflect.Tree] =
+      import quotes.reflect._
+      import util._
+      val search = new TreeAccumulator[Option[Tree]] {
+
+        def foldTree(x: Option[Tree], tree: Tree)(owner: Symbol): Option[Tree] =
+          if (x.isDefined) x
+          else foldOverTree(x, tree)(owner)
+
+        override def foldOverTree(x: Option[Tree], tree: Tree)(owner: Symbol): Option[Tree] = {
+          tree match
+            case t: Definition =>
+              if (t.symbol == Symbol.noSymbol) {
+                Some(t)
+              } else
+                // searh deep
+                //x
+                super.foldOverTree(x, t)(owner)
+            case _ =>
+              super.foldOverTree(x, tree)(owner)
+        }
+      }
+      search.foldTree(None, tree)(Symbol.spliceOwner)
 
   // used for debugging instrumentation
   def dummyMapper(using Quotes)(t: quotes.reflect.Term, owner: quotes.reflect.Symbol): Boolean =

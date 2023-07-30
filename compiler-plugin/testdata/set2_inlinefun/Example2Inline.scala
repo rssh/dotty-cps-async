@@ -8,7 +8,7 @@ import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @experimental
-//@cps.plugin.annotation.CpsDebugLevel(15)
+@cps.plugin.annotation.CpsDebugLevel(15)
 object Example2Inline {
 
 

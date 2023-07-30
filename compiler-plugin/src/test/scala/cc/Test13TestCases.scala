@@ -7,18 +7,6 @@ import org.junit.Test
  */
 class Test13TestCases {
 
-
-  @Test
-  def testCompileBaseFutureTest(): Unit = {
-    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
-  }
-
-  @Test
-  def testCompileAsyncListStress(): Unit = {
-    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m2")
-  }
-
-
   def compileCommon(): Unit = {
     if (!Test13TestCases.commonCompiled) {
       DotcInvocations.compileFilesInDir("testdata/set13TestCases/common")
@@ -27,45 +15,117 @@ class Test13TestCases {
     }
   }
 
-
-  @Test
-  def testCompileCBS1Apply(): Unit = {
+  def compileAfterCommon(dirname: String): Unit = {
     compileCommon()
     val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
-    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m3", secondInvokationArgs)
+    DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
   }
+
+
+
+  @Test
+  def testCompileBaseFutureTest(): Unit = {
+    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
+  }
+
+
+  @Test
+  def testCompileAsyncListStress(): Unit = {
+    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m2")
+  }
+
 
   @Test
   def testCompileCBS1ApplyMin(): Unit = {
-    compileCommon()
-    val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
-    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
+    compileAfterCommon("testdata/set13TestCases/m3")
   }
 
   @Test
   def testCompileCBS1ApplyMin2(): Unit = {
-    compileCommon()
-    val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
-    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
-    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m3_min2", secondInvokationArgs)
+    compileAfterCommon("testdata/set13TestCases/m3_min2")
   }
 
   @Test
   def testCompileCBS1ApplyMin3(): Unit = {
-    compileCommon()
-    val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
-    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
-    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m3_min3", secondInvokationArgs)
+    compileAfterCommon("testdata/set13TestCases/m3_min3")
   }
 
 
   @Test
   def testCompileCBS1DShiftedFunctionM4min1(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m4_min1")
+  }
+
+
+  @Test
+  def testCompileCBS1DShiftedFunctionM4min2(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m4_min2")
+  }
+
+
+
+  @Test
+  def testCommpileCBS1ShiftTryMonadM5min1(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m5_min1")
+  }
+
+
+  @Test
+  def testCompileCBS1ShiftWithFilterM6min1(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m6_min1")
+  }
+
+
+  @Test
+  def testFutureRangeWithFilterShiftM7min1(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m7_min1")
+  }
+
+
+
+  @Test
+  def test59M8min1(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m8_min1")
+  }
+
+
+  @Test
+  def testCBBooleanOpShortCircuits(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m9_m1")
+  }
+
+
+
+  @Test
+  def testCollectionMonads(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m10_m1")
+  }
+
+
+   @Test
+   def testFM2(): Unit = {
+      compileAfterCommon("testdata/set13TestCases/m11_m1")
+   }
+
+
+  @Test
+  def testUtestLike(): Unit = {
+    compileAfterCommon("testdata/set13TestCases/m12_m1")
+  }
+
+
+
+
+
+  @Test
+  def testMiniGopherW1(): Unit = {
+    //compileAfterCommon("testdata/set13TestCases/m13_m1")
+    val dirname = "testdata/set13TestCases/m13_m1"
     compileCommon()
     val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
-    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
-    DotcInvocations.compileFilesInDir("testdata/set13TestCases/m4_min1", secondInvokationArgs)
+    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath), checkAll = false)
+    DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
   }
 
 
