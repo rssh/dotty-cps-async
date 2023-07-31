@@ -127,7 +127,10 @@ object ApplyTransform {
       case tpa@TypeApply(sel@Select(obj,method),targs) =>
         parseMethodCall(appTerm,owner, nesting, obj,sel,Some(tpa), argss)
       case sel@Select(obj,method) =>
-        parseMethodCall(appTerm,owner, nesting, obj,sel,None, argss)
+        if (sel.symbol == defn.Boolean_&& || sel.symbol == defn.Boolean_||) then
+          BooleanShortcutsTransform(appTerm, owner, nesting, obj, sel.symbol)
+        else
+          parseMethodCall(appTerm,owner, nesting, obj,sel,None, argss)
       case _ =>
         parseApplicationNonLambda(appTerm, owner, nesting, argss)
     }
@@ -237,7 +240,8 @@ object ApplyTransform {
     val callMode = FunCallMode(cpsApplicant.asyncKind, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
     parseApplicationCpsFun(appTerm, owner, nesting, cpsApplicant, argss, callMode)
   }
-
+  
+  
   def parseApplicationCpsFun(appTerm: Apply,
                              owner: Symbol,
                              nesting: Int,

@@ -113,7 +113,7 @@ class Test14Run {
     val testClassName = "cps.TestСBS1Try"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
-  
+
 
   @Test
   def testFtFoldScan(): Unit = {
