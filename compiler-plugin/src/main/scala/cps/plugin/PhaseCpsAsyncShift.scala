@@ -22,7 +22,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   // strange -
   override def allowsImplicitSearch = true
   override val runsAfter            = Set(PhaseCps.name)
-  override val runsBefore           = Set(PhaseCpsAsyncReplace.name)
+  override val runsBefore           = Set(PhaseCpsAsyncReplace.name, Erasure.name)
 
   // override def run(using Context): Unit = {
   // TODO:
@@ -39,7 +39,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    */
   override def transformTemplate(tree: Template)(using Context): Tree = {
     println(
-      s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.symbol.info.show}"
+      s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.tpe.show}"
     )
     val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
     var newMethods      = List.empty[DefDef]
@@ -164,22 +164,26 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     // check ValDef input params
     val valDefs: List[ValDef] = filterParams(tree.paramss)
     val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
-    if !funcParams.isEmpty then return true
-    // check the return type
-    // TODO: write implementation for this special case
-    if isFunc(tree.rhs.tpe.finalResultType) then
-      throw CpsTransformException(
-        "Unsupported type of function. The return type must not be a function",
-        tree.srcPos
-      )
-    else false
+    val retval = if funcParams.nonEmpty then
+      true
+    else// check the return type
+      // TODO: write implementation for this special case
+      if isFunc(tree.rhs.tpe.finalResultType) then
+        throw CpsTransformException(
+          "Unsupported type of function. The return type must not be a function",
+          tree.srcPos
+        )
+      else false
+    println("isHightOrder,  params: " + valDefs.map(_.tpt.tpe.show).mkString(",") + ", retval: " + retval)
+    println(s"isHightOrder,  funcParams: ${funcParams.map(_.tpt.tpe.show).mkString(",")}")
+    retval
 
   def filterParams(params: List[ParamClause]): List[ValDef] =
     val ps = params.flatten[ValDef | TypeDef]
     ps.collect { case v: ValDef => v }
 
   def isFunc(t: Type)(using Context): Boolean =
-    t match
+    val retval = t match
       case _: AppliedType
           if (defn.isFunctionType(t) ||
             defn.isContextFunctionType(t)) =>
@@ -187,6 +191,8 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
       case _: MethodType => true
       case _: PolyType => true
       case _ => false
+    println("isFunc, t: " + t.show + ", retval: " + retval)
+    retval
 
 }
 
