@@ -297,14 +297,17 @@ object ApplyTransform {
                   println(s"originFun: ${fun.show}")
                   println(s"shiftedFun: ${newFun.show}")
                   val rt = extractFinalResultType(newFunType, fun, argss)
+                  val originRt = argss.last.origin.tpe.widen
 
-                  println(s"rt=${rt.show}, tctx.monadType=${tctx.monadType.show}, rt.baseType(tctx.monadType.typeSymbol)=${rt.baseType(tctx.monadType.typeSymbol)}")
-
-                  val preliminaryAsyncKind = if (rt.baseType(tctx.monadType.typeSymbol)!=NoType) {
-                    AsyncKind.Async(AsyncKind.Sync)
-                  } else {
-                    AsyncKind.Sync
+                  val preliminaryAsyncKind = if (rt.widen =:= originRt) {
+                       AsyncKind.Sync
+                    } else if (rt.baseType(tctx.monadType.typeSymbol)!=NoType) {
+                       AsyncKind.Async(AsyncKind.Sync)
+                    } else {
+                       AsyncKind.Sync
                   }
+
+                  println(s"rt.widen=${rt.widen.show}, originRt=${originRt.show}, =:= = ${rt.widen =:= originRt}")
 
                   val newCallMode = FunCallMode(AsyncKind.Sync, preliminaryAsyncKind, ApplyArgCallMode.ASYNC_SHIFT, false,
                      newFun.shape.p == ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM,
@@ -392,7 +395,9 @@ object ApplyTransform {
         } else if (callMode.fromCallChain) {
           //TODO: determiante kinf with lambda-s from result type
           //val asyncKind = CpsTransformHelper.kindFromType(newApply.tpe.widen)
-          if ( newApply.tpe.baseType(summon[CpsTopLevelContext].monadType.typeSymbol) != NoType ) {
+          if (newApply.tpe.widen =:= origin.tpe.widen) {
+            CpsTree.pure(origin,owner,newApply)
+          } else if ( newApply.tpe.baseType(summon[CpsTopLevelContext].monadType.typeSymbol) != NoType ) {
             CpsTree.impure(origin,owner,newApply,AsyncKind.Sync)
           } else {
             // TODO: check method type
@@ -774,6 +779,13 @@ object ApplyTransform {
        }
     }
 
+    /**
+     * retrieve shifted method with alreat prepared type-arguments and extra argument list if needed.
+     * @param obj
+     * @param methodName
+     * @param targs
+     * @return
+     */
     def retrieveShiftedMethod(obj: Tree, methodName: Name, targs:List[Tree] ): MbShiftedFun = {
 
       tryFindInplaceAsyncShiftedMethods(obj.tpe.widen.classSymbol, methodName, Set("_async","Async","$cps")) match

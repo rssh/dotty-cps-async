@@ -48,7 +48,6 @@ class Test14Run {
   }
 
 
-
   @Test
   def testShiftIterableOps(): Unit = {
     val dirname = "testdata/set14runtests/m1"
@@ -106,12 +105,20 @@ class Test14Run {
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
 
-   
+
 
   @Test
   def testCBS1Try(): Unit = {
     val dirname = "testdata/set14runtests/m7_1"
     val testClassName = "cps.TestСBS1Try"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
+  
+
+  @Test
+  def testFtFoldScan(): Unit = {
+    val dirname = "testdata/set14runtests/m8"
+    val testClassName = "cps.TestFbFoldScan"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
 
