@@ -27,7 +27,7 @@ class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: Shifted
    * @param Context
    * @return
    */
-  override def transformApply(tree: tpd.Apply)(using Contexts.Context): Tree =
+  override def transformApply(tree: tpd.Apply)(using Context): Tree =
 
     //ref(term.symbol) === tree.fun naked from type-aprameters
 
@@ -37,20 +37,10 @@ class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: Shifted
     // TODO: look for the shiftedSymbols functions application
     shiftedSymbols.getRecord(tree.fun.symbol) match
       case Some(fun) =>
-        // TODO: replace old function application by transformed one
         println(s"asyncReplace::transformApply::selected ${tree}")
         val newApply =
-            cpy.Apply(tree)(Ident(fun.shiftedMethod.symbol.namedType), tree.args)
+          cpy.Apply(tree)(Ident(fun.shiftedMethod.symbol.namedType), tree.args)
         newApply
-
-      //tree match
-        //  case Apply(_, args) =>
-        //    val newApply =
-        //      cpy.Apply(tree)(Ident(fun.shiftedMethod.symbol.namedType), args)
-        //    newApply
-        //  case _ =>
-        //    println(s"unexpected tree:  ${tree}")
-        //    ???
       case None => super.transformApply(tree)
 
 }

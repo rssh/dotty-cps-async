@@ -10,12 +10,12 @@ import cps.monads.{ *, given }
 object Test12m3 {
 
   @cps.plugin.annotation.makeCPS
-  def getUrlBuilder(c: String, f: String => String): String => String =
-    path => f(c) + path
+  def getUrlBuilder(c: String): String => String =
+    path => c + path
 
   def main(args: Array[String]): Unit = {
     val fr = async[Future] {
-      val buildUrl = getUrlBuilder("myurl", name => "prefix" + name)
+      val buildUrl = getUrlBuilder("myurl")
       buildUrl("/item")
     }
     val r  = Await.result(fr, 1000.millis)

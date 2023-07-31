@@ -37,7 +37,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @param Context
    * @return
    */
-  override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = {
+  override def transformTemplate(tree: Template)(using Context): Tree = {
     println(
       s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.symbol.info.show}"
     )
@@ -45,12 +45,17 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     var newMethods      = List.empty[DefDef]
     for (
       bodyTree <- tree.body
-      if bodyTree.symbol.is(Flags.Method) /*&& isHightOrder() && generateCps */
+      if bodyTree.symbol.is(Flags.Method) /*&& generateCps */
     )
       bodyTree match
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
+          if !isHighOrder(fun) then
+            throw CpsTransformException(
+              "Object has to be a high-order function",
+              bodyTree.srcPos
+            )
           val newFunName     = (fun.symbol.name.debugString + "$cps").toTermName
           val newFunSymbol   =
             Symbols.newSymbol(
@@ -60,33 +65,27 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
               fun.symbol.info.widen // let be the same type for now
             )
           // create new rhs
-          val ctx1: Context = summon[Context].withOwner(newFunSymbol)
-          // TODO: write transformation of func body and tests
-          println(s"rhs.tpe=${fun.rhs.tpe.show}")
-          val transformedRhs = transformFunctionBody(fun.rhs)
-          // val nRhs           = Block(Nil, transformedRhs)(using ctx1)
+          val transformedRhs = transformFunсBody(fun.rhs)
           val newMethod      =
             DefDef(
               newFunSymbol,
               // create new paramss
-              // TODO: transform all paramss
               newParamss =>
                 TransformUtil
                   .substParams(
                     transformedRhs,
-                    fun.paramss.head.asInstanceOf[List[ValDef]],
-                    newParamss.head
+                    filterParams(fun.paramss),
+                    newParamss.flatten
                   )
                   .changeOwner(fun.symbol, newFunSymbol)
             )
           shiftedSymbols.addAsyncShift(fun.symbol, newMethod)
           newMethods = newMethod :: newMethods
-        case _ => super.transformTemplate(tree)
+        case _ => ()
 
     val retval = if (newMethods.isEmpty) {
-      tree
+      super.transformTemplate(tree)
     } else {
-      // tree
       println("cpsAsyncShift::transformTemplate: added new methods: " + newMethods.map(_.name).mkString(","))
       cpy.Template(tree)(body = tree.body ++ newMethods)
     }
@@ -95,7 +94,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   }
 
 
-  //Hight-level description of generation of async-shofted version of dunction
+  // Hight-level description of generation of async-shofted version of dunction
   //  val typeParams = if (haveTypeParams) paramss.head else Nil
   //  val normalArgs = if (haveTypeParams) args.tail else args
   //  Apply(
@@ -129,19 +128,65 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
 
   //  DefDef( ....   rhs = cpsAsyncShift ....  )
   //
+      
+  /**
+   * transform rhs of the annotated function
+   * @param tree
+   * @param Context
+   * @return
+   */
+  def transformFunсBody(tree: Tree)(using Context): Tree =
+    // val finalResType = tree.tpe.finalResultType
+    // if isFunc(finalResType) then transformInnerFunction(tree)
+    // else
+    tree
+      .select(defn.String_+)
+      .appliedTo(Literal(Constant("transformed")))
 
-  def transformFunctionBody(tree: tpd.Tree)(using Context): tpd.Tree =
-    println("transformFunctionBody: tree.symbol=${tree.symbol}, tree=${tree.show}")
+  /**
+   * transform a function which is returned from the high-order annotated
+   * function
+   */
+  def transformInnerFunction(tree: Tree)(using Context): Tree =
+    tree match
+      // TODO: create a check for inline function
+      case Block((innerFunc: DefDef) :: Nil, expr) => // unpack inner function
+        Block(List(transformInnerFunction(innerFunc)), expr)
+      case t: DefDef => // create a transformed copy of original inner function
+        val rhs            = t.rhs
+        val transformedRHS = transformInnerFunction(rhs)
+        cpy.DefDef(t)(t.name, t.paramss, t.tpt, transformedRHS)
+      case Block(stats, expr: Apply) => // transform inner function
+        val newExpr = transformFunсBody(expr)
+        Block(stats, newExpr)
 
-    //Symbol = Definition
-    //   ValDef,  DefDef, TypeDef, ClassDef, PackageDef...
+  def isHighOrder(tree: DefDef)(using Context): Boolean =
+    // check ValDef input params
+    val valDefs: List[ValDef] = filterParams(tree.paramss)
+    val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
+    if !funcParams.isEmpty then return true
+    // check the return type
+    // TODO: write implementation for this special case
+    if isFunc(tree.rhs.tpe.finalResultType) then
+      throw CpsTransformException(
+        "Unsupported type of function. The return type must not be a function",
+        tree.srcPos
+      )
+    else false
 
-    val transformed =
-      tree
-        .select(defn.String_+)
-        .appliedTo(tpd.Literal(Constant("transformed")))
-    transformed
+  def filterParams(params: List[ParamClause]): List[ValDef] =
+    val ps = params.flatten[ValDef | TypeDef]
+    ps.collect { case v: ValDef => v }
 
+  def isFunc(t: Type)(using Context): Boolean =
+    t match
+      case _: AppliedType
+          if (defn.isFunctionType(t) ||
+            defn.isContextFunctionType(t)) =>
+        true
+      case _: MethodType => true
+      case _: PolyType => true
+      case _ => false
 
 }
 
