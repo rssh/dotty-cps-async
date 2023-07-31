@@ -139,8 +139,7 @@ object ApplyTransform {
 
 
   def parseMethodCall(appTerm: Apply, owner: Symbol, nesting: Int, obj: Tree, sel: Select, optTypeApply:Option[TypeApply], argss: List[ApplyArgList])(using Context, CpsTopLevelContext): CpsTree = {
-
-
+    
     val cpsObjOrChain = RootTransform(obj,owner, nesting+1)
 
     Log.trace(s"parseMethodCall: cpsObjOrChain=${cpsObjOrChain.show}, sel.name=${sel.name}  argss=${argss.map(_.show)}, optTypeApply=${optTypeApply.map(_.show)}", nesting)
@@ -240,8 +239,8 @@ object ApplyTransform {
     val callMode = FunCallMode(cpsApplicant.asyncKind, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
     parseApplicationCpsFun(appTerm, owner, nesting, cpsApplicant, argss, callMode)
   }
-  
-  
+
+
   def parseApplicationCpsFun(appTerm: Apply,
                              owner: Symbol,
                              nesting: Int,
