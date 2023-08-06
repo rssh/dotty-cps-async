@@ -117,7 +117,7 @@ object DotcInvocations {
       //"-Ydebug-error",
       //"--unique-id",
       //"-Xcheck-macros",
-      //"-Ydebug",
+      "-Ydebug",
       //"-Yprint-syms",
       //List("-Yprint-debug") ++
       //List("-Yshow-tree-ids") ++

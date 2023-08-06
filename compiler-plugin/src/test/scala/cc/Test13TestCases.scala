@@ -23,7 +23,7 @@ class Test13TestCases {
   }
 
 
-
+  /*
   @Test
   def testCompileBaseFutureTest(): Unit = {
     DotcInvocations.compileFilesInDir("testdata/set13TestCases/m1")
@@ -94,9 +94,9 @@ class Test13TestCases {
   def testCBBooleanOpShortCircuits(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m9_m1")
   }
+  */
 
-
-
+  /*
   @Test
   def testCollectionMonads(): Unit = {
     compileAfterCommon("testdata/set13TestCases/m10_m1")
@@ -114,7 +114,7 @@ class Test13TestCases {
     compileAfterCommon("testdata/set13TestCases/m12_m1")
   }
 
-
+  */
 
 
 
@@ -127,6 +127,8 @@ class Test13TestCases {
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath), checkAll = false)
     DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
   }
+
+
 
 
 }

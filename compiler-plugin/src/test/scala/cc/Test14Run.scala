@@ -48,6 +48,7 @@ class Test14Run {
   }
 
 
+
   @Test
   def testShiftIterableOps(): Unit = {
     val dirname = "testdata/set14runtests/m1"
@@ -88,7 +89,6 @@ class Test14Run {
   }
 
 
-
   @Test
   def tesCBReturning2(): Unit = {
     val dirname = "testdata/set14runtests/m5_2"
@@ -115,12 +115,23 @@ class Test14Run {
   }
 
 
+
   @Test
   def testFtFoldScan(): Unit = {
     val dirname = "testdata/set14runtests/m8"
     val testClassName = "cps.TestFbFoldScan"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
+
+
+  @Test
+  def testCBS1CustomShift(): Unit = {
+    val dirname = "testdata/set14runtests/m9"
+    val testClassName = "cps.TestCBS1CustomShift"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
+  
+
 
 }
 

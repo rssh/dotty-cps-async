@@ -13,9 +13,12 @@ import core.SymDenotations.*
 import util.Spans.Span
 import core.Types.*
 import core.Phases.*
-import cps.plugin.*
+import cps.plugin.{AsyncKind, *}
 import cps.plugin.forest.application.*
 import QuoteLikeAPI.*
+import cps.plugin.AsyncKind.Async
+import cps.plugin.forest.application.ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM
+import cps.plugin.forest.application.ShiftedArgumentsTypeParamsShape.SAME_TYPEPARAMS
 import cps.{CpsMonadContext, CpsMonadConversion}
 import inlines.Inlines
 import transform.Inlining
@@ -25,22 +28,39 @@ import scala.util.control.NonFatal
 
 object ApplyTransform {
 
-  case class MbShiftedFun(
-                           tree: Tree,
-                           callShouldBeInlined: Boolean,
-                           /**
+  sealed trait MbShiftedFun {
+    def show(using Context): String
+  }
+
+  case class NonShiftedFun(tree: Tree) extends MbShiftedFun {
+    def show(using Context): String = s"NonShiftedFun(${tree.show})"
+  }
+
+  case class ShiftedFun(
+                         originTree: Tree,
+                         obj: Tree,
+                         method: TermName,
+                         targs: List[Tree],
+                         additionalArgs: Option[List[Tree]],
+                         canBeOverloaded: Boolean,
+                         callShouldBeInlined: Boolean,
+                         /**
                             * Shifted arguments shape, need be applied after tree.
                             */
-                           shape: ShiftedArgumentsShape
-                         ) {
-    def show(using Context): String = s"MbShiftedFun(${tree.show},$callShouldBeInlined, $shape)"
+                         remainingShapeChange: ShiftedArgumentsShape
+                         ) extends MbShiftedFun {
+
+    def show(using Context): String = s"ShiftedFun(${obj.show}.${method.show}[${targs.map(_.tpe.show)}],$canBeOverloaded,$callShouldBeInlined, $remainingShapeChange)"
+
+
   }
+
 
   case class FunCallMode(
                           funKind: AsyncKind,
-                          preliminaryResultKind: AsyncKind,
+                          //preliminaryResultKind: AsyncKind,
                           argCallMode: ApplyArgCallMode,
-                          asyncLambdaApplication: Boolean,
+                          asyncLambdaApplication: Option[AsyncKind],
                           addMonadToFirstArgList: Boolean,
                           fromCallChain: Boolean
                           )
@@ -139,7 +159,7 @@ object ApplyTransform {
 
 
   def parseMethodCall(appTerm: Apply, owner: Symbol, nesting: Int, obj: Tree, sel: Select, optTypeApply:Option[TypeApply], argss: List[ApplyArgList])(using Context, CpsTopLevelContext): CpsTree = {
-    
+
     val cpsObjOrChain = RootTransform(obj,owner, nesting+1)
 
     Log.trace(s"parseMethodCall: cpsObjOrChain=${cpsObjOrChain.show}, sel.name=${sel.name}  argss=${argss.map(_.show)}, optTypeApply=${optTypeApply.map(_.show)}", nesting)
@@ -153,7 +173,7 @@ object ApplyTransform {
         val syncFun = optTypeApply match
           case Some(ta) => cpsObj.select(sel).typeApply(ta)
           case None => cpsObj.select(sel)
-        val callMode = FunCallMode(AsyncKind.Sync, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
+        val callMode = FunCallMode(AsyncKind.Sync, ApplyArgCallMode.SYNC, None, false, fromCallChain)
         parseSyncFunApplication(appTerm, owner, nesting, syncFun.unpure.get, argss, callMode)
       case AsyncKind.Async(internalKind) =>
         val valDefSym = newSymbol(owner, "xApplySelect".toTermName, Flags.EmptyFlags,
@@ -164,7 +184,7 @@ object ApplyTransform {
         val syncFun = optTypeApply match
           case Some(ta) => TypeApply(synFun0,ta.args)
           case None => synFun0
-        val callMode = FunCallMode(cpsObj.asyncKind, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
+        val callMode = FunCallMode(cpsObj.asyncKind, ApplyArgCallMode.SYNC, None, false, fromCallChain)
         val appCpsTree = parseSyncFunApplication(appTerm, owner, nesting, syncFun, argss, callMode)
         val retval = appCpsTree match
           case CallChainSubstCpsTree(origin, owner, call) =>
@@ -198,7 +218,7 @@ object ApplyTransform {
                 case Some(ta) => cpsObj.select(sel).typeApply(ta).unpure.get
                 case None => cpsObj.select((sel)).unpure.get
             }
-            val callMode = FunCallMode(AsyncKind.Sync, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
+            val callMode = FunCallMode(AsyncKind.Sync, ApplyArgCallMode.SYNC, None, false, fromCallChain)
             parseSyncFunApplication(appTerm, owner, nesting, syncFun, argss, callMode)
           case None =>
             if (sel.name == nme.apply) {
@@ -216,7 +236,7 @@ object ApplyTransform {
                   Log.trace(s"ApplyTransform.parseApplication, nLambda=${nLambda.show}", nesting)
                   Log.trace(s"ApplyTransform.parseApplication, nLambda.tree=${nLambda}", nesting)
                   val nFun = Select(nLambda, nme.apply).withSpan(appTerm.span)
-                  val callMode = FunCallMode(AsyncKind.Sync, bodyKind, ApplyArgCallMode.SYNC, true, false, fromCallChain)
+                  val callMode = FunCallMode(AsyncKind.Sync, ApplyArgCallMode.SYNC, Some(bodyKind), false, fromCallChain)
                   parseSyncFunApplication(appTerm, owner, nesting, nFun, argss, callMode)
                 case AsyncKind.AsyncLambda(bodyKind2) =>
                   throw CpsTransformException("Shape (async labda which returns async lambda) is notsupported yet", appTerm.srcPos)
@@ -236,7 +256,7 @@ object ApplyTransform {
         (call , true)
       case _ =>
         (cpsApplicantNoChain,false)
-    val callMode = FunCallMode(cpsApplicant.asyncKind, AsyncKind.Sync, ApplyArgCallMode.SYNC, false, false, fromCallChain)
+    val callMode = FunCallMode(cpsApplicant.asyncKind, ApplyArgCallMode.SYNC, None, false, fromCallChain)
     parseApplicationCpsFun(appTerm, owner, nesting, cpsApplicant, argss, callMode)
   }
 
@@ -274,7 +294,17 @@ object ApplyTransform {
         throw CpsTransformException("Impossible situatuon: call of AsyncLambda without apply method", appTerm.srcPos)
   }
 
-
+  /**
+   *
+   *
+   * @param origin
+   * @param owner
+   * @param nesting
+   * @param fun
+   * @param argss list of arguments, starting from the first non-type argument lists.
+   * @param callMode
+   * @return
+   */
   def parseSyncFunApplication(origin: Apply, owner:Symbol, nesting: Int, fun: Tree, argss:List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
       val tctx = summon[CpsTopLevelContext]
       val runShiftAsyncLambda = argss.exists(_.containsNotUnshiftableAsyncLambda)
@@ -282,18 +312,20 @@ object ApplyTransform {
       val retval = if (runShiftAsyncLambda) {
         tctx.optRuntimeAwait match
           case Some(runtimeAwait) =>
-            genApplication(origin,owner,nesting,MbShiftedFun(fun,false, ShiftedArgumentsShape.same),argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait)), callMode)
+            genApplication(origin,owner,nesting,NonShiftedFun(fun), argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait)), callMode)
           case None =>
             if (fun.denot != NoDenotation) {
                   // check -- can we add shifted version of fun
                   val newFun = try{
-                    retrieveShiftedFun(origin,fun,owner)
+                    retrieveShiftedFun(origin,fun,owner, argss)
                   } catch {
                     case NonFatal(ex) =>
                       println(s"catching shiftedFun, fun=${fun.show}  argss=${argss.map(x => x.show+":"+x.containsAsyncLambda).mkString(",")}")
                       println(s"ex.medsage=${ex.getMessage}")
                       throw ex;
                   }
+                  /*
+                  TODO: move to adoot
                   val newFunType = newFun.tree.tpe.widen
                   // TOOD: anylize newFunType and deduce preliminaryReturnType from it.
                   println(s"shiftedFunType: ${newFunType.show}")
@@ -310,16 +342,13 @@ object ApplyTransform {
                        AsyncKind.Sync
                   }
 
-                  println(s"rt.widen=${rt.widen.show}, originRt=${originRt.show}, =:= = ${rt.widen =:= originRt}")
+                   */
 
-                  val newCallMode = FunCallMode(AsyncKind.Sync, preliminaryAsyncKind, ApplyArgCallMode.ASYNC_SHIFT, false,
-                     newFun.shape.p == ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM,
+                  val newCallMode = FunCallMode(AsyncKind.Sync,  ApplyArgCallMode.ASYNC_SHIFT, None,
+                     newFun.remainingShapeChange.p == ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM,
                      callMode.fromCallChain)
 
                   val r = genApplication(origin, owner, nesting, newFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), newCallMode)
-                  println(s"application of shifted function: ${r.show},  newFun=${newFun.tree.show}")
-                  println(s"origin=${origin.show}")
-                  println(s"argss=${argss.map(_.show).mkString(",")}")
                   r
             } else {
               fun match
@@ -330,7 +359,7 @@ object ApplyTransform {
                   throw CpsTransformException(s"Can't transform function ${fun}",fun.srcPos)
             }
       } else if (containsAsync) {
-        genApplication(origin, owner, nesting, MbShiftedFun(fun,false,ShiftedArgumentsShape.same), argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None), callMode)
+        genApplication(origin, owner, nesting, NonShiftedFun(fun), argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None), callMode)
       } else {
         parseSyncFunPureApplication(origin, owner, nesting, fun, argss, callMode)
       }
@@ -371,7 +400,7 @@ object ApplyTransform {
 
   def adoptCallMode(origin: Tree, plainTree: Tree, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
     if (argss.exists(_.containsDirectContext) ) {
-      val adoptedTree = if (!callMode.asyncLambdaApplication) {
+      val adoptedTree = if (callMode.asyncLambdaApplication.isEmpty) {
         Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
       } else plainTree
       //if (isImpure) {
@@ -379,18 +408,53 @@ object ApplyTransform {
       //  TODO:  separate this case.
       //  throw CpsTransformException(s"Impure call in combination of callign context functon is not supported yet", origin.srcPos)
       //}
-      val internalKind = callMode.preliminaryResultKind match
+      /**
+      callMode.preliminaryResultKind match
         case AsyncKind.Sync => AsyncKind.Sync
         case AsyncKind.Async(internalKind) => internalKind
         case AsyncKind.AsyncLambda(bodyKind) => AsyncKind.Sync
       CpsTree.impure(origin, owner, adoptedTree, internalKind)
+      */
+      CpsTree.impure(origin, owner, adoptedTree, AsyncKind.Sync)
     } else {
       adoptResultKind(origin, plainTree, owner, callMode)
     }
   }
 
   def adoptResultKind(origin:Tree, newApply: Tree, owner: Symbol, callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
-    callMode.preliminaryResultKind match
+
+    if (callMode.argCallMode == ApplyArgCallMode.ASYNC_SHIFT || callMode.fromCallChain) {
+        if (newApply.tpe.baseType(Symbols.requiredClass("cps.runtime.CallChainAsyncShiftSubst"))!=NoType) {
+          CallChainSubstCpsTree(origin, owner, CpsTree.pure(origin, owner, newApply))
+        } else {
+          val originType = origin.tpe.widen
+          val newType = newApply.tpe.widen
+          if (originType =:= newType) {
+            CpsTree.pure(origin,owner,newApply)
+          } else if (newType <:< summon[CpsTopLevelContext].monadType.appliedTo(WildcardType)) {
+            CpsTree.impure(origin, owner, newApply, AsyncKind.Sync)
+          } else if (callMode.asyncLambdaApplication.isDefined) {
+            CpsTree.impure(origin, owner, newApply, callMode.asyncLambdaApplication.get)
+          } else {
+            // TODO: warn about possible unsafe result type
+            CpsTree.pure(origin,owner,newApply)
+          }
+        }
+    } else if (callMode.asyncLambdaApplication.isDefined) {
+       callMode.asyncLambdaApplication.get match
+         case AsyncKind.Sync =>
+           CpsTree.pure(origin,owner,newApply)
+         case  AsyncKind.Async(internalKind) =>
+           CpsTree.impure(origin,owner,newApply,internalKind)
+         case AsyncKind.AsyncLambda(bodyKind) =>
+           CpsTree.opaqueAsyncLambda(origin,owner,newApply,bodyKind)
+    } else {
+       CpsTree.pure(origin,owner,newApply)
+    }
+
+
+    /*
+    preliminaryResultKind match
       case AsyncKind.Sync =>
         if ((callMode.argCallMode == ApplyArgCallMode.ASYNC_SHIFT || callMode.fromCallChain)
           && newApply.tpe.baseType(Symbols.requiredClass("cps.runtime.CallChainAsyncShiftSubst"))!=NoType) {
@@ -410,10 +474,11 @@ object ApplyTransform {
           PureCpsTree(origin, owner, newApply)
         }
       case AsyncKind.Async(internalKind) =>
-
         CpsTree.impure(origin, owner, newApply, internalKind)
       case AsyncKind.AsyncLambda(bodyKind) =>
         CpsTree.opaqueAsyncLambda(origin, owner, newApply, bodyKind)
+
+     */
   }
 
   def genApplication(origin:Apply, owner: Symbol, nesting: Int, fun: MbShiftedFun, argss: List[ApplyArgList], f: ApplyArg => Tree, callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
@@ -428,6 +493,7 @@ object ApplyTransform {
           TypeApply(fun, targs).withSpan(origin.span)
         case ApplyTermArgList(origin, args) =>
           // workarrond for https://github.com/lampepfl/dotty/issues/18113
+          //  (obsotete,  now we do eta-expansion, but need retest before removing)
           val mappedArgs = args.map(f)
           val nArgs = if (argListIndex == 0 && callMode.addMonadToFirstArgList) {
                           summon[CpsTopLevelContext].cpsMonadRef :: mappedArgs
@@ -451,6 +517,62 @@ object ApplyTransform {
       argss match
         case Nil => fun
         case head::tail => genPureReply(genOneLastPureApply(fun, head, index),tail, index+1)
+
+    def genOneLastMbShiftedApply(fun: MbShiftedFun, argList: ApplyArgList, argListIndex:Int): Tree = {
+
+      def assembleNonOverloadedShifted(fun: ShiftedFun): Tree = {
+        val pre0 = Select(fun.obj,fun.method.toTermName)
+        val pre1 = if (fun.targs.isEmpty) pre0 else TypeApply(pre0, fun.targs)
+        if (pre1.tpe.isError) {
+          throw CpsTransformException(s"assembleNonOverloadedShifted is error, fun=${fun.show}, generated fun = ${pre1.show}", fun.originTree.srcPos)
+        }
+        val pre2 = fun.additionalArgs match
+          case None => pre1
+          case Some(args) => Apply(pre1, args)
+        val retval = pre2.withSpan(fun.originTree.span)
+        if (retval.tpe.isError) {
+          throw CpsTransformException(s"assembleNonOverloaded is error, fun=${fun.show}, generated fun = ${retval.show}", fun.originTree.srcPos)
+        }
+        retval
+      }
+
+      fun match
+        case NonShiftedFun(tree) =>
+          genOneLastPureApply(tree, argList, argListIndex)
+        case sf@ShiftedFun(origin, obj, method, targs, additionalArgs, canBeOverloaded, callShouldBeInlined, shape) =>
+          val tree = argList match
+            case ApplyTypeArgList(origin, targs1) =>
+              TypeApply(assembleNonOverloadedShifted(sf), targs1).withSpan(origin.span)
+            case ApplyTermArgList(origin, args0) =>
+              val args =
+                if (argListIndex == 0 && callMode.addMonadToFirstArgList) then
+                  summon[CpsTopLevelContext].cpsMonadRef :: args0.map(f)
+                else
+                  args0.map(f)
+              if (canBeOverloaded) then
+                if (additionalArgs.isEmpty) then
+                  applyOverloaded(obj, method, args, targs.map(_.tpe), Types.WildcardType).withSpan(origin.span)
+                else
+                  val f1 = applyOverloaded(obj, method, additionalArgs.get, targs.map(_.tpe), Types.WildcardType)
+                  Apply(f1, args).withSpan(origin.span)
+              else
+                try {
+                  Apply(assembleNonOverloadedShifted(sf), args).withSpan(origin.span)
+                } catch {
+                  case ex: Throwable =>
+                    println(s"assembleNonOverloadedShifted: ${assembleNonOverloadedShifted(sf).show}")
+                    println(s"args: ${args.map(_.show)}")
+                    throw ex
+                }
+                Apply(assembleNonOverloadedShifted(sf), args).withSpan(origin.span)
+          tree
+    }
+
+    def genMbShiftedReply(fun: MbShiftedFun, argss: List[ApplyArgList], index: Int): Tree =
+      argss match
+        case Nil => throw CpsTransformException("argument list should not be empty", origin.srcPos)
+        case head :: tail => genPureReply(genOneLastMbShiftedApply(fun, head, index), tail, index + 1)
+
 
     def genOneApplyPrefix(origin: Tree, args:List[ApplyArg], tailCpsTree:CpsTree): CpsTree =
         args.foldRight(tailCpsTree) { (e,s) =>
@@ -500,16 +622,19 @@ object ApplyTransform {
           case _ => s
       }
 
-    val pureReply = genPureReply(fun.tree,argss, 0)
+    val pureReply = genMbShiftedReply(fun, argss, 0)
     Log.trace(s"pureReply= ${pureReply.show}", nesting)
-    val pureReplyMbInlined = if (fun.callShouldBeInlined && summon[CpsTopLevelContext].isAfterInliner) {
-        val inlined = atPhase(inliningPhase){
-           Inlines.inlineCall(pureReply)
+    val pureReplyMbInlined = fun match
+      case shiftedFun: ShiftedFun =>
+        if (shiftedFun.callShouldBeInlined && summon[CpsTopLevelContext].isAfterInliner) {
+          val inlined = atPhase(inliningPhase){
+             Inlines.inlineCall(pureReply)
+          }
+          inlined
+        } else {
+          pureReply
         }
-        inlined
-    } else {
-        pureReply
-    }
+      case _ => pureReply
     val fullOrigin = if (argss.isEmpty) origin else argss.last.origin
     val lastCpsTree = adoptCallMode(fullOrigin, pureReply, owner, argss, callMode)
     val nApplyCpsTree = genPrefixes(argss, lastCpsTree)
@@ -542,7 +667,7 @@ object ApplyTransform {
    * @param CpsTopLevelContext
    * @return
    */
-  def retrieveShiftedFun(origin: Tree,  fun:Tree, owner: Symbol)(using Context, CpsTopLevelContext): MbShiftedFun = {
+  def retrieveShiftedFun(origin: Tree,  fun:Tree, owner: Symbol, argLists: List[ApplyArgList])(using Context, CpsTopLevelContext): ShiftedFun = {
 
     val withFilterType = Symbols.requiredClassRef("scala.collection.WithFilter").appliedTo(List(WildcardType, WildcardType))
 
@@ -565,24 +690,34 @@ object ApplyTransform {
               case Right(itShiftedObj) =>
                 //val withFilterSubstDenot = itShiftedObj.tpe.member("_cpsWithFilterSubst".toTermName)
                 val withFilterSubstSelect = Select(maybeInlineObject(itShiftedObj), "_cpsWithFilterSubst".toTermName)
-                val newQual = Apply(withFilterSubstSelect, List(itObj, predicate))
+                val newQual = Apply(withFilterSubstSelect, List(itObj, predicate)).withSpan(itObj.span)
                 //val newDenont = itShiftedObj.tpe.member(methodName)
                 println(s"!!!newQual=${newQual.show}")
                 val newSelect = Select(newQual, methodName)
+                val nTypeParams = if (methodTypeParams.isEmpty) List.empty else TypeTree(summon[CpsTopLevelContext].monadType) :: methodTypeParams
                 val newFun0 = if (methodTypeParams.isEmpty) {
                   newSelect
                 } else {
-                  TypeApply(newSelect, TypeTree(summon[CpsTopLevelContext].monadType) :: methodTypeParams)
+                  TypeApply(newSelect, nTypeParams)
                 }
                 val newFun = Apply(newFun0,List(summon[CpsTopLevelContext].cpsMonadRef)).withSpan(fun.span)
                 println(s"!!!newFun=${newFun.show}")
-                MbShiftedFun(newFun, false, ShiftedArgumentsShape.same )
+                //MbShiftedFun(newFun, false, ShiftedArgumentsShape.same )
+                ShiftedFun(fun,
+                  newQual,
+                  methodName,
+                  nTypeParams,
+                  Some(List(summon[CpsTopLevelContext].cpsMonadRef)),
+                  false,
+                  false,
+                  ShiftedArgumentsShape.same
+                )
               case Left(error) =>
                 throw CpsTransformException(s"Can't resolve shifted object for withFilter: ${error}", fun.srcPos)
           case _ =>
             //TODO: expand set of possible withFilter consturctors
             throw CpsTransformException("Can't retrieve underlaying collection from WithFilter instance", fun.srcPos)
-      case _ => retrieveShiftedFunNoSpecial(origin, fun, owner)
+      case _ => retrieveShiftedFunNoSpecial(origin, fun, owner, argLists)
   }
 
 
@@ -594,9 +729,61 @@ object ApplyTransform {
    * @param CpsTopLevelContext
    * @return  new function (with type arguments and additional parameter list if needed)
    */
-  def retrieveShiftedFunNoSpecial(origin: Tree,  fun:Tree, owner: Symbol)(using Context, CpsTopLevelContext): MbShiftedFun = {
+  def retrieveShiftedFunNoSpecial(origin: Tree,  fun:Tree, owner: Symbol, argLists: List[ApplyArgList])(using Context, CpsTopLevelContext): ShiftedFun = {
 
     val tctx = summon[CpsTopLevelContext]
+
+
+    def approxCompatibleTypes(inOrigin: Type, inCandidate: Type): Boolean = {
+      val origin = inOrigin.dealias
+      val candidate = inCandidate.dealias
+      val retval = if (defn.isFunctionType(origin) || defn.isContextFunctionType(origin)) {
+          defn.isFunctionType(candidate) //  mb in futuer check arguments for real approximation
+        } else if (defn.isFunctionType(candidate)) {
+          true
+        } else {
+          origin match
+            case AppliedType(orTycon, orTargs) =>
+              candidate match
+                case AppliedType(cnTycon, cnTargs) =>
+                  approxCompatibleTypes(orTycon, cnTycon) &&
+                    (orTargs zip cnTargs).forall { (pair) =>
+                      approxCompatibleTypes(pair._1, pair._2)
+                    }
+            case _: TermRef =>
+              origin =:= candidate
+            case typeRef: TypeRef =>
+              if (typeRef.symbol.isTypeParam) then
+                candidate.typeSymbol.isTypeParam
+              else
+                origin =:= candidate
+            case _ =>
+              true
+      }
+      println(s"approxCompatibleTypes: origin=${origin.show} ($origin) candidate=${candidate.show} ($candidate) retval=${retval}")
+      retval
+    }
+
+    def approxCompatibleParamList(origin: List[Symbol], candidate: List[Symbol]): Either[String,Unit] =
+      if (origin.length == candidate.length) {
+        var invalidParamMessage: Option[String] = None
+        val retval = (origin zip candidate).exists{ (pair) =>
+          if (!approxCompatibleTypes(pair._1.info, pair._2.info)) {
+            invalidParamMessage = Some(s"parameter ${pair._1.name} have incompatible types ${pair._1.info.show} and ${pair._2.info.show}")
+            true
+          } else {
+            false
+          }
+        }
+        invalidParamMessage match
+          case Some(msg) =>
+            Left(msg)
+          case None =>
+            Right(())
+      } else {
+        Left("parameters count mismatch")
+      }
+
 
     def matchInplaceArgTypes(originSym:Symbol, candidateSym: Symbol): Either[String,ShiftedArgumentsShape] = {
 
@@ -629,30 +816,36 @@ object ApplyTransform {
           val originPlainArgs = originPlainParamss.head
           val candidatePlainArgs = candidatePlainParamss.head
           if (candidatePlainArgs.length == originPlainArgs.length+1) then
-            Right(ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM)
+            if (candidatePlainArgs.head.info.baseType(Symbols.requiredClass("cps.CpsMonad") ) != NoType) then
+              approxCompatibleParamList(originPlainArgs, candidatePlainArgs.tail).map(_ => ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM)
+            else
+              Left("Type of first argument of candidate is not CpsMonad and lenght of params is different")
           else if (candidatePlainArgs.length == originPlainArgs.length) then
-            Right(ShiftedArgumentsPlainParamsShape.SAME_PARAMS)
+            approxCompatibleParamList(originPlainArgs, candidatePlainArgs).map(_ => ShiftedArgumentsPlainParamsShape.SAME_PARAMS)
           else
             Left(s"${candidateSym.name} have wrong number of arguments")
         else if (originPlainParamss.length+1 == candidatePlainParamss.length) then
-          Right(ShiftedArgumentsPlainParamsShape.EXTRA_PARAM_LIST)
+          val nextCandidate = candidatePlainParamss.tail.head
+          approxCompatibleParamList(originPlainParamss.head, nextCandidate).map(_ => ShiftedArgumentsPlainParamsShape.EXTRA_PARAM_LIST)
         else
           Left(s"${candidateSym.name} have wrong number of arguments (shoule be ${originPlainParamss.length} or ${originPlainParamss.length+1})")
 
       val (originTp, originPlain) = originSym.paramSymss.partition(_.exists(_.isType))
       val (candidateTp, candidatePlain) = candidateSym.paramSymss.partition(_.exists(_.isType))
 
+      println(s"matchInplaceArgTypes:  originSym=${showMethod(originSym.denot)}(${originSym.hashCode()}) originTp=${originTp}, originPlain=${showParamss(originPlain)}, candidateTp=$candidateTp, candidatePlain=${showParamss(candidatePlain)}")
       val retval = for {
         tpShape <- checkTypeArgs(originTp, candidateTp)
         plainShape <- checkPlainArgss(originPlain, candidatePlain)
       } yield ShiftedArgumentsShape(tpShape, plainShape)
 
+      println(s"matchInplaceArgTypes: retval=$retval")
       retval
     }
 
 
 
-    def tryFindInplaceAsyncShiftedMethods(objSym: Symbol, name: Name, suffixes: Set[String]): Either[String,Map[Symbol,ShiftedArgumentsShape]]  = {
+    def tryFindInplaceAsyncShiftedMethods(funSym: Symbol, objSym: Symbol, name: Name, suffixes: Set[String]): Either[String,Map[Symbol,ShiftedArgumentsShape]]  = {
       val shapes = (for{ m <- objSym.lookupPrefix.allMembers
                 suffix <- suffixes if m.symbol.isMethod && m.symbol.name.toString == name.toString + suffix
                 matchShape = matchInplaceArgTypes(fun.symbol, m.symbol)
@@ -670,7 +863,7 @@ object ApplyTransform {
          if (isType) {
             params.map(_.name).mkString("[",",","]")
           } else {
-            params.map(_.name).mkString("(",",",")")
+            params.map(x => s"${x.name}:${x.info.show}").mkString("(",",",")")
          }
       }.mkString("")
     }
@@ -680,42 +873,11 @@ object ApplyTransform {
     }
 
 
-    def checkAsyncShiftedMethod(originMethod: Symbol, candidateMethod: SymDenotation): Either[String,ShiftedArgumentsShiftedObjectShape] = {
+    def checkAsyncShiftedMethod(originMethod: Symbol, candidateMethod: SymDenotation): Either[String,ShiftedArgumentsShape] = {
 
-      def approxCompatibleTypes(origin: Type, candidate:Type): Boolean = {
-        if (defn.isFunctionType(origin) || defn.isContextFunctionType(origin)) {
-           defn.isFunctionType(candidate)  //  mb in futuer check arguments for real approximation
-        } else if (defn.isFunctionType(candidate)) {
-           true // by name parameters are shifted as functions.
-        } else {
-           origin match
-             case AppliedType(orTycon,orTargs) =>
-               candidate match
-                 case AppliedType(cnTycon, cnTargs) =>
-                   approxCompatibleTypes(orTycon,cnTycon) &&
-                    (orTargs zip cnTargs).forall{ (pair) =>
-                        approxCompatibleTypes(pair._1, pair._2)
-                    }
-             case _: TermRef =>
-               origin =:= candidate
-             case _ =>
-               true
-        }
-      }
 
-      def checkSameParameters(originNonTypeParams: List[Symbol], candidateNonTypeParamss: List[Symbol]): Either[String, Boolean] = {
-        if (originNonTypeParams.length == candidateNonTypeParamss.length) then
-          val zipped = originNonTypeParams.zip(candidateNonTypeParamss)
-          var retval: Either[String,Boolean] = Right(true)
-          zipped.exists { pair =>
-             if (!approxCompatibleTypes(pair._1.info.widen, pair._2.info.widen)) {
-               retval = Left(s"mismatch in parameter ${pair._1}, type ${pair._1.info.widen} and ${pair._2.info.widen}")
-               true
-             } else false
-          }
-          retval
-        else
-          Left(s"Can't match parameters in  and ${candidateMethod} - different length")
+      def checkSameParameters(originNonTypeParams: List[Symbol], candidateNonTypeParams: List[Symbol]): Either[String, Boolean] = {
+        approxCompatibleParamList(originNonTypeParams, candidateNonTypeParams).map(_ => true)
       }
 
       def checkSameParameterss(originNonTypeParamss: List[List[Symbol]], originIndex:Int,  candidateNonTypeParamss: List[List[Symbol]], candidateIndex:Int): Either[String,Boolean] =  {
@@ -736,7 +898,7 @@ object ApplyTransform {
           checkSameParameterss(originMethod.paramSymss, 0, candidateMethod.paramSymss.tail.tail,2) match
             case Left(err) =>
               Left(err)
-            case Right(_) => Right(ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM_LIST)
+            case Right(_) => Right(ShiftedArgumentsShape(ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM_LIST, ShiftedArgumentsPlainParamsShape.EXTRA_PARAM_LIST))
         else
           Left(s"Can't match parameters in ${originMethod} and ${candidateMethod}")
       else if (candidateMethod.paramSymss.length == originMethod.paramSymss.length + 1)
@@ -745,42 +907,68 @@ object ApplyTransform {
             //  with extra type-arg and arglist wich pass monad
             checkSameParameterss(originMethod.paramSymss.tail, 1, candidateMethod.paramSymss.tail.tail, 2) match
               case Left(err) => Left(err)
-              case Right(_) => Right(ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM)
+              case Right(_) => Right(ShiftedArgumentsShape(ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM, ShiftedArgumentsPlainParamsShape.EXTRA_PARAM_LIST))
         else
            Left(s"Can't match parameters in ${showMethod(originMethod)} and ${showMethod(candidateMethod)}, tpParams lenght mismatch")
       else
         Left(s"Can't match parameters in ${showMethod(originMethod)} and ${showMethod(candidateMethod)}")
     }
 
-
-    @tailrec
-    def prepareAsyncShiftedMethodCall(originMethod:Symbol, obj:Tree, nObj: Tree, methods: Seq[Symbol], targs: List[Tree]): MbShiftedFun = {
-       if (methods.isEmpty)
-         throw CpsTransformException(s"Can't find async-shifted method ${originMethod.name} of ${obj.show} in ${nObj.show}", fun.srcPos)
-       else {
-         val candidateMethod = methods.head
-         checkAsyncShiftedMethod(originMethod, candidateMethod) match
-           case Left(err) =>
-             println(s"failed for method ${candidateMethod.show}: ${err}")
-             prepareAsyncShiftedMethodCall(originMethod, obj, nObj, methods.tail, targs)
-           case Right(shape) =>
-             val nSelect = nObj.select(candidateMethod)
-             val fType = summon[CpsTopLevelContext].monadType
-             val tree = shape match
-               case ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM_LIST =>
-                   Apply(
-                     TypeApply(nSelect, List(TypeTree(fType.widen))),
-                     List(obj, tctx.cpsMonadRef)
-                   ).withSpan(fun.span)
-               case ShiftedArgumentsShiftedObjectShape.EXTRA_TYPEPARAM =>
-                   Apply(
-                     TypeApply(nSelect, TypeTree(fType)::targs),
-                     List(obj, tctx.cpsMonadRef)
-                   ).withSpan(fun.span)
-             // same, because we applied first type-params and additional argument list
-             MbShiftedFun(tree, false, ShiftedArgumentsShape.same)
-       }
+    def aggregate(shiftedFuns: List[ShiftedFun]): ShiftedFun = {
+      shiftedFuns match
+        case Nil => throw CpsTransformException(s"Can't find shifted function for ${fun.show}", fun.srcPos)
+        case head::Nil => head
+        case head::tail =>
+          tail.foldLeft(head) { (acc, el) =>
+            if (acc.remainingShapeChange != el.remainingShapeChange) then
+              throw CpsTransformException(s"Can't aggregate shifted functions with different shapes: ${acc} and ${el}",fun.srcPos)
+            else if (el.additionalArgs.isDefined) then
+              if (acc.additionalArgs.isDefined) {
+                if (acc.additionalArgs.get.length != el.additionalArgs.get.length) then
+                  throw CpsTransformException(s"Can't select overloaded function with different length of additional args : ${acc} and ${el}",fun.srcPos)
+                else if (! (acc.additionalArgs.get.zip(el.additionalArgs.get).forall{ case (l,r) => l.tpe =:= r.tpe })) then
+                  throw CpsTransformException(s"Can't select overloaded function with different type of additional args : ${acc} and ${el}", fun.srcPos)
+              }
+              acc.copy(canBeOverloaded = true)
+            else if (el.targs.length != acc.targs.length) then
+              throw CpsTransformException(s"Can't select overloaded function with possible different length of type-parameter lists : ${acc} and ${el}",fun.srcPos)
+            else if (! (el.targs.zip(acc.targs).forall{ case (l,r) => l.tpe =:= r.tpe })) then
+              throw CpsTransformException(s"Can't select overloaded function with possible different type parameters : ${acc} and ${el}", fun.srcPos)
+            else
+              acc.copy(canBeOverloaded = true)
+          }
     }
+
+
+    def prepareAsyncShiftedMethodCall(originMethod:Symbol, obj:Tree, nObj: Tree, methods: Seq[Symbol], targs: List[Tree]): ShiftedFun = {
+         val canBeOverloaded = methods.nonEmpty && methods.tail.nonEmpty
+         val candidates = methods.foldLeft(List.empty[ShiftedFun]) { (candidates, candidateMethod) =>
+           checkAsyncShiftedMethod(originMethod, candidateMethod) match
+             case Left(err) =>
+               println(s"failed for method ${candidateMethod.show}: ${err}")
+               candidates
+             case Right(shape) =>
+               val nSelect = nObj.select(candidateMethod)
+               val fType = summon[CpsTopLevelContext].monadType
+               val args0 = Some(List(obj, tctx.cpsMonadRef))
+               val nTargs = shape.tp match
+                 case ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM_LIST =>
+                   List(TypeTree(fType.widen))
+                 case ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM =>
+                   TypeTree(fType) :: targs
+                 case ShiftedArgumentsTypeParamsShape.SAME_TYPEPARAMS =>
+                   targs
+               val needsInline =  candidateMethod.denot.is(Flags.Inline)
+               val nFun = ShiftedFun(fun, nObj, candidateMethod.name.toTermName, nTargs, args0, canBeOverloaded, needsInline, ShiftedArgumentsShape.same)
+               nFun :: candidates
+         }
+         candidates match
+           case Nil =>
+             throw CpsTransformException(s"Can't find async shifted method ${originMethod.name} for ${obj.tpe.widen.show}", fun.srcPos)
+           case other =>
+             aggregate(candidates)
+    }
+
 
     /**
      * retrieve shifted method with alreat prepared type-arguments and extra argument list if needed.
@@ -789,12 +977,13 @@ object ApplyTransform {
      * @param targs
      * @return
      */
-    def retrieveShiftedMethod(obj: Tree, methodName: Name, targs:List[Tree] ): MbShiftedFun = {
+    def retrieveShiftedMethod(funSym: Symbol, obj: Tree, methodName: Name, targs:List[Tree] ): ShiftedFun = {
 
-      tryFindInplaceAsyncShiftedMethods(obj.tpe.widen.classSymbol, methodName, Set("_async","Async","$cps")) match
+      println(s"originMethod: ${showMethod(funSym.denot)}(${funSym.hashCode()})")
+
+      tryFindInplaceAsyncShiftedMethods(funSym, obj.tpe.widen.classSymbol, methodName, Set("_async","Async","$cps")) match
         case Left(inPlaceErrors) =>
           //TODO: debug output
-
           resolveAsyncShiftedObject(obj) match
             case Right(nObj) =>
               // TODO:
@@ -821,38 +1010,51 @@ object ApplyTransform {
               report.error(msg, fun.srcPos)
               throw CpsTransformException(msg, fun.srcPos)
         case Right(methodsWithShape) =>
-          methodsWithShape.headOption match
-            case Some((sym,shape)) =>
-               // TODO: we should check nArgs, because now typeAppl
-              val isInlined = sym.denot.is(Flags.Inline)
-              if (isInlined && tctx.isBeforeInliner) then
-                ctx.compilationUnit.needsInlining=true
-              val funWithoutTypeapply = Select(obj,TermRef(obj.tpe,sym)).withSpan(fun.span)
-              val tree = shape.tp match
-                case ShiftedArgumentsTypeParamsShape.SAME_TYPEPARAMS =>
-                  if (targs.isEmpty)
-                    funWithoutTypeapply
-                  else
-                    TypeApply(funWithoutTypeapply, targs).withSpan(fun.span)
-                case ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM =>
-                  val tctx = summon[CpsTopLevelContext]
-                  val retval = TypeApply(funWithoutTypeapply, TypeTree(tctx.monadType) :: targs).withSpan(fun.span)
-                  retval
-                case ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM_LIST =>
-                  TypeApply(funWithoutTypeapply, targs :+ TypeTree(tctx.monadType)).withSpan(fun.span)
-              MbShiftedFun(tree,isInlined, shape)
-            case None =>
-              throw CpsTransformException(s"Can't find async-shifted method ${methodName} for ${obj.show}", fun.srcPos)
-
+          println(s"methodsWithShape: ${methodsWithShape.map{case (m,s) => m.show+s"(${m.hashCode}) -> " + s}.mkString(",")}")
+          // Not,
+          val candidates = methodsWithShape.foldLeft(List.empty[ShiftedFun]) { (candidates, msh) =>
+            val (candidateMethod, shape) = msh
+            //val nSelect = obj.select(candidateMethod)
+            val fType = summon[CpsTopLevelContext].monadType
+            val nTargs = shape.tp match
+              case ShiftedArgumentsTypeParamsShape.SAME_TYPEPARAMS =>
+                targs
+              case ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM =>
+                TypeTree(fType) :: targs
+              case ShiftedArgumentsTypeParamsShape.EXTRA_TYPEPARAM_LIST =>
+                if (targs.isEmpty) then
+                  List(TypeTree(fType.widen))
+                else
+                  // impossible ?
+                  targs :+ TypeTree(fType.widen)
+            val args0 = shape.p match
+              case ShiftedArgumentsPlainParamsShape.SAME_PARAMS =>
+                None
+              case ShiftedArgumentsPlainParamsShape.EXTRA_PARAM_LIST =>
+                Some(List(obj, tctx.cpsMonadRef))
+              case ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM =>
+                None
+            val remainingShapeChange = shape.p match
+              case ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM =>
+                ShiftedArgumentsShape(SAME_TYPEPARAMS, EXTRA_FIRST_PARAM)
+              case _ =>
+                ShiftedArgumentsShape.same
+            val needsInlining = candidateMethod.denot.is(Flags.Inline)
+            println(s"candidateMethod=${candidateMethod}(${candidateMethod.hashCode()}) isMethod=${candidateMethod.isMethod}")
+            val canBeOverloaded = obj.tpe.member(candidateMethod.name).isOverloaded
+            val nFun = ShiftedFun(fun, obj, candidateMethod.name.toTermName, nTargs, args0, canBeOverloaded, needsInlining, remainingShapeChange)
+            nFun :: candidates
+          }
+          aggregate(candidates)
     }
 
     val shiftedFun = fun match
       case TypeApply(Select(obj,methodName),targs) =>
-        retrieveShiftedMethod(obj,methodName,targs)
+        retrieveShiftedMethod(fun.symbol, obj,methodName,targs)
       case Select(obj,methodName) =>
-        retrieveShiftedMethod(obj,methodName,Nil)
+        retrieveShiftedMethod(fun.symbol, obj,methodName,Nil)
       case _ =>
-        throw CpsTransformException(s"Can't find async-shifted method for ${fun.show}, unsupported fun shape ${fun}", fun.srcPos)
+        throw CpsTransformException(s"Can't find async-shifted method for ${fun.show}, unsupported fun tree ${fun}", fun.srcPos)
 
     shiftedFun
 
