@@ -8,6 +8,7 @@ import scala.annotation._
  *
  * see [chapter in User Guide](https://rssh.github.io/dotty-cps-async/Features.html#custom-value-discard)
  **/
+@Deprecated("use non-wrapped direct values in CpsDirect context and -Wwarn-value-discard compiler option instead")
 trait ValueDiscard[T]:
 
   /**
@@ -41,6 +42,7 @@ object ValueDiscard:
  * Useful for pure effect monads. 
  * `AwaitValueDiscard[F,T].apply(ft)` is transformed to `await(ft)` during evaluation of async macro.
  **/
+@Deprecated("use non-wrapped direct values in CpsDirect context and -Wwarn-value-discard compiler option instead")
 class AwaitValueDiscard[F[_]:CpsMonad,T] extends ValueDiscard[F[T]]:
 
   type FT = F[T]
@@ -61,11 +63,13 @@ class AwaitValueDiscard[F[_]:CpsMonad,T] extends ValueDiscard[F[T]]:
  *  then discarding values inside async block is translated
  *  to summon[ValueDiscard[T]].apply()
  **/
+@Deprecated()
 given customValueDiscard: ValueDiscard.CustomTag with {}
 
 
 /**
  * marker object for enabling warning about discarding non-primitve values without custom discard.
  **/
+@Deprecated("Use compiler flag -Wwarn-value-discard instead")
 given warnValueDiscard: ValueDiscard.WarnTag with {}
 

@@ -188,30 +188,40 @@ object CpsTransformHelper {
 
   }*/
 
+
   def findImplicitInstance(tpe: Type, span: Span)(using ctx:Context): Option[Tree] = {
     val searchResult = ctx.typer.inferImplicitArg(tpe,span)
     searchResult.tpe match
       case _ : typer.Implicits.SearchFailureType => None
       case _  => Some(searchResult)
   }
-  
+
+  def findWrapperForMonad(wrapperClassName: String, monadType: Type, span: Span)(using Context): Option[Tree] = {
+    //TODO:  Problem: shows incorrect phase.
+    val cpsMonad = requiredClassRef(wrapperClassName)
+    val tpe = AppliedType(cpsMonad, List(monadType))
+    findImplicitInstance(tpe, span)
+  }
+
+
   def findRuntimeAwait(monadType: Type, span: Span)(using ctx:Context): Option[Tree] = {
-      //TODO:  Problem: shows incorrect phase.
-      val runtimeAwait = requiredClassRef("cps.CpsRuntimeAwait")
-      val tpe = AppliedType(runtimeAwait, List(monadType))
-      findImplicitInstance(tpe, span)
+      findWrapperForMonad("cps.CpsRuntimeAwait", monadType, span)
   }
   
   def findCpsThrowSupport(monadType:Type, span: Span)(using ctx:Context): Option[Tree] = {
-      val cpsThrowSupport = requiredClassRef("cps.CpsThrowSupport")
-      val tpe = AppliedType(cpsThrowSupport, List(monadType))
-      findImplicitInstance(tpe, span)
+      findWrapperForMonad("cps.CpsThrowSupport", monadType, span)
   }
 
   def findCpsTrySupport(monadType: Type, span: Span)(using ctx:Context): Option[Tree] = {
-      val cpsTrySupport = requiredClassRef("cps.CpsTrySupport")
-      val tpe = AppliedType(cpsTrySupport, List(monadType))
-      findImplicitInstance(tpe, span)
+      findWrapperForMonad("cps.CpsTrySupport", monadType, span)
+  }
+
+  def findAutomaticColoringTag(monadType: Type, span: Span)(using ctx: Context): Option[Tree] = {
+    findWrapperForMonad("cps.automaticColoring.AutomaticColoringTag", monadType, span)
+  }
+
+  def findCpsMonadMemoization(monadType: Type, span: Span)(using ctx: Context): Option[Tree] = {
+    findWrapperForMonad("cps.CpsMonadMemoization", monadType, span)
   }
 
 

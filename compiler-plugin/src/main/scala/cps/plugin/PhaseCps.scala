@@ -13,10 +13,11 @@ import cps.plugin.DefDefSelectKind.{RETURN_CONTEXT_FUN, USING_CONTEXT_PARAM}
 import plugins.*
 import cps.plugin.QuoteLikeAPI.*
 import cps.plugin.forest.*
+import cps.plugin.observatory.AutomaticColoringAnalyzer
 import dotty.tools.dotc.ast.{Trees, tpd}
 import dotty.tools.dotc.core.DenotTransformers.{InfoTransformer, SymTransformer}
 import dotty.tools.dotc.util.SrcPos
-import transform.{Inlining,Erasure,ElimPackagePrefixes,Pickler}
+import transform.{ElimPackagePrefixes, Erasure, Inlining, Pickler}
 
 
 /**
@@ -193,11 +194,23 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     //}
     //val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
 
+
+
+    if (true) {
+      println(s"transformDefDefInsideAsync: checking correct input ctx.owner=${ctx.owner.hashCode()}")
+      TransformUtil.findSubtermsWithIncorrectOwner(ddef.rhs, ddef.symbol) match
+        case subterm::tail =>
+          println(s"found subterm with incorrect owner: ${subterm.symbol}(${subterm.symbol.hashCode()}  owner=${subterm.symbol.owner}(${subterm.symbol.owner.hashCode()})")
+        case Nil =>
+          println(s"not found subterm with incorrect owner")
+    }
+
     val contextParam = cpsMonadContext match
       case vd: ValDef => ref(vd.symbol)
       case _ => throw CpsTransformException(s"excepted that cpsMonadContext is ValDef, but we have ${cpsMonadContext.show}", asyncCallTree.srcPos)
     val tctx = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
     val ddefCtx = ctx.withOwner(ddef.symbol)
+    tctx.automaticColoring.foreach(_.analyzer.observe(ddef.rhs)(using ddefCtx))
     val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefCtx, tctx)
     val nRhsTerm = wrapTopLevelCpsTree(nRhsCps)(using ddefCtx, tctx)
     val nRhsType = nRhsTerm.tpe.widen
@@ -220,6 +233,11 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     println(s"old defdef type: ${ddef.tpe.widen.show}")
     println(s"new defdef type: ${nDefDef.tpe.widen.show}")
 
+    if (true) {
+      TransformUtil.findSubtermWithOwner(nDefDef.rhs, ddef.symbol) match
+        case Some(tree) => println(s"err::symbol still have old owner:  ${tree.show}")
+        case None =>
+    }
 
     /*
     val nDefDef = DefDef(newSym, paramss => {
@@ -380,9 +398,20 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
                           else if (runsAfter.contains(Inlining.name)) { false }
                           else
                              throw new CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
+    val automaticColoringTag = CpsTransformHelper.findAutomaticColoringTag(monadType, srcPos.span)
+    val automaticColoring = if (automaticColoringTag.isDefined) {
+      println("found automatic coloring")
+      val memoization = CpsTransformHelper.findCpsMonadMemoization(monadType, srcPos.span)
+      if (memoization.isDefined) {
+        val analyzer = new AutomaticColoringAnalyzer()
+        Some(CpsAutomaticColoring(memoization.get,analyzer))
+      } else {
+        throw CpsTransformException(s"Can't find instance of cps.CpsMemoization for ${monadType.show}", srcPos)
+      }
+    } else None
     val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectOrSimpleContext,
                                 optRuntimeAwait, optThrowSupport, optTrySupport,
-                                debugSettings, settings, isBeforeInliner)
+                                debugSettings, settings, isBeforeInliner, automaticColoring)
     tc
   }
 

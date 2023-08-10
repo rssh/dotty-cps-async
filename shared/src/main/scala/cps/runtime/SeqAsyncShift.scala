@@ -60,7 +60,7 @@ class SeqAsyncShift[A, C[X] <: scala.collection.Seq[X] & scala.collection.SeqOps
     run(it,i)
 
   def indexWhere[F[_]](c:CA, m: CpsMonad[F])(p: A=>F[Boolean]): F[Int] =
-     indexWhere(c,m)(p,0)
+      indexWhere(c,m)(p,0)
 
   def segmentLength[F[_]](c:CA, m: CpsMonad[F])(p: A=>F[Boolean], from: Int): F[Int] =
     def run(it: Iterator[A], i:Int, acc:Int):F[Int] =

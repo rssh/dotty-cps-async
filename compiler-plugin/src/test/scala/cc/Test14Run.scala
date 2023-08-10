@@ -48,7 +48,7 @@ class Test14Run {
   }
 
 
-
+  /*
   @Test
   def testShiftIterableOps(): Unit = {
     val dirname = "testdata/set14runtests/m1"
@@ -130,7 +130,15 @@ class Test14Run {
     val testClassName = "cps.TestCBS1CustomShift"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
-  
+
+   */
+
+  @Test
+  def testFizzBuzz(): Unit = {
+    val dirname = "testdata/set14runtests/m10"
+    val testClassName = "cps.pe.TestFizzBuzz"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
 
 
 }

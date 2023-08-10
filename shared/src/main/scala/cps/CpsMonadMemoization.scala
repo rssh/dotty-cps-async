@@ -28,7 +28,10 @@ object CpsMonadMemoization:
 
   trait Dynamic[F[_]] extends CpsMonadMemoization[F]
 
-  trait DynamicAp[F[_],T,FT]:
+  //trait DynamicAp[F[_], T, FT]:
+  //  def apply(ft: FT): F[FT]
+
+  trait DynamicAp[F[_],FT]:
     def apply(ft:FT):F[FT]
 
   /**

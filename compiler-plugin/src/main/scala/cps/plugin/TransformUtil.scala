@@ -10,6 +10,7 @@ import core.Types.*
 import dotty.tools.dotc.util.SrcPos
 import ast.tpd.*
 
+case class TermWithIncorrectOwner(term: Tree, expectedOwner: Symbol, actualOwner: Symbol)
 
 object TransformUtil {
 
@@ -139,7 +140,6 @@ object TransformUtil {
    }
 
    def findSubtermWithOwner(tree:Tree, owner:Symbol)(using Context): Option[Tree] = {
-      println(s"find subterm with owner ${owner.show} (${owner.hashCode()})")
       val finder = new TreeAccumulator[Option[Tree]] {
          def apply(x: Option[Tree], tree: Tree)(using Context): Option[Tree] =
             if (x.isDefined) then
@@ -214,6 +214,45 @@ object TransformUtil {
       finder(None,tree)
    }
 
+   def findSubtermsWithIncorrectOwner(tree:Tree, topOwner: Symbol)(using Context): List[Tree] = {
+      val finder = new TreeAccumulator[List[Tree]] {
+
+         def checkOwner(x:Symbol, owner:Symbol)(using Context): Boolean = {
+            if (x.owner == owner) {
+               true
+            } else if (x.owner.isWeakOwner) {
+              checkOwner(x.owner, owner)
+            } else if (owner.isWeakOwner) {
+              checkOwner(x, owner.owner)
+            } else {
+               false
+            }
+         }
+
+         def apply(x: List[Tree], tree: Tree)(using Context): List[Tree] =
+            if (x.nonEmpty) then
+               x
+            else
+               tree match
+                 case xdef: MemberDef =>
+                   if (!checkOwner(xdef.symbol,summon[Context].owner)) then
+                      tree :: x
+                   else
+                      xdef match
+                        case xDefDef: DefDef =>
+                            foldOver(x, xDefDef.rhs)(using summon[Context].withOwner(xDefDef.symbol))
+                        case xValDef: ValDef =>
+                            foldOver(x, xValDef.rhs)(using summon[Context].withOwner(xValDef.symbol))
+                        case xTypeDef: TypeDef =>
+                            foldOver(x, xTypeDef.rhs)(using summon[Context].withOwner(xTypeDef.symbol))
+                        case other =>
+                          throw CpsTransformException("MemberDef but not DefDef, ValDef or TypeDef", other.sourcePos)
+
+                 case _ =>
+                      foldOver(x, tree)
+      }
+      finder(Nil,tree)
+   }
 
    final val COMMA = ","
 

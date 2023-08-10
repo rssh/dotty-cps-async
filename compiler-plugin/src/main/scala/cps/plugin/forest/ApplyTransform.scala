@@ -80,6 +80,8 @@ object ApplyTransform {
              else
                Log.trace(s"cpsAwait not recognized",nesting)
                applyMArgs(term, owner, nesting, Nil)
+        case observatory.ImplicitAwaitCall(arg, tf, ta, tg, gContext, conversion) =>
+              AwaitTransform.fromApply(term, owner, nesting, tf, ta, tg, arg, gContext, conversion)
         case Apply(TypeApply(adoptCpsedCallCn,List(tf,ta)),List(a))
                   if (adoptCpsedCallCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")) =>
              //  this means that we walk over nesting async.
@@ -553,8 +555,52 @@ object ApplyTransform {
                 if (additionalArgs.isEmpty) then
                   applyOverloaded(obj, method, args, targs.map(_.tpe), Types.WildcardType).withSpan(origin.span)
                 else
-                  val f1 = applyOverloaded(obj, method, additionalArgs.get, targs.map(_.tpe), Types.WildcardType)
-                  Apply(f1, args).withSpan(origin.span)
+                  val alternatives = obj.tpe.member(method).alternatives
+                  val selected = alternatives.filter { a =>
+                    println(s"alternative: ${a.show}: ${a.info.show}")
+                    a.info match
+                      case pt: PolyType =>
+                        println(s"pt paramInfos: ${pt.paramInfos.map(_.show)}, resType: ${pt.resType.show}")
+                        println(s"pt paramTypes: ${pt.typeParams.map(_.show)}")
+                        // TODO: check types?
+                        val step1 = (pt.typeParams.length == targs.length)
+                        val step2 = pt.resType match
+                          case rmt: MethodType =>
+                            println(s"rmt methodType paramInfos: ${rmt.paramInfos.map(_.show)}, resType=${rmt.resType.show}")
+                            rmt.paramInfos.length == 2 && {
+                              rmt.resType match
+                                case rmt2: MethodType =>
+                                  println(s"rmt2 methodType paramInfos: ${rmt2.paramInfos.map(_.show)}, resType=${rmt2.resType.show}")
+                                  rmt2.paramInfos.length == args.length
+                                case _ =>
+                                  println(s"rmt2 is not MethodType but ${rmt.resType}")
+                                  false
+                            }
+                          case _ =>
+                            println(s"resType is not MethodType but ${pt.resType}")
+                            false
+                        step1 && step2
+                      case mt: MethodType =>
+                        println(s"mt paramInfos: ${mt.paramInfos.map(_.show)}, resType=${mt.resType.show}")
+                        mt.paramInfos.length == args.length
+                      case _ =>
+                        throw CpsTransformException(s"unexpected type of method ${a.show}: ${a.info.show}, expected MethodType or PolyType", origin.srcPos)
+                  }
+                  if (selected.isEmpty) {
+                    // TODO: log failed
+                    throw CpsTransformException(s"no suitable alternative for ${obj.show}.${method.show} with ${args.length} arguments", origin.srcPos)
+                  } else if (selected.tail.nonEmpty) {
+                    // this will wrote an error.
+                    val f1 = applyOverloaded(obj, method, additionalArgs.get, targs.map(_.tpe), Types.WildcardType)
+                    Apply(f1, args).withSpan(origin.span)
+                    throw CpsTransformException(s"more than one alternative for ${obj.show}.${method.show} with ${args.length} arguments", origin.srcPos)
+                  } else {
+                    val denotation = selected.head
+                    val sel = Select(obj, denotation.symbol.namedType)
+                    val pre0 = if (targs.isEmpty) sel else TypeApply(sel, targs)
+                    val pre1 = Apply(pre0, additionalArgs.get)
+                    Apply(pre1, args).withSpan(origin.span)
+                  }
               else
                 try {
                   Apply(assembleNonOverloadedShifted(sf), args).withSpan(origin.span)
@@ -738,8 +784,11 @@ object ApplyTransform {
       val origin = inOrigin.dealias
       val candidate = inCandidate.dealias
       val retval = if (defn.isFunctionType(origin) || defn.isContextFunctionType(origin)) {
-          defn.isFunctionType(candidate) //  mb in futuer check arguments for real approximation
+        println(s"approxCompatibleTypes: origin=${origin.show} candidate=${candidate.show}: origin is function type")
+
+        defn.isFunctionType(candidate) //  mb in futuer check arguments for real approximation
         } else if (defn.isFunctionType(candidate)) {
+          println(s"approxCompatibleTypes: origin=${origin.show} candidate=${candidate.show}: candidate is function type")
           true
         } else {
           origin match
@@ -751,12 +800,14 @@ object ApplyTransform {
                       approxCompatibleTypes(pair._1, pair._2)
                     }
             case _: TermRef =>
+              println("approxCompatibleTypes: origin is TermRef")
               origin =:= candidate
             case typeRef: TypeRef =>
+              println(s"approxCompatibleTypes: origin is TypeRef, canDropAlias=${typeRef.canDropAlias}")
               if (typeRef.symbol.isTypeParam) then
                 candidate.typeSymbol.isTypeParam
               else
-                origin =:= candidate
+                origin <:< candidate
             case _ =>
               true
       }

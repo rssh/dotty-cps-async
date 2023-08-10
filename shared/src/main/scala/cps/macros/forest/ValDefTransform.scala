@@ -64,7 +64,7 @@ object ValDefTransform:
                               val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
                               CpsExpr.async(monad, nextRhs.asExprOf[F[F[r]]]).asInstanceOf[CpsExpr[F,et]]
                         case CpsMonadMemoization.Kind.DYNAMIC => 
-                           Expr.summon[CpsMonadMemoization.DynamicAp[F,r,et]] match
+                           Expr.summon[CpsMonadMemoization.DynamicAp[F,et]] match
                                case Some(mm) => 
                                  if (cpsRight.isAsync) then
                                     refinedCpsRight.flatMap( '{ (x:F[r]) => ${mm}.apply(x.asInstanceOf[et]) } ).asInstanceOf[CpsExpr[F,et]]
@@ -75,7 +75,7 @@ object ValDefTransform:
                                case None =>
                                  // todo: use search instead summon for additional message in failure
                                  val msg = 
-                                   s"Can't find given instance of ${TypeRepr.of[CpsMonadMemoization.DynamicAp[F,r,et]].show}"
+                                   s"Can't find given instance of ${TypeRepr.of[CpsMonadMemoization.DynamicAp[F,et]].show}"
                                  throw MacroError(msg, rhs.asExpr)
                     else
                       cpsRight

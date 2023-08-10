@@ -4,8 +4,9 @@ import dotty.tools.dotc.*
 import core.*
 import core.Types.*
 import ast.tpd.*
+import cps.plugin.observatory.*
 
-
+case class CpsAutomaticColoring(memoization: Tree, analyzer: AutomaticColoringAnalyzer)
 
 case class CpsTopLevelContext(
                                //val shiftedSymbols: ShiftedSymbols,
@@ -19,6 +20,7 @@ case class CpsTopLevelContext(
                                val debugSettings: DebugSettings,
                                val pluginSettings: CpsPluginSettings,
                                val isBeforeInliner: Boolean,
+                               val automaticColoring: Option[CpsAutomaticColoring]
 )   {
 
   def isAfterInliner = !isBeforeInliner
