@@ -113,8 +113,6 @@ object BlockTransform {
     else
       inDiscard
 
-    println(s"apllYDiscard, isAwait=${discard.tpe.baseType(Symbols.requiredClass("cps.AwaitValueDiscard")) != NoType}, discard=${discard.show}}")
-
     if (discard.tpe.baseType(Symbols.requiredClass("cps.AwaitValueDiscard")) != NoType) then
       if !(cpsTree.originType <:< summon[CpsTopLevelContext].monadType.appliedTo(Types.WildcardType)) then
         throw CpsTransformException(s"await discard is not applicable to ${cpsTree.originType.show}", cpsTree.origin.srcPos)
@@ -128,32 +126,12 @@ object BlockTransform {
             case AsyncKind.Async(internalKind) =>
               if (internalKind != AsyncKind.Sync) then
                 throw CpsTransformException(s"impossible: async tree with non-sync internal kind: ${cpsTree}", cpsTree.origin.srcPos)
-              println(s"BlocTransform:applyDiscard: await discard, originType=${cpsTree.originType.show}, transformedType=${cpsTree.transformed.show}")
-              println(s"BlocTransform:applyDiscard: arg=${cpsTree.show}")
-              println(s"BlocTransform:applyDiscard: arg.transformed=${cpsTree.transformed.show}")
-              //val toDiscardSym = Symbols.newSymbol(owner, "toAwaitDiscard".toTermName, Flags.Synthetic, cpsTree.originType)
-              //val toDiscardRef = ref(toDiscardSym)
-              //val toDiscardValDef = ValDef(toDiscardSym, EmptyTree)
-              //FlatMapCpsTree(cpsTree.origin, cpsTree.owner, cpsTree,
-              //    FlatMapCpsTreeArgument(Some(toDiscardValDef),CpsTree.impure(cpsTree.origin, cpsTree.owner, toDiscardRef, internalKind)))
-
-
               val untpdTree = untpd.Apply(
                       untpd.Select(untpd.TypedSplice(summon[CpsTopLevelContext].cpsMonadRef), "flatten".toTermName),
                       List(untpd.TypedSplice(cpsTree.transformed))
               )
-              //println(s"BlockTransform:applyDiscard flatten, originType=${cpsTree.originType.show}, untpdTree=${untpdTree.show}")
               val typedTree = ctx.typer.typed(untpdTree, summon[CpsTopLevelContext].monadType.appliedTo(Types.WildcardType))
-
-              typedTree match
-                case Apply(TypeApply(flatten,List(targ)), List(arg)) =>
-                  println(s"BlockTransform:applyDiscard  flatten matched, targ =${targ.show}")
-                case _ => println(s"BlockTransform:applyDiscard  flatten not matched, typedTree =${typedTree}")
-
               val fakeOrigin = Apply(Select(discard, "apply".toTermName),List(cpsTree.origin)  )
-
-              println(s"BlockTransform:applyDiscard  flatten, typedTree =${typedTree.show}")
-              println(s"BlockTransform:applyDiscard  flatten, typedTree.tpe.widen=${typedTree.tpe.widen.show}")
               CpsTree.impure(fakeOrigin, owner, typedTree, internalKind)
             case AsyncKind.AsyncLambda(bodyKind) =>
               throw CpsTransformException(s"discarede lambda expression: ${cpsTree}", cpsTree.origin.srcPos)
