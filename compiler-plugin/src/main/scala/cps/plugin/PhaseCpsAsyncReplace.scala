@@ -28,11 +28,10 @@ class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: Shifted
    * @return
    */
   override def transformApply(tree: tpd.Apply)(using Context): Tree =
+    // ref(term.symbol) === tree.fun naked from type-aprameters
 
-    //ref(term.symbol) === tree.fun naked from type-aprameters
-
-     //Apply(Plus[String,String],arg)
-     //symbol: Plus
+    // Apply(Plus[String,String],arg)
+    // symbol: Plus
 
     // TODO: look for the shiftedSymbols functions application
     shiftedSymbols.getRecord(tree.fun.symbol) match

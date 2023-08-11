@@ -38,9 +38,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @return
    */
   override def transformTemplate(tree: Template)(using Context): Tree = {
-    println(
-      s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.symbol.info.show}"
-    )
+    println(s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.tpe.show}")
     val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
     var newMethods      = List.empty[DefDef]
     for (
@@ -86,13 +84,16 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     val retval = if (newMethods.isEmpty) {
       super.transformTemplate(tree)
     } else {
-      println("cpsAsyncShift::transformTemplate: added new methods: " + newMethods.map(_.name).mkString(","))
+      println(
+        "cpsAsyncShift::transformTemplate: added new methods: " + newMethods
+          .map(_.name)
+          .mkString(",")
+      )
       cpy.Template(tree)(body = tree.body ++ newMethods)
     }
     // println(s"after CpsAsyncShift, retval: ${retval.show}")
     retval
   }
-
 
   // Hight-level description of generation of async-shofted version of dunction
   //  val typeParams = if (haveTypeParams) paramss.head else Nil
@@ -111,7 +112,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //      ValDef(f, TypeTree(AppliedType(defn.ContextFunctionSymbol,))
   //    )
   //  )
-  //
+  //   example:
   //   map[A,B](collection:List[A])(f: A => B): List[B] =  doSpmetjong
   //   map[F[_],C <: CpsMonadContext[F],A,B](am: CpsMonad.Aux[F,C])(collection:List[A])(f: A => B): F[List[B]] = {
   //      cpsAsyncApply[F,List[B],C](am,
@@ -122,13 +123,12 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
 
   //   tranfromedBody(f) = {
   //      Apply(f, ...)  =>  await[[F,result-typr-of-apply,F]](f, ....)
+  //      or throw unimplemented instead await
   //
-  //
-  //  ???
 
   //  DefDef( ....   rhs = cpsAsyncShift ....  )
   //
-      
+
   /**
    * transform rhs of the annotated function
    * @param tree
@@ -164,7 +164,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     // check ValDef input params
     val valDefs: List[ValDef] = filterParams(tree.paramss)
     val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
-    if !funcParams.isEmpty then return true
+    if funcParams.nonEmpty then return true
     // check the return type
     // TODO: write implementation for this special case
     if isFunc(tree.rhs.tpe.finalResultType) then
