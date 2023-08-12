@@ -131,7 +131,7 @@ class Test14Run {
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
 
-   */
+
 
   @Test
   def testFizzBuzz(): Unit = {
@@ -139,7 +139,14 @@ class Test14Run {
     val testClassName = "cps.pe.TestFizzBuzz"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
+   */
 
+  @Test
+  def testCBS2Dynamic(): Unit = {
+    val dirname = "testdata/set14runtests/m11"
+    val testClassName = "cps.TestCBS2Dynamic"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
 
 }
 

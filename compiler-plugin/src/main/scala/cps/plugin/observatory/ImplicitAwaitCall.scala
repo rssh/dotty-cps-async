@@ -15,12 +15,13 @@ object ImplicitAwaitCall {
   def unapply(tree: Tree)(using ctx: Context): Option[(Tree,Tree,Tree,Tree,Tree,Tree)] =
     val retval = tree match
       case Apply(sel: Select, List(arg)) if (sel.name.toSimpleName.toString == "apply") =>
-        println("ImplicitAwaitCall: found apply, qualifier=${sel.qualifier.show}")
         sel.qualifier match
           case ImplicitAwaitLambda(tf,ta,tg,gc,conversion) => Some((arg,tf,ta,tg,gc,conversion))
           case _ => None
       case _ => None
-    println(s"ImplicitAwaitCall (result=${retval.isDefined}): tree=${tree.show}")
+    if (retval.isDefined) {
+      println(s"AutomaticColoring::implicit await call for ${tree.show} => true")
+    }
     retval
 }
 
@@ -38,7 +39,6 @@ object ImplicitAwaitLambda {
             if cnAwait.symbol == Symbols.requiredMethod("cps.await") => Some((tf,ta,tg,gc,conversion))
           case _ => None
       case _ => None
-    println(s"check ImplicitAwaitLambda for tree: ${tree.show}, result=${retval.isDefined} ")
     retval
   }
 

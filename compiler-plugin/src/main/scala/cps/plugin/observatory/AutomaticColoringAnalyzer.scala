@@ -9,6 +9,7 @@ import dotty.tools.dotc.core.Contexts.*
 import dotty.tools.dotc.core.Decorators.*
 import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.core.Symbols.*
+import dotty.tools.dotc.util.SrcPos
 
 
 class ValUsage(
@@ -47,7 +48,6 @@ class ValUsage(
 class AutomaticColoringAnalyzer {
 
   val usageRecords = new MutableSymbolMap[ValUsage]()
-  val valDefStack = new Stack[ValDef]()
 
 
   def observe(tree: Tree)(using context: Context): Unit = {
@@ -57,14 +57,20 @@ class AutomaticColoringAnalyzer {
       override def traverse(tree: Tree)(using ctx: Context): Unit = {
         tree match {
           case tree: ValDef =>
-            val usage = usageRecords.getOrElseUpdate(tree.symbol, ValUsage())
-            if (!valDefStack.isEmpty) {
-              usage.optValDef = Some(valDefStack.top)
+            if (tree.symbol.is(Flags.Mutable)) {
+              report.error("Mutable var is not supported in the block with automatic coloring", tree.srcPos)
             }
-            println(s"AutomaticColoringAnalyzer: found valDef: ${tree.symbol.showFullName},  id=${tree.symbol.hashCode()}"  )
-            valDefStack.push(tree)
-            traverse(tree.rhs)(using ctx.withOwner(tree.symbol))
-            valDefStack.pop()
+            val usage = usageRecords.getOrElseUpdate(tree.symbol, ValUsage())
+            usage.optValDef = Some(tree)
+            println(s"AutomaticColoringAnalyzer: found valDef: ${tree.symbol.showFullName},  id=${tree.symbol.hashCode()} rhs=${tree.rhs}")
+            tree.rhs match
+              case id: Ident =>
+                val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())
+                usageRecord.aliases += usage
+                println(s"AutomaticColoringAnalyzer: found alias: ${id.symbol.showFullName} for ${tree.symbol} (${tree.symbol.hashCode()})")
+              case _ =>
+                println(s"AutomaticColoringAnalyzer: traversing rhs")
+                traverse(tree.rhs)(using ctx.withOwner(tree.symbol))
           case term@Apply(fun, args) =>
             // to have the same structure as forest/ApplyTransform for the same patterns
             checkApply(term, fun, args)
@@ -72,32 +78,37 @@ class AutomaticColoringAnalyzer {
             val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())
             usageRecord.withoutAwaits += id
           case _ =>
+            println("AutomaticColoringAnalyzer: traversing children begin")
             super.traverseChildren(tree)
+            println("AutomaticColoringAnalyzer: traversing children end")
         }
       }
 
       def checkApply(tree: Apply, fun: Tree, args: List[Tree])(using ctx: Context): Unit = {
-        if !args.isEmpty then
-          tree match
-            case ImplicitAwaitCall(arg,tg,ta,tf,gc,gcn) =>
-              arg match
-                case id: Ident =>
-                  val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())
-                  usageRecord.inAwaits += id
-                case _ =>
-                  super.traverseChildren(tree)
-            case Apply(Apply(TypeApply(cnAwait, targs), List(arg)), List(monad, conversion))
-              if cnAwait.symbol == Symbols.requiredMethod("cps.await") =>
-              println("discovered await: arg=$arg")
-              arg match
-                case id: Ident =>
-                  val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())
-                  usageRecord.inAwaits += id
-                case _ =>
-                  super.traverseChildren(tree)
-            case _ =>
-              super.traverseChildren(tree)
+        tree match
+          case ImplicitAwaitCall(arg, tg, ta, tf, gc, gcn) =>
+            println(s"AutomaticColoring:discovered await: arg=${arg.show}")
+            arg match
+              case id: Ident =>
+                println("arg is ident")
+                val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())
+                usageRecord.inAwaits += id
+              case _ =>
+                println("arg is not ident")
+                super.traverseChildren(tree)
+          case Apply(Apply(TypeApply(cnAwait, targs), List(arg)), List(monad, conversion))
+            if cnAwait.symbol == Symbols.requiredMethod("cps.await") =>
+            println("discovered await: arg=$arg")
+            arg match
+              case id: Ident =>
+                val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())
+                usageRecord.inAwaits += id
+              case _ =>
+                super.traverseChildren(tree)
+          case _ =>
+            super.traverseChildren(tree)
       }
+
 
     }
     traverser.traverse(tree)

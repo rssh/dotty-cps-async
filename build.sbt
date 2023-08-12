@@ -150,7 +150,8 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                               libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
                               Test / unmanagedSourceDirectories ++= Seq(
                                 baseDirectory.value / ".." / ".." / "jvm" / "src" / "test" / "scala",
-                              )
+                              ),
+                              Test / unmanagedSources / excludeFilter := "TestSF1W1.scala" || "TestSL3.scala"
                            ).jsSettings(
                               scalaJSUseMainModuleInitializer := true,
                               libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),

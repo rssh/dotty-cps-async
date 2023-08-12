@@ -20,7 +20,7 @@ import cps.testconfig.given
 import scala.concurrent.ExecutionContext.Implicits.global
 
 // This test will be deleted after disabling of automatic coloring.
-//@CpsDebugLevel(20)
+@CpsDebugLevel(20)
 class TestFizzBuzz:
 
 
@@ -33,7 +33,7 @@ class TestFizzBuzz:
      val c = async[PureEffect] {
        val logger = PEToyLogger.make()
        val counter = PEIntRef.make(-1)
-       println(s"crrate counter, value=${counter.value}")
+       //println(s"crrate counter, value=${counter.value}")
        while {
          val v = counter.increment()
          logger.log(await(v).toString)

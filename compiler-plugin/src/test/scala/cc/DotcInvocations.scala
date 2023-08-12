@@ -119,6 +119,7 @@ object DotcInvocations {
       //"-Xcheck-macros",
       "-Ydebug",
       //"-Yprint-syms",
+      "-explain",
       //List("-Yprint-debug") ++
       //List("-Yshow-tree-ids") ++
       //List("-verbose") ++
@@ -130,6 +131,7 @@ object DotcInvocations {
     //List("-Vprint:constructors") ++
     //List("-Vprint:lambdaLift") ++
     //List("-Xshow-phases") ++
+
     )
   }
 

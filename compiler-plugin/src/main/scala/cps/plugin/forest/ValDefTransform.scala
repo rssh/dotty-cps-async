@@ -26,13 +26,13 @@ object ValDefTransform {
                                    println(s"found usage record (automatic coloring), nInAwaits=${record.nInAwaits}")
                                    record.reportCases()
                                    if (record.nInAwaits > 0 && record.nWithoutAwaits == 0) {
-                                          applyMemoization(cpsRhs0, owner, c.memoization,term)
-                                   } else if (record.nInAwaits == 0 && record.nWithoutAwaits > 0) {
-                                          cpsRhs0
+                                     applyMemoization(cpsRhs0, owner, c.memoization, term)
+                                   } else if (record.nInAwaits >0 && record.nWithoutAwaits > 0) {
+                                     record.reportCases()
+                                     throw CpsTransformException(s"val ${term.name} used in both sync and async way with automatic coloring", term.srcPos)
                                    } else {
-                                          record.reportCases()
-                                          throw CpsTransformException(s"Val ${term.name} used in both sync and async way with automatic coloring", term.srcPos)
-                                   }
+                                     cpsRhs0
+                                   } 
                              case None => cpsRhs0
                   case _ => cpsRhs0
             cpsRhs.asyncKind match

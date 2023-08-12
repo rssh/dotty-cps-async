@@ -430,7 +430,8 @@ case class RepeatApplyArg(
       s.appended(e.exprInCall(callMode,optRuntimeAwait))
     }
     val (nElemTpt, nRtp) = callMode match
-      case ApplyArgCallMode.ASYNC_SHIFT if elements.exists(_.isLambda) =>
+      case ApplyArgCallMode.ASYNC_SHIFT if elements.exists(_.isLambda) && !(elementTpt.tpe =:= defn.AnyType) =>
+        //  (case for elementTpt.tpe =:= defn.AnyType is when we transformign dynamic valie)
         val elemTpe = CpsTransformHelper.cpsTransformedType(elementTpt.tpe, summon[CpsTopLevelContext].monadType)
         val elemTpt = TypeTree(elemTpe)
         (elemTpt, AppliedTypeTree(TypeTree(defn.RepeatedParamType), List(elemTpt)))

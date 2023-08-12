@@ -509,7 +509,8 @@ object ApplyTransform {
             case _ =>
                 fun
           println("GenOneLastPureApply: fun: "+fun.show +", fun.tpe="+fun.tpe.show)
-          println("GenOneLastPureApply: nArgs: "+nArgs.map(_.show).mkString(","))
+         // println(s"GenOneLastPureApply: nArgs: "+nArgs.map(_.show).mkString(","))
+          println(s"GenOneLastPureApply: nArgs: ${nArgs}")
           Apply(fun1, nArgs).withSpan(origin.span)
       tree
     }

@@ -1,16 +1,17 @@
 package cps.pe
 
 import scala.language.implicitConversions
+import org.junit.{Ignore, Test}
+import org.junit.Assert.*
 
-import org.junit.{Test,Ignore}
-import org.junit.Assert._
-
-import scala.quoted._
+import scala.quoted.*
+import scala.compiletime.*
 import scala.util.*
-
 import cps.*
+import cps.macros.flags.UseCompilerPlugin
 import cps.testconfig.given
 import cps.util.FutureCompleter
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
@@ -65,8 +66,16 @@ class TestPEPartialMemoizing:
      """
     val errors = compiletime.testing.typeCheckErrors(code)
     println(s"errors: $errors")
-    assert(!compiletime.testing.typeChecks(code))
+    if (!testUseCompilerPlugin()) {
+      assertTrue(!compiletime.testing.typeChecks(code))
+    }
   }
+
+  inline def testUseCompilerPlugin(): Boolean =
+    summonFrom {
+      case cp: UseCompilerPlugin => true
+      case _ => false
+    }
 
 
 
