@@ -70,6 +70,11 @@ class DotcInvocations(silent: Boolean = false) {
     }
   }
 
+  private def runJS(outDir: String, mainClass: String, timeout: FiniteDuration = 1.minute): (Int, String) = {
+    val cmd = s"node --experimental-modules --experimental-loader=src/main/resources/js-loader.mjs "
+    println(s"Running $cmd")
+  }
+
   /**
    * Recursively list all scala files in a given path
    * @param path

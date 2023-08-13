@@ -798,6 +798,8 @@ object ApplyTransform {
           // bug in scala-3.3.0  ! (Seq[B] <:< IterableOnce[B]) == true
           println(s"approxCompatibleTypes: ${origin.show}.baseType(${candidate.typeSymbol}) = ${origin.baseType(candidate.typeSymbol)}")
           true
+        } else if (candidate.typeSymbol.isTypeParam) {
+          true
         } else {
           println(s"approxCompatibleTypes: origin=${origin.show} <:< ${candidate.show} is false")
           origin match
@@ -808,6 +810,10 @@ object ApplyTransform {
                     (orTargs zip cnTargs).forall { (pair) =>
                       approxCompatibleTypes(pair._1, pair._2)
                     }
+                case cTypeRef:TypeRef =>
+                   cTypeRef.typeSymbol.isTypeParam
+                case _ =>
+                  false
             case _: TermRef =>
               println("approxCompatibleTypes: origin is TermRef")
               origin =:= candidate

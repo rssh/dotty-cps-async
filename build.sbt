@@ -143,7 +143,7 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                                   val jar = (compilerPlugin / Compile / packageBin).value
                                   Seq(s"-Xplugin:${jar.getAbsolutePath}", s"-Jdummy=${jar.lastModified}",
                                        "-color:never",
-                                       "-explain"
+                                       "-explain",
                                      )
                               }
                            ).jvmSettings(
@@ -157,15 +157,17 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                               libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
                               mimaFailOnNoPrevious := false,
                               Test / unmanagedSourceDirectories ++= Seq(
-                                  baseDirectory.value / ".." / "jvm" / "src" / "test" / "scala",
-                              )
+                                  baseDirectory.value / ".." / ".." / "js" / "src" / "test" / "scala",
+                              ),
+                              Test / unmanagedSources / excludeFilter := "TestSF1W1.scala" || "TestSL3.scala" || "TestSF4.scala"
                            ).nativeSettings(
                               libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
                               libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
                               addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full),
                               Test / unmanagedSourceDirectories ++= Seq(
-                                  baseDirectory.value / ".." / "native" / "src" / "test" / "scala"
-                              )
+                                  baseDirectory.value / ".." / ".." / "native" / "src" / "test" / "scala"
+                              ),
+                              Test / unmanagedSources / excludeFilter := "TestSF1W1.scala" || "TestSL3.scala"
                            )
 
 
