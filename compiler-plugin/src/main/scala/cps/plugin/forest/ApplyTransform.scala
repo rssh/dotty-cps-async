@@ -791,7 +791,15 @@ object ApplyTransform {
         } else if (defn.isFunctionType(candidate)) {
           println(s"approxCompatibleTypes: origin=${origin.show} candidate=${candidate.show}: candidate is function type")
           true
+        } else if ( origin <:< candidate ) {
+          println(s"approxCompatibleTypes: origin=${origin.show} candidate=${candidate.show}: origin <:< candidate")
+          true
+        } else if (origin.baseType(candidate.typeSymbol) != NoType) {
+          // bug in scala-3.3.0  ! (Seq[B] <:< IterableOnce[B]) == true
+          println(s"approxCompatibleTypes: ${origin.show}.baseType(${candidate.typeSymbol}) = ${origin.baseType(candidate.typeSymbol)}")
+          true
         } else {
+          println(s"approxCompatibleTypes: origin=${origin.show} <:< ${candidate.show} is false")
           origin match
             case AppliedType(orTycon, orTargs) =>
               candidate match
@@ -808,7 +816,8 @@ object ApplyTransform {
               if (typeRef.symbol.isTypeParam) then
                 candidate.typeSymbol.isTypeParam
               else
-                origin <:< candidate
+                println(s"approxCompatibleTypes: origin is TypeRef ")
+                false
             case _ =>
               true
       }
