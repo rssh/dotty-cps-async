@@ -139,7 +139,7 @@ class Test14Run {
     val testClassName = "cps.pe.TestFizzBuzz"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
-   */
+
 
   @Test
   def testCBS2Dynamic(): Unit = {
@@ -147,6 +147,16 @@ class Test14Run {
     val testClassName = "cps.TestCBS2Dynamic"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
+  */
+
+
+  @Test
+  def testFutureRangeWithFilterShift(): Unit = {
+    val dirname = "testdata/set14runtests/m12"
+    val testClassName = "cps.TestFutureRangeWithFilterShift"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
+
 
 }
 

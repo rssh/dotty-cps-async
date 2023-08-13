@@ -224,5 +224,16 @@ object CpsTransformHelper {
     findWrapperForMonad("cps.CpsMonadMemoization", monadType, span)
   }
 
+  def findCustomValueDiscardTag(span: Span)(using ctx: Context): Option[Tree] = {
+    //findImplicitInstance(Symbols.requiredClassRef("cps.ValueDiscard.CustomTag"), span)
+    val tpe = Symbols.requiredClassRef("cps.ValueDiscard.CustomTag")
+    val searchResult = ctx.typer.inferImplicitArg(tpe, span)
+    searchResult.tpe match
+      case _: typer.Implicits.SearchFailureType => None
+      case _ =>
+        println(s"founf ValueDiscard.CustomTag: ${searchResult.show} ")
+        Some(searchResult)
+  }
+
 
 }

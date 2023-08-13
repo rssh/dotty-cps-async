@@ -20,7 +20,8 @@ case class CpsTopLevelContext(
                                val debugSettings: DebugSettings,
                                val pluginSettings: CpsPluginSettings,
                                val isBeforeInliner: Boolean,
-                               val automaticColoring: Option[CpsAutomaticColoring]
+                               val automaticColoring: Option[CpsAutomaticColoring],
+                               val customValueDiscard: Boolean
 )   {
 
   def isAfterInliner = !isBeforeInliner

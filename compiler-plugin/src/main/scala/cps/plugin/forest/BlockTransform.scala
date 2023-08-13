@@ -62,7 +62,8 @@ object BlockTransform {
                //   imports here ?
                s
              case _ =>
-              val cpsE = maybeApplyCustomDiscard(RootTransform(e, owner, nesting+1), owner)
+              val cpsE0 = RootTransform(e, owner, nesting+1)
+              val cpsE = maybeApplyCustomDiscard(cpsE0, owner, nesting)
               val r = s.appendInBlock(cpsE)
               r
         }  
@@ -74,20 +75,19 @@ object BlockTransform {
   }
 
   // TODO: remove after elimination of automatic coloring
-  def maybeApplyCustomDiscard(cpsTree:CpsTree, owner:Symbol)(using Context, CpsTopLevelContext): CpsTree = {
-
+  def maybeApplyCustomDiscard(cpsTree:CpsTree, owner:Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
     val tctx = summon[CpsTopLevelContext]
-    if (tctx.automaticColoring.isEmpty) then // TODO (add checkCustomDiscard flag)
+    Log.trace(s"BlockTransform.maybeApplyCustomDiscard: customValueDiscard=${tctx.customValueDiscard}", nesting)
+    if (!tctx.customValueDiscard) then
       cpsTree
     else
-      //if (cpsTree.originType <:< tctx.monadType.appliedTo(Types.WildcardType)) then
       if (cpsTree.originType != defn.UnitType && cpsTree.originType != defn.NothingType) then
         val valueDiscardType = Symbols.requiredClassRef("cps.ValueDiscard").appliedTo(cpsTree.originType.widen)
         CpsTransformHelper.findImplicitInstance(valueDiscardType, cpsTree.origin.span) match
           case Some(discard) =>
              applyImplicitDiscard(cpsTree, owner, discard)
           case None =>
-              report.warning("custom discard is enablde, but no implicit instance of ValueDiscard found", cpsTree.origin.srcPos)
+              report.warning(s"custom discard is enablde, but no implicit instance for ${valueDiscardType.show} found", cpsTree.origin.srcPos)
               cpsTree
       else
         cpsTree
@@ -139,7 +139,8 @@ object BlockTransform {
       cpsTree.unpure match
         case Some(stat) =>
           val tree = genDiscardApply(discard, stat)
-          CpsTree.impure(cpsTree.origin, cpsTree.owner, tree, AsyncKind.Sync)
+          val fakeOrigin = Typed(cpsTree.origin, TypeTree(defn.UnitType)).withSpan(cpsTree.origin.span)
+          CpsTree.pure(fakeOrigin, cpsTree.owner, tree)
         case None =>
           cpsTree.asyncKind match
             case AsyncKind.Sync =>
@@ -149,8 +150,10 @@ object BlockTransform {
               val toDiscardRef = ref(toDiscardSym)
               val toDiscardValDef = ValDef(toDiscardSym, EmptyTree)
               val discardBody = genDiscardApply(discard, toDiscardRef)
-              MapCpsTree(cpsTree.origin, owner, cpsTree,
-                MapCpsTreeArgument(Some(toDiscardValDef), CpsTree.pure(EmptyTree, owner, discardBody)))
+              val fakeOrigin0 = Apply(Select(discard, "apply".toTermName),List(cpsTree.origin)  ).withSpan(cpsTree.origin.span)
+              val fakeOrigin1 = Apply(Select(discard, "apply".toTermName),List(toDiscardRef)  ).withSpan(cpsTree.origin.span)
+              MapCpsTree(fakeOrigin0, owner, cpsTree,
+                MapCpsTreeArgument(Some(toDiscardValDef), CpsTree.pure(fakeOrigin1 , owner, discardBody)))
             case AsyncKind.AsyncLambda(bodyKind) =>
               throw CpsTransformException(s"discarede lambda expression: ${cpsTree}", cpsTree.origin.srcPos)
   }

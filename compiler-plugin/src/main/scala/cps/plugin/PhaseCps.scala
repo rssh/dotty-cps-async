@@ -409,9 +409,10 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         throw CpsTransformException(s"Can't find instance of cps.CpsMemoization for ${monadType.show}", srcPos)
       }
     } else None
+    val customValueDiscard = automaticColoring.isDefined || CpsTransformHelper.findCustomValueDiscardTag(srcPos.span).isDefined
     val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectOrSimpleContext,
                                 optRuntimeAwait, optThrowSupport, optTrySupport,
-                                debugSettings, settings, isBeforeInliner, automaticColoring)
+                                debugSettings, settings, isBeforeInliner, automaticColoring, customValueDiscard)
     tc
   }
 

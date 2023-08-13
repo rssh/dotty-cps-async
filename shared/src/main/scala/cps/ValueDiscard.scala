@@ -63,7 +63,7 @@ class AwaitValueDiscard[F[_]:CpsMonad,T] extends ValueDiscard[F[T]]:
  *  then discarding values inside async block is translated
  *  to summon[ValueDiscard[T]].apply()
  **/
-@Deprecated()
+@Deprecated("Use context direct functions and -Wwarn-value-discard compiler option instead")
 given customValueDiscard: ValueDiscard.CustomTag with {}
 
 
