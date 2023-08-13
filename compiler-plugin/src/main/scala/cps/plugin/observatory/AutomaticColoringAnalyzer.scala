@@ -62,14 +62,11 @@ class AutomaticColoringAnalyzer {
             }
             val usage = usageRecords.getOrElseUpdate(tree.symbol, ValUsage())
             usage.optValDef = Some(tree)
-            println(s"AutomaticColoringAnalyzer: found valDef: ${tree.symbol.showFullName},  id=${tree.symbol.hashCode()} rhs=${tree.rhs}")
             tree.rhs match
               case id: Ident =>
                 val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())
                 usageRecord.aliases += usage
-                println(s"AutomaticColoringAnalyzer: found alias: ${id.symbol.showFullName} for ${tree.symbol} (${tree.symbol.hashCode()})")
               case _ =>
-                println(s"AutomaticColoringAnalyzer: traversing rhs")
                 traverse(tree.rhs)(using ctx.withOwner(tree.symbol))
           case term@Apply(fun, args) =>
             // to have the same structure as forest/ApplyTransform for the same patterns
@@ -78,27 +75,21 @@ class AutomaticColoringAnalyzer {
             val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())
             usageRecord.withoutAwaits += id
           case _ =>
-            println("AutomaticColoringAnalyzer: traversing children begin")
             super.traverseChildren(tree)
-            println("AutomaticColoringAnalyzer: traversing children end")
         }
       }
 
       def checkApply(tree: Apply, fun: Tree, args: List[Tree])(using ctx: Context): Unit = {
         tree match
           case ImplicitAwaitCall(arg, tg, ta, tf, gc, gcn) =>
-            println(s"AutomaticColoring:discovered await: arg=${arg.show}")
             arg match
               case id: Ident =>
-                println("arg is ident")
                 val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())
                 usageRecord.inAwaits += id
               case _ =>
-                println("arg is not ident")
                 super.traverseChildren(tree)
           case Apply(Apply(TypeApply(cnAwait, targs), List(arg)), List(monad, conversion))
             if cnAwait.symbol == Symbols.requiredMethod("cps.await") =>
-            println("discovered await: arg=$arg")
             arg match
               case id: Ident =>
                 val usageRecord = usageRecords.getOrElseUpdate(id.symbol, ValUsage())

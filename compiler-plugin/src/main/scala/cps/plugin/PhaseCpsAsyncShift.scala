@@ -38,9 +38,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @return
    */
   override def transformTemplate(tree: Template)(using Context): Tree = {
-    println(
-      s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.tpe.show}"
-    )
     val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
     var newMethods      = List.empty[DefDef]
     for (
@@ -86,10 +83,8 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     val retval = if (newMethods.isEmpty) {
       super.transformTemplate(tree)
     } else {
-      println("cpsAsyncShift::transformTemplate: added new methods: " + newMethods.map(_.name).mkString(","))
       cpy.Template(tree)(body = tree.body ++ newMethods)
     }
-    // println(s"after CpsAsyncShift, retval: ${retval.show}")
     retval
   }
 
@@ -174,8 +169,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
           tree.srcPos
         )
       else false
-    println("isHightOrder,  params: " + valDefs.map(_.tpt.tpe.show).mkString(",") + ", retval: " + retval)
-    println(s"isHightOrder,  funcParams: ${funcParams.map(_.tpt.tpe.show).mkString(",")}")
     retval
 
   def filterParams(params: List[ParamClause]): List[ValDef] =
@@ -191,7 +184,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
       case _: MethodType => true
       case _: PolyType => true
       case _ => false
-    println("isFunc, t: " + t.show + ", retval: " + retval)
     retval
 
 }

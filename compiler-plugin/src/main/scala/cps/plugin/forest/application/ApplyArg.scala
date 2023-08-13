@@ -113,18 +113,7 @@ object ApplyArg {
           ApplyArg(p,newName,elemtpt.tpe,isByName, isDirectContext, owner, dependFromLeft, None, nesting)
         },  elemtpt,  expr, named, enclosingInlined)
       case _ =>
-        val cpsExpr = try{
-          RootTransform(expr, owner, nesting+1)
-        }catch {
-          case NonFatal(ex) =>
-            expr match
-              case Typed(expr,tpt) =>
-                println(s"Failed term: ${expr}")
-                println(s"Failed type: ${tpt}")
-              case _ =>
-                println(s"Failed term: ${expr}")
-            throw ex
-        }
+        val cpsExpr = RootTransform(expr, owner, nesting+1)
         Log.trace(s"ApplyArg: ${expr.show} => ${cpsExpr.show}", nesting)
         if (isByName) then
           ByNameApplyArg(paramName, paramType, cpsExpr, isDirectContext, named)
@@ -178,54 +167,29 @@ sealed trait ExprApplyArg extends ApplyArg {
     case _ => false
 
   def lambdaCanBeUnshifted(using Context, CpsTopLevelContext): Boolean = {
-    println(s"checking lambdaCanBeUnshifted for ${tpe.show}")
 
     def isAsync(tp: Type): Boolean = {
       tp.baseType(summon[CpsTopLevelContext].monadType.typeSymbol) != NoType
     }
 
-
-
     @tailrec
     def canBeUnshifted(tp: Type): Boolean = {
-      /*
-      val wtpe = tp.widen
-      if (defn.isFunctionType(wtpe)) {
-        println(s"defn.isFunctionType fro ${wtpe.show}")
-        // how
-      }
-      println(s"defn.isFunctionType fro ${wtpe.show} = ${defn.isFunctionType(wtpe)}")
-      println(s"defn.isFunctionType fro ${tp.show} = ${defn.isFunctionType(tp)}")
-      val contextFunction = defn.FunctionType(2,true).appliedTo(List(defn.IntType,defn.IntType))
-      println(s"defn.isFunctionType for ContextFunction ${contextFunction.show} = ${defn.isFunctionType(contextFunction)}")
-      val mt = MethodType(List("x".toTermName),List(defn.IntType),defn.IntType)
-      println(s"defn.isFunctionType for MethodType ${mt.show} = ${defn.isFunctionType(mt)}")
-      val polyType = PolyType(List("T".toTypeName))(
-        (pt => List(TypeBounds.empty )),
-        (pt => MethodType(List("x".toTermName),List(defn.IntType),pt.paramRefs(0)))
-      )
-      println(s"defn.isFunctionType for PolyType ${polyType.show} = ${defn.isFunctionType(polyType)}")
-      */
       tp.widen match
         case tp: MethodOrPoly => isAsync(tp.resType) || canBeUnshifted(tp.resType)
         case AppliedType(tycon, targs) =>
           if (defn.isFunctionSymbol(tycon.typeSymbol)) then
             val tp = targs.last
-            println("determinated function type")
             isAsync(tp) || canBeUnshifted(tp)
           else if (defn.isContextFunctionClass(tycon.typeSymbol))
             val tp = targs.last
             isAsync(tp) || canBeUnshifted(tp)
           else
-            println(s"${tycon.show} is not function type, for all-type: ${defn.isFunctionType(tp)}")
             false
         case _ =>
-          println(s"unchecked type for LambdaCanBeUnshifted: ${tp}")
           false
     }
 
     val result = canBeUnshifted(tpe.widen)
-    println(s"lanbdaCanBeUnshifted for ${tpe.show} is ${result}")
     result
 
   }
@@ -465,7 +429,6 @@ case class ByNameApplyArg(
   }
 
   override def exprInCallNotNamed(callMode: ApplyArgCallMode, optRuntimeAwait:Option[Tree])(using Context, CpsTopLevelContext): Tree = {
-    println("ByNameApplyArg.exprInCallNotNamed: ${expr.show}, callMode=${callMode}")
     callMode match
       case ApplyArgCallMode.ASYNC_SHIFT =>
         // make lambda

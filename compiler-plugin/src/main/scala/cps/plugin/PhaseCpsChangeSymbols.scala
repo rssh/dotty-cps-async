@@ -36,11 +36,9 @@ class PhaseCpsChangeSymbols(selectedNodes: SelectedNodes, shiftedSymbols:Shifted
       case Some(selectRecord) =>
         // we have erased type in sym.info
         //  normal full type saced
-        println(s"transformSym for ${sym} (${sym.symbol.id}):  ${sym.info.show} ")
         val monadType = selectRecord.monadType
         val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType)
         selectRecord.changedType = ntp
-        println(s"transformSym: ${sym.info.show}  ->  ${ntp.show}, ${sym} '${sym.name.mangledString}' ${sym.symbol.id}")
         sym.copySymDenotation(info = ntp)
       case None =>
         sym

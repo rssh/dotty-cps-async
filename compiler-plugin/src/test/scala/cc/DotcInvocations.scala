@@ -38,7 +38,7 @@ class DotcInvocations(silent: Boolean = false) {
   def compileAndRunFilesInDirs(dirs: List[String], outDir: String, mainClass:String = "Main", extraArgs: List[String] = List.empty): (Int,String) = {
     val reporter = compileFilesInDirs(dirs, outDir, extraArgs)
     if (reporter.hasErrors) {
-      println("Compilation failed")
+      println(s"Compilation failed in dirs ${dirs}")
       println(reporter.allErrors.mkString("\n"))
       throw new RuntimeException("Compilation failed")
     } else {
@@ -68,11 +68,6 @@ class DotcInvocations(silent: Boolean = false) {
         throw new RuntimeException(s"Process $cmd timed out")
       }
     }
-  }
-
-  private def runJS(outDir: String, mainClass: String, timeout: FiniteDuration = 1.minute): (Int, String) = {
-    val cmd = s"node --experimental-modules --experimental-loader=src/main/resources/js-loader.mjs "
-    println(s"Running $cmd")
   }
 
   /**

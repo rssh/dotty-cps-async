@@ -65,7 +65,6 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
   def transformDefDefInternal(tree: DefDef, selectRecord: DefDefSelectRecord, optTopLevelContext:Option[CpsTopLevelContext]=None)(using Context): DefDef = {
     val debugSettings = optTopLevelContext.map(_.debugSettings).getOrElse(DebugSettings.make(tree))
     selectRecord.debugLevel = debugSettings.debugLevel
-    println(s"transformDefDef ${tree.symbol.showFullName}, (${tree.symbol.id}) starting at${tree.srcPos.startPos.show}, selectRecord.kind=${selectRecord.kind}")
     if (debugSettings.printCode) then
       report.log("transforming tree:", tree.srcPos)
     val retval = selectRecord.kind match
@@ -79,12 +78,8 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         val ctx1: Context = summon[Context].withOwner(tree.symbol)
         val transformedRhs = RootTransform(tree.rhs,tree.symbol, 0)(using ctx1, tc).transformed
         val nRhs = Block(tc.cpsMonadValDef::Nil,transformedRhs)(using ctx1)
-        println(s"nRsh.block=${nRhs.show}")
-        println(s"nRhs.tpe = ${nRhs.tpe.show}")
         val adoptedRhs = Scaffolding.adoptUncpsedRhs(nRhs, tree.tpt.tpe, tc.monadType)
         val retval = cpy.DefDef(tree)(tree.name, tree.paramss, tree.tpt, adoptedRhs)
-        println(s"transformDefDef[1] for ${tree.symbol.id}  ")
-          //tree.symbol.defTree = retval
         retval
       case RETURN_CONTEXT_FUN(internalKind) =>
         tree.rhs match
@@ -96,10 +91,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
             val nClosureType = CpsTransformHelper.cpsTransformedType(closure.tpe, fType)
             //selectRecord.changedReturnType = nClosureType
             val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
-            println(s"creating closure (ref to ${nDefDef.symbol.id}):${nClosure} ")
-            println(s"closure.tpe=${closure.tpe.show},  nClosure.tpe=${nClosure.tpe.show}")
             val nLambda = Block(nDefDef::Nil,nClosure).withSpan(oldLambda.span)
-            println(s"Block.tpe = ${nLambda.tpe.show}")
             val retval = cpy.DefDef(tree)(tree.name, tree.paramss, tree.tpt, nLambda)
             retval
           case _ =>
@@ -147,20 +139,14 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
            )  if (cpsAsyncApplyCn.symbol == Symbols.requiredMethod("cps.plugin.cpsAsyncApply")) =>
         val (ddef, closure) = ctxFun match
           case Inlined(call, List(), Block((ddef: DefDef)::Nil, closure: Closure)) =>
-            println(s"transformApplyInternal: Inlined found ddef.symbol=${ddef.symbol.showFullName}")
             (ddef, closure)
           case Block((ddef: DefDef)::Nil, closure: Closure) =>
-            println(s"transform Apply: found ddef.symbol=${ddef.symbol.showFullName}")
             (ddef, closure)
           case _ =>
             throw CpsTransformException(s"excepted that second argument of cpsAsyncApply is closure, we have $ctxFun", tree.srcPos)
         val nDefDef = transformDefDefInsideAsync(ddef, tree, false)
         if (ddef.symbol.owner != ctx.owner) {
-          println(s"transformApplyInternal: ddef.symbol.owner != ctx.owner  ddef.symbol.owner=${ddef.symbol.owner.showFullName}, ctx.owner=${ctx.owner.showFullName}")
-        }
-        if (ddef.symbol.hashCode() == 41394) {
-          println(s"transformApplyInternal: 41394 found: ddef.symbol=${ddef.symbol.showFullName}")
-          println(s"nDedDef.symbol = {nDefDef.symbol} (${nDefDef.symbol.hashCode()})")
+          report.warning(s"transformApplyInternal: ddef.symbol.owner != ctx.owner  ddef.symbol.owner=${ddef.symbol.owner.showFullName}, ctx.owner=${ctx.owner.showFullName}", tree.srcPos)
         }
         val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
         val applyArg = Block(nDefDef::Nil, nClosure).withSpan(ctxFun.span)
@@ -186,23 +172,11 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     val cpsMonadContext = ddef.paramss.head.head
     val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, CpsTransformHelper.cpsMonadContextClassSymbol, asyncCallTree.srcPos)
 
-    //val nRhsType = CpsTransformHelper.cpsTransformedType(ddef.rhs.tpe.widen, monadType)
-    //val mt = if (contextual) {
-    //  ContextualMethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
-    //} else {
-    //  MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.tpe.widen), _ => nRhsType)
-    //}
-    //val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
-
-
-
     if (true) {
-      println(s"transformDefDefInsideAsync: checking correct input ctx.owner=${ctx.owner.hashCode()}")
       TransformUtil.findSubtermsWithIncorrectOwner(ddef.rhs, ddef.symbol) match
         case subterm::tail =>
-          println(s"found subterm with incorrect owner: ${subterm.symbol}(${subterm.symbol.hashCode()}  owner=${subterm.symbol.owner}(${subterm.symbol.owner.hashCode()})")
+          report.debugwarn(s"found subterm with incorrect owner: ${subterm.symbol}(${subterm.symbol.hashCode()}  owner=${subterm.symbol.owner}(${subterm.symbol.owner.hashCode()})", ddef.srcPos)
         case Nil =>
-          println(s"not found subterm with incorrect owner")
     }
 
     val contextParam = cpsMonadContext match
@@ -229,33 +203,13 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
         //  note, that changeOwner should be last, because otherwise substParams will not see origin params.
       nBody
     }).withSpan(ddef.span)
-    println(s"transformDefDefInsideAsync: newSym=${newSym.hashCode()}, old ddef.sym=${ddef.symbol.hashCode()}, ctx.owner=${ctx.owner.hashCode()}")
-    println(s"old defdef type: ${ddef.tpe.widen.show}")
-    println(s"new defdef type: ${nDefDef.tpe.widen.show}")
 
-    if (true) {
-      TransformUtil.findSubtermWithOwner(nDefDef.rhs, ddef.symbol) match
-        case Some(tree) => println(s"err::symbol still have old owner:  ${tree.show}")
-        case None =>
-    }
+    //if (true) {
+    //  TransformUtil.findSubtermWithOwner(nDefDef.rhs, ddef.symbol) match
+    //    case Some(tree) => println(s"err::symbol still have old owner:  ${tree.show}")
+    //    case None =>
+    //}
 
-    /*
-    val nDefDef = DefDef(newSym, paramss => {
-      given tctx: CpsTopLevelContext = makeCpsTopLevelContext(paramss.head.head, newSym, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
-      val nctx = ctx.withOwner(newSym)
-      TransformUtil.findSubtermWithOtherOwner(ddef.rhs, ddef.symbol) match
-        case Some(tree) => println(s"err::symbol have other owner then ddef:  ${tree.show} with owner ${tree.symbol.owner.hashCode()}")
-        case None =>
-      val nBody = TransformUtil.substParams(ddef.rhs, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head).changeOwner(ddef.symbol, newSym)
-      TransformUtil.findSubtermWithOwner(nBody, ddef.symbol) match
-        case Some(tree) => println(s"err::symbol still have old owner:  ${tree.show}")
-        case None =>
-      val nRhsCps = RootTransform(nBody, newSym, 0)(using nctx, tctx)
-      val nRhs = wrapTopLevelCpsTree(nRhsCps)(using nctx, tctx)
-      Block(tctx.cpsMonadValDef::Nil, nRhs)(using nctx)
-    } ).withSpan(ddef.span)
-
-     */
     nDefDef
   }
 
@@ -372,7 +326,6 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
           case AsyncKind.Async(AsyncKind.Sync) =>
             makeAsync(cpsTree.transformed)
           case _ =>
-            println(s"CpsTree with non-standard async kind: ${cpsTree.show}")
             throw CpsTransformException(s"unsupported type for top-level wrap, asyncKind=${cpsTree.asyncKind}", cpsTree.origin.srcPos)
   }
 
@@ -400,7 +353,6 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
                              throw new CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
     val automaticColoringTag = CpsTransformHelper.findAutomaticColoringTag(monadType, srcPos.span)
     val automaticColoring = if (automaticColoringTag.isDefined) {
-      println("found automatic coloring")
       val memoization = CpsTransformHelper.findCpsMonadMemoization(monadType, srcPos.span)
       if (memoization.isDefined) {
         val analyzer = new AutomaticColoringAnalyzer()

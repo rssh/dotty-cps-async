@@ -120,8 +120,6 @@ object TryTransform {
       case (exprKind, casesKind, _) =>
         exprKind.unify(casesKind) match
           case Left(p) =>
-            println(s"expr=${cpsExpr.show},  expr.kind=${cpsExpr.asyncKind} ")
-            println(s"cases = ${cases.unpureCaseDefs.map(_.show)}  cases.kind=${casesAsyncKind} ")
             throw CpsTransformException(s"Non-compatible async shape in try exppression and handlers ${p}", origin.srcPos)
           case Right(k) =>
             val expr1 = generateWithAsyncCases(origin, owner, cpsExpr, cases, k, nesting)

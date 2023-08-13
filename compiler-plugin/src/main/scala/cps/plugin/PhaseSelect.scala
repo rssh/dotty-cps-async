@@ -28,7 +28,6 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
         val optKind = SelectedNodes.detectDefDefSelectKind(tree)
         optKind.foreach{kind =>
           selectedNodes.addDefDef(tree.symbol,kind)
-          println(s"phaseSelect, addDefDef for ${tree.symbol}, symbol.id= ${tree.symbol.id}")
         }
         val childTraversor = new TreeTraverser {
           override def traverse(tree: Tree)(using Context): Unit = {
@@ -37,7 +36,6 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
                 selectedNodes.getDefDefRecord(tree.symbol) match
                   case Some(r) =>
                     if (!r.internal) {
-                      println(s"selectPhase: set internal for ${fun.symbol.showFullName} (${fun.symbol.id}) at ${tree.srcPos.startPos.show}, r.identity=${System.identityHashCode(r)}")
                       selectedNodes.markAsInternal(tree.symbol)
                       traverseChildren(tree)
                     }

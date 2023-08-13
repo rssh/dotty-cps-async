@@ -14,7 +14,6 @@ object AwaitTransform {
 
     val cpsTree = term match
       case Apply(Apply(TypeApply(fCpsAwaitCn, List(tf, ta, tg)), List(fa)), List(gc, gcn)) =>
-        println(s" form at : ${term.show},  symbol=${fCpsAwaitCn.symbol}")
         if (fCpsAwaitCn.symbol == Symbols.requiredMethod("cps.cpsAwait") ||
             fCpsAwaitCn.symbol == Symbols.requiredMethod("cps.await")        ) then
           //def cpsAwait[F[_], A, G[_]](fa: F[A])(using CpsMonadContext[G], CpsMonadConversion[F, G]): A =

@@ -19,9 +19,6 @@ object ImplicitAwaitCall {
           case ImplicitAwaitLambda(tf,ta,tg,gc,conversion) => Some((arg,tf,ta,tg,gc,conversion))
           case _ => None
       case _ => None
-    if (retval.isDefined) {
-      println(s"AutomaticColoring::implicit await call for ${tree.show} => true")
-    }
     retval
 }
 

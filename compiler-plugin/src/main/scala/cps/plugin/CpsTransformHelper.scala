@@ -99,10 +99,6 @@ object CpsTransformHelper {
   def cpsTransformedType(t:Type, fType:Type, debug: Boolean = false)(using Context): Type = {
     val retval = t match
       case AppliedType(funCn,params) =>
-        if (debug) {
-          println(s"cpsTransformedType, funCn = ${funCn.show}, isFunctionType=${defn.isFunctionType(funCn)}, isContextFunctionType=${defn.isContextFunctionType(funCn)}")
-          println(s"cpsTransformedType, isContextFunctionType(t)=${defn.isContextFunctionType(t)}")
-        }
         if (defn.isFunctionType(t) || defn.isContextFunctionType(t)) then
           val nParams = adoptResultTypeParam(params, fType)
           AppliedType(funCn, nParams)
@@ -120,10 +116,6 @@ object CpsTransformHelper {
         PolyType(pt.paramNames)(_ => pt.paramInfos, _ => cpsTransformedType(pt.resType, fType, debug))
       case _  =>
         decorateTypeApplications(fType).appliedTo(t.widen)
-    if (debug) {
-      println(s"cpsTransformedType: in = (${t.show}   [${t}]")
-      println(s"cpsTransformedType: out = ${retval.show}   [${retval}]")
-    }
     retval
   }
 
@@ -225,14 +217,7 @@ object CpsTransformHelper {
   }
 
   def findCustomValueDiscardTag(span: Span)(using ctx: Context): Option[Tree] = {
-    //findImplicitInstance(Symbols.requiredClassRef("cps.ValueDiscard.CustomTag"), span)
-    val tpe = Symbols.requiredClassRef("cps.ValueDiscard.CustomTag")
-    val searchResult = ctx.typer.inferImplicitArg(tpe, span)
-    searchResult.tpe match
-      case _: typer.Implicits.SearchFailureType => None
-      case _ =>
-        println(s"founf ValueDiscard.CustomTag: ${searchResult.show} ")
-        Some(searchResult)
+    findImplicitInstance(Symbols.requiredClassRef("cps.ValueDiscard.CustomTag"), span)
   }
 
 

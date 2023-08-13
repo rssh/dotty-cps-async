@@ -117,7 +117,6 @@ sealed trait CpsTree {
   def applyRuntimeAwait(runtimeAwait: Tree)(using Context, CpsTopLevelContext): CpsTree
 
   def select(origin: Select)(using Context, CpsTopLevelContext): CpsTree =
-    println(s"CpsTree.select,  origin.type=${origin.tpe.widen.show}")
     SelectTypeApplyTypedCpsTree(
       List(SelectTypeApplyTypedCpsTree.OpSelect(origin)),
       this,
@@ -680,11 +679,7 @@ case class FlatMapCpsTree(
 
   override def select(origin: Select)(using Context, CpsTopLevelContext): CpsTree = {
     // TODO:  check about asyncLambda in body
-    println(s"FlatMap.select: origin.type.widen=${origin.tpe.widen.show}")
-    println(s"FlatMap.select: origin.type=${origin.tpe.show}")
     val retval = copy(flatMapFun = flatMapFun.copy(body = flatMapFun.body.select(origin)))
-    println(s"FlatMap.select: origin.type=${origin.tpe.show}")
-    println(s"FlatMap.select: retval=${retval.show} ")
     retval
   }
 
@@ -774,8 +769,6 @@ case class LambdaCpsTree(
             Some(origin)
           case _ =>
             val tpe =  createUnshiftedType()
-            println(s"LambdaCpsTree.unpure:  tpe=${tpe.show}  origin.tpe.widen=${origin.tpe.widen.show}")
-
             val meth = Symbols.newAnonFun(owner,tpe)
             val closure = Closure(meth,
               { tss =>
@@ -854,7 +847,6 @@ case class LambdaCpsTree(
             tctx.cpsMonadContextRef
           )
         )
-        println(s"applyRuntimeAwait:  runtimeAwait=${runtimeAwait.show}, nBody=${nBody.show}")
         val nDefDef =  ???
         val nLambda: Tree = ???
         CpsTree.pure(origin,owner,nLambda)
@@ -879,8 +871,6 @@ case class LambdaCpsTree(
     val paramTypes = params.map(_.tpe.widen)
 
     val retval = if (originDefDef.tpe <:< defn.PartialFunctionOf(WildcardType,WildcardType)) {
-                      println("orifinDefDef.tpe <:< PartialFunctionOf")
-                      println(s"orifinDefDef.tpe = ${originDefDef.tpe}, show=${originDefDef.tpe.show}")
                       ???
                   } else
                       MethodType(paramNames)(
@@ -1475,8 +1465,6 @@ case class CallChainSubstCpsTree(override val origin: Tree,
 
 
   def finishChain()(using Context, CpsTopLevelContext): CpsTree = {
-     println(s"before _finishChain, call = ${call.show}")
-     Thread.dumpStack()
      val finishChainSelect = call.select(Select(call.origin,"_finishChain".toTermName))
      val finishChainType = finishChainSelect.originType.widen
      if (finishChainType <:< defn.NothingType) then

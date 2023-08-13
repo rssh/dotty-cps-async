@@ -23,7 +23,6 @@ object ValDefTransform {
                   case Some(c) if (cpsRhs0.originType <:< tctx.monadType.appliedTo(Types.WildcardType)) =>
                        c.analyzer.usageRecords.get(term.symbol) match
                              case Some(record) =>
-                                   println(s"found usage record (automatic coloring), nInAwaits=${record.nInAwaits}")
                                    record.reportCases()
                                    if (record.nInAwaits > 0 && record.nWithoutAwaits == 0) {
                                      applyMemoization(cpsRhs0, owner, c.memoization, term)
@@ -32,7 +31,7 @@ object ValDefTransform {
                                      throw CpsTransformException(s"val ${term.name} used in both sync and async way with automatic coloring", term.srcPos)
                                    } else {
                                      cpsRhs0
-                                   } 
+                                   }
                              case None => cpsRhs0
                   case _ => cpsRhs0
             cpsRhs.asyncKind match
@@ -90,11 +89,9 @@ object ValDefTransform {
 
 
       def applyMemoization(cpsRhs: CpsTree, owner: Symbol, memoization: Tree, term: ValDef)(using Context, CpsTopLevelContext): CpsTree = {
-            println(s"ValDefTransform::applyMemoization for ${term.show} (${term.symbol.show}  ${term.symbol.hashCode()})")
             if (memoization.tpe <:< Symbols.requiredClassRef("cps.CpsMonadMemoization.Default").appliedTo(Types.WildcardType)) then
                   cpsRhs
             else if (memoization.tpe.baseType(Symbols.requiredClass("cps.CpsMonadMemoization.Inplace")) != NoType) then
-                  println("inplace memoization")
                   cpsRhs.unpure match
                     case Some(unpureRhs) =>
                       val untpdTerm = untpd.Apply(
@@ -153,7 +150,6 @@ object ValDefTransform {
                     case AsyncKind.AsyncLambda(bodyKind) =>
                       throw CpsTransformException(s"Can't apply inplace memoization to function ${term.name}", term.srcPos)
             else if (memoization.tpe.baseType(Symbols.requiredClass("cps.CpsMonadMemoization.Dynamic")) != NoType) then
-                  println("dynamic memoization")
                   //
                   //Expr.summon[CpsMonadMemoization.DynamicAp[F,et]] match
                   //                      case Some(mm) =>
