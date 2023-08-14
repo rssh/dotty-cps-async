@@ -153,7 +153,7 @@ class Test14Run {
   @Test
   def testFutureRangeWithFilterShift(): Unit = {
     val dirname = "testdata/set14runtests/m12"
-    val testClassName = "cps.TestFutureRangeWithFilterShift"
+    val testClassName = "cpstest.TestFutureRangeWithFilterShift"
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
 
