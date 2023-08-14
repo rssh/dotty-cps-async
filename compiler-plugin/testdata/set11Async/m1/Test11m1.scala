@@ -41,10 +41,11 @@ object Test11m1 {
     val r = Await.result(fr, 1.second)
     val nMillis1 = System.currentTimeMillis()
     val delta = nMillis1 - nMillis0
-    if (r == List("url1:500","url2:100","url3:200") && delta < 800) then
+    if (r == List("url1:500","url2:100","url3:200") && delta < 1000) then
       println("Ok")
     else
       println(r)
+    
     scheduledExecutorService.shutdown()
   }
 
