@@ -19,7 +19,7 @@ val sharedSettings = Seq(
 
 lazy val root = project
   .in(file("."))
-  .aggregate(cps.js, cps.jvm, cps.native)
+  .aggregate(cps.js, cps.jvm, cps.native, compilerPlugin)
   .settings(
     Sphinx / sourceDirectory := baseDirectory.value / "docs",
     SiteScaladocPlugin.scaladocSettings(CpsJVM, cps.jvm / Compile / packageDoc / mappings, "api/jvm"),
