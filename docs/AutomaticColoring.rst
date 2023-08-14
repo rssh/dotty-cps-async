@@ -1,5 +1,5 @@
-Automatic Coloring 
-===================
+Automatic Coloring  (deprecated)
+================================
 
 Overview
 -------- 
@@ -36,6 +36,20 @@ can be written without |await|_ as:
      val dmpInfo: String = api.retrieveDMPInfo(url, theme, "1")
      dmpInfo
    }
+
+
+Note, that automatic coloring is 
+
+.. code-block:: scala
+
+   val c = async[Future] {
+     val url = "http://www.example.com"
+     val data = api.fetchUrl("http://www.example.com")
+     val theme = api.classifyText(data)
+     val dmpInfo = api.retrieveDMPInfo(url, theme, "1")
+     dmpInfo
+   }
+
 
 
 Automatic Coloring & Memoization
