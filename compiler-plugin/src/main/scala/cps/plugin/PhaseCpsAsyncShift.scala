@@ -12,7 +12,7 @@ import ast.tpd.*
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Types.TypeRef
 import plugins.*
-import transform.{ Erasure, Inlining, Pickler, PruneErasedDefs }
+import transform.{Erasure, Inlining, Pickler, PruneErasedDefs}
 
 class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSymbols)
     extends PluginPhase {
@@ -31,13 +31,22 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //   -- update the global cache, setting as key - signature of function or method, value - async tree
   // }
 
+
+  override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree =
+    try
+      transformTemplateInternal(tree)
+    catch
+      case ex: CpsTransformException =>
+        report.error(ex.getMessage, ex.pos)
+        tree
+
   /**
    * looks for annotated functions, changes them and add to shiftedSymbols
    * @param tree
    * @param Context
    * @return
    */
-  override def transformTemplate(tree: Template)(using Context): Tree = {
+  def transformTemplateInternal(tree: Template)(using Context): Tree = {
     val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
     var newMethods      = List.empty[DefDef]
     for (
@@ -48,11 +57,10 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
-          if !isHighOrder(fun) then
-            throw CpsTransformException(
-              "Object has to be a high-order function",
-              bodyTree.srcPos
-            )
+          checkApplicableForMakeCPS(fun) match
+            case Left(err) =>
+              throw CpsTransformException(err, bodyTree.srcPos)
+            case Right(_) =>
           val newFunName     = (fun.symbol.name.debugString + "$cps").toTermName
           val newFunSymbol   =
             Symbols.newSymbol(
@@ -123,7 +131,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
 
   //  DefDef( ....   rhs = cpsAsyncShift ....  )
   //
-      
+
   /**
    * transform rhs of the annotated function
    * @param tree
@@ -155,21 +163,23 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         val newExpr = transformFunсBody(expr)
         Block(stats, newExpr)
 
-  def isHighOrder(tree: DefDef)(using Context): Boolean =
+  def checkApplicableForMakeCPS(tree: DefDef)(using Context): Either[String,Unit] =
+    // check ValDef input params
+    if (!isHightOrderByArg(tree)) then
+      Left("Object annotated with cps.plugin.annotation.makeCPS has to be a high-order function")
+    else// check the return type
+      if isFunc(tree.rhs.tpe.finalResultType) then
+        Left("Unsupported type of function. The return type must not be a function")
+      else
+        Right(())
+
+  def isHightOrderByArg(tree: DefDef)(using Context): Boolean =
     // check ValDef input params
     val valDefs: List[ValDef] = filterParams(tree.paramss)
     val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
-    val retval = if funcParams.nonEmpty then
-      true
-    else// check the return type
-      // TODO: write implementation for this special case
-      if isFunc(tree.rhs.tpe.finalResultType) then
-        throw CpsTransformException(
-          "Unsupported type of function. The return type must not be a function",
-          tree.srcPos
-        )
-      else false
-    retval
+    funcParams.nonEmpty
+
+
 
   def filterParams(params: List[ParamClause]): List[ValDef] =
     val ps = params.flatten[ValDef | TypeDef]

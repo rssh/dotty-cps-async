@@ -43,6 +43,7 @@ class Test12 {
       assert(false, "Expected exception was not thrown")
     } catch {
       case ex: CpsTransformException =>
+        ex.printStackTrace()
         assert(
           ex.getMessage == "Unsupported type of function. The return type must not be a function",
           "There should be a CpsTransformException about unsupported type"
