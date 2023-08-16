@@ -119,19 +119,18 @@ object DotcInvocations {
       //"-Xcheck-macros",
       "-Ydebug",
       //"-Yprint-syms",
-      "-explain",
+      //"-explain",
       //List("-Yprint-debug") ++
       //List("-Yshow-tree-ids") ++
       //List("-verbose") ++
       //List("-unchecked") ++
        "--color:never",
-       "-Vprint:erasure",
-       "-Vprint:rssh.cps",
-       "-Vprint:inlining"
-    //List("-Vprint:constructors") ++
-    //List("-Vprint:lambdaLift") ++
-    //List("-Xshow-phases") ++
-
+      // "-Vprint:erasure",
+      // "-Vprint:rssh.cps",
+      // "-Vprint:inlining"
+      //List("-Vprint:constructors") ++
+      //List("-Vprint:lambdaLift") ++
+      //List("-Xshow-phases") ++
     )
   }
 

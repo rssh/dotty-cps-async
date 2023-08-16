@@ -1,7 +1,7 @@
 package cps.plugin
 
 import dotty.tools.dotc.*
-import core.*
+import core.{Types, *}
 import core.Contexts.*
 import core.Constants.*
 import core.Annotations.*
@@ -62,12 +62,16 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
               throw CpsTransformException(err, bodyTree.srcPos)
             case Right(_) =>
           val newFunName     = (fun.symbol.name.debugString + "$cps").toTermName
+
+
           val newFunSymbol   =
             Symbols.newSymbol(
               fun.symbol.owner,
               newFunName,
               fun.symbol.flags | Flags.Synthetic,
-              fun.symbol.info.widen // let be the same type for now
+              fun.symbol.info.widen, // let be the same type for now
+              //  TODO:  create PolyType with type-params and MethodType instead fun.symbol.info.widen
+              //PolyType()
             )
           // create new rhs
           val transformedRhs = transformFunсBody(fun.rhs)
@@ -116,12 +120,16 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //  )
   //
   //   map[A,B](collection:List[A])(f: A => B): List[B] =  doSpmetjong
-  //   map[F[_],C <: CpsMonadContext[F],A,B](am: CpsMonad.Aux[F,C])(collection:List[A])(f: A => B): F[List[B]] = {
+  //   map$cps[F[_],C <: CpsMonadContext[F],A,B](am: CpsMonad.Aux[F,C])(collection:List[A])(f: A => B): F[List[B]] = {
   //      cpsAsyncApply[F,List[B],C](am,
   //           mt = ContextMethodType(....)
   //           Lambda(mt, tss => transfomrdBody(f) )
   //      )
   //   }
+  //
+  //   add type-params
+  //      new typr of DefDef:  if its PolyType, - copy PolyType and add type parameter
+  //                           MethodType - create PolyType with type-params and MethodType
 
   //   tranfromedBody(f) = {
   //      Apply(f, ...)  =>  await[[F,result-typr-of-apply,F]](f, ....)
