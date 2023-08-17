@@ -180,6 +180,14 @@ object CpsTransformHelper {
 
   }*/
 
+  def isDirectContext(tpe:Type)(using Context): Boolean = {
+    if (tpe =:= defn.NothingType || tpe =:= defn.NullType) then
+      false
+    else
+      val directContextType = Symbols.requiredClassRef("cps.CpsDirect").appliedTo(Types.WildcardType)
+      tpe <:< directContextType
+  }
+
 
   def findImplicitInstance(tpe: Type, span: Span)(using ctx:Context): Option[Tree] = {
     val searchResult = ctx.typer.inferImplicitArg(tpe,span)

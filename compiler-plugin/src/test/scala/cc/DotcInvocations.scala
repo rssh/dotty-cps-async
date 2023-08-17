@@ -39,7 +39,7 @@ class DotcInvocations(silent: Boolean = false) {
     val reporter = compileFilesInDirs(dirs, outDir, extraArgs)
     if (reporter.hasErrors) {
       println(s"Compilation failed in dirs ${dirs}")
-      println(reporter.allErrors.mkString("\n"))
+      DotcInvocations.reportErrors(reporter)
       throw new RuntimeException("Compilation failed")
     } else {
       run(outDir, mainClass)
@@ -127,7 +127,7 @@ object DotcInvocations {
        "--color:never",
       // "-Vprint:erasure",
       // "-Vprint:rssh.cps",
-      // "-Vprint:inlining"
+      //"-Vprint:inlining"
       //List("-Vprint:constructors") ++
       //List("-Vprint:lambdaLift") ++
       //List("-Xshow-phases") ++
@@ -141,10 +141,16 @@ object DotcInvocations {
                            checkAll: Boolean = true
                            )
 
-  def compileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Unit = {
+  def compileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Reporter = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
-    dotcInvocations.compileFilesInDir(dir,dir,invocationArgs.extraDotcArgs,invocationArgs.checkAll)
-    checkReporter(dotcInvocations.reporter)
+    dotcInvocations.compileFilesInDir(dir, dir, invocationArgs.extraDotcArgs, invocationArgs.checkAll)
+    dotcInvocations.reporter
+  }
+
+
+  def succesfullyCompileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Unit = {
+    val reporter = compileFilesInDir(dir, invocationArgs)
+    checkReporter(reporter)
   }
 
   def compileAndRunFilesInDirAndCheckResult(
@@ -176,12 +182,16 @@ object DotcInvocations {
     }
   }
 
-  private def checkReporter(reporter: Reporter): Unit = {
+  def reportErrors(reporter: Reporter): Unit = {
     if (!reporter.allErrors.isEmpty) {
-      for(err <- reporter.allErrors)  {
+      for (err <- reporter.allErrors) {
         println(s"${err.msg} at ${err.pos.source}:${err.pos.line}:${err.pos.column}")
       }
     }
+  }
+
+  private def checkReporter(reporter: Reporter): Unit = {
+    reportErrors(reporter)
     assert(reporter.allErrors.isEmpty, "There should be no errors")
   }
 

@@ -9,7 +9,7 @@ class Test14Run {
 
   def compileCommon(): Unit = {
     if (!Test14Run.commonCompiled) {
-      DotcInvocations.compileFilesInDir("testdata/set14runtests/common")
+      DotcInvocations.succesfullyCompileFilesInDir("testdata/set14runtests/common")
       Test14Run.commonCompiled = true
       println("-----finish common compilation-----")
     }
@@ -19,7 +19,7 @@ class Test14Run {
     compileCommon()
     val classpath1 = s"testdata/set14runtests/common:${System.getProperty("java.class.path")}"
     val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath1))
-    DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
+    DotcInvocations.succesfullyCompileFilesInDir(dirname, secondInvokationArgs)
     val classpath2 = s"${dirname}:${classpath1}"
     val mainClass = "testUtil.JunitMain"
     val cmd = s"java -cp $classpath2 $mainClass $testClassName"

@@ -20,7 +20,6 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
   override val runsBefore = Set("rssh.cps")
 
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
-      // TODO: skip inline methods
       if (tree.symbol.denot.is(Flags.Inline)) then
         tree
       else
@@ -29,6 +28,7 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
         optKind.foreach{kind =>
           selectedNodes.addDefDef(tree.symbol,kind)
         }
+        // TODO:  try run this onlu on selected nodes
         val childTraversor = new TreeTraverser {
           override def traverse(tree: Tree)(using Context): Unit = {
             tree match
@@ -64,6 +64,28 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
         childTraversor.traverse(tree)
         tree
   }
+
+  override def transformValDef(tree: tpd.ValDef)(using Context): tpd.Tree = {
+    tree.rhs match
+      case EmptyTree =>
+        tree
+      case other =>
+        if (!tree.symbol.flags.isOneOf(Flags.InlineOrProxy|Flags.Synthetic) &&
+            CpsTransformHelper.isDirectContext(tree.rhs.tpe)) then
+              report.error("CpsDirect can't be a value", tree.srcPos)
+              tree
+        else
+          super.transformValDef(tree)
+  }
+
+  override def transformAssign(tree: tpd.Assign)(using Context): tpd.Tree = {
+    if (CpsTransformHelper.isDirectContext(tree.tpe)) then
+      report.error("CpsDirect can't be a assigned", tree.srcPos)
+      tree
+    else
+      super.transformAssign(tree)
+  }
+
 
 }
 

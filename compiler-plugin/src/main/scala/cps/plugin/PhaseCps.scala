@@ -51,7 +51,7 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
 
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
     selectedNodes.getDefDefRecord(tree.symbol) match
-      case Some(selectRecord) if (!selectRecord.internal) =>
+      case Some(selectRecord) if (!selectRecord.internal)  =>
           try
             transformDefDefInternal(tree, selectRecord, None)
           catch
@@ -59,8 +59,10 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
               report.error(ex.message, ex.pos)
               //ex.printStackTrace()
               throw ex
-      case _ => tree
+      case _ =>
+        tree
   }
+
 
   def transformDefDefInternal(tree: DefDef, selectRecord: DefDefSelectRecord, optTopLevelContext:Option[CpsTopLevelContext]=None)(using Context): DefDef = {
     val debugSettings = optTopLevelContext.map(_.debugSettings).getOrElse(DebugSettings.make(tree))
