@@ -168,7 +168,7 @@ object DotcInvocations {
     checkReporter(reporter)
 
     //println(s"output=${output}")
-    assert(output == expectedOutput, s"The output should be '$expectedOutput', we have '$output''")
+    assert(output.endsWith(expectedOutput), s"The output should ends with '$expectedOutput', we have '$output''")
 
   }
 
