@@ -47,6 +47,7 @@ object CpsTransformHelper {
     contextFunctionArgType.dealias match
       case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == wrapperSymbol) =>
              targ
+      // TODO: check type parameter (write test)
       case other =>
              val cntBase = other.baseType(wrapperSymbol)
              if (cntBase != NoType) 
@@ -135,10 +136,21 @@ object CpsTransformHelper {
           else
             MethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedErasedType(mt.resType, fType))
         case _ =>
-            // TODO: optimize
-            val retval = TypeErasure.erasure(decorateTypeApplications(fType).appliedTo(t))
-            println(s"eraded type application: ${retval.show},  is fType == ${retval == fType}, =:+= ${retval =:= fType}")
-            retval
+            fType match
+              case wt:WildcardType =>
+                defn.ObjectType
+              case _ =>
+                // TODO: optimize
+                val retval = TypeErasure.erasure(decorateTypeApplications(fType).appliedTo(t))
+                retval
+  }
+
+  def extractReturnType(tpe: Type)(using Context): Type = {
+    tpe match
+      case mpt: MethodOrPoly =>
+        extractReturnType(mpt.resType)
+      case _ =>
+        tpe
   }
 
   def asyncKindFromTransformedType(tpe: Type, ft: Type)(using Context): AsyncKind = {

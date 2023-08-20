@@ -29,7 +29,8 @@ class Test12 {
 
   @Test
   def testCompileAndRunM2(): Unit =
-    DotcInvocations.checkRuns(selection = (".*".r))(
+    val dotcArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-P:rssh.cps:withShiftReplace"))
+    DotcInvocations.checkRuns(selection = (".*".r),dotcArgs = dotcArgs)(
       TestRun("testdata/set12/m2", "cpstest.Test12m2", "prefixmyurltransformed\n")
     )
 

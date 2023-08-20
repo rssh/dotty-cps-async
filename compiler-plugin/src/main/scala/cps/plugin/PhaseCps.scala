@@ -27,17 +27,21 @@ import transform.{ElimPackagePrefixes, Erasure, Inlining, Pickler}
  * @param selectedNodes
  * @param shiftedSymbols
  */
-class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shiftedSymbols:ShiftedSymbols) extends PluginPhase {
+class PhaseCps(settings: CpsPluginSettings,
+               selectedNodes: SelectedNodes,
+               shiftedSymbols:ShiftedSymbols,
+               nextCpsPhaseName: String) extends PluginPhase {
 
   val phaseName = PhaseCps.name
 
   override def allowsImplicitSearch = true
 
+  override def changesBaseTypes: Boolean = true
   override def changesMembers: Boolean = true
 
 
-  override val runsAfter = Set("rssh.cpsSelect", Inlining.name, Pickler.name)
-  override val runsBefore = Set("rssh.cpsAsyncShift", ElimPackagePrefixes.name, Erasure.name, PhaseCpsChangeSymbols.name)
+  override val runsAfter = Set(PhaseSelect.phaseName, Inlining.name, Pickler.name)
+  override val runsBefore = Set(nextCpsPhaseName, ElimPackagePrefixes.name, Erasure.name)
 
 
   val debug = true
@@ -366,7 +370,8 @@ class PhaseCps(settings: CpsPluginSettings, selectedNodes: SelectedNodes, shifte
     val customValueDiscard = automaticColoring.isDefined || CpsTransformHelper.findCustomValueDiscardTag(srcPos.span).isDefined
     val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectOrSimpleContext,
                                 optRuntimeAwait, optThrowSupport, optTrySupport,
-                                debugSettings, settings, isBeforeInliner, automaticColoring, customValueDiscard)
+                                debugSettings, settings, isBeforeInliner,
+                                automaticColoring, customValueDiscard)
     tc
   }
 

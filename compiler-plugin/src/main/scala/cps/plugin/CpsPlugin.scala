@@ -20,26 +20,37 @@ class CpsPlugin extends StandardPlugin {
   
 
   def init(options: List[String]): List[PluginPhase] = {
+     println(s"CpsPlugin.init, options = $options")
      val settings = parseOptions(options)
      val shiftedSymbols = new ShiftedSymbols()
      val selectedNodes = new SelectedNodes()
      List(
        new PhaseSelect(selectedNodes),
-       new PhaseCps(settings,selectedNodes,shiftedSymbols),
-       new PhaseCpsAsyncShift(selectedNodes, shiftedSymbols),
-       new PhaseCpsAsyncReplace(selectedNodes, shiftedSymbols),
-      new PhaseCpsChangeSymbols(selectedNodes, shiftedSymbols)
+       new PhaseCps(settings,selectedNodes,shiftedSymbols, PhaseChangeSymbolsAndRemoveScaffolding.name),
+     ) ++ {
+       if (settings.withShiftReplace) then
+         List(
+           new PhaseCpsAsyncShift(selectedNodes, shiftedSymbols),
+           new PhaseCpsAsyncReplace(selectedNodes, shiftedSymbols),
+         )
+       else
+         List.empty
+     } ++ List(
+       new PhaseChangeSymbolsAndRemoveScaffolding(selectedNodes, shiftedSymbols)
      )
   }
 
   private def parseOptions(options:List[String]): CpsPluginSettings = {
     val settings = new CpsPluginSettings()
+    println("plugin options: " + options)
     for (option <- options) {
       if (option.startsWith("debugLevel=")) {
         val level = option.substring("debugLevel=".length).toInt
         settings.debugLevel = level
       } else if (option == "useLoom") {
         settings.useLoom = true
+      } else if (option == "withShiftReplace") {
+        settings.withShiftReplace = true
       } else {
         throw new IllegalArgumentException(s"Unknown option for cps plugin: $option")
       }

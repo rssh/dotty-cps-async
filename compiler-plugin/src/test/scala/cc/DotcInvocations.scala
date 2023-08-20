@@ -115,7 +115,7 @@ object DotcInvocations {
     // note, that -Ycheck:all is not included here, because it is added conditionally
     List(
       //"-Ydebug-error",
-      //"--unique-id",
+      "--unique-id",
       //"-Xcheck-macros",
       "-Ydebug",
       //"-Yprint-syms",
@@ -161,7 +161,7 @@ object DotcInvocations {
                                            ): Unit = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDir(dir,dir,mainClass)
+    val (code, output) = dotcInvocations.compileAndRunFilesInDir(dir,dir,mainClass,invocationArgs.extraDotcArgs)
 
     val reporter = dotcInvocations.reporter
     println("summary: " + reporter.summary)

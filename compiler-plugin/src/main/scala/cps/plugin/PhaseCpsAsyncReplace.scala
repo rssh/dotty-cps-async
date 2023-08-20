@@ -11,6 +11,7 @@ import ast.tpd.*
 import transform.{ Erasure, Pickler, PruneErasedDefs }
 import plugins.*
 
+// TODO: merge with PhasCps
 class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSymbols)
     extends PluginPhase {
 
@@ -19,7 +20,7 @@ class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: Shifted
   // strange -
   override def allowsImplicitSearch = true
   override val runsAfter            = Set(PhaseCpsAsyncShift.name)
-  override val runsBefore           = Set(PhaseCpsChangeSymbols.name, Erasure.name)
+  override val runsBefore           = Set(PhaseChangeSymbolsAndRemoveScaffolding.name, Erasure.name)
 
   /**
    * replaces symbols by transformed values from shiftedSymbols

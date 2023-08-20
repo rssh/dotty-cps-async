@@ -14,6 +14,7 @@ import dotty.tools.dotc.core.Types.TypeRef
 import plugins.*
 import transform.{Erasure, Inlining, Pickler, PruneErasedDefs}
 
+//TODO: merge with phaseSelect
 class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSymbols)
     extends PluginPhase {
 

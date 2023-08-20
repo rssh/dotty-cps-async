@@ -17,7 +17,7 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
   val phaseName = PhaseSelect.phaseName
 
   override val runsAfter = Set(SetRootTree.name, Pickler.name)
-  override val runsBefore = Set("rssh.cps")
+  override val runsBefore = Set(PhaseCps.name)
 
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
       if (tree.symbol.denot.is(Flags.Inline)) then

@@ -106,7 +106,7 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
                            .dependsOn(cps.jvm)
                            .settings(sharedSettings)
                            .settings(
-                              name := "dotty-cps-compiler-plugin",
+                              name := "dotty-cps-async-compiler-plugin",
                               libraryDependencies ++= Seq(
                                   "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
                                   "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
