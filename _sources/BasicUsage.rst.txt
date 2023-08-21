@@ -239,9 +239,9 @@ We can freely use `await` inside this direct context functions. Sometimes, we ne
           urls.map{ url => 
                  asynchronized(fetch(url))
                }
-              .flatMap{ fetchResult =>
+              .flatMap{ fetchingUrl =>
                try
-                   Some((url, await(fetchResult)))
+                   Some((url, await(fetchingUrl)))
                catch
                    case NonFatal(ex) =>
                       logger.log(s"Can't fetch $url, skipping", ex)

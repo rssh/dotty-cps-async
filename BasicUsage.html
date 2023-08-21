@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Dependency &#8212; dotty-cps-async 0.9.18-SNAPSHOT documentation</title>
+    <title>Dependency &#8212; dotty-cps-async 0.9.18 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="index.html" title="User Manual"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>  
@@ -243,9 +243,9 @@ Note, that signature also can be written in carried form: <cite>def fetchGreetin
 <span class="w">       </span><span class="n">urls</span><span class="p">.</span><span class="n">map</span><span class="p">{</span><span class="w"> </span><span class="n">url</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
 <span class="w">              </span><span class="n">asynchronized</span><span class="p">(</span><span class="n">fetch</span><span class="p">(</span><span class="n">url</span><span class="p">))</span><span class="w"></span>
 <span class="w">            </span><span class="p">}</span><span class="w"></span>
-<span class="w">           </span><span class="p">.</span><span class="n">flatMap</span><span class="p">{</span><span class="w"> </span><span class="n">fetchResult</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
+<span class="w">           </span><span class="p">.</span><span class="n">flatMap</span><span class="p">{</span><span class="w"> </span><span class="n">fetchingUrl</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
 <span class="w">            </span><span class="k">try</span><span class="w"></span>
-<span class="w">                </span><span class="nc">Some</span><span class="p">((</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">await</span><span class="p">(</span><span class="n">fetchResult</span><span class="p">)))</span><span class="w"></span>
+<span class="w">                </span><span class="nc">Some</span><span class="p">((</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">await</span><span class="p">(</span><span class="n">fetchingUrl</span><span class="p">)))</span><span class="w"></span>
 <span class="w">            </span><span class="k">catch</span><span class="w"></span>
 <span class="w">                </span><span class="k">case</span><span class="w"> </span><span class="nc">NonFatal</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
 <span class="w">                   </span><span class="n">logger</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="s">s&quot;Can&#39;t fetch </span><span class="si">$</span><span class="n">url</span><span class="s">, skipping&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"></span>
@@ -371,7 +371,7 @@ We define alternative names for macros: <cite>reify(reifed)/reflect</cite>, whic
         <li class="right" >
           <a href="index.html" title="User Manual"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>
