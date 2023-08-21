@@ -75,6 +75,7 @@ lazy val Root = config("root")
 
 lazy val cpsLoomJVM = project.in(file("jvm-loom"))
                       .dependsOn(cps.jvm)
+                      .disablePlugins(SitePreviewPlugin)
                       .settings(sharedSettings)
                       .settings(name := "dotty-cps-async-loom-test")
                       .settings(
@@ -105,6 +106,7 @@ lazy val cpsLoomJVM = project.in(file("jvm-loom"))
 lazy val compilerPlugin = project.in(file("compiler-plugin"))
                            .dependsOn(cps.jvm)
                            .settings(sharedSettings)
+                           .disablePlugins(SitePreviewPlugin)
                            .settings(
                               name := "dotty-cps-async-compiler-plugin",
                               libraryDependencies ++= Seq(
@@ -128,6 +130,7 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                            .jvmConfigure(_.dependsOn(compilerPlugin))
                            .jsConfigure(_.dependsOn(compilerPlugin))
                            .nativeConfigure(_.dependsOn(compilerPlugin))
+                           .disablePlugins(SitePreviewPlugin)
                            .settings(sharedSettings)
                            .settings(
                               name := "dotty-cps-compiler-plugin-tests",

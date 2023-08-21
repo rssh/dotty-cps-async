@@ -102,7 +102,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.17"
+  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.18"
 
 
 **Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_ and streaming frameworks like |Akka Streams|_ and |fs2|_. 
@@ -181,13 +181,13 @@ The signature above is an example of a function in direct encoding:
 
  .. code-block:: scala
 
- def  fetch(url:String)(using CpsDirect[Future]): String
+   def  fetch(url:String)(using CpsDirect[Future]): String
 
 Usage:
 
  .. code-block:: scala
 
- def fetchAccessible(urls:List[String])(using CpsDirect[Future]): Map[String,String] =
+   def fetchAccessible(urls:List[String])(using CpsDirect[Future]): Map[String,String] =
           urls.flatMap{ url =>
                try
                    Some((url, fetch(url)))
@@ -202,29 +202,29 @@ Our minimal example in this style:
 
  .. code-block:: scala
 
- import scala.annotation.experimental
- import scala.concurrent.*
- import scala.concurrent.duration.*
- import scala.concurrent.ExecutionContext.Implicits.global
+   import scala.annotation.experimental
+   import scala.concurrent.*
+   import scala.concurrent.duration.*
+   import scala.concurrent.ExecutionContext.Implicits.global
 
- import cps.*                         //  import cps
- import cps.monads.{*,given}          //  import support for build-in monads (i.e. Future)
+   import cps.*                         //  import cps
+   import cps.monads.{*,given}          //  import support for build-in monads (i.e. Future)
 
 
- @experimental
- class TestMinimalExample:
+   @experimental
+   class TestMinimalExample:
 
-   def fetchGreeting()(using CpsDirectContext[Future]): String =    
-     "Hi."  // assume this is a real async operation
+     def fetchGreeting()(using CpsDirectContext[Future]): String =    
+       "Hi."  // assume this is a real async operation
 
-   def greet()(using CpsDirectContext[Future]) = 
-     val greeting = fetchGreeting()
-     println(greeting)
+     def greet()(using CpsDirectContext[Future]) = 
+       val greeting = fetchGreeting()
+       println(greeting)
  
-   def main(args: Array[String]): Unit =
-     val f = async[Future]{ greet() }
-     Await.ready(f, Duration(1.seconds))
-     f.failed.map { ex => println(ex.getMessage) }
+     def main(args: Array[String]): Unit =
+       val f = async[Future]{ greet() }
+       Await.ready(f, Duration(1.seconds))
+       f.failed.map { ex => println(ex.getMessage) }
   
 
 I.e. function accept external context parameter of form `CpsDirect[F]` and return type is an ordinary value not wrapped in monad.
@@ -235,8 +235,7 @@ We can freely use `await` inside this direct context functions. Sometimes, we ne
 
  .. code-block:: scala
 
-
- def fetchAccessible(urls:List[String])(using CpsDirect[Future]): Map[String,String] =
+   def fetchAccessible(urls:List[String])(using CpsDirect[Future]): Map[String,String] =
           urls.map{ url => 
                  asynchronized(fetch(url))
                }
@@ -313,8 +312,8 @@ Yet one pair of names 'lift/unlift', used for example in the |monadless|_ librar
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
 
-.. |0.9.17| replace:: ``0.9.17``
-.. _0.9.17: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.17/
+.. |0.9.18| replace:: ``0.9.18``
+.. _0.9.18: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.18/
 
 .. /*to update*/ 
 
