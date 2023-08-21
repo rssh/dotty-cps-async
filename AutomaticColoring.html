@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Automatic Coloring &#8212; dotty-cps-async 0.9.17 documentation</title>
+    <title>Automatic Coloring (deprecated) &#8212; dotty-cps-async 0.9.18-SNAPSHOT documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,8 +33,8 @@
         <li class="right" >
           <a href="MonadsInteroperability.html" title="Monads interoperability."
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">Automatic Coloring</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Automatic Coloring  (deprecated)</a></li> 
       </ul>
     </div>  
 
@@ -43,8 +43,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="automatic-coloring">
-<h1>Automatic Coloring<a class="headerlink" href="#automatic-coloring" title="Permalink to this heading">¶</a></h1>
+  <section id="automatic-coloring-deprecated">
+<h1>Automatic Coloring  (deprecated)<a class="headerlink" href="#automatic-coloring-deprecated" title="Permalink to this heading">¶</a></h1>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h2>
 <p>Sometimes, especially when we work with distributed systems, most API calls are asynchronous and should be prefixed by <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>.  And we should remember what functions we should call async and what - not.  It is known as ‘async coloring problem’: i.e. we should split our code technically into two parts (colors):  one works with async expressions (i.e., <code class="docutils literal notranslate"><span class="pre">F[T]</span></code>) and one - sync. (<code class="docutils literal notranslate"><span class="pre">T</span></code> without <code class="docutils literal notranslate"><span class="pre">F</span></code>).</p>
@@ -73,9 +73,20 @@ So, the code below</p>
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
+<p>Note, that starting from 0.17 automatic coloring is deprecated in favor of direct context encoding.
+Assuming, that underlaying API use direct encoding, previous example can be rewritten as:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="kd">val</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;http://www.example.com&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">api</span><span class="p">.</span><span class="n">fetchUrl</span><span class="p">(</span><span class="s">&quot;http://www.example.com&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="n">theme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">api</span><span class="p">.</span><span class="n">classifyText</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="n">dmpInfo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">api</span><span class="p">.</span><span class="n">retrieveDMPInfo</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">theme</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">dmpInfo</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
 </section>
-<section id="automatic-coloring-memoization">
-<h2>Automatic Coloring &amp; Memoization<a class="headerlink" href="#automatic-coloring-memoization" title="Permalink to this heading">¶</a></h2>
+<section id="automatic-coloring-memoization-deprecated">
+<h2>Automatic Coloring &amp; Memoization (deprecated)<a class="headerlink" href="#automatic-coloring-memoization-deprecated" title="Permalink to this heading">¶</a></h2>
 <p>If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation), then implicit await is enough for automatic coloring.  But should we handle pure effect monads, which hold computations without starting them?</p>
 <p>Let’s look at the following code:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">updateCounter</span><span class="p">(</span><span class="n">counter</span><span class="p">:</span><span class="w"> </span><span class="nc">Counter</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">async</span><span class="p">[</span><span class="nc">IO</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -117,8 +128,8 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 <li><p>If the variable, defined outside of the async block, is used in synchronous context more than once - the macro also will report an error.</p></li>
 </ul>
 </section>
-<section id="custom-value-discard">
-<h2>Custom value discard<a class="headerlink" href="#custom-value-discard" title="Permalink to this heading">¶</a></h2>
+<section id="custom-value-discard-deprecated">
+<h2>Custom value discard (deprecated)<a class="headerlink" href="#custom-value-discard-deprecated" title="Permalink to this heading">¶</a></h2>
 <p id="index-0">During the writing of asynchronous code,  a typical developers’ mistake is to forget to handle something connected with discarded values, like error processing or awaiting.</p>
 <p><code class="docutils literal notranslate"><span class="pre">cps.customValueDiscard</span></code> limits the value discarding in the non-final expression in the block.  When enabled, value discarding is allowed only for those types <code class="docutils literal notranslate"><span class="pre">T</span></code>, for which it exists an implementation of a special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/ValueDiscard.scala#L11"><code class="docutils literal notranslate"><span class="pre">ValueDiscard[T]</span></code></a>.</p>
 <ul class="simple">
@@ -168,13 +179,15 @@ Otherwise, the counter will be incremented three times instead of one.</p>
 </div>
 <p>Without custom value discarding, the log statement will be dropped.  (Type of <code class="docutils literal notranslate"><span class="pre">if</span></code> with one branch is <a class="reference external" href="https://www.scala-lang.org/api/current/scala/Unit.html"><code class="docutils literal notranslate"><span class="pre">Unit</span></code></a>, so type of the first branch should be <a class="reference external" href="https://www.scala-lang.org/api/current/scala/Unit.html"><code class="docutils literal notranslate"><span class="pre">Unit</span></code></a> and the <code class="docutils literal notranslate"><span class="pre">log</span></code> statement will be discarded).
 <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> provides special <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/ff25b61f93e49a1ae39df248dbe4af980cd7f948/shared/src/main/scala/cps/ValueDiscard.scala#L44"><code class="docutils literal notranslate"><span class="pre">AwaitValueDiscard</span></code></a>  which forces the monad to be evaluated before being discarded.  We recommend to use this discard as default for <code class="docutils literal notranslate"><span class="pre">IO[Unit]</span></code>.</p>
-<p class="rubric">Footnotes</p>
-<aside class="footnote-list brackets">
-<aside class="footnote brackets" id="f1" role="note">
-<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
-<p>The definitions of <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> and <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> are simplified, in reality they are more complex, because we want to infer the type of the expression independently from the type of monad.</p>
-</aside>
-</aside>
+</section>
+<section id="migration-from-automatic-coloring">
+<h2>Migration from automatic coloring.<a class="headerlink" href="#migration-from-automatic-coloring" title="Permalink to this heading">¶</a></h2>
+<p>If you use eager cacheable async monad (i.e. Future) than you have two choices:</p>
+<ul class="simple">
+<li><p>move implicit transformation from ‘Future[T]’ to ‘[T]’ into you application</p></li>
+<li><p>add to underlying API methods with direct context encoding and call those methods in the direct style.</p></li>
+</ul>
+<p>For lazy evaluation monads (IO, ZIO, etc … ) only last option is available.</p>
 </section>
 </section>
 
@@ -188,11 +201,12 @@ Otherwise, the counter will be incremented three times instead of one.</p>
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
-<li><a class="reference internal" href="#">Automatic Coloring</a><ul>
+<li><a class="reference internal" href="#">Automatic Coloring  (deprecated)</a><ul>
 <li><a class="reference internal" href="#overview">Overview</a></li>
-<li><a class="reference internal" href="#automatic-coloring-memoization">Automatic Coloring &amp; Memoization</a></li>
+<li><a class="reference internal" href="#automatic-coloring-memoization-deprecated">Automatic Coloring &amp; Memoization (deprecated)</a></li>
 <li><a class="reference internal" href="#safety-rules-for-using-memoized-effect">Safety rules for using memoized effect.</a></li>
-<li><a class="reference internal" href="#custom-value-discard">Custom value discard</a></li>
+<li><a class="reference internal" href="#custom-value-discard-deprecated">Custom value discard (deprecated)</a></li>
+<li><a class="reference internal" href="#migration-from-automatic-coloring">Migration from automatic coloring.</a></li>
 </ul>
 </li>
 </ul>
@@ -241,8 +255,8 @@ Otherwise, the counter will be incremented three times instead of one.</p>
         <li class="right" >
           <a href="MonadsInteroperability.html" title="Monads interoperability."
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">Automatic Coloring</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Automatic Coloring  (deprecated)</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

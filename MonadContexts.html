@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Monad Context &#8212; dotty-cps-async 0.9.17 documentation</title>
+    <title>Monad Context &#8212; dotty-cps-async 0.9.18-SNAPSHOT documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monad Context</a></li> 
       </ul>
     </div>  
@@ -74,6 +74,7 @@ Inside <code class="docutils literal notranslate"><span class="pre">expr</span><
 </pre></div>
 </div>
 <p>where <cite>F</cite> is a type of awaited wrapper and <cite>G</cite> monad in enclosing <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> block.</p>
+<p>Also, an instance of monad context is automatically available inside the direct context functions, i.e., when we have CpsDirect[F] in the current scope.</p>
 <p>Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions, but allows us to represent important industry cases, like <a class="reference external" href="https://en.wikipedia.org/wiki/Structured_concurrency"><strong>structured concurrency</strong></a>.
 Jokingly, we can say that our monad is close to the original Leibnic definition of monad in his work <a class="reference external" href="https://en.wikipedia.org/wiki/Monadology"><strong>Monadology</strong></a>, where each monad has unique qualities, not accessible from outside.</p>
 <p>The monad context is defined as a type inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a> :</p>
@@ -109,7 +110,7 @@ is waiting for completing an external <a class="reference external" href="https:
 <p>Note that this is one variant of the code organization approach.  Alternatively, we can signal to <code class="docutils literal notranslate"><span class="pre">f</span></code>,
 if we know that we  exclusively own <code class="docutils literal notranslate"><span class="pre">f</span></code> evaluation. This can be an approach for lazy effect.
 The design choice for possible solutions is quite large.</p>
-<p>For monad writers: as a general design rule, use monad context when you want to provide access to some API, which should be visible only inside a monad (i.e. inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a>).  For trivial cases, when you don’t need a context API, you can mix <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/a6f2bfdf83f4ffb9985b455c57e867e3e9b8c9da/shared/src/main/scala/cps/CpsMonadContext.scala#L22"><code class="docutils literal notranslate"><span class="pre">CpsMonadInstanceContext</span></code></a> into your implementation of trait <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a>.
+<p>For monad writers: as a general design rule, use monad context when you want to provide access to some API, which should be visible only inside a monad (i.e. inside <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> or direct context function).  For trivial cases, when you don’t need a context API, you can mix <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/a6f2bfdf83f4ffb9985b455c57e867e3e9b8c9da/shared/src/main/scala/cps/CpsMonadContext.scala#L22"><code class="docutils literal notranslate"><span class="pre">CpsMonadInstanceContext</span></code></a> into your implementation of trait <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L20"><code class="docutils literal notranslate"><span class="pre">CpsMonad</span></code></a>.
 For more advanced cases, we advise using the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/a6f2bfdf83f4ffb9985b455c57e867e3e9b8c9da/shared/src/main/scala/cps/CpsMonadContext.scala#L47"><code class="docutils literal notranslate"><span class="pre">CpsContextMonad</span></code></a> trait.</p>
 <p>Also, you can notice the compatibility of this context with <a class="reference external" href="https://github.com/lampepfl/monadic-reflection"><strong>monadic-reflection</strong></a>, based on Flinsky encoding, where <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> becomes <a class="reference external" href="https://github.com/lampepfl/monadic-reflection/blob/main/core/src/main/scala/monadic/Monadic.scala#L31"><code class="docutils literal notranslate"><span class="pre">reify</span></code></a> and <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> accordingly <a class="reference external" href="https://github.com/lampepfl/monadic-reflection/blob/main/core/src/main/scala/monadic/Monadic.scala#L26"><code class="docutils literal notranslate"><span class="pre">reflect</span></code></a>.</p>
 </section>
@@ -164,7 +165,7 @@ For more advanced cases, we advise using the <a class="reference external" href=
         <li class="right" >
           <a href="Integrations.html" title="Integrations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Monad Context</a></li> 
       </ul>
     </div>

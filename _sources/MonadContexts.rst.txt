@@ -41,6 +41,9 @@ The complete await signature looks like:
 where `F` is a type of awaited wrapper and `G` monad in enclosing |async|_ block.
 
 
+Also, an instance of monad context is automatically available inside the direct context functions, i.e., when we have CpsDirect[F] in the current scope.
+
+
 Using a context parameter makes our monad a bit more complex than traditional Haskell-like monad constructions, but allows us to represent important industry cases, like |structured concurrency|_.
 Jokingly, we can say that our monad is close to the original Leibnic definition of monad in his work |Monadology|_, where each monad has unique qualities, not accessible from outside.
 
@@ -85,10 +88,12 @@ Note that this is one variant of the code organization approach.  Alternatively,
 if we know that we  exclusively own ``f`` evaluation. This can be an approach for lazy effect.
 The design choice for possible solutions is quite large.
 
-For monad writers: as a general design rule, use monad context when you want to provide access to some API, which should be visible only inside a monad (i.e. inside |await|_).  For trivial cases, when you don't need a context API, you can mix |CpsMonadInstanceContext|_ into your implementation of trait |CpsMonad|_.  
+For monad writers: as a general design rule, use monad context when you want to provide access to some API, which should be visible only inside a monad (i.e. inside |async|_ or direct context function).  For trivial cases, when you don't need a context API, you can mix |CpsMonadInstanceContext|_ into your implementation of trait |CpsMonad|_.  
 For more advanced cases, we advise using the |CpsContextMonad|_ trait.
 
 Also, you can notice the compatibility of this context with |monadic-reflection|_, based on Flinsky encoding, where |async|_ becomes |reify|_ and |await|_ accordingly |reflect|_. 
+
+
 
 
 .. ###########################################################################

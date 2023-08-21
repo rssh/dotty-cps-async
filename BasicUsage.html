@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Dependency &#8212; dotty-cps-async 0.9.17 documentation</title>
+    <title>Dependency &#8212; dotty-cps-async 0.9.18-SNAPSHOT documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="index.html" title="User Manual"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>  
@@ -47,19 +47,27 @@
 <h1>Dependency<a class="headerlink" href="#dependency" title="Permalink to this heading">¶</a></h1>
 <section id="sbt-example">
 <h2>Sbt Example<a class="headerlink" href="#sbt-example" title="Permalink to this heading">¶</a></h2>
-<p>The current prerelease is <code class="docutils literal notranslate"><span class="pre">0.9.17</span></code> for using with Scala <a class="reference external" href="https://github.com/lampepfl/dotty/releases/tag/3.3.0"><code class="docutils literal notranslate"><span class="pre">3.3.0</span></code></a>.</p>
+<p>The current prerelease is <code class="docutils literal notranslate"><span class="pre">0.9.18</span></code> for using with Scala <a class="reference external" href="https://github.com/lampepfl/dotty/releases/tag/3.3.0"><code class="docutils literal notranslate"><span class="pre">3.3.0</span></code></a>.</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.17&quot;</span><span class="w"></span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.18&quot;</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>JavaScript and Native targets are also supported.</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.17&quot;</span><span class="w"></span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.18&quot;</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
 <p><strong>Note</strong>: <span class="red">%%%</span> automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see <a class="reference external" href="https://www.scala-js.org/doc/project/cross-build.html"><strong>Scala.js Cross-Building</strong></a>).</p>
+<p>For using direct context encoding you also need to add compiler-plugin:</p>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>autoCompilerPlugins := true
+addCompilerPlugin(“com.github.rssh” %% “dotty-cps-async-compiler-plugin” % “0.9.18”)</p>
+</div></blockquote>
 </section>
 </section>
 <section id="basic-usage">
@@ -110,7 +118,7 @@
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span><span class="w"> </span><span class="nc">Array</span><span class="p">[</span><span class="nc">String</span><span class="p">]):</span><span class="w"> </span><span class="nc">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
-<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Await</span><span class="p">.</span><span class="n">ready</span><span class="p">(</span><span class="n">greet</span><span class="p">,</span><span class="w"> </span><span class="nc">Duration</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;seconds&quot;</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Await</span><span class="p">.</span><span class="n">ready</span><span class="p">(</span><span class="n">greet</span><span class="p">(),</span><span class="w"> </span><span class="nc">Duration</span><span class="p">(</span><span class="mi">1</span><span class="p">.</span><span class="n">seconds</span><span class="p">))</span><span class="w"></span>
 <span class="w">    </span><span class="n">f</span><span class="p">.</span><span class="n">failed</span><span class="p">.</span><span class="n">map</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ex</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="n">getMessage</span><span class="p">)</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
@@ -118,7 +126,7 @@
 <p>This minimal example is for <a class="reference external" href="https://www.scala-lang.org/api/current/scala/concurrent/Future.html"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a> monad and depends on library <a class="reference external" href="https://github.com/rssh/dotty-cps-async#dotty-cps-async"><strong>dotty-cps-async</strong></a> to be added to our project file <code class="docutils literal notranslate"><span class="pre">build.sbt</span></code> :</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">// https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async</span>
-<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.17&quot;</span><span class="w"></span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.18&quot;</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -176,11 +184,82 @@
 same as the number of <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> s in the source code.
 You can read the <a class="reference internal" href="random-notes/index.html#random-notes"><span class="std std-ref">notes about implementation details</span></a>.</p>
 </section>
+<section id="direct-context-encoding-experimental">
+<h2>Direct context encoding. (experimental)<a class="headerlink" href="#direct-context-encoding-experimental" title="Permalink to this heading">¶</a></h2>
+<p>Direct context encoding allows the representation of asynchronous API as ordinary synchronous calls using context parameter CpsDirect[F].
+The signature above is an example of a function in direct encoding:</p>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w">  </span><span class="nf">fetch</span><span class="p">(</span><span class="n">url</span><span class="p">:</span><span class="nc">String</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsDirect</span><span class="p">[</span><span class="nc">Future</span><span class="p">]):</span><span class="w"> </span><span class="nc">String</span><span class="w"></span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Usage:</p>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">fetchAccessible</span><span class="p">(</span><span class="n">urls</span><span class="p">:</span><span class="nc">List</span><span class="p">[</span><span class="nc">String</span><span class="p">])(</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsDirect</span><span class="p">[</span><span class="nc">Future</span><span class="p">]):</span><span class="w"> </span><span class="nc">Map</span><span class="p">[</span><span class="nc">String</span><span class="p">,</span><span class="nc">String</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">       </span><span class="n">urls</span><span class="p">.</span><span class="n">flatMap</span><span class="p">{</span><span class="w"> </span><span class="n">url</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
+<span class="w">            </span><span class="k">try</span><span class="w"></span>
+<span class="w">                </span><span class="nc">Some</span><span class="p">((</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">fetch</span><span class="p">(</span><span class="n">url</span><span class="p">)))</span><span class="w"></span>
+<span class="w">            </span><span class="k">catch</span><span class="w"></span>
+<span class="w">                </span><span class="k">case</span><span class="w"> </span><span class="nc">NonFatal</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
+<span class="w">                   </span><span class="n">logger</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="s">s&quot;Can&#39;t fetch </span><span class="si">$</span><span class="n">url</span><span class="s">, skipping&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="p">}.</span><span class="n">toMap</span><span class="w"></span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Our minimal example in this style:</p>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nn">scala</span><span class="p">.</span><span class="nn">annotation</span><span class="p">.</span><span class="n">experimental</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="n">*</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nn">duration</span><span class="p">.</span><span class="n">*</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">scala</span><span class="p">.</span><span class="nn">concurrent</span><span class="p">.</span><span class="nc">ExecutionContext</span><span class="p">.</span><span class="nc">Implicits</span><span class="p">.</span><span class="n">global</span>
+
+<span class="k">import</span><span class="w"> </span><span class="nn">cps</span><span class="p">.</span><span class="n">*</span><span class="w">                         </span><span class="c1">//  import cps</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">cps</span><span class="p">.</span><span class="nn">monads</span><span class="p">.{</span><span class="n">*</span><span class="p">,</span><span class="k">given</span><span class="p">}</span><span class="w">          </span><span class="c1">//  import support for build-in monads (i.e. Future)</span>
+
+
+<span class="nd">@experimental</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TestMinimalExample</span><span class="p">:</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">fetchGreeting</span><span class="p">()(</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsDirect</span><span class="p">[</span><span class="nc">Future</span><span class="p">]):</span><span class="w"> </span><span class="nc">String</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">    </span><span class="s">&quot;Hi.&quot;</span><span class="w">  </span><span class="c1">// assume this is a real async operation</span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">greet</span><span class="p">()(</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsDirect</span><span class="p">[</span><span class="nc">Future</span><span class="p">])</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">greeting</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fetchGreeting</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="n">println</span><span class="p">(</span><span class="n">greeting</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span><span class="w"> </span><span class="nc">Array</span><span class="p">[</span><span class="nc">String</span><span class="p">]):</span><span class="w"> </span><span class="nc">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">async</span><span class="p">[</span><span class="nc">Future</span><span class="p">]{</span><span class="w"> </span><span class="n">greet</span><span class="p">()</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="nc">Await</span><span class="p">.</span><span class="n">ready</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="nc">Duration</span><span class="p">(</span><span class="mi">1</span><span class="p">.</span><span class="n">seconds</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="n">f</span><span class="p">.</span><span class="n">failed</span><span class="p">.</span><span class="n">map</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ex</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="n">ex</span><span class="p">.</span><span class="n">getMessage</span><span class="p">)</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>I.e. function accept external context parameter of form <cite>CpsDirect[F]</cite> and return type is an ordinary value not wrapped in monad.
+The developer can call such function from an async block or other function with the direct context.
+Note, that signature also can be written in carried form: <cite>def fetchGreeting(): CpsDirect[F] ?=&gt; String</cite>.</p>
+<p>We can freely use <cite>await</cite> inside this direct context functions. Sometimes, we need to transform the synchronous style into asynchronous. We can do this using nested async expression or pseudo operator <cite>asynchronized</cite>  (reified with reify/reflect syntax), which uses current context for inferring the monad type. For example, here is a version of <cite>fetchAccessibe</cite> which fetch url-s in parallel:</p>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">fetchAccessible</span><span class="p">(</span><span class="n">urls</span><span class="p">:</span><span class="nc">List</span><span class="p">[</span><span class="nc">String</span><span class="p">])(</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsDirect</span><span class="p">[</span><span class="nc">Future</span><span class="p">]):</span><span class="w"> </span><span class="nc">Map</span><span class="p">[</span><span class="nc">String</span><span class="p">,</span><span class="nc">String</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">       </span><span class="n">urls</span><span class="p">.</span><span class="n">map</span><span class="p">{</span><span class="w"> </span><span class="n">url</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
+<span class="w">              </span><span class="n">asynchronized</span><span class="p">(</span><span class="n">fetch</span><span class="p">(</span><span class="n">url</span><span class="p">))</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">           </span><span class="p">.</span><span class="n">flatMap</span><span class="p">{</span><span class="w"> </span><span class="n">fetchResult</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
+<span class="w">            </span><span class="k">try</span><span class="w"></span>
+<span class="w">                </span><span class="nc">Some</span><span class="p">((</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">await</span><span class="p">(</span><span class="n">fetchResult</span><span class="p">)))</span><span class="w"></span>
+<span class="w">            </span><span class="k">catch</span><span class="w"></span>
+<span class="w">                </span><span class="k">case</span><span class="w"> </span><span class="nc">NonFatal</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"></span>
+<span class="w">                   </span><span class="n">logger</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="s">s&quot;Can&#39;t fetch </span><span class="si">$</span><span class="n">url</span><span class="s">, skipping&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="p">}.</span><span class="n">toMap</span><span class="w"></span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Note, that in current version (0.18) direct context encoding is marked to be experimental.</p>
+</section>
 <section id="alternative-names">
 <h2>Alternative names<a class="headerlink" href="#alternative-names" title="Permalink to this heading">¶</a></h2>
-<p><cite>async/await</cite> names is appropriate for Future-s and effect monads. There are other monads where a  direct style can be helpful
+<p><cite>async(asynchronized)/await</cite>  names is appropriate for Future-s and effect monads. There are other monads where a  direct style can be helpful
 in applications such as probabilistic programming, navigation over search space, collections, and many other.
-We define alternative names for macros: <cite>reify/reflect</cite>, which can be more appropriate in the general case:</p>
+We define alternative names for macros: <cite>reify(reifed)/reflect</cite>, which can be more appropriate in the general case:</p>
 <div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">bayesianCoin</span><span class="p">(</span><span class="n">nFlips</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">):</span><span class="w"> </span><span class="nc">Distribution</span><span class="p">[</span><span class="nc">Trial</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reify</span><span class="p">[</span><span class="nc">Distribution</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">      </span><span class="kd">val</span><span class="w"> </span><span class="n">haveFairCoin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reflect</span><span class="p">(</span><span class="n">tf</span><span class="p">())</span><span class="w"></span>
 <span class="w">      </span><span class="kd">val</span><span class="w"> </span><span class="n">myCoin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">haveFairCoin</span><span class="p">)</span><span class="w"> </span><span class="n">coin</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">biasedCoin</span><span class="p">(</span><span class="mf">0.9</span><span class="p">)</span><span class="w"></span>
@@ -242,6 +321,7 @@ We define alternative names for macros: <cite>reify/reflect</cite>, which can be
 </li>
 <li><a class="reference internal" href="#basic-usage">Basic Usage</a><ul>
 <li><a class="reference internal" href="#traditional-async-await-interface">Traditional async/await interface</a></li>
+<li><a class="reference internal" href="#direct-context-encoding-experimental">Direct context encoding. (experimental)</a></li>
 <li><a class="reference internal" href="#alternative-names">Alternative names</a></li>
 </ul>
 </li>
@@ -291,7 +371,7 @@ We define alternative names for macros: <cite>reify/reflect</cite>, which can be
         <li class="right" >
           <a href="index.html" title="User Manual"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.17 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>
