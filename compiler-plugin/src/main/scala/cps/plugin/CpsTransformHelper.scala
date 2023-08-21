@@ -26,6 +26,7 @@ object CpsTransformHelper {
 
 
   /**
+   * Check that type is CpsDirect[F].
    * Note, that this function should be called before erasure.
    * After erasure the encoding is different
    */
