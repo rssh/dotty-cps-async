@@ -110,7 +110,7 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
                CpsExpr.async[F,T](monad, sealedTransformed)
              } catch {
                case ex: Throwable =>
-                 println("failed seal:"+ transformed.asExpr.show )
+                 println("failed seal:"+ safeShow(transformed) )
                  println(s"transformed.tpe=${transformed.tpe}")
                  println(s"cpsTree=$this")
                  println(s"F[T]=${TypeRepr.of[F[T]]}")
