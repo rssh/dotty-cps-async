@@ -20,7 +20,6 @@ class CpsPlugin extends StandardPlugin {
   
 
   def init(options: List[String]): List[PluginPhase] = {
-     println(s"CpsPlugin.init, options = $options")
      val settings = parseOptions(options)
      val shiftedSymbols = new ShiftedSymbols()
      val selectedNodes = new SelectedNodes()
@@ -42,7 +41,6 @@ class CpsPlugin extends StandardPlugin {
 
   private def parseOptions(options:List[String]): CpsPluginSettings = {
     val settings = new CpsPluginSettings()
-    println("plugin options: " + options)
     for (option <- options) {
       if (option.startsWith("debugLevel=")) {
         val level = option.substring("debugLevel=".length).toInt

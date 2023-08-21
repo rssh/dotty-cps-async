@@ -139,7 +139,7 @@ object TransformUtil {
                     None
    }
 
-   def findSubtermWithOwner(tree:Tree, owner:Symbol)(using Context): Option[Tree] = {
+   def findSubtermWithOwner(tree:Tree, owner:Symbol, reportWarnings: Boolean = false)(using Context): Option[Tree] = {
       val finder = new TreeAccumulator[Option[Tree]] {
          def apply(x: Option[Tree], tree: Tree)(using Context): Option[Tree] =
             if (x.isDefined) then
@@ -148,15 +148,16 @@ object TransformUtil {
                tree match
                  case xi: Ident if xi.symbol.maybeOwner.exists =>
                    if (xi.symbol == owner) then
-                      println("found ident with direct owner")
+                      if (reportWarnings) then
+                        report.warning(s"found ident $xi with direct old owner ${owner} ", tree.srcPos)
                       Some(tree)
                    else {
                      findIndirectOwner(xi.symbol,owner,Nil) match
                         case Some(path) =>
-                           println(s"found ident with indirect owner, path=${path}")
+                           if (reportWarnings) then
+                              report.warning(s"found ident with indirect owner, path=${path}", tree.srcPos)
                            Some(tree)
                         case None =>
-                           //println(s"owner of ${xi.show} is ${xi.symbol.owner.show} (${xi.symbol.owner.hashCode()})")
                            foldOver(x, tree)
                    }
                  case _ =>
@@ -165,7 +166,8 @@ object TransformUtil {
                     else
                       findIndirectOwner(tree.symbol.maybeOwner, owner, Nil) match
                         case Some(path) =>
-                            println(s"found tree with indirect old owner, path=${path.reverse.map(s=>s"${s}(${s.hashCode()})").mkString("->")}")
+                            if reportWarnings then
+                               report.warning(s"found tree with indirect old owner, path=${path.reverse.map(s=>s"${s}(${s.hashCode()})").mkString("->")}", tree.srcPos)
                             Some(tree)
                         case None =>
                             foldOver(x, tree)

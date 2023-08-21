@@ -25,6 +25,10 @@ object CpsTransformHelper {
     Symbols.requiredClass("cps.CpsDirect")
 
 
+  /**
+   * Note, that this function should be called before erasure.
+   * After erasure the encoding is different
+   */
   def isCpsDirectType(tpe:Type, debug:Boolean=false)(using Context): Boolean = {
      val retval = tpe.dealias match
        case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsDirectClassSymbol) =>
@@ -32,7 +36,7 @@ object CpsTransformHelper {
        case other =>
          other.baseType(cpsDirectClassSymbol) != NoType
      if (debug)
-        println(s"isCpsDirectType(${tpe.show} [tree:${tpe}]) = ${retval}")
+        report.debuglog(s"isCpsDirectType(${tpe.show} [tree:${tpe}]) = ${retval}")
      retval
   }
 

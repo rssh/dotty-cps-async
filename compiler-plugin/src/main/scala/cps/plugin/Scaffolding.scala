@@ -81,7 +81,6 @@ object Scaffolding {
         case Apply(cnUnbox, List(internal)) if Erasure.Boxing.isUnbox(cnUnbox.symbol) =>
           internal match
             case Uncpsed(internal1) =>
-              println(s"found unbox, internal1.tpe.widen = ${internal1.tpe.widen.show}")
               // TODO: set asInstanceOf ?
               Some(internal1)
             case _ => None

@@ -24,10 +24,12 @@ class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
 
 }
 
+
 @experimental
 object CpsDirect {
 
   given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] = new CpsDirect[F](context)
+
 
 }
 

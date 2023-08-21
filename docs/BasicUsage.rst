@@ -202,6 +202,7 @@ Our minimal example in this style:
 
  .. code-block:: scala
 
+ import scala.annotation.experimental
  import scala.concurrent.*
  import scala.concurrent.duration.*
  import scala.concurrent.ExecutionContext.Implicits.global
@@ -210,6 +211,7 @@ Our minimal example in this style:
  import cps.monads.{*,given}          //  import support for build-in monads (i.e. Future)
 
 
+ @experimental
  class TestMinimalExample:
 
    def fetchGreeting()(using CpsDirectContext[Future]): String =    
@@ -247,6 +249,7 @@ We can freely use `await` inside this direct context functions. Sometimes, we ne
           }.toMap
 
 
+Note, that in current version (0.18) direct context encoding is marked to be experimental.
 
 
 Alternative names
