@@ -172,8 +172,8 @@ You can read the :ref:`notes about implementation details <random-notes>`.
 
 
 
-Direct context encoding.
--------------------------
+Direct context encoding. (experimental)
+---------------------------------------
 
 Direct context encoding allows the representation of asynchronous API as ordinary synchronous calls using context parameter CpsDirect[F].
 The signature above is an example of a function in direct encoding:
@@ -214,10 +214,10 @@ Our minimal example in this style:
    @experimental
    class TestMinimalExample:
 
-     def fetchGreeting()(using CpsDirectContext[Future]): String =    
+     def fetchGreeting()(using CpsDirect[Future]): String =    
        "Hi."  // assume this is a real async operation
 
-     def greet()(using CpsDirectContext[Future]) = 
+     def greet()(using CpsDirect[Future]) = 
        val greeting = fetchGreeting()
        println(greeting)
  
@@ -229,7 +229,7 @@ Our minimal example in this style:
 
 I.e. function accept external context parameter of form `CpsDirect[F]` and return type is an ordinary value not wrapped in monad.
 The developer can call such function from an async block or other function with the direct context.
-Note, that signature also can be written in carried form: `def fetchGreeting(): CpsDirectContext ?=> String`.
+Note, that signature also can be written in carried form: `def fetchGreeting(): CpsDirect[F] ?=> String`.
 
 We can freely use `await` inside this direct context functions. Sometimes, we need to transform the synchronous style into asynchronous. We can do this using nested async expression or pseudo operator `asynchronized`  (reified with reify/reflect syntax), which uses current context for inferring the monad type. For example, here is a version of `fetchAccessibe` which fetch url-s in parallel:
 

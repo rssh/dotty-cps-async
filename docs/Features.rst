@@ -4,7 +4,7 @@ Additional Features
 Short syntax for ``await``
 --------------------------
 
-It can be helpful when the monad or environment does not support automatic coloring, but the default |await|_ syntax is too heavy.  In this case, we define the |unary_!|_ operator to use instead of |await|_.
+It can be helpful when the monad or environment does not support automatic coloring or direct context, but the default |await|_ syntax is too heavy.  In this case, we define the |unary_!|_ operator to use instead of |await|_.
 
 Example:
 

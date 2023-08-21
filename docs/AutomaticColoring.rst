@@ -38,7 +38,8 @@ can be written without |await|_ as:
    }
 
 
-Note, that automatic coloring is 
+Note, that starting from 0.17 automatic coloring is deprecated in favor of direct context encoding.
+Assuming, that underlaying API use direct encoding, previous example can be rewritten as:
 
 .. code-block:: scala
 
@@ -52,8 +53,8 @@ Note, that automatic coloring is
 
 
 
-Automatic Coloring & Memoization
---------------------------------
+Automatic Coloring & Memoization (deprecated)
+---------------------------------------------
 
 If the underlying monad supports execution caching for using this feature (i.e., two awaits on the same expression should not cause reevaluation), then implicit await is enough for automatic coloring.  But should we handle pure effect monads, which hold computations without starting them?
 
@@ -111,8 +112,8 @@ Preliminary analysis using next algorithm:
 * If the variable, defined outside of the async block, is used in synchronous context more than once - the macro also will report an error.
 
 
-Custom value discard
---------------------
+Custom value discard (deprecated)
+---------------------------------
 
 .. index:: customValueDiscard
 
@@ -186,9 +187,16 @@ Without custom value discarding, the log statement will be dropped.  (Type of ``
 |dotty-cps-async|_ provides special |AwaitValueDiscard|_  which forces the monad to be evaluated before being discarded.  We recommend to use this discard as default for ``IO[Unit]``.
 
 
-.. rubric:: Footnotes
+Migration from automatic coloring.
+----------------------------------
 
-.. [#f1] The definitions of |async|_ and |await|_ are simplified, in reality they are more complex, because we want to infer the type of the expression independently from the type of monad.
+If you use eager cacheable async monad (i.e. Future) than you have two choices:
+
+- move implicit transformation from 'Future[T]' to '[T]' into you application
+- add to underlying API methods with direct context encoding and call those methods in the direct style.
+
+For lazy evaluation monads (IO, ZIO, etc ... ) only last option is available. 
+
 
 
 .. ###########################################################################
