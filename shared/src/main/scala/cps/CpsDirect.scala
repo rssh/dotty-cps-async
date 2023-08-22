@@ -30,7 +30,8 @@ class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
 object CpsDirect {
 
   inline given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
-    requiringCpsCompilerPlugin(new CpsDirect[F](context))
+    new CpsDirect[F](context)
+    //TODO: requiringCpsCompilerPlugin(new CpsDirect[F](context))
 
 
 }
