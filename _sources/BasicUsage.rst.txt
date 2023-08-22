@@ -23,8 +23,8 @@ For using direct context encoding you also need to add compiler-plugin:
 
  .. code-block:: scala
 
- autoCompilerPlugins := true
- addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.18")
+  autoCompilerPlugins := true
+  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.18")
 
 
 Basic Usage

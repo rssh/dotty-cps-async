@@ -62,11 +62,10 @@
 <p><strong>Note</strong>: <span class="red">%%%</span> automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see <a class="reference external" href="https://www.scala-js.org/doc/project/cross-build.html"><strong>Scala.js Cross-Building</strong></a>).</p>
 <p>For using direct context encoding you also need to add compiler-plugin:</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">autoCompilerPlugins</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kc">true</span><span class="w"></span>
+<span class="n">addCompilerPlugin</span><span class="p">(</span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async-compiler-plugin&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.18&quot;</span><span class="p">)</span><span class="w"></span>
 </pre></div>
 </div>
-<p>autoCompilerPlugins := true
-addCompilerPlugin(“com.github.rssh” %% “dotty-cps-async-compiler-plugin” % “0.9.18”)</p>
 </div></blockquote>
 </section>
 </section>
