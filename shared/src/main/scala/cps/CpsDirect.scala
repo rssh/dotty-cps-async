@@ -29,7 +29,8 @@ class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
 @experimental
 object CpsDirect {
 
-  inline given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
+  // TODO: wrong position when inline
+  given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
     new CpsDirect[F](context)
     //TODO: requiringCpsCompilerPlugin(new CpsDirect[F](context))
 
