@@ -2,6 +2,7 @@ package cps
 
 import scala.annotation.experimental
 import scala.util.NotGiven
+import cps.plugin.scaffolding.requiringCpsCompilerPlugin
 
 
 /**
@@ -28,7 +29,8 @@ class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
 @experimental
 object CpsDirect {
 
-  given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] = new CpsDirect[F](context)
+  inline given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
+    requiringCpsCompilerPlugin(new CpsDirect[F](context))
 
 
 }

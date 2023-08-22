@@ -66,9 +66,11 @@ trait CpsConcurrentMonadContext[F[_]] extends CpsTryMonadContext[F] {
 
 object CpsMonadContext {
 
+  import cps.plugin.scaffolding.requiringCpsCompilerPlugin
+
   @experimental
-  given monadContext[F[_]](using direct:CpsDirect[F]): CpsTryMonadContext[F] =
-     direct.context
+  inline given monadContext[F[_]](using direct:CpsDirect[F]): CpsTryMonadContext[F] =
+     requiringCpsCompilerPlugin(direct.context)
 
 }
 
