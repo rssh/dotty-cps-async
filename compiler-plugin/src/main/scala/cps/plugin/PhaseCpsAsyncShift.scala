@@ -227,10 +227,12 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
 
   def isHighOrder(tree: DefDef)(using Context): Boolean =
     // check ValDef input params
-    val valDefs: List[ValDef] = filterParams(tree.paramss)
+    val valDefs: List[ValDef] = filterParams[ValDef](tree.paramss)
     val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
-    if funcParams.nonEmpty then return true
+    val retval     =
+      if funcParams.nonEmpty then true
     // check the return type
+      else
     // TODO: write implementation for this special case
     if isFunc(tree.rhs.tpe.finalResultType) then
       throw CpsTransformException(
@@ -239,9 +241,11 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
       )
     else false
 
-  def filterParams(params: List[ParamClause]): List[ValDef] =
+    retval
+
+  def filterParams[T](params: List[ParamClause]): List[T] =
     val ps = params.flatten[ValDef | TypeDef]
-    ps.collect { case v: ValDef => v }
+    ps.collect { case v: T => v }
 
   def isFunc(t: Type)(using Context): Boolean =
     t match
