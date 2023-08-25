@@ -1,7 +1,9 @@
 package cps.plugin
 
 import dotty.tools.dotc.*
+import dotty.tools.dotc.ast.Trees
 import core.*
+import core.Names.*
 import core.Contexts.*
 import core.Constants.*
 import core.Annotations.*
@@ -54,13 +56,76 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
               "Object has to be a high-order function",
               bodyTree.srcPos
             )
+          // create PolyType for a new Symbol info
+          val args = fun.paramss
+          val typeArgs:   List[TypeDef]  = filterParams[TypeDef](args)
+          val normalArgs: List[ValDef]   = filterParams[ValDef](args)
+          // TODO: params into TermName
+          val paramNames: List[TermName] = normalArgs.map(_.name)
+          // create new return type with type params
+          val newSymbolInfo  =
+            PolyType(List("F".toTypeName, "C".toTypeName))(
+              // bounds for the type parameters
+              pt =>
+                List(
+                  TypeBounds(defn.NothingType, defn.AnyType),
+                  TypeBounds(
+                    defn.NothingType,
+                    AppliedType(
+                      Symbols
+                        .requiredClassRef("cps.plugin.CpsMonadContext"),
+                      List(pt.newParamRef(0))
+                    )
+                  )
+                ),
+              pt => {
+                val mtParamTypes = List(
+                  AppliedType(
+                    TypeRef(
+                      Symbols.requiredClassRef("cps.plugin.CpsMonad"),
+                      "Aux".toTermName
+                    ),
+                    List(pt.newParamRef(0), pt.newParamRef(1))
+                  )
+                ) ++ normalArgs.map(_.tpt.tpe)
+                val mtReturnType = pt.newParamRef(0).appliedTo(fun.symbol.info.widen)
+                MethodType("am".toTermName :: paramNames)(
+                  _ => mtParamTypes,
+                  _ => mtReturnType
+                )
+                // MethodType(List("am".toTermName))
+                // (
+                // // params info expression
+                // (mt: MethodType) =>
+                //   List(
+                //     AppliedType(
+                //       TypeRef(
+                //         Symbols.requiredClassRef("cps.plugin.CpsMonad"),
+                //         "Aux".toTermName
+                //       ),
+                //       List(pt.newParamRef(0), pt.newParamRef(1))
+                //     )
+                //   ),
+                // result type expression
+                // (mt: MethodType) =>
+                //   MethodType(paramNames)(
+                //     mtn =>
+                //       normalArgs.map(p =>
+                //         p match
+                //           case v: ValDef => v.tpt.tpe
+                //           case d: TypeDef => d.rhs.tpe
+                //       ),
+                //     mtn => pt.newParamRef(0).appliedTo(fun.symbol.info.widen)
+                // )
+              }
+            )
           val newFunName     = (fun.symbol.name.debugString + "$cps").toTermName
           val newFunSymbol   =
             Symbols.newSymbol(
               fun.symbol.owner,
               newFunName,
               fun.symbol.flags | Flags.Synthetic,
-              fun.symbol.info.widen // let be the same type for now
+              newSymbolInfo
             )
           // create new rhs
           val transformedRhs = transformFunсBody(fun.rhs)
