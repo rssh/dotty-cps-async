@@ -15,7 +15,9 @@ import cps.plugin.scaffolding.requiringCpsCompilerPlugin
  *  ```
  **/
 @experimental
-class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
+trait CpsDirect[F[_]] {
+
+  def context: CpsTryMonadContext[F]
 
   def monad: CpsMonad[F] = context.monad
 
@@ -25,13 +27,29 @@ class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
 
 }
 
+@experimental
+class CpsDirectId[F[_]](override val context: CpsTryMonadContext[F]) extends CpsDirect[F]
+
+@experimental
+class CpsDirectConv[F[_],G[_]](val parentContext: CpsTryMonadContext[F], val conversion: CpsMonadConversion[F,G]) extends CpsDirect[G] {
+  def context: CpsTryMonadContext[G] = ???
+}
+
+@experimental
+trait CpsDirectLowLevel {
+
+  given directWithConversion[F[_],G[_]](using parentContext: CpsTryMonadContext[F], conversion: CpsMonadConversion[F,G]): CpsDirect[G] =
+    new CpsDirectConv[F,G](parentContext, conversion)
+  
+}
+
 
 @experimental
 object CpsDirect {
 
   // TODO: wrong position when inline
   given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
-    new CpsDirect[F](context)
+    new CpsDirectId[F](context)
     //TODO: requiringCpsCompilerPlugin(new CpsDirect[F](context))
 
 

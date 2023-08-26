@@ -43,7 +43,6 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
                             "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types",
                             "-Ydebug", "-uniqid", "-Xcheck-macros", "-Ycheck:macro", "-Yprint-syms",
                             "-Ysafe-init",
-                            "-explain",
                              ),
                              // -explain
                              // -Ydebug-error

@@ -975,6 +975,7 @@ object ApplyTransform {
      */
     def retrieveShiftedMethod(funSym: Symbol, obj: Tree, methodName: Name, targs:List[Tree] ): ShiftedFun = {
 
+
       tryFindInplaceAsyncShiftedMethods(funSym, obj.tpe.widen.classSymbol, methodName, Set("_async","Async","$cps")) match
         case Left(inPlaceErrors) =>
           //TODO: debug output

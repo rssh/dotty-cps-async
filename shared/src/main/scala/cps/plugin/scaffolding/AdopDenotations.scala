@@ -35,3 +35,14 @@ def adoptCpsedCall[F[_],T](f: T): F[T] = {
   println("looks like you cathed bug in plugin, please report it")
   ???
 }
+
+
+/*
+def adoptMakeCpsCall1[F[_],NonCpsedArg,CpsedArg,B](f: NonCpsedArg=>B): CpsedArg=>F[B]) = {
+  ???
+}
+
+def adoptMakeCpsCall2[F[_],NonCpsedArg1,NonCpsedArg2, CpsedArg1,CpsedArg2, B](f: (A1,A2) =>B): (A1,A2) =>F[B]) = {
+  ???
+}
+*/
