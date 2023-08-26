@@ -18,13 +18,13 @@ class TestDisableAutomaticColoring:
 
   def passInt(x:Int):Int = x
 
-
   @Test def testEnableAutomaticColoring(): Unit = {
      val c = async {
          val x = T1.cbi(1)
          passInt(x)
      }
      val r = c.run()
+     println(s"TestDisableAutomaticColoring:testEnableAutomaticColoring,r=$r")
      assert(r == Success(1))
   }
 

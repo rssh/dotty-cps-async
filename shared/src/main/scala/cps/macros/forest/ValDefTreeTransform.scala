@@ -64,13 +64,13 @@ trait ValDefTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
               case CpsMonadMemoization.Kind.DYNAMIC =>
                 rhsTpe.asType match
                   case '[et] =>
-                    Expr.summon[CpsMonadMemoization.DynamicAp[F,r,et]] match
+                    Expr.summon[CpsMonadMemoization.DynamicAp[F,et]] match
                       case Some(mm) =>
                         //TODO: recheck
                         cpsRhs.monadFlatMap( t => '{ ${mm}.apply(${t.asExprOf[et]}) }.asTerm, rhsTpe )
                       case None =>
                         // todo: use search instead summon for additional message in failure
-                        val msg = s"Can't find given instance of ${TypeRepr.of[CpsMonadMemoization.DynamicAp[F,r,et]].show}"
+                        val msg = s"Can't find given instance of ${TypeRepr.of[CpsMonadMemoization.DynamicAp[F,et]].show}"
                         throw MacroError(msg, rhs.asExpr)
                   case _ =>
                     throw MacroError(s"Can't determinate type for ${rhs.show}", rhs.asExpr)

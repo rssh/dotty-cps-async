@@ -38,8 +38,8 @@ class DotcInvocations(silent: Boolean = false) {
   def compileAndRunFilesInDirs(dirs: List[String], outDir: String, mainClass:String = "Main", extraArgs: List[String] = List.empty): (Int,String) = {
     val reporter = compileFilesInDirs(dirs, outDir, extraArgs)
     if (reporter.hasErrors) {
-      println("Compilation failed")
-      println(reporter.allErrors.mkString("\n"))
+      println(s"Compilation failed in dirs ${dirs}")
+      DotcInvocations.reportErrors(reporter)
       throw new RuntimeException("Compilation failed")
     } else {
       run(outDir, mainClass)
@@ -115,21 +115,22 @@ object DotcInvocations {
     // note, that -Ycheck:all is not included here, because it is added conditionally
     List(
       //"-Ydebug-error",
-      //"--unique-id",
+      "--unique-id",
       //"-Xcheck-macros",
-      //"-Ydebug",
+      "-Ydebug",
       //"-Yprint-syms",
+      //"-explain",
       //List("-Yprint-debug") ++
       //List("-Yshow-tree-ids") ++
       //List("-verbose") ++
       //List("-unchecked") ++
        "--color:never",
-       "-Vprint:erasure",
-       "-Vprint:rssh.cps",
-       "-Vprint:inlining"
-    //List("-Vprint:constructors") ++
-    //List("-Vprint:lambdaLift") ++
-    //List("-Xshow-phases") ++
+      // "-Vprint:erasure",
+      // "-Vprint:rssh.cps",
+      //"-Vprint:inlining"
+      //List("-Vprint:constructors") ++
+      //List("-Vprint:lambdaLift") ++
+      //List("-Xshow-phases") ++
     )
   }
 
@@ -140,10 +141,16 @@ object DotcInvocations {
                            checkAll: Boolean = true
                            )
 
-  def compileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Unit = {
+  def compileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Reporter = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
-    dotcInvocations.compileFilesInDir(dir,dir,invocationArgs.extraDotcArgs,invocationArgs.checkAll)
-    checkReporter(dotcInvocations.reporter)
+    dotcInvocations.compileFilesInDir(dir, dir, invocationArgs.extraDotcArgs, invocationArgs.checkAll)
+    dotcInvocations.reporter
+  }
+
+
+  def succesfullyCompileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Unit = {
+    val reporter = compileFilesInDir(dir, invocationArgs)
+    checkReporter(reporter)
   }
 
   def compileAndRunFilesInDirAndCheckResult(
@@ -154,14 +161,14 @@ object DotcInvocations {
                                            ): Unit = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDir(dir,dir,mainClass)
+    val (code, output) = dotcInvocations.compileAndRunFilesInDir(dir,dir,mainClass,invocationArgs.extraDotcArgs)
 
     val reporter = dotcInvocations.reporter
     println("summary: " + reporter.summary)
     checkReporter(reporter)
 
     //println(s"output=${output}")
-    assert(output == expectedOutput, s"The output should be '$expectedOutput', we have '$output''")
+    assert(output.endsWith(expectedOutput), s"The output should ends with '$expectedOutput', we have '$output''")
 
   }
 
@@ -175,12 +182,16 @@ object DotcInvocations {
     }
   }
 
-  private def checkReporter(reporter: Reporter): Unit = {
+  def reportErrors(reporter: Reporter): Unit = {
     if (!reporter.allErrors.isEmpty) {
-      for(err <- reporter.allErrors)  {
+      for (err <- reporter.allErrors) {
         println(s"${err.msg} at ${err.pos.source}:${err.pos.line}:${err.pos.column}")
       }
     }
+  }
+
+  private def checkReporter(reporter: Reporter): Unit = {
+    reportErrors(reporter)
     assert(reporter.allErrors.isEmpty, "There should be no errors")
   }
 

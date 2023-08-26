@@ -11,6 +11,7 @@ import ast.tpd.*
 import transform.{ Erasure, Pickler, PruneErasedDefs }
 import plugins.*
 
+// TODO: merge with PhasCps
 class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSymbols)
     extends PluginPhase {
 
@@ -19,7 +20,7 @@ class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: Shifted
   // strange -
   override def allowsImplicitSearch = true
   override val runsAfter            = Set(PhaseCpsAsyncShift.name)
-  override val runsBefore           = Set(Erasure.name, PhaseCpsChangeSymbols.name)
+  override val runsBefore = Set(PhaseChangeSymbolsAndRemoveScaffolding.name, Erasure.name)
 
   /**
    * replaces symbols by transformed values from shiftedSymbols
@@ -36,7 +37,6 @@ class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: Shifted
     // TODO: look for the shiftedSymbols functions application
     shiftedSymbols.getRecord(tree.fun.symbol) match
       case Some(fun) =>
-        println(s"asyncReplace::transformApply::selected ${tree}")
         val newApply =
           cpy.Apply(tree)(Ident(fun.shiftedMethod.symbol.namedType), tree.args)
         newApply

@@ -6,10 +6,12 @@ import ast.tpd.*
 import ast.{Trees, tpd}
 import core.*
 import core.Decorators.*
+import core.Constants.*
 import core.Contexts.*
 import core.Names.*
 import core.Symbols.*
 import core.Types.*
+import transform.Erasure
 import cps.plugin
 import util.SrcPos
 import plugins.*
@@ -42,6 +44,62 @@ object Scaffolding {
   def isAdoptCpsedCall(sym: Symbol)(using Context): Boolean = {
        sym == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")
   }
+
+  object Cpsed {
+
+    def unapply(tree: Tree)(using Context): Option[Tree] = {
+      tree match
+        case Apply(fn, List(arg)) if (Scaffolding.isAdoptCpsedCall(fn.symbol)) =>
+          // TODO:  (are we need check for isInstanceOf here?)
+          val cpsedCall = arg match
+            case Apply(fn1, List(arg1)) if Erasure.Boxing.isBox(fn1.symbol) =>
+              arg1
+            case Block(List(stat), expr) if expr == Literal(Constant(()))
+              || expr.symbol.exists && expr.symbol == defn.BoxedUnit_UNIT =>
+              stat
+            case _ =>
+              arg
+          Some(cpsedCall)
+        case _ => None
+    }
+
+
+  }
+
+
+  object Uncpsed {
+
+    def unapply(tree: Tree)(using Context): Option[Tree] = {
+      tree match
+        case TypeApply(sel@Select(internal, asInstanceOfCn), List(tpt))
+          if (asInstanceOfCn.toString == "asInstanceOf") =>
+          internal match
+            case Uncpsed(internal1) =>
+              Some(cpy.TypeApply(tree)(Select(internal1, asInstanceOfCn), List(TypeTree(internal1.tpe.widen))))
+            case _ =>
+              None
+        case Apply(cnUnbox, List(internal)) if Erasure.Boxing.isUnbox(cnUnbox.symbol) =>
+          internal match
+            case Uncpsed(internal1) =>
+              // TODO: set asInstanceOf ?
+              Some(internal1)
+            case _ => None
+        case Block((ddef: DefDef) :: Nil, closure: Closure) =>
+          ddef.rhs match
+            case Uncpsed(nRhs) =>
+              Some(cpy.Block(tree)(cpy.DefDef(ddef)(rhs = nRhs, tpt = TypeTree(nRhs.tpe.widen)) :: Nil, closure))
+            case _ =>
+              None
+        case Apply(fn, List(arg)) if (Scaffolding.isAdoptForUncpsedDenotation(fn.symbol)) =>
+          Some(arg)
+        case Block(List(Uncpsed(internal)), Literal(Constant(()))) =>
+          // we can have function Direct => Unit and it's can be wrapped in empty block to return Unit regardless of computation result.
+          Some(internal)
+        case _ => None
+    }
+
+  }
+
 
 }
 

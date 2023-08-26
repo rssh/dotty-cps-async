@@ -47,11 +47,9 @@ object DebugSettings {
                 case other =>
                   throw CpsTransformException(s"Invalid DebugLevel settings, see: ${f.rhs.show}",debugLevelTree.srcPos)
             case _ =>
-              println(s"DebugLevel: debugLevel.symbol.tree=${debugLevelTree.symbol.defTree}")
               throw CpsTransformException(s"Invalid DebugLevel settings, expected constant application, see: ${debugLevelTree.show}",debugLevelTree.srcPos)
         case None => 
-          println(s"DebugLevel instance is not found at ${from.span}")
-          0  
+          0
     }
     val printCodeTpe = Symbols.requiredClass("cps.plugin.settings.PrintCode").typeRef
     val printCode  = CpsTransformHelper.findImplicitInstance(printCodeTpe, summon[Context].tree.span).isDefined

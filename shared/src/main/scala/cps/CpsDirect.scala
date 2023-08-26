@@ -2,6 +2,7 @@ package cps
 
 import scala.annotation.experimental
 import scala.util.NotGiven
+import cps.plugin.scaffolding.requiringCpsCompilerPlugin
 
 
 /**
@@ -24,10 +25,15 @@ class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
 
 }
 
+
 @experimental
 object CpsDirect {
 
-  given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] = new CpsDirect[F](context)
+  // TODO: wrong position when inline
+  given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
+    new CpsDirect[F](context)
+    //TODO: requiringCpsCompilerPlugin(new CpsDirect[F](context))
+
 
 }
 

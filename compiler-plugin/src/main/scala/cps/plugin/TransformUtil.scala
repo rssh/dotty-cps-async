@@ -10,6 +10,7 @@ import core.Types.*
 import dotty.tools.dotc.util.SrcPos
 import ast.tpd.*
 
+case class TermWithIncorrectOwner(term: Tree, expectedOwner: Symbol, actualOwner: Symbol)
 
 object TransformUtil {
 
@@ -138,8 +139,7 @@ object TransformUtil {
                     None
    }
 
-   def findSubtermWithOwner(tree:Tree, owner:Symbol)(using Context): Option[Tree] = {
-      println(s"find subterm with owner ${owner.show} (${owner.hashCode()})")
+   def findSubtermWithOwner(tree:Tree, owner:Symbol, reportWarnings: Boolean = false)(using Context): Option[Tree] = {
       val finder = new TreeAccumulator[Option[Tree]] {
          def apply(x: Option[Tree], tree: Tree)(using Context): Option[Tree] =
             if (x.isDefined) then
@@ -148,15 +148,16 @@ object TransformUtil {
                tree match
                  case xi: Ident if xi.symbol.maybeOwner.exists =>
                    if (xi.symbol == owner) then
-                      println("found ident with direct owner")
+                      if (reportWarnings) then
+                        report.warning(s"found ident $xi with direct old owner ${owner} ", tree.srcPos)
                       Some(tree)
                    else {
                      findIndirectOwner(xi.symbol,owner,Nil) match
                         case Some(path) =>
-                           println(s"found ident with indirect owner, path=${path}")
+                           if (reportWarnings) then
+                              report.warning(s"found ident with indirect owner, path=${path}", tree.srcPos)
                            Some(tree)
                         case None =>
-                           //println(s"owner of ${xi.show} is ${xi.symbol.owner.show} (${xi.symbol.owner.hashCode()})")
                            foldOver(x, tree)
                    }
                  case _ =>
@@ -165,7 +166,8 @@ object TransformUtil {
                     else
                       findIndirectOwner(tree.symbol.maybeOwner, owner, Nil) match
                         case Some(path) =>
-                            println(s"found tree with indirect old owner, path=${path.reverse.map(s=>s"${s}(${s.hashCode()})").mkString("->")}")
+                            if reportWarnings then
+                               report.warning(s"found tree with indirect old owner, path=${path.reverse.map(s=>s"${s}(${s.hashCode()})").mkString("->")}", tree.srcPos)
                             Some(tree)
                         case None =>
                             foldOver(x, tree)
@@ -214,6 +216,45 @@ object TransformUtil {
       finder(None,tree)
    }
 
+   def findSubtermsWithIncorrectOwner(tree:Tree, topOwner: Symbol)(using Context): List[Tree] = {
+      val finder = new TreeAccumulator[List[Tree]] {
+
+         def checkOwner(x:Symbol, owner:Symbol)(using Context): Boolean = {
+            if (x.owner == owner) {
+               true
+            } else if (x.owner.isWeakOwner) {
+              checkOwner(x.owner, owner)
+            } else if (owner.isWeakOwner) {
+              checkOwner(x, owner.owner)
+            } else {
+               false
+            }
+         }
+
+         def apply(x: List[Tree], tree: Tree)(using Context): List[Tree] =
+            if (x.nonEmpty) then
+               x
+            else
+               tree match
+                 case xdef: MemberDef =>
+                   if (!checkOwner(xdef.symbol,summon[Context].owner)) then
+                      tree :: x
+                   else
+                      xdef match
+                        case xDefDef: DefDef =>
+                            foldOver(x, xDefDef.rhs)(using summon[Context].withOwner(xDefDef.symbol))
+                        case xValDef: ValDef =>
+                            foldOver(x, xValDef.rhs)(using summon[Context].withOwner(xValDef.symbol))
+                        case xTypeDef: TypeDef =>
+                            foldOver(x, xTypeDef.rhs)(using summon[Context].withOwner(xTypeDef.symbol))
+                        case other =>
+                          throw CpsTransformException("MemberDef but not DefDef, ValDef or TypeDef", other.sourcePos)
+
+                 case _ =>
+                      foldOver(x, tree)
+      }
+      finder(Nil,tree)
+   }
 
    final val COMMA = ","
 

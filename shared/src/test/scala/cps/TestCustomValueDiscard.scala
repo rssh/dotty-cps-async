@@ -21,17 +21,19 @@ class TestCustomValueDiscard:
   import scala.concurrent.ExecutionContext.Implicits.global 
 
   case class MyObj(value:Int)
-  
+
+  var x = 0
+
+  given ValueDiscard[MyObj] with
+      override def apply(value: MyObj) =
+        x += value.value
+
 
   @Test def withCustomValueDiscard(): Unit = 
      //implicit val printCode = cps.macros.flags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(10)
      
-     var x = 0
-     given ValueDiscard[MyObj] with
-        override def apply(value:MyObj) = 
-           x += value.value
 
      val c = async[ComputationBound]{ 
          await(T1.cbt(MyObj(1)))

@@ -17,11 +17,6 @@ object NonLocalReturnsThrowReturnTransform {
     val shiftedNonLocalReturnsThrowReturn = Symbols.requiredMethod("cps.runtime.util.control.NonLocalReturnsAsyncShift.throwReturn")
 
     val refThrowReturn = ref(shiftedNonLocalReturnsThrowReturn)
-    refThrowReturn match
-      case _: RefTree =>
-        println(s"refThrowReturn is RefTree")
-      case _ =>
-        println(s"refThrowReturn is not RefTree, but ${refThrowReturn.getClass.getName}")
 
     def buildCall(arg:Tree): Tree = {
       Apply(

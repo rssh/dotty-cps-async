@@ -2,8 +2,7 @@ package cps.plugin
 
 import dotty.tools.dotc.*
 import dotty.tools.dotc.ast.Trees
-import core.*
-import core.Names.*
+import core.{ Names, Types, * }
 import core.Contexts.*
 import core.Constants.*
 import core.Annotations.*
@@ -16,6 +15,7 @@ import dotty.tools.dotc.core.Types.TypeRef
 import plugins.*
 import transform.{ Erasure, Inlining, Pickler, PruneErasedDefs }
 
+//TODO: merge with phaseSelect
 class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSymbols)
     extends PluginPhase {
 
@@ -33,14 +33,20 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //   -- update the global cache, setting as key - signature of function or method, value - async tree
   // }
 
+  override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree =
+    try transformTemplateInternal(tree)
+    catch
+      case ex: CpsTransformException =>
+        report.error(ex.getMessage, ex.pos)
+        tree
+
   /**
    * looks for annotated functions, changes them and add to shiftedSymbols
    * @param tree
    * @param Context
    * @return
    */
-  override def transformTemplate(tree: Template)(using Context): Tree = {
-    println(s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.tpe.show}")
+  def transformTemplateInternal(tree: Template)(using Context): Tree = {
     val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
     var newMethods      = List.empty[DefDef]
     for (
@@ -51,81 +57,17 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
-          if !isHighOrder(fun) then
-            throw CpsTransformException(
-              "Object has to be a high-order function",
-              bodyTree.srcPos
-            )
-          // create PolyType for a new Symbol info
-          val args = fun.paramss
-          val typeArgs:   List[TypeDef]  = filterParams[TypeDef](args)
-          val normalArgs: List[ValDef]   = filterParams[ValDef](args)
-          // TODO: params into TermName
-          val paramNames: List[TermName] = normalArgs.map(_.name)
-          // create new return type with type params
-          val newSymbolInfo  =
-            PolyType(List("F".toTypeName, "C".toTypeName))(
-              // bounds for the type parameters
-              pt =>
-                List(
-                  TypeBounds(defn.NothingType, defn.AnyType),
-                  TypeBounds(
-                    defn.NothingType,
-                    AppliedType(
-                      Symbols
-                        .requiredClassRef("cps.plugin.CpsMonadContext"),
-                      List(pt.newParamRef(0))
-                    )
-                  )
-                ),
-              pt => {
-                val mtParamTypes = List(
-                  AppliedType(
-                    TypeRef(
-                      Symbols.requiredClassRef("cps.plugin.CpsMonad"),
-                      "Aux".toTermName
-                    ),
-                    List(pt.newParamRef(0), pt.newParamRef(1))
-                  )
-                ) ++ normalArgs.map(_.tpt.tpe)
-                val mtReturnType = pt.newParamRef(0).appliedTo(fun.symbol.info.widen)
-                MethodType("am".toTermName :: paramNames)(
-                  _ => mtParamTypes,
-                  _ => mtReturnType
-                )
-                // MethodType(List("am".toTermName))
-                // (
-                // // params info expression
-                // (mt: MethodType) =>
-                //   List(
-                //     AppliedType(
-                //       TypeRef(
-                //         Symbols.requiredClassRef("cps.plugin.CpsMonad"),
-                //         "Aux".toTermName
-                //       ),
-                //       List(pt.newParamRef(0), pt.newParamRef(1))
-                //     )
-                //   ),
-                // result type expression
-                // (mt: MethodType) =>
-                //   MethodType(paramNames)(
-                //     mtn =>
-                //       normalArgs.map(p =>
-                //         p match
-                //           case v: ValDef => v.tpt.tpe
-                //           case d: TypeDef => d.rhs.tpe
-                //       ),
-                //     mtn => pt.newParamRef(0).appliedTo(fun.symbol.info.widen)
-                // )
-              }
-            )
+          checkApplicableForMakeCPS(fun) match
+            case Left(err) =>
+              throw CpsTransformException(err, bodyTree.srcPos)
+            case Right(_) => ()
           val newFunName     = (fun.symbol.name.debugString + "$cps").toTermName
           val newFunSymbol   =
             Symbols.newSymbol(
               fun.symbol.owner,
               newFunName,
               fun.symbol.flags | Flags.Synthetic,
-              newSymbolInfo
+              fun.symbol.info.widen
             )
           // create new rhs
           val transformedRhs = transformFunсBody(fun.rhs)
@@ -149,14 +91,8 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     val retval = if (newMethods.isEmpty) {
       super.transformTemplate(tree)
     } else {
-      println(
-        "cpsAsyncShift::transformTemplate: added new methods: " + newMethods
-          .map(_.name)
-          .mkString(",")
-      )
       cpy.Template(tree)(body = tree.body ++ newMethods)
     }
-    // println(s"after CpsAsyncShift, retval: ${retval.show}")
     retval
   }
 
@@ -179,12 +115,16 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //  )
   //   example:
   //   map[A,B](collection:List[A])(f: A => B): List[B] =  doSpmetjong
-  //   map[F[_],C <: CpsMonadContext[F],A,B](am: CpsMonad.Aux[F,C])(collection:List[A])(f: A => B): F[List[B]] = {
+  //   map$cps[F[_],C <: CpsMonadContext[F],A,B](am: CpsMonad.Aux[F,C])(collection:List[A])(f: A => B): F[List[B]] = {
   //      cpsAsyncApply[F,List[B],C](am,
   //           mt = ContextMethodType(....)
   //           Lambda(mt, tss => transfomrdBody(f) )
   //      )
   //   }
+  //
+  //   add type-params
+  //      new typr of DefDef:  if its PolyType, - copy PolyType and add type parameter
+  //                           MethodType - create PolyType with type-params and MethodType
 
   //   tranfromedBody(f) = {
   //      Apply(f, ...)  =>  await[[F,result-typr-of-apply,F]](f, ....)
@@ -225,30 +165,29 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         val newExpr = transformFunсBody(expr)
         Block(stats, newExpr)
 
-  def isHighOrder(tree: DefDef)(using Context): Boolean =
+  def checkApplicableForMakeCPS(tree: DefDef)(using Context): Either[String, Unit] =
+    // check ValDef input params
+    if !isHightOrderByArg(tree) then
+      Left(
+        "Object annotated with cps.plugin.annotation.makeCPS has to be a high-order function"
+      )
+    else // check the return type
+    if isFunc(tree.rhs.tpe.finalResultType) then
+      Left("Unsupported type of function. The return type must not be a function")
+    else Right(())
+
+  def isHightOrderByArg(tree: DefDef)(using Context): Boolean =
     // check ValDef input params
     val valDefs: List[ValDef] = filterParams[ValDef](tree.paramss)
     val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
-    val retval     =
-      if funcParams.nonEmpty then true
-    // check the return type
-      else
-    // TODO: write implementation for this special case
-    if isFunc(tree.rhs.tpe.finalResultType) then
-      throw CpsTransformException(
-        "Unsupported type of function. The return type must not be a function",
-        tree.srcPos
-      )
-    else false
-
-    retval
+    funcParams.nonEmpty
 
   def filterParams[T](params: List[ParamClause]): List[T] =
     val ps = params.flatten[ValDef | TypeDef]
     ps.collect { case v: T => v }
 
   def isFunc(t: Type)(using Context): Boolean =
-    t match
+    val retval = t match
       case _: AppliedType
           if (defn.isFunctionType(t) ||
             defn.isContextFunctionType(t)) =>
@@ -256,6 +195,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
       case _: MethodType => true
       case _: PolyType => true
       case _ => false
+    retval
 
 }
 

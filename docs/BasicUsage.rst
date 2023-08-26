@@ -4,20 +4,27 @@ Dependency
 Sbt Example
 -----------
 
-The current prerelease is |0.9.17| for using with Scala |3.3.0|_.
+The current prerelease is |0.9.18| for using with Scala |3.3.0|_.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.17"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.18"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.17"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.18"
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
+
+For using direct context encoding you also need to add compiler-plugin:
+
+ .. code-block:: scala
+
+  autoCompilerPlugins := true
+  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.18")
 
 
 Basic Usage
@@ -86,7 +93,7 @@ The minimal complete snippet looks as follows:
       }
 
       def main(args: Array[String]): Unit =
-        val f = Await.ready(greet, Duration(1, "seconds"))
+        val f = Await.ready(greet(), Duration(1.seconds))
         f.failed.map { ex => println(ex.getMessage) }
   
 
@@ -95,7 +102,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.17"
+  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.18"
 
 
 **Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_ and streaming frameworks like |Akka Streams|_ and |fs2|_. 
@@ -163,12 +170,93 @@ Since we use optimized monadic transform as the transformation technique, the nu
 same as the number of |await|_ s in the source code.  
 You can read the :ref:`notes about implementation details <random-notes>`.
 
+
+
+Direct context encoding. (experimental)
+---------------------------------------
+
+Direct context encoding allows the representation of asynchronous API as ordinary synchronous calls using context parameter CpsDirect[F].
+The signature above is an example of a function in direct encoding:
+
+
+ .. code-block:: scala
+
+   def  fetch(url:String)(using CpsDirect[Future]): String
+
+Usage:
+
+ .. code-block:: scala
+
+   def fetchAccessible(urls:List[String])(using CpsDirect[Future]): Map[String,String] =
+          urls.flatMap{ url =>
+               try
+                   Some((url, fetch(url)))
+               catch
+                   case NonFatal(ex) =>
+                      logger.log(s"Can't fetch $url, skipping", ex)
+          }.toMap
+
+
+Our minimal example in this style:
+
+
+ .. code-block:: scala
+
+   import scala.annotation.experimental
+   import scala.concurrent.*
+   import scala.concurrent.duration.*
+   import scala.concurrent.ExecutionContext.Implicits.global
+
+   import cps.*                         //  import cps
+   import cps.monads.{*,given}          //  import support for build-in monads (i.e. Future)
+
+
+   @experimental
+   class TestMinimalExample:
+
+     def fetchGreeting()(using CpsDirect[Future]): String =    
+       "Hi."  // assume this is a real async operation
+
+     def greet()(using CpsDirect[Future]) = 
+       val greeting = fetchGreeting()
+       println(greeting)
+ 
+     def main(args: Array[String]): Unit =
+       val f = async[Future]{ greet() }
+       Await.ready(f, Duration(1.seconds))
+       f.failed.map { ex => println(ex.getMessage) }
+  
+
+I.e. function accept external context parameter of form `CpsDirect[F]` and return type is an ordinary value not wrapped in monad.
+The developer can call such function from an async block or other function with the direct context.
+Note, that signature also can be written in carried form: `def fetchGreeting(): CpsDirect[F] ?=> String`.
+
+We can freely use `await` inside this direct context functions. Sometimes, we need to transform the synchronous style into asynchronous. We can do this using nested async expression or pseudo operator `asynchronized`  (reified with reify/reflect syntax), which uses current context for inferring the monad type. For example, here is a version of `fetchAccessibe` which fetch url-s in parallel:
+
+ .. code-block:: scala
+
+   def fetchAccessible(urls:List[String])(using CpsDirect[Future]): Map[String,String] =
+          urls.map{ url => 
+                 asynchronized(fetch(url))
+               }
+              .flatMap{ fetchingUrl =>
+               try
+                   Some((url, await(fetchingUrl)))
+               catch
+                   case NonFatal(ex) =>
+                      logger.log(s"Can't fetch $url, skipping", ex)
+          }.toMap
+
+
+Note, that in current version (0.18) direct context encoding is marked to be experimental.
+
+
 Alternative names
 -----------------
 
-`async/await` names is appropriate for Future-s and effect monads. There are other monads where a  direct style can be helpful
+`async(asynchronized)/await`  names is appropriate for Future-s and effect monads. There are other monads where a  direct style can be helpful
 in applications such as probabilistic programming, navigation over search space, collections, and many other.
-We define alternative names for macros: `reify/reflect`, which can be more appropriate in the general case:
+We define alternative names for macros: `reify(reifed)/reflect`, which can be more appropriate in the general case:
 
 
 .. code-block:: scala
@@ -224,8 +312,8 @@ Yet one pair of names 'lift/unlift', used for example in the |monadless|_ librar
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
 
-.. |0.9.17| replace:: ``0.9.17``
-.. _0.9.17: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.17/
+.. |0.9.18| replace:: ``0.9.18``
+.. _0.9.18: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.18/
 
 .. /*to update*/ 
 
