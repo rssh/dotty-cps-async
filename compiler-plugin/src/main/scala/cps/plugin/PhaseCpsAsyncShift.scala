@@ -87,7 +87,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
               fun.symbol.flags | Flags.Synthetic,
               newSymbolInfo
             )
-          println(s"newSymbolInfo=${newSymbolInfo}")
+          println(s"newSymbolInfo=${newSymbolInfo.show}")
           println(s"passedSymbolCreation::${fun.symbol.name}")
           // create new rhs
           val funcParams    = getHighOrderArgs(fun)
@@ -131,12 +131,12 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
       // bounds for the type parameters
       pt =>
         List(
-          TypeBounds(defn.NothingType, defn.AnyType),
+          TypeBounds(defn.NothingType, defn.AnyKindType),
           TypeBounds(
             defn.NothingType,
             AppliedType(
               Symbols
-                .requiredClassRef("cps.plugin.CpsMonadContext"),
+                .requiredClassRef("cps.CpsMonadContext"),
               List(pt.newParamRef(0))
             )
           )
@@ -146,10 +146,10 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
       pt => {
         val mtParamTypes = List(
           AppliedType(
-            TypeRef(Symbols.requiredClassRef("cps.plugin.CpsMonad"), "Aux".toTermName),
+            TypeRef(Symbols.requiredClassRef("cps.CpsMonad"), "Aux".toTermName),
             List(pt.newParamRef(0), pt.newParamRef(1))
           )
-        ) ++ normalArgs.map(_.tpt.tpe)
+        ) ++ normalArgs.map(_.tpt.tpe.widen)
         val mtReturnType = pt.newParamRef(0).appliedTo(f.symbol.info.widen)
         MethodType("am".toTermName :: normalParamNames)(
           _ => mtParamTypes,

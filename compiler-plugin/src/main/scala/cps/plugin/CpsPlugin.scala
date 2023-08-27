@@ -27,7 +27,7 @@ class CpsPlugin extends StandardPlugin {
        new PhaseSelect(selectedNodes),
        new PhaseCps(settings,selectedNodes,shiftedSymbols, PhaseChangeSymbolsAndRemoveScaffolding.name),
      ) ++ {
-       if (settings.withShiftReplace) then
+       if (settings.withShiftReplace || true) then
          List(
            new PhaseCpsAsyncShift(selectedNodes, shiftedSymbols),
            new PhaseCpsAsyncReplace(selectedNodes, shiftedSymbols),

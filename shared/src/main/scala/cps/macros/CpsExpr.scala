@@ -144,7 +144,7 @@ case class GenericSyncCpsExpr[F[_]:Type,T:Type](
            e.prependExprs(Seq(UnsealExprTreeGen(last, changed))).prependExprs(prev)
 
        override def map[A:Type](f: Expr[T => A])(using Quotes): CpsExpr[F,A] =
-           copy(lastExpr = Expr.betaReduce('{$f($lastExpr)}), true )
+           copy(lastExpr = Expr.betaReduce('{$f($lastExpr)}), changed = true )
 
        override def flatMap[A:Type](f: Expr[T => F[A]])(using Quotes): CpsExpr[F,A] =
             GenericAsyncCpsExpr[F,A](dm, prev, '{ $dm.flatMap($dm.pure($last))($f) } )
