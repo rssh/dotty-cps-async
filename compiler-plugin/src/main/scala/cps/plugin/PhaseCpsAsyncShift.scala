@@ -193,13 +193,32 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @param Context
    * @return
    */
-  def transformFunсBody(tree: Tree)(using Context): Tree =
+  def transformFunсBody(tree: Tree, funcParams: List[ValDef], newParams: List[Tree])(using
+    Context
+  ): Tree =
     // val finalResType = tree.tpe.finalResultType
     // if isFunc(finalResType) then transformInnerFunction(tree)
     // else
-    tree
-      .select(defn.String_+)
-      .appliedTo(Literal(Constant("transformed")))
+    println(s"funcParams=$newParams")
+    val methodName = "apply".toTermName
+    val mapper     = new TreeMap() {
+      override def transform(tree: Tree)(using Context): Tree =
+        println(s"TreeMap::transform=$tree")
+        tree match
+          case Apply(TypeApply(Select(f @ Ident(fname), methodName), targs), args)
+              if (funcParams.exists(_.symbol == f.symbol)) =>
+            ???
+          case Apply(Select(f, methodName), args)
+              if (funcParams.exists(_.symbol == f.symbol)) =>
+            ???
+          case f: Ident if (funcParams.exists(_.symbol == f.symbol)) =>
+            ???
+          case _ => super.transform(tree)
+    }
+    mapper.transform(tree)
+    // tree
+    //   .select(defn.String_+)
+    //   .appliedTo(Literal(Constant("transformed")))
 
   /**
    * transform a function which is returned from the high-order annotated
