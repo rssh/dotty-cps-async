@@ -34,6 +34,8 @@ object CpsTransformHelper {
      val retval = tpe.dealias match
        case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsDirectClassSymbol) =>
          true
+       case x if (x =:= defn.NothingType || x =:= defn.NullType) =>
+         false
        case other =>
          other.baseType(cpsDirectClassSymbol) != NoType
      if (debug)
@@ -197,6 +199,8 @@ object CpsTransformHelper {
 
   }*/
 
+
+  // TODO: merge with isCpsDirectType.
   def isDirectContext(tpe:Type)(using Context): Boolean = {
     if (tpe =:= defn.NothingType || tpe =:= defn.NullType) then
       false
@@ -204,7 +208,6 @@ object CpsTransformHelper {
       val directContextType = Symbols.requiredClassRef("cps.CpsDirect").appliedTo(Types.WildcardType)
       tpe <:< directContextType
   }
-
 
   def findImplicitInstance(tpe: Type, span: Span)(using ctx:Context): Option[Tree] = {
     val searchResult = ctx.typer.inferImplicitArg(tpe,span)

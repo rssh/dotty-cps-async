@@ -76,6 +76,16 @@ class Test15PE {
   }
 
 
+  @Test
+  def testUseResourceM3() = {
+    compileAndRunTestAfterCommon("testdata/set15pe/m3", "cps.pe.TestUseResource",
+      DotcInvocations.InvocationArgs(checkAll = true,
+        extraDotcArgs = List(
+          "-Vprint:rssh.cps", "-Vprint:erasure"
+        )
+      )
+    )
+  }
 
 
 }

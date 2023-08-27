@@ -24,7 +24,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
     hasAsync: Boolean,
     hasShiftedLambda: Boolean,
     shouldBeChangedSync: Boolean,
-    hasCpsDirect: Boolean
+    cpsDirectArg: Option[Term]
   ):
 
     def merge(other: ApplyArgRecord): ApplyArgsSummaryPropertiesStep1 =
@@ -33,7 +33,10 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
         hasAsync || other.isAsync,
         hasShiftedLambda || other.hasShiftedLambda,
         shouldBeChangedSync || other.shouldBeChangedSync,
-        hasCpsDirect || other.isCpsDirect
+        if (cpsDirectArg.isEmpty) then
+          if (other.isCpsDirect) then Some(other.term)  else None
+        else
+          cpsDirectArg
       )
 
     def mergeSeq(seq: Seq[ApplyArgRecord]): ApplyArgsSummaryPropertiesStep1 =
@@ -46,7 +49,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
   object ApplyArgsSummaryPropertiesStep1:
 
      def mergeSeqSeq(args: Seq[Seq[ApplyArgRecord]]): ApplyArgsSummaryPropertiesStep1 =
-        val zero = ApplyArgsSummaryPropertiesStep1(0,false,false,false,false)
+        val zero = ApplyArgsSummaryPropertiesStep1(0,false,false,false,None)
         zero.mergeSeqSeq(args)
 
   case class ApplyArgsSummaryProperties(
@@ -57,7 +60,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
      def hasAsync: Boolean = step1.hasAsync
      def hasShiftedLambda: Boolean = step1.hasShiftedLambda
      def shouldBeChangedSync: Boolean = step1.shouldBeChangedSync
-     def hasCpsDirect: Boolean = step1.hasCpsDirect
+     def cpsDirectArg: Option[Term] = step1.cpsDirectArg
 
      def mergeStep2SeqSeq(seqSeq: Seq[Seq[ApplyArgRecord]]): ApplyArgsSummaryProperties =
        seqSeq.foldLeft(this)((s,e)=> s.mergeStep2Seq(e))

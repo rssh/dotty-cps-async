@@ -7,14 +7,15 @@ import core.Types.*
 import core.Decorators.*
 import core.Symbols.*
 import ast.tpd.*
-
 import cps.plugin.*
 import cps.plugin.forest.*
+import dotty.tools.dotc.ast.tpd
 
 sealed trait ApplyArgList {
   def isAsync(using Context, CpsTopLevelContext): Boolean
   def containsNotUnshiftableAsyncLambda(using Context, CpsTopLevelContext): Boolean
   def containsAsyncLambda(using Context, CpsTopLevelContext): Boolean
+  def findDirectContext: Option[Tree]
   def containsDirectContext: Boolean
   def show(using Context):String
   def origin: Tree
@@ -31,6 +32,7 @@ case class ApplyTermArgList(
   override def containsAsyncLambda(using Context, CpsTopLevelContext) = args.exists(_.isAsyncLambda)
   override def containsNotUnshiftableAsyncLambda(using Context, CpsTopLevelContext) =
     args.exists(x => x.isAsyncLambda && !x.lambdaCanBeUnshifted )
+  override def findDirectContext: Option[Tree] = args.find(_.isDirectContext).map(_.origin)
   override def containsDirectContext = args.exists(_.isDirectContext)
   override def origin = originApplyTerm
   override def isTypeParams = false
@@ -49,6 +51,7 @@ case class ApplyTypeArgList(
   override def isAsync(using Context, CpsTopLevelContext) = false
   override def containsAsyncLambda(using Context, CpsTopLevelContext) = false
   override def containsNotUnshiftableAsyncLambda(using Context, CpsTopLevelContext) = false
+  override def findDirectContext: Option[Tree] = None
   override def containsDirectContext = false
   override def origin = originApplyTerm
   override def show(using Context): String = {

@@ -346,7 +346,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         val existsPrependArg = argsProperties.usePrepend
         val existsShiftedLambda = argsProperties.hasShiftedLambda
         val shouldBeChangedSync = argsProperties.shouldBeChangedSync
-        val existsCpsDirect = argsProperties.hasCpsDirect
+        val existsCpsDirect = argsProperties.cpsDirectArg.isDefined
         val callCpsDirect =  existsCpsDirect && !fun.symbol.hasAnnotation(cpsNotChangeSymbol)
                                                          && !fun.symbol.flags.is(Flags.Inline)
                                                          && !fun.symbol.name.contains("$")
@@ -371,16 +371,48 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                              if (callCpsDirect)
                                // TODO: check that cps plugin is enabled.
                                // XmacroSetting.find("cps:usePlugin")
-                               println(s"callCpsDirect detected:fun=${fun.show}, aritfact=${fun.symbol.flags.is(Flags.Artifact)}, synthetic=${fun.symbol.flags.is(Flags.Synthetic)}, paramAccessor=${fun.symbol.flags.is(Flags.ParamAccessor)}, ")
                                if (fun.symbol.name.contains("spawnDelay")) {
                                  println(s"fun.symbol.annotations=${fun.symbol.annotations}")
                                }
-                               val adoptedApply = Apply(
-                                 TypeApply(Ref(adoptCpsedCallSymbol),
-                                           List(TypeTree.of[F],Inferred(applyTerm.tpe.widen))),
-                                 List(applyTerm)
-                               )
-                               CpsTree.impure(owner,adoptedApply, applyTerm.tpe.widen)
+                               val cpsDirectArg = argsProperties.cpsDirectArg.get
+                               cpsDirectArg match
+                                 case Apply(TypeApply(byInclusionCn,List(tf,tg)),List(fctx,fgincl))
+                                   if (byInclusionCn.symbol == Symbol.requiredMethod("cps.CpsDirect.byInclusion")) =>
+                                      println("found byInclusion")
+                                      if (tf.tpe =:= tg.tpe) then
+                                        val nCpsDirectArg = genCpsDirectDefaultConstructor(tf,fctx,cpsDirectArg)
+                                        val adoptedApply = Apply.copy(applyTerm)(
+                                          TypeApply(Ref(adoptCpsedCallSymbol),
+                                            List(TypeTree.of[F], Inferred(applyTerm.tpe.widen))),
+                                          List(substituteCpsDirectArg(applyTerm, cpsDirectArg, nCpsDirectArg))
+                                        )
+                                        CpsTree.impure(owner, adoptedApply, applyTerm.tpe.widen)
+                                      else
+                                        println(s"tf=${tf.show}, tg=${tg.show}")
+                                        val tgctx = Symbol.requiredClass("cps.CpsTryMonadContext").typeRef.appliedTo(tg.tpe)
+                                        val grt = tg.tpe.widen.appliedTo(applyTerm.tpe.widen)
+                                        val lambdaMethodType = MethodType(List("ctx"))(_ => List(tgctx), _ => grt)
+                                        val lambda = Lambda(owner,lambdaMethodType, { (owner, params) =>
+                                          // TODO: create local context with owner
+                                          val gctxArg = params.head.asInstanceOf[Term]
+                                          val nCpsDirectArg = genCpsDirectDefaultConstructor(tg, gctxArg, cpsDirectArg)
+                                          val adoptedApply = Apply.copy(applyTerm)(
+                                            TypeApply(Ref(adoptCpsedCallSymbol),
+                                              List(tg, Inferred(applyTerm.tpe.widen))),
+                                            List(substituteCpsDirectArg(applyTerm, cpsDirectArg, nCpsDirectArg))
+                                          )
+                                          adoptedApply.changeOwner(owner)
+                                        })
+                                        val r = Apply.copy(applyTerm)(
+                                            Apply(
+                                              TypeApply(Select.unique(fgincl,"apply"),List(Inferred(applyTerm.tpe.widen))),
+                                              List(fctx)
+                                            ),
+                                            List(lambda)
+                                        )
+                                        CpsTree.impure(owner,r,applyTerm.tpe.widen)
+                                 case _ =>
+                                   throw MacroError(s"cpsDirectArg is not byConversion: ${cpsDirectArg.show}",applyTerm.asExpr)
                              else
                                CpsTree.pure(owner,applyTerm)
                            else
@@ -435,8 +467,24 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         }
   }
 
+  def genCpsDirectDefaultConstructor(tf: TypeTree, fctx: Term, posTerm:Term): Term =
+    val cpsDirectType = Symbol.requiredClass("cps.CpsDirect").typeRef.appliedTo(tf.tpe)
+    val cpsDirectConstructor = Select.unique(New(Inferred(cpsDirectType)),"<init>")
+    Apply.copy(posTerm)(
+      TypeApply(cpsDirectConstructor, List(tf)),
+      List(fctx)
+    )
+
+  def substituteCpsDirectArg(applyTerm:Apply, originCPsDirectArg: Term, nCpsDirectArg:Term): Apply = {
+    Apply.copy(applyTerm)(
+      applyTerm.fun,
+      applyTerm.args.map(
+        arg => if (arg eq originCPsDirectArg) then nCpsDirectArg else arg
+      )
+    )
+  }
  
-   def buildApplyPrependArgsFlatMaps(cpsFun: CpsTree, fun: Term,
+  def buildApplyPrependArgsFlatMaps(cpsFun: CpsTree, fun: Term,
                  argsRecords: Seq[ApplyArgRecord],
                  applyTerm: Apply,
                  argsProperties: ApplyArgsSummaryProperties,
@@ -468,7 +516,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
          } else lastCpsTree
 
       retval
-   }
+  }
 
 
   def findAsyncShiftTerm(e:Term):(ImplicitSearchResult, TypeRepr) =

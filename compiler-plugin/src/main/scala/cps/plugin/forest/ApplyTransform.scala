@@ -364,9 +364,21 @@ object ApplyTransform {
      retval
   }
 
-  def adoptCallMode(origin: Tree, plainTree: Tree, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
+  def adoptCallMode(origin: Tree, plainTree: Apply, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
     if (argss.exists(_.containsDirectContext) ) {
-      val adoptedTree = if (callMode.asyncLambdaApplication.isEmpty) {
+      println(s"ApplyTransform: foundDirectContext in call ${origin.show}")
+      val directContextArg = argss.find(_.containsDirectContext).flatMap(_.findDirectContext).get
+      val adoptedTree = optDirectContextArg.get match
+            case dc@Apply(TypeApply(byInclusionCn, List(tf, tg)), List(fctx, fgincl))
+              if (byInclusionCn.symbol == Symbols.requiredMethod("cps.CpsDirect.byInclusion")) =>
+                 if (tf.tpe =:= tg.tpe) {
+                   val nCpsDirectArg = genCpsDirectDefaultConstructor(tf,fctx,dc)
+
+                 }
+            case other =>
+              false
+      println(s"ApplyTransform::adoptCallMode, directContextArg=${optDirectContextArg.get.show}, isConv=${isConv}")
+      val adoptedTree1 = if (callMode.asyncLambdaApplication.isEmpty) {
         Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
       } else plainTree
       //if (isImpure) {
@@ -386,6 +398,24 @@ object ApplyTransform {
       adoptResultKind(origin, plainTree, owner, callMode)
     }
   }
+
+  def genCpsDirectDefaultConstructor(tf: TypeTree, fctx: Term, posTerm: Term): Term =
+    val cpsDirectType = Symbols.requiredClassRef("cps.CpsDirect").appliedTo(tf.tpe)
+    val cpsDirectConstructor = Select(New(Inferred(cpsDirectType)), "<init>".toTermName)
+    Apply(
+      TypeApply(cpsDirectConstructor, List(tf)),
+      List(fctx)
+    ).withSpan(posTerm.span)
+
+  def substituteCpsDirectArg(applyTerm: Apply, originCPsDirectArg: Tree, nCpsDirectArg: Tree): Apply = {
+    Apply(
+      applyTerm.fun,
+      applyTerm.args.map(
+        arg => if (arg eq originCPsDirectArg) then nCpsDirectArg.withSpan(arg.span) else arg
+      )
+    ).withSpan(applyTerm)
+  }
+
 
   def adoptResultKind(origin:Tree, newApply: Tree, owner: Symbol, callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
 
@@ -1052,6 +1082,7 @@ object ApplyTransform {
 
   }
 
+  /*
   def extractFinalResultType(funType:Type, fun:Tree, argss: List[ApplyArgList])(using Context): Type = {
     argss match
       case Nil => funType
@@ -1074,6 +1105,8 @@ object ApplyTransform {
             case _ =>
               throw CpsTransformException(s"Can't extract final result type from ${funType.show}, expect MethodOrPoly or AppliedType", fun.srcPos)
   }
+
+   */
 
   def resolveAsyncShiftedObject(obj: Tree)(using Context): Either[String, Tree] = {
     val asyncShift = ref(requiredClass("cps.AsyncShift")).tpe

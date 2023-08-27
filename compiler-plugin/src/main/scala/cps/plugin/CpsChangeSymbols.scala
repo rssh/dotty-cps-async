@@ -59,17 +59,18 @@ trait CpsChangeSymbols {
   def findCpsDirectContextInParamss(sym: Symbol, paramss:List[List[Symbol]])(using ctx:Context): Option[Type] = {
     paramss.flatten.find(
       paramSym => {
-        if (paramSym.isTypeParam)
+        if (paramSym.isTypeParam  ||  !(paramSym.flags.isOneOf(Flags.GivenOrImplicit)))
           false
         else
           val retval = paramSym.info.widen.dealias match
             case vt: ErasedValueType =>
-                if (vt.tycon <:< Symbols.requiredClassRef("cps.CpsDirect")) then
-                  paramSym.flags.isOneOf(Flags.GivenOrImplicit)
-                else
-                  false
+                 // for valueType
+                (vt.tycon <:< Symbols.requiredClassRef("cps.CpsDirect"))
+            case tr: TypeRef =>
+                tr <:< Symbols.requiredClassRef("cps.CpsDirect")
             case _ =>
               false
+          println(s"CpsChangeSymbols::checking CpsDirectContext for ${paramSym.info.widen.dealias}, result=${retval}")
           retval
       }
     ).map { paramSym =>

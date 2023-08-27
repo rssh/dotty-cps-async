@@ -1,6 +1,6 @@
 package cps
 
-import scala.annotation.experimental
+import scala.annotation.{compileTimeOnly, experimental}
 import scala.util.NotGiven
 import cps.plugin.scaffolding.requiringCpsCompilerPlugin
 
@@ -15,9 +15,9 @@ import cps.plugin.scaffolding.requiringCpsCompilerPlugin
  *  ```
  **/
 @experimental
-trait CpsDirect[F[_]] {
+class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends AnyVal {
 
-  def context: CpsTryMonadContext[F]
+  //def context: CpsTryMonadContext[F]
 
   def monad: CpsMonad[F] = context.monad
 
@@ -27,31 +27,52 @@ trait CpsDirect[F[_]] {
 
 }
 
-@experimental
-class CpsDirectId[F[_]](override val context: CpsTryMonadContext[F]) extends CpsDirect[F]
+
+//@experimental
+//class CpsDirectInclusion[F[_],G[_]](val parentContext: CpsTryMonadContext[F], val inclusion: CpsTryMonadContextInclusion[F,G]) extends CpsDirect[G] {
+//  def context: CpsTryMonadContext[G] = ???
+//}
+
+//@experimental
+//class CpsDirectId[F[_]](override val context: CpsTryMonadContext[F]) extends AnyVal with CpsDirect[F]
+
+//class CpsDirectConversion[F[_],G[_]](override val context: CpsTryMonadContext[F], val conversion: CpsTryMonadConversion[F,G]) extends CpsDirect[G]
+
+
+
+
 
 @experimental
-class CpsDirectConv[F[_],G[_]](val parentContext: CpsTryMonadContext[F], val conversion: CpsMonadConversion[F,G]) extends CpsDirect[G] {
-  def context: CpsTryMonadContext[G] = ???
+object CpsDirect  {
+
+  @compileTimeOnly("CpsDirect consrtructioe should be removed by cps compiler plugin")
+  given byInclusion[F[_], G[_]](using CpsTryMonadContext[F], CpsMonadContextInclusion[F,G]): CpsDirect[G] =
+    ??? //CpsDirectId(await(summon[CpsMonad[G]].apply(ctx => ctx)))
+
+  //direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
+  //  new CpsDirect[F](context)
+
+
 }
 
-@experimental
-trait CpsDirectLowLevel {
+trait CpsMonadContextInclusion[F[_],G[_]] {
 
-  given directWithConversion[F[_],G[_]](using parentContext: CpsTryMonadContext[F], conversion: CpsMonadConversion[F,G]): CpsDirect[G] =
-    new CpsDirectConv[F,G](parentContext, conversion)
-  
-}
-
-
-@experimental
-object CpsDirect {
-
-  // TODO: wrong position when inline
-  given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
-    new CpsDirectId[F](context)
-    //TODO: requiringCpsCompilerPlugin(new CpsDirect[F](context))
-
+  def apply[T](fctx: CpsTryMonadContext[F])(fun: CpsTryMonadContext[G] => G[T]):F[T]
 
 }
 
+object CpsMonadContextInclusion {
+
+  given byConversion[F[_],G[_]](using gfc: CpsMonadConversion[G,F], gm: CpsTryMonad[G]): CpsMonadContextInclusion[F,G] =
+    new CpsMonadContextInclusion[F,G] {
+      override def apply[T](fctx: CpsTryMonadContext[F])(fun: CpsTryMonadContext[G] => G[T]):F[T] =
+        gfc.apply(gm.apply(fun))
+    }
+
+  given byIdentity[F[_]]: CpsMonadContextInclusion[F,F] =
+    new CpsMonadContextInclusion[F,F] {
+      override def apply[T](fctx: CpsTryMonadContext[F])(fun: CpsTryMonadContext[F] => F[T]): F[T] =
+         fun(fctx)
+    }
+
+}
