@@ -34,6 +34,19 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //   -- update the global cache, setting as key - signature of function or method, value - async tree
   // }
 
+  /**
+   * replaces symbols by transformed values from shiftedSymbols
+   * @param tree
+   * @param Context
+   * @return
+   */
+  override def transformApply(tree: tpd.Apply)(using Context): Tree =
+    // if (tree.symbol == "FutureAsyncMonad")
+    // println(s"cpsAsyncShift::transformApply Symbol ${tree.symbol}")
+    // println(s"cpsAsyncShift::transformApply ${tree.show}")
+    // println(s"cpsAsyncShift::transformApply Info ${tree}")
+    super.transformApply(tree)
+
   override def transformTemplate(tree: Template)(using Context): Tree =
     try transformTemplateInternal(tree)
     catch
@@ -48,6 +61,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @return
    */
   def transformTemplateInternal(tree: Template)(using Context): Tree = {
+    println(s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.tpe.show}")
     val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
     var newMethods      = List.empty[DefDef]
     for (
@@ -62,29 +76,37 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
             case Left(err) =>
               throw CpsTransformException(err, bodyTree.srcPos)
             case Right(_) => ()
-          val newSymbolInfo  = generateNewFuncType(fun)
-          val newFunName     = (fun.symbol.name.debugString + "$cps").toTermName
-          val newFunSymbol   =
+          // create PolyType for a new Symbol info
+          println(s"passedChecks::${fun.symbol.name}")
+          val newSymbolInfo = generateNewFuncType(fun)
+          val newFunName    = (fun.symbol.name.debugString + "$cps").toTermName
+          val newFunSymbol  =
             Symbols.newSymbol(
               fun.symbol.owner,
               newFunName,
               fun.symbol.flags | Flags.Synthetic,
-              fun.symbol.info.widen
+              newSymbolInfo
             )
+          println(s"newSymbolInfo=${newSymbolInfo}")
+          println(s"passedSymbolCreation::${fun.symbol.name}")
           // create new rhs
-          val transformedRhs = transformFunсBody(fun.rhs)
-          val newMethod      =
+          val funcParams    = getHighOrderArgs(fun)
+          println(s"passedBodyTransformation::${fun.symbol.name}")
+          val newMethod     =
             DefDef(
               newFunSymbol,
               // create new paramss
-              newParamss =>
+              newParamss => {
+                val transformedRhs =
+                  transformFunсBody(fun.rhs, funcParams, newParamss.head)
                 TransformUtil
                   .substParams(
                     transformedRhs,
-                    filterParams[ValDef](fun.paramss),
+                    filterParamsValDef(fun.paramss),
                     newParamss.flatten
                   )
                   .changeOwner(fun.symbol, newFunSymbol)
+              }
             )
           shiftedSymbols.addAsyncShift(fun.symbol, newMethod)
           newMethods = newMethod :: newMethods
@@ -100,8 +122,8 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
 
   def generateNewFuncType(f: DefDef)(using Context): Type =
     val args = f.paramss
-    val typeArgs:         List[TypeDef]  = filterParams[TypeDef](args)
-    val normalArgs:       List[ValDef]   = filterParams[ValDef](args)
+    val typeArgs:         List[TypeDef]  = filterParamsTypeDef(args)
+    val normalArgs:       List[ValDef]   = filterParamsValDef(args)
     val typeParamNames:   List[TypeName] = typeArgs.map(_.name)
     val normalParamNames: List[TermName] = normalArgs.map(_.name)
     // create new return type with type params
@@ -248,15 +270,23 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
       Left("Unsupported type of function. The return type must not be a function")
     else Right(())
 
+  def getHighOrderArgs(tree: DefDef)(using Context): List[ValDef] =
+    val valDefs: List[ValDef] = filterParamsValDef(tree.paramss)
+    val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
+    funcParams
+
   def isHightOrderByArg(tree: DefDef)(using Context): Boolean =
     // check ValDef input params
-    val valDefs: List[ValDef] = filterParams[ValDef](tree.paramss)
-    val funcParams = valDefs.filter(p => isFunc(p.tpt.tpe))
+    val funcParams = getHighOrderArgs(tree)
     funcParams.nonEmpty
 
-  def filterParams[T](params: List[ParamClause]): List[T] =
+  def filterParamsTypeDef(params: List[ParamClause]): List[TypeDef] =
     val ps = params.flatten[ValDef | TypeDef]
-    ps.collect { case v: T => v }
+    ps.collect { case v: TypeDef => v }
+
+  def filterParamsValDef(params: List[ParamClause]): List[ValDef] =
+    val ps = params.flatten[ValDef | TypeDef]
+    ps.collect { case v: ValDef => v }
 
   def isFunc(t: Type)(using Context): Boolean =
     val retval = t match
