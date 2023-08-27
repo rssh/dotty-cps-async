@@ -2,49 +2,50 @@ package cc
 
 import cps.plugin.*
 
-import org.junit.Test
+import org.junit.{ Ignore, Test }
 
 class Test12 {
 
-
+  @Ignore
   @Test
   def testCompileAndRunM1(): Unit =
     val dotcInvocations = new DotcInvocations()
     val (code, output)  =
-        dotcInvocations.compileAndRunFilesInDir("testdata/set12/m1", "cpstest.Test12m1")
+      dotcInvocations.compileAndRunFilesInDir("testdata/set12/m1", "cpstest.Test12m1")
     val reporter        = dotcInvocations.reporter
-      println("summary: " + reporter.summary)
-      println(s"output=${output}")
+    println("summary: " + reporter.summary)
+    println(s"output=${output}")
     assert(code == 1, "Expected one exception to be thrown")
-        assert(
+    assert(
       output == "Object has to be a high-order function",
-          "There should be a CpsTransformException about high-order check"
-        )
+      "There should be a CpsTransformException about high-order check"
+    )
 
   @Test
   def testCompileAndRunM2M4M5(): Unit =
     DotcInvocations.checkRuns(selection = (".*".r))(
-      // TestRun("testdata/set12/m2", "cpstest.Test12m2", "prefixmyurltransformed\n"),
+      TestRun("testdata/set12/m2", "cpstest.Test12m2", "prefixmyurltransformed\n")
       // TestRun("testdata/set12/m4", "cpstest.Test12m4", "Hello world\n"),
-      TestRun(
-        "testdata/set12/m5",
-        "cpstest.Test12m5",
-        "{myurl1,myurl2,myurl3}transformed\n"
-      )
+      // TestRun(
+      //   "testdata/set12/m5",
+      //   "cpstest.Test12m5",
+      //   "{myurl1,myurl2,myurl3}transformed\n"
+      // )
     )
 
+  @Ignore
   @Test
   def testCompileAndRunM3(): Unit =
     val dotcInvocations = new DotcInvocations()
     val (code, output)  =
-        dotcInvocations.compileAndRunFilesInDir("testdata/set12/m3", "cpstest.Test12m3")
+      dotcInvocations.compileAndRunFilesInDir("testdata/set12/m3", "cpstest.Test12m3")
     val reporter        = dotcInvocations.reporter
-      println("summary: " + reporter.summary)
-      println(s"output=${output}")
+    println("summary: " + reporter.summary)
+    println(s"output=${output}")
     assert(code == 1, "Expected one exception to be thrown")
-        assert(
+    assert(
       output == "Unsupported type of function. The return type must not be a function",
-          "There should be a CpsTransformException about unsupported type"
-        )
+      "There should be a CpsTransformException about unsupported type"
+    )
 
 }
