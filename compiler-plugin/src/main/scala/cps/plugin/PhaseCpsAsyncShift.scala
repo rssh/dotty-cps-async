@@ -62,6 +62,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
             case Left(err) =>
               throw CpsTransformException(err, bodyTree.srcPos)
             case Right(_) => ()
+          val newSymbolInfo  = generateNewFuncType(fun)
           val newFunName     = (fun.symbol.name.debugString + "$cps").toTermName
           val newFunSymbol   =
             Symbols.newSymbol(
@@ -97,7 +98,48 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     retval
   }
 
-  // Hight-level description of generation of async-shofted version of dunction
+  def generateNewFuncType(f: DefDef)(using Context): Type =
+    val args = f.paramss
+    val typeArgs:         List[TypeDef]  = filterParams[TypeDef](args)
+    val normalArgs:       List[ValDef]   = filterParams[ValDef](args)
+    val typeParamNames:   List[TypeName] = typeArgs.map(_.name)
+    val normalParamNames: List[TermName] = normalArgs.map(_.name)
+    // create new return type with type params
+    PolyType(List("F".toTypeName, "C".toTypeName) ++ typeParamNames)(
+      // bounds for the type parameters
+      pt =>
+        List(
+          TypeBounds(defn.NothingType, defn.AnyType),
+          TypeBounds(
+            defn.NothingType,
+            AppliedType(
+              Symbols
+                .requiredClassRef("cps.plugin.CpsMonadContext"),
+              List(pt.newParamRef(0))
+            )
+          )
+          // TODO: write transformation to TypeBounds
+          // print params and look into them
+        ) ++ typeArgs.map(t => toBounds(t.rhs.tpe)),
+      pt => {
+        val mtParamTypes = List(
+          AppliedType(
+            TypeRef(Symbols.requiredClassRef("cps.plugin.CpsMonad"), "Aux".toTermName),
+            List(pt.newParamRef(0), pt.newParamRef(1))
+          )
+        ) ++ normalArgs.map(_.tpt.tpe)
+        val mtReturnType = pt.newParamRef(0).appliedTo(f.symbol.info.widen)
+        MethodType("am".toTermName :: normalParamNames)(
+          _ => mtParamTypes,
+          _ => mtReturnType
+        )
+      }
+    )
+
+  def toBounds(t: Type)(using Context): TypeBounds =
+    println(s"generateNewFuncType::${t}")
+    TypeBounds(defn.NothingType, defn.AnyType)
+
   //  val typeParams = if (haveTypeParams) paramss.head else Nil
   //  val normalArgs = if (haveTypeParams) args.tail else args
   //  Apply(
