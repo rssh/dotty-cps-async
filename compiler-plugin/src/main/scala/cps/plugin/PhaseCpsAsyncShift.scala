@@ -34,12 +34,12 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //   -- update the global cache, setting as key - signature of function or method, value - async tree
   // }
 
-  override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree =
+  override def transformTemplate(tree: Template)(using Context): Tree =
     try transformTemplateInternal(tree)
     catch
       case ex: CpsTransformException =>
-        report.error(ex.getMessage, ex.pos)
-        tree
+        report.error(ex.message, ex.pos)
+        throw ex
 
   /**
    * looks for annotated functions, changes them and add to shiftedSymbols
@@ -81,7 +81,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
                 TransformUtil
                   .substParams(
                     transformedRhs,
-                    filterParams(fun.paramss),
+                    filterParams[ValDef](fun.paramss),
                     newParamss.flatten
                   )
                   .changeOwner(fun.symbol, newFunSymbol)
@@ -225,7 +225,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         "Object annotated with cps.plugin.annotation.makeCPS has to be a high-order function"
       )
     else // check the return type
-    if isFunc(tree.rhs.tpe.finalResultType) then
+    if isFunc(tree.tpe.finalResultType) then
       Left("Unsupported type of function. The return type must not be a function")
     else Right(())
 
