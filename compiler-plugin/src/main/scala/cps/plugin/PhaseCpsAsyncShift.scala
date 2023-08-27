@@ -205,18 +205,18 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * transform a function which is returned from the high-order annotated
    * function
    */
-  def transformInnerFunction(tree: Tree)(using Context): Tree =
-    tree match
-      // TODO: create a check for inline function
-      case Block((innerFunc: DefDef) :: Nil, expr) => // unpack inner function
-        Block(List(transformInnerFunction(innerFunc)), expr)
-      case t: DefDef => // create a transformed copy of original inner function
-        val rhs            = t.rhs
-        val transformedRHS = transformInnerFunction(rhs)
-        cpy.DefDef(t)(t.name, t.paramss, t.tpt, transformedRHS)
-      case Block(stats, expr: Apply) => // transform inner function
-        val newExpr = transformFunсBody(expr)
-        Block(stats, newExpr)
+  // def transformInnerFunction(tree: Tree)(using Context): Tree =
+  //   tree match
+  //     // TODO: create a check for inline function
+  //     case Block((innerFunc: DefDef) :: Nil, expr) => // unpack inner function
+  //       Block(List(transformInnerFunction(innerFunc)), expr)
+  //     case t: DefDef => // create a transformed copy of original inner function
+  //       val rhs            = t.rhs
+  //       val transformedRHS = transformInnerFunction(rhs)
+  //       cpy.DefDef(t)(t.name, t.paramss, t.tpt, transformedRHS)
+  //     case Block(stats, expr: Apply) => // transform inner function
+  //       val newExpr = transformFunсBody(expr, List())
+  //       Block(stats, newExpr)
 
   def checkApplicableForMakeCPS(tree: DefDef)(using Context): Either[String, Unit] =
     // check ValDef input params
