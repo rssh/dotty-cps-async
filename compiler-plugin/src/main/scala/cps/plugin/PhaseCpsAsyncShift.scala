@@ -140,24 +140,25 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     println(s"generateNewFuncType::${t}")
     TypeBounds(defn.NothingType, defn.AnyType)
 
+  // Hight-level description of generation of async-shifted version of function
   //  val typeParams = if (haveTypeParams) paramss.head else Nil
   //  val normalArgs = if (haveTypeParams) args.tail else args
   //  Apply(
   //    TypeApply(
   //          ref(Symbols.requiredMetod("cps.cpsAsyncApply")),
   //          List[
-  //            task - proint amd look.
+  //            task - print and look.
   //            TypeTree(F[_],TypeParam,),
   //          ]
   //    ),
-  //      Tadk:  add parameter to alreadu existing function.
+  //      Task:  add parameter to already existing function.
   //    List(
   //      ValDef(am, TypeTree(,,,)),
   //      ValDef(f, TypeTree(AppliedType(defn.ContextFunctionSymbol,))
   //    )
   //  )
   //   example:
-  //   map[A,B](collection:List[A])(f: A => B): List[B] =  doSpmetjong
+  //   map[A,B](collection:List[A])(f: A => B): List[B] =  doSomething
   //   map$cps[F[_],C <: CpsMonadContext[F],A,B](am: CpsMonad.Aux[F,C])(collection:List[A])(f: A => B): F[List[B]] = {
   //      cpsAsyncApply[F,List[B],C](am,
   //           mt = ContextMethodType(....)
@@ -169,7 +170,16 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //      new typr of DefDef:  if its PolyType, - copy PolyType and add type parameter
   //                           MethodType - create PolyType with type-params and MethodType
 
-  //   tranfromedBody(f) = {
+  // original
+  // class Functor[F[_]] {
+  //    def map[A, B](f: A => B): F[A] => F[B]
+  // }
+  // expanded
+  // class Functor[F <: Lambda1] {
+  //    def map[A, B](f: A => B): F { type $hkArg$0 = A } # Apply  =>  F { type $hkArg$0 = B } # Apply
+  // }
+
+  //   transformedBody(f) = {
   //      Apply(f, ...)  =>  await[[F,result-typr-of-apply,F]](f, ....)
   //      or throw unimplemented instead await
   //
