@@ -1,8 +1,11 @@
 package cps.plugin
 
 import dotty.tools.dotc.*
+import dotty.tools.dotc.core.Types.TypeRef
 import dotty.tools.dotc.ast.Trees
+import dotty.tools.dotc.ast.tpd
 import core.{ Names, Types, * }
+import core.Names.*
 import core.Contexts.*
 import core.Constants.*
 import core.Annotations.*
@@ -10,10 +13,8 @@ import core.Decorators.*
 import core.Symbols.*
 import core.Types.*
 import ast.tpd.*
-import dotty.tools.dotc.ast.tpd
-import dotty.tools.dotc.core.Types.TypeRef
-import plugins.*
 import transform.{ Erasure, Inlining, Pickler, PruneErasedDefs }
+import plugins.*
 
 //TODO: merge with phaseSelect
 class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSymbols)
