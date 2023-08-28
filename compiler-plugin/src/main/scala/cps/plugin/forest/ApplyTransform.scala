@@ -364,20 +364,25 @@ object ApplyTransform {
      retval
   }
 
-  def adoptCallMode(origin: Tree, plainTree: Apply, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
+  def adoptCallMode(origin: Tree, plainTree: Tree, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
     if (argss.exists(_.containsDirectContext) ) {
       println(s"ApplyTransform: foundDirectContext in call ${origin.show}")
       val directContextArg = argss.find(_.containsDirectContext).flatMap(_.findDirectContext).get
-      val adoptedTree = optDirectContextArg.get match
+      val adoptedTree = directContextArg match
             case dc@Apply(TypeApply(byInclusionCn, List(tf, tg)), List(fctx, fgincl))
               if (byInclusionCn.symbol == Symbols.requiredMethod("cps.CpsDirect.byInclusion")) =>
                  if (tf.tpe =:= tg.tpe) {
-                   val nCpsDirectArg = genCpsDirectDefaultConstructor(tf,fctx,dc)
-
+                   val nCpsDirectArg = CpsDirectHelper.genCpsDirectDefaultConstructor(TypeTree(tf.tpe),fctx,dc)
+                   val tree = substituteCpsDirectArgInCall(plainTree, directContextArg, nCpsDirectArg)
+                   Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
+                 } else {
+                   //
+                   val mt =
                  }
+                 ???
             case other =>
-              false
-      println(s"ApplyTransform::adoptCallMode, directContextArg=${optDirectContextArg.get.show}, isConv=${isConv}")
+              Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
+      println(s"ApplyTransform::adoptCallMode, directContextArg=${directContextArg.show},")
       val adoptedTree1 = if (callMode.asyncLambdaApplication.isEmpty) {
         Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
       } else plainTree
@@ -399,21 +404,14 @@ object ApplyTransform {
     }
   }
 
-  def genCpsDirectDefaultConstructor(tf: TypeTree, fctx: Term, posTerm: Term): Term =
-    val cpsDirectType = Symbols.requiredClassRef("cps.CpsDirect").appliedTo(tf.tpe)
-    val cpsDirectConstructor = Select(New(Inferred(cpsDirectType)), "<init>".toTermName)
-    Apply(
-      TypeApply(cpsDirectConstructor, List(tf)),
-      List(fctx)
-    ).withSpan(posTerm.span)
-
-  def substituteCpsDirectArg(applyTerm: Apply, originCPsDirectArg: Tree, nCpsDirectArg: Tree): Apply = {
-    Apply(
-      applyTerm.fun,
-      applyTerm.args.map(
-        arg => if (arg eq originCPsDirectArg) then nCpsDirectArg.withSpan(arg.span) else arg
-      )
-    ).withSpan(applyTerm)
+  def substituteCpsDirectArgInCall(applyOrTypeApply: Tree, originCPsDirectArg: Tree, nCpsDirectArg: Tree)(using Context): Tree = {
+    applyOrTypeApply match
+      case app: Apply =>
+        CpsDirectHelper.substituteCpsDirectArgInApply(app, originCPsDirectArg, nCpsDirectArg)
+      case TypeApply(fn, targs) =>
+        TypeApply(substituteCpsDirectArgInCall(fn, originCPsDirectArg, nCpsDirectArg), targs)
+      case other =>
+        throw CpsTransformException(s"Apply or TypeApply expected in ${applyOrTypeApply}", applyOrTypeApply.srcPos)
   }
 
 
