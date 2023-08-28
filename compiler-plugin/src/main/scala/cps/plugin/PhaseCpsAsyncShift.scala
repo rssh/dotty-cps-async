@@ -4,6 +4,7 @@ import dotty.tools.dotc.*
 import dotty.tools.dotc.core.Types.TypeRef
 import dotty.tools.dotc.ast.Trees
 import dotty.tools.dotc.ast.tpd
+import dotty.tools.dotc.util.SrcPos
 import core.{ Names, Types, * }
 import core.Names.*
 import core.Contexts.*
@@ -26,6 +27,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   override def allowsImplicitSearch = true
   override val runsAfter            = Set(PhaseCps.name)
   override val runsBefore           = Set(Erasure.name, PhaseCpsAsyncReplace.name)
+  private var srcPos: SrcPos = null
 
   // override def run(using Context): Unit = {
   // TODO:
@@ -72,9 +74,10 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         case fun: DefDef
             if (!fun.symbol.isAnonymousFunction &&
               !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
+          srcPos = fun.srcPos
           checkApplicableForMakeCPS(fun) match
             case Left(err) =>
-              throw CpsTransformException(err, bodyTree.srcPos)
+              throw CpsTransformException(err, srcPos)
             case Right(_) => ()
           // create PolyType for a new Symbol info
           println(s"passedChecks::${fun.symbol.name}")
@@ -87,7 +90,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
               fun.symbol.flags | Flags.Synthetic,
               newSymbolInfo
             )
-          println(s"newSymbolInfo=${newSymbolInfo.show}")
           println(s"passedSymbolCreation::${fun.symbol.name}")
           // create new rhs
           val funcParams    = getHighOrderArgs(fun)
@@ -95,10 +97,14 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
           val newMethod     =
             DefDef(
               newFunSymbol,
-              // create new paramss
               newParamss => {
-                val transformedRhs =
-                  transformFunсBody(fun.rhs, funcParams, newParamss.head)
+                println(s"newParamsDefDef=$newParamss")
+                val newTypeParams   = newParamss.head
+                val newNormalParams = newParamss.tail.head
+                // create new func body
+                val transformedRhs  =
+                  transformFunсBody(fun.rhs, funcParams, newTypeParams, newNormalParams)
+                // create new paramss
                 TransformUtil
                   .substParams(
                     transformedRhs,
@@ -129,20 +135,20 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     // create new return type with type params
     PolyType(List("F".toTypeName, "C".toTypeName) ++ typeParamNames)(
       // bounds for the type parameters
-      pt =>
+      pt => {
+        // F[_]
+        val hkTypeLambda = HKTypeLambda.any(1)
+        // C <: CpsMonadContext[F]
+        val appliedType  = AppliedType(
+          Symbols
+            .requiredClassRef("cps.CpsMonadContext"),
+          List(pt.newParamRef(0))
+        )
         List(
-          TypeBounds(defn.NothingType, defn.AnyKindType),
-          TypeBounds(
-            defn.NothingType,
-            AppliedType(
-              Symbols
-                .requiredClassRef("cps.CpsMonadContext"),
-              List(pt.newParamRef(0))
-            )
-          )
-          // TODO: write transformation to TypeBounds
-          // print params and look into them
-        ) ++ typeArgs.map(t => toBounds(t.rhs.tpe)),
+          TypeBounds(defn.NothingType, hkTypeLambda),
+          TypeBounds(defn.NothingType, appliedType)
+        ) ++ typeArgs.map(_.rhs.tpe.asInstanceOf[TypeBounds])
+      },
       pt => {
         val mtParamTypes = List(
           AppliedType(
@@ -157,10 +163,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         )
       }
     )
-
-  def toBounds(t: Type)(using Context): TypeBounds =
-    println(s"generateNewFuncType::${t}")
-    TypeBounds(defn.NothingType, defn.AnyType)
 
   // Hight-level description of generation of async-shifted version of function
   //  val typeParams = if (haveTypeParams) paramss.head else Nil
@@ -184,7 +186,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //   map$cps[F[_],C <: CpsMonadContext[F],A,B](am: CpsMonad.Aux[F,C])(collection:List[A])(f: A => B): F[List[B]] = {
   //      cpsAsyncApply[F,List[B],C](am,
   //           mt = ContextMethodType(....)
-  //           Lambda(mt, tss => transfomrdBody(f) )
+  //           Lambda(mt, tss => transformedBody(f) )
   //      )
   //   }
   //
@@ -207,7 +209,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
   //
 
   //  DefDef( ....   rhs = cpsAsyncShift ....  )
-  //
 
   /**
    * transform rhs of the annotated function
@@ -215,32 +216,77 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
    * @param Context
    * @return
    */
-  def transformFunсBody(tree: Tree, funcParams: List[ValDef], newParams: List[Tree])(using
-    Context
-  ): Tree =
+  def transformFunсBody(
+    tree:          Tree,
+    funcParams:    List[ValDef],
+    newTypeParams: List[Tree],
+    newParams:     List[Tree]
+  )(using Context): Tree =
     // val finalResType = tree.tpe.finalResultType
     // if isFunc(finalResType) then transformInnerFunction(tree)
     // else
-    println(s"funcParams=$newParams")
+    val typeParamF = newTypeParams.head
+    val typeParamC = newTypeParams.tail.head
+    val paramAm    = newParams.head
     val methodName = "apply".toTermName
-    val mapper     = new TreeMap() {
-      override def transform(tree: Tree)(using Context): Tree =
-        println(s"TreeMap::transform=$tree")
-        tree match
-          case Apply(TypeApply(Select(f @ Ident(fname), methodName), targs), args)
-              if (funcParams.exists(_.symbol == f.symbol)) =>
-            ???
-          case Apply(Select(f, methodName), args)
-              if (funcParams.exists(_.symbol == f.symbol)) =>
-            ???
-          case f: Ident if (funcParams.exists(_.symbol == f.symbol)) =>
-            ???
-          case _ => super.transform(tree)
-    }
-    mapper.transform(tree)
-    // tree
-    //   .select(defn.String_+)
-    //   .appliedTo(Literal(Constant("transformed")))
+    val mtt        =
+      ContextualMethodType(List("C".toTermName))(
+        mt => List(typeParamC.tpe),
+        mt => tree.tpe.widen
+      )
+    // f: C ?=> T
+    val lambda     = Lambda(
+      mtt,
+      // get context
+      contextParams => {
+        val mapper = new TreeMap() {
+          override def transform(tree: Tree)(using Context): Tree =
+            tree match
+              case Apply(TypeApply(Select(f @ Ident(fname), methodName), targs), args)
+                  if (funcParams.exists(_.symbol == f.symbol)) =>
+                insertAwait(tree, newParams, contextParams.head)
+              case Apply(Select(f, methodName), args)
+                  if (funcParams.exists(_.symbol == f.symbol)) =>
+                insertAwait(tree, newParams, contextParams.head)
+              case f: Ident if (funcParams.exists(_.symbol == f.symbol)) =>
+                throw new CpsTransformException("Function is not invoked", srcPos)
+              case _ => super.transform(tree)
+        }
+        val body   = mapper.transform(tree)
+        body
+      }
+    )
+    // create cpsAsyncApply from awaited function
+    Apply(
+      TypeApply(
+        ref(Symbols.requiredMethod("cps.plugin.cpsAsyncApply")),
+        List(TypeTree(typeParamF.tpe), TypeTree(tree.tpe.widen), TypeTree(typeParamC.tpe))
+      ),
+      List(paramAm, lambda)
+    )
+
+  def insertAwait(tree: Tree, typeParams: List[Tree], monadCtx: Tree)(using
+    Context
+  ): Tree =
+    val tF = typeParams.head
+    Apply(
+      Apply(
+        TypeApply(
+          // F[_],T, F[_]
+          ref(Symbols.requiredMethod("cps.await")),
+          List(tF, TypeTree(tree.tpe.widen), tF)
+        ),
+        List(tree)
+      ),
+      List(
+        // using ctx: CpsMonadContext[F], conversion: CpsMonadConversion[F,G]
+        monadCtx,
+        TypeApply(
+          ref(Symbols.requiredMethod("cps.CpsMonadConversion.identityConversion")),
+          List(tF)
+        )
+      )
+    )
 
   /**
    * transform a function which is returned from the high-order annotated

@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import cps.*
 import cps.monads.{ *, given }
 
-object Test12m5 {
+object Test12m4 {
 
   @cps.plugin.annotation.makeCPS
   def fetchList[T](c: List[T], f: List[T] => String): String = f(c)

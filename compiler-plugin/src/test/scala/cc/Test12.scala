@@ -22,15 +22,21 @@ class Test12 {
     )
 
   @Test
-  def testCompileAndRunM2M4M5(): Unit =
+  def testCompileAndRunM2M4(): Unit =
     DotcInvocations.checkRuns(selection = (".*".r))(
-      TestRun("testdata/set12/m2", "cpstest.Test12m2", "prefixmyurltransformed\n")
-      // TestRun("testdata/set12/m4", "cpstest.Test12m4", "Hello world\n"),
-      // TestRun(
-      //   "testdata/set12/m5",
-      //   "cpstest.Test12m5",
-      //   "{myurl1,myurl2,myurl3}transformed\n"
-      // )
+      // TestRun("testdata/set12/m2", "cpstest.Test12m2", "prefixmyurltransformed\n")
+      TestRun(
+        "testdata/set12/m4",
+        "cpstest.Test12m4",
+        "{myurl1,myurl2,myurl3}transformed\n"
+      )
+    )
+
+  @Ignore
+  @Test
+  def testCompileAndRunM(): Unit =
+    DotcInvocations.checkRuns(selection = (".*".r))(
+      TestRun("testdata/set12/m", "cpstest.Test12m", "Hello world\n")
     )
 
   @Ignore
