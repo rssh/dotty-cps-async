@@ -155,7 +155,7 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
             TypeRef(Symbols.requiredClassRef("cps.CpsMonad"), "Aux".toTermName),
             List(pt.newParamRef(0), pt.newParamRef(1))
           )
-        ) ++ normalArgs.map(_.tpt.tpe)
+        ) ++ normalArgs.map(_.tpt.tpe.widen)
         val mtReturnType = pt.newParamRef(0).appliedTo(f.symbol.info.widen)
         MethodType("am".toTermName :: normalParamNames)(
           _ => mtParamTypes,
