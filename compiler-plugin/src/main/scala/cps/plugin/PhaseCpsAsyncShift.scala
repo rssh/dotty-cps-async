@@ -129,24 +129,24 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
     // create new return type with type params
     PolyType(List("F".toTypeName, "C".toTypeName) ++ typeParamNames)(
       // bounds for the type parameters
-      pt =>
-        List(
-          TypeBounds(defn.NothingType, defn.AnyType),
-          TypeBounds(
-            defn.NothingType,
-            AppliedType(
+      pt => {
+        // F[_]
+        val hkTypeLambda = HKTypeLambda.any(1)
+        // C <: CpsMonadContext[F]
+        val appliedType  = AppliedType(
               Symbols
-                .requiredClassRef("cps.plugin.CpsMonadContext"),
+            .requiredClassRef("cps.CpsMonadContext"),
               List(pt.newParamRef(0))
             )
-          )
-          // TODO: write transformation to TypeBounds
-          // print params and look into them
-        ) ++ typeArgs.map(t => toBounds(t.rhs.tpe)),
+        List(
+          TypeBounds(defn.NothingType, hkTypeLambda),
+          TypeBounds(defn.NothingType, appliedType)
+        ) ++ typeArgs.map(_.rhs.tpe.asInstanceOf[TypeBounds])
+      },
       pt => {
         val mtParamTypes = List(
           AppliedType(
-            TypeRef(Symbols.requiredClassRef("cps.plugin.CpsMonad"), "Aux".toTermName),
+            TypeRef(Symbols.requiredClassRef("cps.CpsMonad"), "Aux".toTermName),
             List(pt.newParamRef(0), pt.newParamRef(1))
           )
         ) ++ normalArgs.map(_.tpt.tpe)
@@ -157,10 +157,6 @@ class PhaseCpsAsyncShift(selectedNodes: SelectedNodes, shiftedSymbols: ShiftedSy
         )
       }
     )
-
-  def toBounds(t: Type)(using Context): TypeBounds =
-    println(s"generateNewFuncType::${t}")
-    TypeBounds(defn.NothingType, defn.AnyType)
 
   // Hight-level description of generation of async-shifted version of function
   //  val typeParams = if (haveTypeParams) paramss.head else Nil
