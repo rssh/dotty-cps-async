@@ -237,8 +237,7 @@ case class PlainApplyArg(
     import AsyncKind.*
     expr.asyncKind match
       case Sync => expr.unpure match
-        case Some(tree) =>
-          tree
+        case Some(tree) => tree
         case None => throw CpsTransformException("Impossibke: syn expression without unpure",expr.origin.srcPos)
       case Async(_) => ref(optIdentValDef.get.symbol).withSpan(expr.origin.span)
       case AsyncLambda(internal) =>

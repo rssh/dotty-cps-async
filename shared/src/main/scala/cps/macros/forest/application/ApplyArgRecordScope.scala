@@ -24,7 +24,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
     hasAsync: Boolean,
     hasShiftedLambda: Boolean,
     shouldBeChangedSync: Boolean,
-    cpsDirectArg: Option[Term]
+    cpsDirectArg: Option[Term],
   ):
 
     def merge(other: ApplyArgRecord): ApplyArgsSummaryPropertiesStep1 =

@@ -293,6 +293,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
       case _ => throw MacroError(s"Not supported type for shifting: ${tpe.show}",cpsCtx.patternCode)
     }
 
+
   /**
    * How to handle arguments?
    *  We want keep evaluation order from left to right, so, imagine we have
@@ -337,10 +338,8 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
 
         val paramsDescriptor = MethodParamsDescriptor(fun)
-
         val applyRecords = O.buildApplyArgsRecords(paramsDescriptor, args /*, cpsCtx*/)(owner)
-
-        val argsProperties = ApplyArgsSummaryProperties.mergeSeqSeq(applyRecords::tails)
+        val argsProperties = ApplyArgsSummaryProperties.mergeSeqSeq(applyRecords :: tails)
 
         val existsAsyncArg = argsProperties.hasAsync
         val existsPrependArg = argsProperties.usePrepend
@@ -369,58 +368,16 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                          case Some(fun1) =>
                            if (!cpsFun.isChanged && !unpure)
                              if (callCpsDirect)
-                               // TODO: check that cps plugin is enabled.
-                               // XmacroSetting.find("cps:usePlugin")
-                               if (fun.symbol.name.contains("spawnDelay")) {
-                                 println(s"fun.symbol.annotations=${fun.symbol.annotations}")
-                               }
-                               val cpsDirectArg = argsProperties.cpsDirectArg.get
-                               cpsDirectArg match
-                                 case Apply(TypeApply(byInclusionCn,List(tf,tg)),List(fctx,fgincl))
-                                   if (byInclusionCn.symbol == Symbol.requiredMethod("cps.CpsDirect.byInclusion")) =>
-                                      println("found byInclusion")
-                                      if (tf.tpe =:= tg.tpe) then
-                                        val nCpsDirectArg = genCpsDirectDefaultConstructor(tf,fctx,cpsDirectArg)
-                                        val adoptedApply = Apply.copy(applyTerm)(
-                                          TypeApply(Ref(adoptCpsedCallSymbol),
-                                            List(TypeTree.of[F], Inferred(applyTerm.tpe.widen))),
-                                          List(substituteCpsDirectArg(applyTerm, cpsDirectArg, nCpsDirectArg))
-                                        )
-                                        CpsTree.impure(owner, adoptedApply, applyTerm.tpe.widen)
-                                      else
-                                        println(s"tf=${tf.show}, tg=${tg.show}")
-                                        val tgctx = Symbol.requiredClass("cps.CpsTryMonadContext").typeRef.appliedTo(tg.tpe)
-                                        val grt = tg.tpe.widen.appliedTo(applyTerm.tpe.widen)
-                                        val lambdaMethodType = MethodType(List("ctx"))(_ => List(tgctx), _ => grt)
-                                        val lambda = Lambda(owner,lambdaMethodType, { (owner, params) =>
-                                          // TODO: create local context with owner
-                                          val gctxArg = params.head.asInstanceOf[Term]
-                                          val nCpsDirectArg = genCpsDirectDefaultConstructor(tg, gctxArg, cpsDirectArg)
-                                          val adoptedApply = Apply.copy(applyTerm)(
-                                            TypeApply(Ref(adoptCpsedCallSymbol),
-                                              List(tg, Inferred(applyTerm.tpe.widen))),
-                                            List(substituteCpsDirectArg(applyTerm, cpsDirectArg, nCpsDirectArg))
-                                          )
-                                          adoptedApply.changeOwner(owner)
-                                        })
-                                        val r = Apply.copy(applyTerm)(
-                                            Apply(
-                                              TypeApply(Select.unique(fgincl,"apply"),List(Inferred(applyTerm.tpe.widen))),
-                                              List(fctx)
-                                            ),
-                                            List(lambda)
-                                        )
-                                        CpsTree.impure(owner,r,applyTerm.tpe.widen)
-                                 case _ =>
-                                   throw MacroError(s"cpsDirectArg is not byConversion: ${cpsDirectArg.show}",applyTerm.asExpr)
+                               wrapCallIntoCpsDirect(applyTerm, argsProperties.cpsDirectArg.get, applyTerm)(owner)
                              else
                                CpsTree.pure(owner,applyTerm)
                            else
                              if (unpure)
                                 val internalApply = fun1.appliedToArgss(args::tailArgss)
-                                shiftedResultCpsTree(applyTerm, internalApply)(owner)
+                                shiftedResultCpsTree(applyTerm, internalApply, argsProperties.cpsDirectArg)(owner)
                              else
-                                CpsTree.pure(owner,fun1.appliedToArgss(args::tailArgss), true)
+                                val newApply = fun1.appliedToArgss(args::tailArgss)
+                                optWrapCallIntoCpsDirect(applyTerm, argsProperties.cpsDirectArg, newApply, true)(owner)
                          case _ =>
                             cpsFun.monadMap(x => x.appliedToArgss(args::tailArgss), applyTerm.tpe)
         } else {
@@ -467,6 +424,62 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         }
   }
 
+  def optWrapCallIntoCpsDirect(originApplyTerm: Apply, optCpsDirectArg: Option[Term], call: Term, isChanged:Boolean)(owner: Symbol): CpsTree =
+    optCpsDirectArg match
+      case Some(cpsDirectArg) =>
+        wrapCallIntoCpsDirect(originApplyTerm, cpsDirectArg, call)(owner)
+      case None =>
+        CpsTree.pure(owner, call, isChanged)
+
+  def wrapCallIntoCpsDirect(origin: Term, cpsDirectArg: Term, applyCall: Term)(owner: Symbol): CpsTree = {
+    cpsDirectArg match
+      case Apply(TypeApply(byInclusionCn, List(tf, tg)), List(fctx, fgincl))
+        if (byInclusionCn.symbol == Symbol.requiredMethod("cps.CpsDirect.byInclusion")) =>
+          println("found byInclusion")
+          if (tf.tpe =:= tg.tpe) then
+            val nCpsDirectArg = genCpsDirectDefaultConstructor(tf,fctx,cpsDirectArg)
+            val tree = applyCall
+            val adoptedTree = Apply.copy(origin)(
+              TypeApply(Ref(adoptCpsedCallSymbol),
+                List(TypeTree.of[F], Inferred(origin.tpe.widen))),
+                List(substituteCpsDirectArgRequired(tree, cpsDirectArg, nCpsDirectArg))
+            )
+            CpsTree.impure(owner, adoptedTree, origin.tpe.widen)
+          else
+            val tgctx = Symbol.requiredClass("cps.CpsTryMonadContext").typeRef.appliedTo(tg.tpe)
+            val grt = tg.tpe.widen.appliedTo(origin.tpe.widen)
+            val lambdaMethodType = MethodType(List("ctx"))(_ => List(tgctx), _ => grt)
+            val lambda = Lambda(owner, lambdaMethodType, { (owner, params) =>
+              val gctxArg = params.head.asInstanceOf[Term]
+              val nCpsDirectArg = genCpsDirectDefaultConstructor(tg, gctxArg, cpsDirectArg)
+              //  assume that tree is generated with new owner
+              val tree = applyCall
+              // TODO:mb move substirute args to the later step
+              val adoptedTree = Apply.copy(origin)(
+                TypeApply(Ref(adoptCpsedCallSymbol),
+                  List(tg, Inferred(origin.tpe.widen))),
+                  List(substituteCpsDirectArgRequired(tree, cpsDirectArg, nCpsDirectArg))
+              )
+              adoptedTree.changeOwner(owner)
+            })
+            val r = Apply.copy(origin)(
+              Apply(
+                TypeApply(Select.unique(fgincl, "apply"), List(Inferred(origin.tpe.widen))),
+                List(fctx)
+              ),
+              List(lambda)
+            )
+            CpsTree.impure(owner, r, origin.tpe.widen)
+      case _ =>
+        val tree = applyCall
+        val adoptedTree = Apply.copy(origin)(
+          TypeApply(Ref(adoptCpsedCallSymbol),
+            List(Inferred(TypeRepr.of[CC]), Inferred(origin.tpe.widen))),
+          List(tree)
+        )
+        CpsTree.impure(owner, adoptedTree, origin.tpe.widen)
+  }
+
   def genCpsDirectDefaultConstructor(tf: TypeTree, fctx: Term, posTerm:Term): Term =
     val cpsDirectType = Symbol.requiredClass("cps.CpsDirect").typeRef.appliedTo(tf.tpe)
     val cpsDirectConstructor = Select.unique(New(Inferred(cpsDirectType)),"<init>")
@@ -475,13 +488,47 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
       List(fctx)
     )
 
-  def substituteCpsDirectArg(applyTerm:Apply, originCPsDirectArg: Term, nCpsDirectArg:Term): Apply = {
-    Apply.copy(applyTerm)(
-      applyTerm.fun,
-      applyTerm.args.map(
-        arg => if (arg eq originCPsDirectArg) then nCpsDirectArg else arg
-      )
+  def substituteCpsDirectArgRequired(term: Term, originCpsDirectArg: Term, nCpsDirectArg: Term): Term =
+    substituteCpsDirectArg(term,originCpsDirectArg,nCpsDirectArg).getOrElse(
+      throw MacroError(s"Can't find cpsDirectArg context parameter ${originCpsDirectArg} in ${term}",term.asExpr)
     )
+
+  def substituteCpsDirectArg(term: Term, originCPsDirectArg: Term, nCpsDirectArg:Term): Option[Term] = {
+    term match
+      case ap@Apply(f, args) =>
+        substituteCpsDirectArgApply(ap, originCPsDirectArg, nCpsDirectArg)
+      case TypeApply(f, targs) =>
+        substituteCpsDirectArg(f, originCPsDirectArg, nCpsDirectArg).map(_ => TypeApply.copy(term)(f, targs))
+      case _ => None
+  }
+
+  def substituteCpsDirectArgApply(applyTerm:Apply, originCPsDirectArg: Term, nCpsDirectArg:Term): Option[Apply] = {
+    var found = false
+    val newArgs = applyTerm.args.map{ arg =>
+      if (isCpsDirectByInclusionCall(arg, Some(originCPsDirectArg))) {
+        found = true
+        nCpsDirectArg
+      } else {
+        arg
+      }
+    }
+    if (found) {
+      Some(Apply.copy(applyTerm)(applyTerm.fun, newArgs))
+    } else {
+      substituteCpsDirectArg(applyTerm.fun, originCPsDirectArg, nCpsDirectArg).map(newFun =>
+        Apply.copy(applyTerm)(newFun, applyTerm.args)
+      )
+    }
+  }
+
+  def isCpsDirectByInclusionCall(arg: Term, originCPsDirectArg: Option[Term]): Boolean = {
+    // in future - check that originCpsDirectArg is the same as arg (but can be copied and with other owner)
+    //  for now - assume that we have obly one CpsDirect[F] context parameter
+    arg match
+      case Apply(TypeApply(byInclusionCn, List(tf, tg)), List(fctx, fgincl))
+        if (byInclusionCn.symbol == Symbol.requiredMethod("cps.CpsDirect.byInclusion")) =>
+          true
+      case _ => false
   }
  
   def buildApplyPrependArgsFlatMaps(cpsFun: CpsTree, fun: Term,
@@ -497,7 +544,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                   runFold = false
                   if (!argsProperties.hasShiftedLambda && !cpsFun.isChanged && 
                       !unpure && !argsProperties.shouldBeChangedSync)
-                     CpsTree.pure(owner,applyTerm)
+                     optWrapCallIntoCpsDirect(applyTerm, argsProperties.cpsDirectArg, applyTerm, false)(owner)
                   else
                      buildApply(cpsFun, fun, argsRecords, applyTerm, argsProperties, unpure, tails)(owner)
                } else {
@@ -532,28 +579,29 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                       funCpsTree: CpsTree, 
                       argRecords: Seq[ApplyArgRecord],
                       argTails: List[Seq[ApplyArgRecord]],
-                      applyTerm: Term,
-                      withAsync: Boolean)(owner: Symbol): CpsTree =
+                      applyTerm: Apply,
+                      argsSummaryProperties: ApplyArgsSummaryProperties)(owner: Symbol): CpsTree =
 
     def condTypeApply(sel:Term, targs: List[TypeTree]):Term =
       if (targs.isEmpty) sel else TypeApply(sel,targs)
 
+    val withAsync = argsSummaryProperties.hasAsync
     
     funCpsTree.syncOrigin match
       case Some(origin) =>
-        val head = shiftedApplyTerm(origin, argRecords, withAsync)
-        shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, withAsync))(owner)
+        val head = shiftedApplyTerm(origin, argRecords, argsSummaryProperties)
+        shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, argsSummaryProperties.hasAsync), argsSummaryProperties.cpsDirectArg)(owner)
       case None =>
         funCpsTree match
            case _ : PureCpsTree  |  EmptyCpsTree => 
               // impossible
               val originTerm = funCpsTree.syncOrigin.get
-              val head = shiftedApplyTerm(originTerm, argRecords, withAsync)
-              shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails,withAsync))(owner)
+              val head = shiftedApplyTerm(originTerm, argRecords, argsSummaryProperties)
+              shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails,withAsync),argsSummaryProperties.cpsDirectArg)(owner)
            case SelectTypeApplyCpsTree(optOrigin,nested,targs,selects,otpe, changed) =>
               if (selects.isEmpty) then
                  if (targs.isEmpty) then
-                   shiftedApplyCps(nested,argRecords,argTails,applyTerm, withAsync)(owner)
+                   shiftedApplyCps(nested,argRecords,argTails,applyTerm, argsSummaryProperties)(owner)
                  else
                    // this can be only generice async-lambda
                    //  which is impossible to create in scala syntax
@@ -564,44 +612,44 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                  val prev = SelectTypeApplyCpsTree.create(optOrigin,nested,targs,prevSelects,current.prevTpe, changed)
                  prev.monadFlatMap({x => 
                        val funToShift = condTypeApply(Select(x,current.symbol),current.targs)
-                       val head = shiftedApplyTerm(funToShift,argRecords,withAsync)
+                       val head = shiftedApplyTerm(funToShift,argRecords,argsSummaryProperties)
                        head.withTailArgs(argTails, withAsync)
                  }, applyTerm.tpe)
            case lt@AsyncLambdaCpsTree(owner,originLambda,params,body,otpe) =>
-              val head = shiftedApplyTerm(lt.rLambda, argRecords, withAsync)
-              shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, withAsync))(owner)
+              val head = shiftedApplyTerm(lt.rLambda, argRecords, argsSummaryProperties)
+              shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, withAsync), argsSummaryProperties.cpsDirectArg)(owner)
            case x: AsyncCpsTree =>
               // this can be only function, so, try to call apply method
               x.monadMap({fun =>
-                  val head = shiftedApplyTerm(Select.unique(fun,"apply"), argRecords, withAsync)
+                  val head = shiftedApplyTerm(Select.unique(fun,"apply"), argRecords, argsSummaryProperties)
                   head.withTailArgs(argTails, withAsync)
               }, applyTerm.tpe)
            case BlockCpsTree(owner,stats, last) =>
                   BlockCpsTree(owner,stats,shiftedApplyCps(last,argRecords,
-                               argTails, applyTerm, withAsync)(owner))
+                               argTails, applyTerm, argsSummaryProperties)(owner))
            case InlinedCpsTree(owner,origin, bindings, nested) =>
                   InlinedCpsTree(owner,origin, bindings, shiftedApplyCps(nested, argRecords,
-                                         argTails, applyTerm, withAsync)(owner))
+                                         argTails, applyTerm, argsSummaryProperties)(owner))
            case ValCpsTree(owner,valDef, rightPart, nested, canBeLambda) =>
                   ValCpsTree(owner,valDef, rightPart, shiftedApplyCps(nested, argRecords,
-                                        argTails, applyTerm, withAsync)(owner), canBeLambda)
+                                        argTails, applyTerm, argsSummaryProperties)(owner), canBeLambda)
            case AppendCpsTree(frs, snd) =>
                   AppendCpsTree(frs, 
-                      shiftedApplyCps(snd,argRecords,argTails,applyTerm, withAsync)(owner))
+                      shiftedApplyCps(snd,argRecords,argTails,applyTerm, argsSummaryProperties)(owner))
            case CallChainSubstCpsTree(owner, origin, shifted, otpe) =>
-                  val head = shiftedApplyTerm(Select.unique(shifted,"apply"), argRecords, withAsync)
-                  shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, withAsync))(owner)
+                  val head = shiftedApplyTerm(Select.unique(shifted,"apply"), argRecords, argsSummaryProperties)
+                  shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, withAsync), argsSummaryProperties.cpsDirectArg)(owner)
            case _ => // impossible, but let's check
                  throw MacroError(s"Unsupported fun: CpsTree:  $funCpsTree", applyTerm.asExpr)
                   
                   
 
-  def shiftedApplyTerm(funTerm: Term, argRecords: Seq[ApplyArgRecord], withAsync: Boolean): PartialShiftedApply =
+  def shiftedApplyTerm(funTerm: Term, argRecords: Seq[ApplyArgRecord], argsSummaryProperties: ApplyArgsSummaryProperties): PartialShiftedApply =
 
     val monad = cpsCtx.monad.asTerm
 
     def shiftArgs(shiftType: ApplicationShiftType): List[Term] =     
-      argRecords.map(_.shift(shiftType).identArg(withAsync)).toList
+      argRecords.map(_.shift(shiftType).identArg(argsSummaryProperties.hasAsync)).toList
 
     def applyCpsOnlyShift(makeApply: List[Term] => Term): PartialShiftedApply =
       val newArgs = shiftArgs(ApplicationShiftType.CPS_ONLY)
@@ -810,7 +858,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
             }
        case Block(statements, last) =>
                   // TODO: change cpsFun appropriative
-                  val pa = shiftedApplyTerm(last, argRecords, withAsync)
+                  val pa = shiftedApplyTerm(last, argRecords, argsSummaryProperties)
                   pa.copy(shifted = Block(statements,pa.shifted))
        case _ =>
             if (cpsCtx.runtimeAwait.isDefined) then
@@ -823,6 +871,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                throw MacroError(s"Can't shift caller ${funTerm.show} (tree ${funTerm})",posExprs(funTerm))
 
   end shiftedApplyTerm
+
 
   def buildApply(cpsFun: CpsTree, fun: Term,
                  argRecords: Seq[ApplyArgRecord],
@@ -838,8 +887,9 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         val withAsync = argsProperties.hasAsync
         val applyTpe = applyTerm.tpe
         if (argsProperties.hasShiftedLambda)
-          buildShiftedApply(cpsFun, fun, argRecords, withAsync, tails, applyTerm)(owner)
+          buildShiftedApply(cpsFun, fun, argRecords, argsProperties, tails, applyTerm)(owner)
         else
+          //TODO("hanlde when argsProperties.hasCpsDirectArg")
           val args = argRecords.map(_.identArg(withAsync)).toList
           val tailArgss = tails.map(_.map(_.identArg(withAsync)).toList)
           val argss = args::tailArgss
@@ -851,73 +901,71 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                     if (cpsCtx.flags.debugLevel >= 15) {
                        cpsCtx.log(s"buildApply: cs:CallChainSubstCpsTree")
                     }
-                    shiftedResultCpsTree(applyTerm, cs.shifted.appliedToArgss(argss))(owner)
+                    shiftedResultCpsTree(applyTerm, cs.shifted.appliedToArgss(argss), argsProperties.cpsDirectArg)(owner)
              case _ =>
                     cpsFun.syncOrigin match
                        case Some(fun) =>
-                          try
                             val applied = fun.appliedToArgss(argss)
                             if (inShiftedCallChain)
-                               shiftedResultCpsTree(applyTerm, applied)(owner)
+                               shiftedResultCpsTree(applyTerm, applied, argsProperties.cpsDirectArg)(owner)
                             else
-                               CpsTree.pure(owner,applied, isChanged=true)
-                          catch
-                            case ex: Throwable =>
-                              println("Errror during apply:")
-                              ex.printStackTrace()
-                              println(s"fun = ${fun.show}")
-                              println(s"origFun = ${origFun.show}")
-                              println(s"applyTerm = ${applyTerm.show}")
-                              throw ex
+                               optWrapCallIntoCpsDirect(applyTerm, argsProperties.cpsDirectArg, applied, true)(owner)
                        case None =>
                           if (inShiftedCallChain)
                              val shifted = cpsFun.transformed
-                             shiftedResultCpsTree(applyTerm, shifted.appliedToArgss(argss))(owner)
+                             shiftedResultCpsTree(applyTerm, shifted.appliedToArgss(argss), argsProperties.cpsDirectArg)(owner)
                           else
-                             cpsFun.monadMap(x => x.appliedToArgss(argss), applyTpe)
+                            argsProperties.cpsDirectArg match
+                              case Some(cpsDirectArg) =>
+                                cpsFun.monadFlatMap({ x =>
+                                  wrapCallIntoCpsDirect(applyTerm, cpsDirectArg, x.appliedToArgss(argss))(owner).transformed }, applyTpe)
+                              case None =>
+                                cpsFun.monadMap({ x => x.appliedToArgss(argss) }, applyTpe)
           if (cpsCtx.flags.debugLevel >= 15) {
-             cpsCtx.log(s"buildApply: retval = $retval")
+            cpsCtx.log(s"buildApply: retval = $retval")
           }
           retval
 
-
-  def shiftedResultCpsTree(origin: Term, shifted: Term)(owner: Symbol): CpsTree =
-   
-      if (shifted.tpe.widen =:= origin.tpe.widen) then
-          // when shifted result type is the same as result type.
-          // can be during cpsTrre.await
-          CpsTree.pure(owner, shifted, isChanged=true)
-      else if (shifted.tpe.isFunctionType) then
-         // TODO: extract argument types. now - one experiment
-         shifted.tpe match
-            case AppliedType(f,List(a,AppliedType(m,b))) if f <:< TypeRepr.of[Function1] =>
-               val sym = Symbol.newVal(owner, "shiftedArg", a.widen, Flags.EmptyFlags, Symbol.noSymbol)
-               AsyncLambdaCpsTree(owner, origin, List(ValDef(sym,None)),
-                        // will be changed.   (TODO: changer asyncLamfda signature ?[owner=>body instead body.])
-                        CpsTree.impure(owner,Apply.copy(origin)(Select.unique(shifted,"apply"),List(Ref(sym))),b.head),
-                        origin.tpe)
-            case _ =>
-               throw MacroError("Async function with arity != 1 is not supported yet",posExprs(shifted,origin))
-      else if (shifted.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F,?,?]]) then
-         CallChainSubstCpsTree(owner, origin, shifted, origin.tpe)
-      else
-         CpsTree.impure(owner, shifted, origin.tpe)
-    
-
+  def shiftedResultCpsTree(origin: Term, shifted: Term, optCpsDirectArg: Option[Term])(owner: Symbol): CpsTree = {
+            if (shifted.tpe.widen =:= origin.tpe.widen) then
+                // when shifted result type is the same as result type.
+                // can be during cpsTrre.await
+                optCpsDirectArg match
+                  case Some(cpsDirectArg) =>
+                    wrapCallIntoCpsDirect(origin, cpsDirectArg, shifted)(owner)
+                  case None =>
+                    CpsTree.pure(owner, shifted, isChanged = true)
+            else if (shifted.tpe.isFunctionType) then
+                // TODO: extract argument types. now - one experiment
+                shifted.tpe match
+                  case AppliedType(f, List(a, AppliedType(m, b))) if f <:< TypeRepr.of[Function1] =>
+                    val sym = Symbol.newVal(owner, "shiftedArg", a.widen, Flags.EmptyFlags, Symbol.noSymbol)
+                    AsyncLambdaCpsTree(owner, origin, List(ValDef(sym, None)),
+                      // will be changed.   (TODO: changer asyncLamfda signature ?[owner=>body instead body.])
+                       CpsTree.impure(owner, Apply.copy(origin)(Select.unique(shifted, "apply"), List(Ref(sym))), b.head),
+                      origin.tpe)
+                  case _ =>
+                    throw MacroError("Async function with arity != 1 is not supported yet", posExprs(shifted, origin))
+            else if (shifted.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F, ?, ?]]) then
+                    CallChainSubstCpsTree(owner, origin, shifted, origin.tpe)
+            else
+              CpsTree.impure(owner, shifted, origin.tpe)
+  }
 
 
   def buildShiftedApply(
-                        cpsFun: CpsTree,
-                        fun: Term,
-                        argRecords:Seq[ApplyArgRecord],
-                        withAsync: Boolean,
-                        tails:List[Seq[ApplyArgRecord]],
-                        applyTerm: Apply)(owner: Symbol): CpsTree =
-      if (cpsCtx.flags.debugLevel >= 15)
-          cpsCtx.log(s"buildShiftedApply::fun=${fun}")
-          cpsCtx.log(s"buildShiftedApply::argRecords=${argRecords}")
-          cpsCtx.log(s"buildShiftedApply::tails=${tails}")
-      shiftedApplyCps(cpsFun, argRecords, tails, applyTerm, withAsync)(owner)
+                                 cpsFun: CpsTree,
+                                 fun: Term,
+                                 argRecords: Seq[ApplyArgRecord],
+                                 argsProperties: ApplyArgsSummaryProperties,
+                                 tails: List[Seq[ApplyArgRecord]],
+                                 applyTerm: Apply)(owner: Symbol): CpsTree = {
+          if (cpsCtx.flags.debugLevel >= 15)
+            cpsCtx.log(s"buildShiftedApply::fun=${fun}")
+            cpsCtx.log(s"buildShiftedApply::argRecords=${argRecords}")
+            cpsCtx.log(s"buildShiftedApply::tails=${tails}")
+          shiftedApplyCps(cpsFun, argRecords, tails, applyTerm, argsProperties)(owner)
+  }
 
 
 object ApplyTreeTransform:

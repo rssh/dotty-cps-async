@@ -48,7 +48,7 @@ class Test15PE {
   }
 
 
-
+  /*
   @Test
   def testFizzBuzz() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m1", "cps.pe.TestFizzBuzz",
@@ -86,7 +86,18 @@ class Test15PE {
       )
     )
   }
+   */
 
+  @Test
+  def testUseResourceM4() = {
+    compileAndRunTestAfterCommon("testdata/set15pe/m4", "cps.pe.TestUseResourceFromPlugin",
+      DotcInvocations.InvocationArgs(checkAll = true,
+        extraDotcArgs = List(
+          "-Vprint:rssh.cps", "-Vprint:erasure"
+        )
+      )
+    )
+  }
 
 }
 

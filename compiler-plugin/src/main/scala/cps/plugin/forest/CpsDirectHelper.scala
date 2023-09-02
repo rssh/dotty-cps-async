@@ -36,13 +36,47 @@ object CpsDirectHelper {
     ).withSpan(posTerm.span)
 
 
-  def substituteCpsDirectArgInApply(applyTerm: Apply, originCPsDirectArg: Tree, nCpsDirectArg: Tree)(using Context): Apply = {
-    Apply(
-      applyTerm.fun,
-      applyTerm.args.map(
-        arg => if (arg eq originCPsDirectArg) then nCpsDirectArg.withSpan(arg.span) else arg
-      )
-    ).withSpan(applyTerm.span)
+  
+  def substituteCpsDirectArgInCall(applyOrTypeApply: Tree, originCPsDirectArg: ByInclusionCallArgs, nCpsDirectArg: Tree)(using Context): Option[Tree] = {
+    applyOrTypeApply match
+      case app: Apply =>
+        CpsDirectHelper.substituteCpsDirectArgInApply(app, originCPsDirectArg, nCpsDirectArg)
+      case ta@TypeApply(fn, targs) =>
+        substituteCpsDirectArgInCall(fn, originCPsDirectArg, nCpsDirectArg).map(x => TypeApply(x, targs).withSpan(ta.span))
+      case other =>
+        None
+  }
+
+  def substituteCpsDirectArgInApply(applyTerm: Apply, originCPsDirectArg: ByInclusionCallArgs, nCpsDirectArg: Tree)(using Context): Option[Apply] = {
+    var changed = false
+    val newArgs = applyTerm.args.map {
+        case ByInclusionCall(tf,tg,fctx,fginc) =>
+            if (!changed) then
+              changed = true
+              nCpsDirectArg
+            else
+              throw CpsTransformException("More than one CpsDirect argument in call", applyTerm.srcPos)
+        case arg =>
+          arg
+    }
+    if (changed) then
+      Some(Apply(applyTerm.fun, newArgs).withSpan(applyTerm.span))
+    else
+      substituteCpsDirectArgInCall(applyTerm.fun, originCPsDirectArg, nCpsDirectArg).map{
+        newFun => Apply(newFun, newArgs).withSpan(applyTerm.span)
+      }
+  }
+  
+  case class ByInclusionCallArgs(tf: Tree, tg: Tree, fctx: Tree, fginc: Tree)
+
+  object ByInclusionCall {
+    def unapply(tree: Tree)(using Context): Option[(Tree, Tree, Tree, Tree)] =
+      tree match
+        case Apply(TypeApply(fn, List(tf, tg)), List(fctx, fgincl))
+          if (fn.symbol == Symbols.requiredMethod("cps.CpsDirect.byInclusion")) =>
+            Some((tf, tg, fctx, fgincl))
+        case _ =>
+            None
   }
 
 }
