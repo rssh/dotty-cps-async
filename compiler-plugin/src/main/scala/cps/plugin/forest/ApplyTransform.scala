@@ -372,14 +372,18 @@ object ApplyTransform {
             case dc@CpsDirectHelper.ByInclusionCall(tf,tg,fctx,fgincl) =>
                  val callArgs = CpsDirectHelper.ByInclusionCallArgs(tf,tg,fctx,fgincl)
                  if (tf.tpe =:= tg.tpe) then
-                   if (callMode.asyncLambdaApplication.isDefined) then
-                     plainTree
+                   val nCpsDirectArg = CpsDirectHelper.genCpsDirectDefaultConstructor(TypeTree(tf.tpe),fctx,dc.span)
+                   val tree = CpsDirectHelper.substituteCpsDirectArgInCall(plainTree, callArgs, nCpsDirectArg).getOrElse(
+                     throw CpsTransformException("Internal error: can't find direct context argument in call", origin.srcPos)
+                   )
+                   if (!summon[CpsTopLevelContext].pluginSettings.transformDirectContextLambda && callMode.asyncLambdaApplication.isDefined) then
+                    // lambda used only here, so don't need to preserve call.
+                    // also all internal labdas are rewritten, so symbol of call will be other
+                    // So, if compiling of async-lambda call not cause loading of symbol, then
+                    //  we can don't transfrom internal direct context lambda at all.
+                    tree
                    else
-                    val nCpsDirectArg = CpsDirectHelper.genCpsDirectDefaultConstructor(TypeTree(tf.tpe),fctx,dc)
-                    val tree = CpsDirectHelper.substituteCpsDirectArgInCall(plainTree, callArgs, nCpsDirectArg).getOrElse(
-                      throw CpsTransformException("Internal error: can't find direct context argument in call", origin.srcPos)
-                    )
-                    Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
+                    Scaffolding.adoptCpsedCall(tree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
                  else
                    //
                    if (callMode.asyncLambdaApplication.isDefined) then
@@ -391,25 +395,15 @@ object ApplyTransform {
                    val sym = newAnonFun(owner, mt)
                    val lambda = Closure(sym, tss => {
                       val List(ctx) = tss.head
-                      val nCpsDirectArg = CpsDirectHelper.genCpsDirectDefaultConstructor(TypeTree(tg.tpe),ctx,dc)
+                      val nCpsDirectArg = CpsDirectHelper.genCpsDirectDefaultConstructor(TypeTree(tg.tpe),ctx,dc.span)
                       val tree = CpsDirectHelper.substituteCpsDirectArgInCall(plainTree, callArgs, nCpsDirectArg).getOrElse {
                         throw CpsTransformException("Internal error: can't find direct context argument in call when building inclusion", origin.srcPos)
                       }
                       Scaffolding.adoptCpsedCall(tree, tree.tpe.widen, tg.tpe.widen)
                    })
-                   //trait CpsMonadContextInclusion[F[_],G[_]] {
-                   //
-                   //  def apply[T](fctx: CpsTryMonadContext[F])(fun: CpsTryMonadContext[G] => G[T]):F[T]
-                   //
-                   //}
-                   Apply(
-                     Apply(
-                       TypeApply(Select(fgincl,"apply".toTermName),List(TypeTree(origin.tpe.widen))),
-                       List(fctx)
-                     ),
-                     List(lambda)
-                   ).withSpan(origin.span)
+                   CpsDirectHelper.genConventionCall(fctx,fgincl,origin.tpe.widen,lambda,origin.span)
             case other =>
+              println(s"this is not byInclusionCall: ${other.show}")
               Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
       //if (isImpure) {
       //  TODO: such situationis possible when we pass lamba with context parameters (can be inline)
@@ -479,14 +473,35 @@ object ApplyTransform {
           }
         }
     } else if (callMode.asyncLambdaApplication.isDefined) {
-       if (usingDirectContext) 
-         throw CpsTransformException("Lambda Application can't have CpsDirect context parameter", origin.srcPos)
+       //  asynk lambda can be applied to direct context (as the result of the inline function)
+       //  question - are we transform lambda-applications with direct context or not.
+       //  current solution: use flag in plugin settings.
+       val transformDirectContextLambdaCall = summon[CpsTopLevelContext].pluginSettings.transformDirectContextLambda
        callMode.asyncLambdaApplication.get match
          case AsyncKind.Sync =>
-           CpsTree.pure(origin,owner,newApply)
+           if (usingDirectContext && transformDirectContextLambdaCall) {
+             CpsTree.impure(origin,owner,newApply,AsyncKind.Sync)
+           } else {
+             CpsTree.pure(origin,owner,newApply)
+           }
          case  AsyncKind.Async(internalKind) =>
-           CpsTree.impure(origin,owner,newApply,internalKind)
+           if (usingDirectContext && transformDirectContextLambdaCall) {
+             val flattenedNewApply = Apply(
+               TypeApply(
+                 Select(summon[CpsTopLevelContext].cpsMonadRef, "flatten".toTermName),
+                 List(TypeTree(newApply.tpe.widen))
+               ),
+               List(newApply)
+             )
+             CpsTree.impure(origin,owner,flattenedNewApply,internalKind)
+           } else {
+             CpsTree.impure(origin, owner, newApply, internalKind)
+           }
          case AsyncKind.AsyncLambda(bodyKind) =>
+           if (usingDirectContext && transformDirectContextLambdaCall) {
+             // it's why better to keep transformDirectContextLambdaCall = false
+             throw CpsTransformException("Unsuppored use of lamba application as output of direct context lambda", origin.srcPos)
+           }
            CpsTree.opaqueAsyncLambda(origin,owner,newApply,bodyKind)
     } else if (usingDirectContext) {
        CpsTree.impure(origin,owner,newApply, AsyncKind.Sync)

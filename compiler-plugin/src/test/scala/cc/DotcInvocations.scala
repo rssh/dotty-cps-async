@@ -115,7 +115,7 @@ object DotcInvocations {
     // note, that -Ycheck:all is not included here, because it is added conditionally
     List(
       //"-Ydebug-error",
-      "--unique-id",
+      //"--unique-id",
       //"-Xcheck-macros",
       "-Ydebug",
       //"-Yprint-syms",

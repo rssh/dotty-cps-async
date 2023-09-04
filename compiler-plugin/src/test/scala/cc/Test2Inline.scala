@@ -11,7 +11,9 @@ class Test2Inline {
     val (code, output0) = dotcInvocations.compileAndRunFilesInDirs(
       List("testdata/set2_inlinefun"),
       "testdata/set2/target",
-      "cpstest.Example2Inline")
+      "cpstest.Example2Inline",
+      extraArgs = List("-Vprint:rssh.cps")
+    )
 
 
     val reporter = dotcInvocations.reporter

@@ -474,7 +474,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         val tree = applyCall
         val adoptedTree = Apply.copy(origin)(
           TypeApply(Ref(adoptCpsedCallSymbol),
-            List(Inferred(TypeRepr.of[CC]), Inferred(origin.tpe.widen))),
+            List(Inferred(TypeRepr.of[F]), Inferred(origin.tpe.widen))),
           List(tree)
         )
         CpsTree.impure(owner, adoptedTree, origin.tpe.widen)

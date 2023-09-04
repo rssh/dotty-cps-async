@@ -27,14 +27,33 @@ object CpsDirectHelper {
    * @param posTerm - position of new term
    * @return new CpsDirect[tf](fctx)
    */
-  def genCpsDirectDefaultConstructor(tf: TypeTree, fctx: Tree, posTerm: Tree)(using Context): Tree =
+  def genCpsDirectDefaultConstructor(tf: TypeTree, fctx: Tree, posSpan: Span)(using Context): Tree =
     val cpsDirectType = Symbols.requiredClassRef("cps.CpsDirect").appliedTo(tf.tpe)
     val cpsDirectConstructor = Select(New(TypeTree(cpsDirectType)), "<init>".toTermName)
     Apply(
       TypeApply(cpsDirectConstructor, List(tf)),
       List(fctx)
-    ).withSpan(posTerm.span)
+    ).withSpan(posSpan)
 
+
+  /**
+   * generate fgincl.apply(fctx)(lambda)
+   */
+  def genConventionCall(fctx:Tree, fgincl: Tree, originType:Type, lambda: Tree, span: Span)(using Context): Tree = {
+    //trait CpsMonadContextInclusion[F[_],G[_]] {
+    //
+    //  def apply[T](fctx: CpsTryMonadContext[F])(fun: CpsTryMonadContext[G] => G[T]):F[T]
+    //
+    //}
+    Apply(
+      Apply(
+        TypeApply(Select(fgincl, "apply".toTermName), List(TypeTree(originType.widen))),
+        List(fctx)
+      ),
+      List(lambda)
+    ).withSpan(span)
+
+  }
 
   
   def substituteCpsDirectArgInCall(applyOrTypeApply: Tree, originCPsDirectArg: ByInclusionCallArgs, nCpsDirectArg: Tree)(using Context): Option[Tree] = {

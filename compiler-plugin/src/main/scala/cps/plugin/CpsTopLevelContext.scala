@@ -9,9 +9,8 @@ import cps.plugin.observatory.*
 case class CpsAutomaticColoring(memoization: Tree, analyzer: AutomaticColoringAnalyzer)
 
 case class CpsTopLevelContext(
-                               //val shiftedSymbols: ShiftedSymbols,
                                val monadType: Type, // F[_]
-                               val cpsMonadValDef: ValDef, // val m = summon[CpsTryMonad[F]]
+                               //val cpsMonadValDef: ValDef, // val m = summon[CpsTryMonad[F]]
                                val cpsMonadRef: Tree, // m
                                val cpsMonadContextRef: Tree, // TODO: many contexts, if we have context per effect ?
                                val optRuntimeAwait: Option[Tree],

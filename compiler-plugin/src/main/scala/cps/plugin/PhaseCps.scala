@@ -76,14 +76,14 @@ class PhaseCps(settings: CpsPluginSettings,
     val retval = selectRecord.kind match
       case USING_CONTEXT_PARAM(cpsMonadContextArg) =>
         val cpsMonadContext = ref(cpsMonadContextArg.symbol)
-        val tc = makeCpsTopLevelContext(cpsMonadContext,tree.symbol,tree.srcPos,debugSettings, CpsTransformHelper.cpsDirectClassSymbol)
+        val (tc, monadValDef) = makeCpsTopLevelContext(cpsMonadContext,tree.symbol,tree.srcPos,debugSettings, CpsTransformHelper.cpsDirectClassSymbol)
         val nTpt = CpsTransformHelper.cpsTransformedType(tree.tpt.tpe, tc.monadType)
         selectRecord.monadType = tc.monadType
         //selectRecord.changedReturnType = nTpt
         given CpsTopLevelContext = tc
         val ctx1: Context = summon[Context].withOwner(tree.symbol)
         val transformedRhs = RootTransform(tree.rhs,tree.symbol, 0)(using ctx1, tc).transformed
-        val nRhs = Block(tc.cpsMonadValDef::Nil,transformedRhs)(using ctx1)
+        val nRhs = Block(monadValDef::Nil,transformedRhs)(using ctx1)
         val adoptedRhs = Scaffolding.adoptUncpsedRhs(nRhs, tree.tpt.tpe, tc.monadType)
         val retval = cpy.DefDef(tree)(tree.name, tree.paramss, tree.tpt, adoptedRhs)
         retval
@@ -188,7 +188,7 @@ class PhaseCps(settings: CpsPluginSettings,
     val contextParam = cpsMonadContext match
       case vd: ValDef => ref(vd.symbol)
       case _ => throw CpsTransformException(s"excepted that cpsMonadContext is ValDef, but we have ${cpsMonadContext.show}", asyncCallTree.srcPos)
-    val tctx = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
+    val (tctx, monadValDef) = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
     val ddefCtx = ctx.withOwner(ddef.symbol)
     tctx.automaticColoring.foreach(_.analyzer.observe(ddef.rhs)(using ddefCtx))
     val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefCtx, tctx)
@@ -202,7 +202,6 @@ class PhaseCps(settings: CpsPluginSettings,
     val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
     val nDefDef = DefDef(newSym, paramss => {
       implicit val nctx = ctx.withOwner(newSym)
-      val monadValDef = tctx.cpsMonadValDef
       val body = Block(monadValDef::Nil, nRhsTerm).withSpan(ddef.rhs.span)
       val nBody = TransformUtil.substParams(body, ddef.paramss.head.asInstanceOf[List[ValDef]], paramss.head)
         .changeOwner(ddef.symbol, newSym)
@@ -269,10 +268,10 @@ class PhaseCps(settings: CpsPluginSettings,
         Inlined(call, env, transformDefDef2InsideCpsAsyncStreamApply(body, ctxRef))
       case Block((ddef: DefDef)::Nil, closure: Closure) if (ddef.symbol == closure.meth.symbol) =>
         //val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, CpsTransformHelper.cpsMonadContextClassSymbol, asyncCallTree.srcPos)
-        val tctx = makeCpsTopLevelContext(ctxRef, ddef.symbol, ddef.rhs.srcPos, DebugSettings.make(ddef), CpsTransformHelper.cpsMonadContextClassSymbol)
+        val (tctx, monadValDef) = makeCpsTopLevelContext(ctxRef, ddef.symbol, ddef.rhs.srcPos, DebugSettings.make(ddef), CpsTransformHelper.cpsMonadContextClassSymbol)
         val ddefContext = ctx.withOwner(ddef.symbol)
         val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefContext, tctx)
-        val nRhs = Block(tctx.cpsMonadValDef::Nil, nRhsCps.transformed(using ddefContext, tctx))
+        val nRhs = Block(monadValDef.changeOwner(monadValDef.symbol.owner,ddef.symbol)::Nil, nRhsCps.transformed(using ddefContext, tctx))
         val mt = MethodType(ddef.paramss.head.map(_.name.toTermName))(_ => ddef.paramss.head.map(_.typeOpt.widen), _ => nRhs.tpe.widen)
         val newSym = Symbols.newAnonFun(ctx.owner, mt, ddef.span)
         val nDefDef = DefDef(newSym, { paramss =>
@@ -341,7 +340,7 @@ class PhaseCps(settings: CpsPluginSettings,
    * @param cpsDirectOrSimpleContext - reference to cpsMonadContext.
    * @param srcPos - position whre show monadInit
    **/
-  private def makeCpsTopLevelContext(cpsDirectOrSimpleContext: Tree, owner:Symbol, srcPos: SrcPos, debugSettings:DebugSettings, wrapperSym: ClassSymbol)(using Context): CpsTopLevelContext =  {
+  private def makeCpsTopLevelContext(cpsDirectOrSimpleContext: Tree, owner:Symbol, srcPos: SrcPos, debugSettings:DebugSettings, wrapperSym: ClassSymbol)(using Context): (CpsTopLevelContext, ValDef) =  {
     cpsDirectOrSimpleContext match
       case vd: ValDef =>
         throw CpsTransformException("incorrect makeCpsTopLevelContext", srcPos)
@@ -368,11 +367,11 @@ class PhaseCps(settings: CpsPluginSettings,
       }
     } else None
     val customValueDiscard = automaticColoring.isDefined || CpsTransformHelper.findCustomValueDiscardTag(srcPos.span).isDefined
-    val tc = CpsTopLevelContext(monadType, monadValDef, monadRef, cpsDirectOrSimpleContext,
+    val tc = CpsTopLevelContext(monadType, monadRef, cpsDirectOrSimpleContext,
                                 optRuntimeAwait, optThrowSupport, optTrySupport,
                                 debugSettings, settings, isBeforeInliner,
                                 automaticColoring, customValueDiscard)
-    tc
+    (tc, monadValDef)
   }
 
 
