@@ -126,19 +126,24 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
 
   case class ApplyArgRepeatRecord(
-       term: Repeated,
+       term: Term, // Typed(Repeated(...), TypeTree) or Repeated(...)
+       repeatedTerm: Repeated,
        index: Int,
        elements: List[ApplyArgRecord],
        seqTypeTree: TypeTree
   ) extends ApplyArgRecord {
     override def usePrepend(existsAsync:Boolean): Boolean = elements.exists(_.usePrepend(existsAsync))
-    override def identArg(existsAsync:Boolean): Term =
-      if (usePrepend(existsAsync))
-          Typed(Repeated(elements.map(_.identArg(existsAsync)),term.elemtpt), seqTypeTree)
+
+    override def identArg(existsAsync:Boolean): Term = {
+      val retval = if (usePrepend(existsAsync))
+          Typed(Repeated(elements.map(_.identArg(existsAsync)),repeatedTerm.elemtpt), seqTypeTree)
       else if (hasShiftedLambda)
           Typed(Repeated(elements.map(_.identArg(existsAsync)),shiftedElemTpt), shiftSeqTypeTree)
       else
           term
+      retval
+    }
+
     override def isAsync = elements.exists(_.isAsync)
     override def hasShiftedLambda = elements.exists(_.hasShiftedLambda)
     override def isCpsDirect: Boolean = false
@@ -162,11 +167,11 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
          }
 
     private def shiftedElemTpt: TypeTree = 
-         if (term.elemtpt.tpe =:= TypeRepr.of[Any]) then
+         if (repeatedTerm.elemtpt.tpe =:= TypeRepr.of[Any]) then
            // this can be dynamic, leave as is
-           term.elemtpt
+           repeatedTerm.elemtpt
          else
-           shiftedLambdaTypeTree(term.elemtpt)
+           shiftedLambdaTypeTree(repeatedTerm.elemtpt)
 
     private def shiftSeqTypeTree: TypeTree = 
 

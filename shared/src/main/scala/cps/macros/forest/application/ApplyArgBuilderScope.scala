@@ -67,14 +67,17 @@ trait ApplyArgBuilderScope[F[_],CT, CC<:CpsMonadContext[F]] {
             val accRepeated = O.buildApplyArgsRecordsAcc(paramsDescriptor,
                                rargs, owner,
                                acc.copy(inRepeat=true,records=IndexedSeq.empty))
-            val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt1)
+            val nextRecord = ApplyArgRepeatRecord(tr, r, acc.posIndex, accRepeated.records.toList, tpt1)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case r@Repeated(rargs, tpt) =>
             // TODO: in nested context
+            // repeated without typed. Impossible?..  let's put warning and process.
+            //val tr = Typed.copy(r)(r,Inferred(r.tpe.widen))
+            //report.warning(s"repeated without type, t=${t.show}", posExpr(t))
             val accRepeated = O.buildApplyArgsRecordsAcc(paramsDescriptor,
                                rargs, owner,
                                acc.copy(inRepeat=true, records=IndexedSeq.empty))
-            val nextRecord = ApplyArgRepeatRecord(r, acc.posIndex, accRepeated.records.toList, tpt)
+            val nextRecord = ApplyArgRepeatRecord(r, r, acc.posIndex, accRepeated.records.toList, tpt)
             acc.advance(nextRecord).copy(posIndex = accRepeated.posIndex)
          case lambda@Lambda(params, body) =>
             // mb, this will not work, for expressions, which return block.
