@@ -54,7 +54,7 @@ class Test15PE {
     compileAndRunTestAfterCommon("testdata/set15pe/m1", "cps.pe.TestFizzBuzz",
       DotcInvocations.InvocationArgs(checkAll = true,
         extraDotcArgs = List(
-          "-Vprint:rssh.cps"
+         // "-Vprint:rssh.cps"
         )
       )
     )
@@ -69,7 +69,7 @@ class Test15PE {
     compileAndRunTestAfterCommon("testdata/set15pe/m2", "cps.pe.TestFizzBuzz",
       DotcInvocations.InvocationArgs(checkAll = true,
         extraDotcArgs = List(
-          "-Vprint:rssh.cps", "-Vprint:erasure"
+          // "-Vprint:rssh.cps", "-Vprint:erasure"
         )
       )
     )
@@ -99,14 +99,14 @@ class Test15PE {
     )
   }
 
-   
+
 
   @Test
   def testFizzBuzzWithInlineDirectRefM5() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m5", "cps.pe.TestFizzBuzzM5",
       DotcInvocations.InvocationArgs(checkAll = false,
         extraDotcArgs = List(
-          "-Vprint:rssh.cps", "-Vprint:erasure"
+          //"-Vprint:rssh.cps", "-Vprint:erasure"
         )
       )
     )
