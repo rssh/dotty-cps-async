@@ -53,7 +53,7 @@ given FreeCpsMonad: CpsTryMonad[FreeMonad] with CpsTryMonadInstanceContext[FreeM
  * Used when you want use test free monad with API which uses callbacks.
  * @tparam T
  */
-sealed trait AsyncFreeMonad[+T] extends FreeMonad[T]
+sealed trait AsyncFreeMonad[+T]
 
 
 object AsyncFreeMonad {

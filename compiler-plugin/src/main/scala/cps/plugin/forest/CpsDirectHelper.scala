@@ -98,4 +98,14 @@ object CpsDirectHelper {
             None
   }
 
+  object NewCall {
+    def unapply(tree: Tree)(using Context): Option[(Tree)] =
+      tree match
+        case Apply(Select(New(cnt), cnInit), List(fctx))
+          if (CpsTransformHelper.isCpsDirectType(cnt.tpe)) && cnInit == "<init>".toTermName =>
+            Some((fctx))
+        case _ =>
+            None
+  }
+
 }

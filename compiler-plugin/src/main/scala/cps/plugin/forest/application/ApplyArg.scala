@@ -398,8 +398,9 @@ case class RepeatApplyArg(
         val elemTpe = CpsTransformHelper.cpsTransformedType(elementTpt.tpe, summon[CpsTopLevelContext].monadType)
         val elemTpt = TypeTree(elemTpe)
         (elemTpt, AppliedTypeTree(TypeTree(defn.RepeatedParamType), List(elemTpt)))
-      case _ => (elementTpt, TypeTree(tpe))
-    // todo - return orign if nothing was changed
+      case _ =>
+        (elementTpt, TypeTree(tpe.widen))
+        // todo - return orign if nothing was changed
     Typed(SeqLiteral(trees.toList,nElemTpt).withSpan(origin.span) ,nRtp).withSpan(origin.span)
 
   override def show(using Context): String = {

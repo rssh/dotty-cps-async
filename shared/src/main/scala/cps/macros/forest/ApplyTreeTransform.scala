@@ -347,13 +347,15 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         val shouldBeChangedSync = argsProperties.shouldBeChangedSync
         val existsCpsDirect = argsProperties.cpsDirectArg.isDefined
         val callCpsDirect =  existsCpsDirect && !fun.symbol.hasAnnotation(cpsNotChangeSymbol)
-                                                         && !fun.symbol.flags.is(Flags.Inline)
+                                                       //  && !fun.symbol.flags.is(Flags.Inline)
                                                          && !fun.symbol.name.contains("$")
         if cpsCtx.flags.debugLevel >= 15 then
             cpsCtx.log(s" existsShiftedLambda=${existsShiftedLambda}")
             cpsCtx.log(s" existsAsyncArg=${existsAsyncArg}")
             cpsCtx.log(s" existsPrependArg=${existsPrependArg}")
             cpsCtx.log(s" shouldBeChangedSync=${shouldBeChangedSync}")
+            cpsCtx.log(s" callCpsDirect=${callCpsDirect}")
+
 
         if (!existsAsyncArg && !existsShiftedLambda && !shouldBeChangedSync) {
            val tailArgss = tails.map(_.map(_.term).toList)
@@ -435,7 +437,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
     cpsDirectArg match
       case Apply(TypeApply(byInclusionCn, List(tf, tg)), List(fctx, fgincl))
         if (byInclusionCn.symbol == Symbol.requiredMethod("cps.CpsDirect.byInclusion")) =>
-          println("found byInclusion")
+          println(s"found byInclusion, applyCall = ${applyCall.show}")
           if (tf.tpe =:= tg.tpe) then
             val nCpsDirectArg = genCpsDirectDefaultConstructor(tf,fctx,cpsDirectArg)
             val tree = applyCall

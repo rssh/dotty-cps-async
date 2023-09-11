@@ -86,8 +86,13 @@ object ApplyTransform {
                   if (adoptCpsedCallCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")) =>
              //  this means that we walk over nesting async.
              //  leave one unchanged
-             Log.trace(s"adoptCpsedCall form at : ${term.show}", nesting)
-             CpsTree.unchangedPure(term, owner)
+             println(s"ApplyTransfrom::apply adoptCpsedCall, a = ${a.show} (tree=$a)")
+             a match
+               case Inlined(call, bindings, expansion) =>
+                  ???
+               case _ =>
+                 Log.trace(s"adoptCpsedCall form at : ${term.show}", nesting)
+                 CpsTree.unchangedPure(term, owner)
         case Apply(Apply(TypeApply(fAsynchronizedCm,List(tf,ta)),List(a)),List(fctx))
                          if (fAsynchronizedCm.symbol == Symbols.requiredMethod("cps.asynchronized")) =>
               Log.trace(s"asynchronized at : ${term.show}", nesting)

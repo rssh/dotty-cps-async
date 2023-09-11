@@ -48,7 +48,7 @@ class Test15PE {
   }
 
 
-  /*
+
   @Test
   def testFizzBuzz() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m1", "cps.pe.TestFizzBuzz",
@@ -81,23 +81,37 @@ class Test15PE {
     compileAndRunTestAfterCommon("testdata/set15pe/m3", "cps.pe.TestUseResource",
       DotcInvocations.InvocationArgs(checkAll = true,
         extraDotcArgs = List(
-          "-Vprint:rssh.cps", "-Vprint:erasure"
+         // "-Vprint:rssh.cps", "-Vprint:erasure"
         )
       )
     )
   }
-   */
+
 
   @Test
   def testUseResourceM4() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m4", "cps.pe.TestUseResourceFromPlugin",
       DotcInvocations.InvocationArgs(checkAll = true,
         extraDotcArgs = List(
+         //  "-Vprint:rssh.cps", "-Vprint:erasure"
+        )
+      )
+    )
+  }
+
+   
+
+  @Test
+  def testFizzBuzzWithInlineDirectRefM5() = {
+    compileAndRunTestAfterCommon("testdata/set15pe/m5", "cps.pe.TestFizzBuzzM5",
+      DotcInvocations.InvocationArgs(checkAll = false,
+        extraDotcArgs = List(
           "-Vprint:rssh.cps", "-Vprint:erasure"
         )
       )
     )
   }
+
 
 }
 

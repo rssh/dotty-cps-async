@@ -166,6 +166,38 @@ class PhaseCps(settings: CpsPluginSettings,
              List(absorber, ctxFun)
            ) if (cpsAsyncStreamApplyCn.symbol == Symbols.requiredMethod("cps.plugin.cpsAsyncStreamApply")) =>
         transformCpsAsyncStreamApply(tree,absorber,ctxFun)
+      case Apply(TypeApply(adoptCpsedCallCn, List(tf, ta)), List(a))
+        if (adoptCpsedCallCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")) =>
+          a match
+            case ai@Inlined(call, bindings, expansion) =>
+              // this is inline extension method defined inside asycn block which was transformed by macros.
+              // Since extension methods are inlined after macros, macros have not seen it [dotty error ?], but
+              // compiler inlined one and insert before PhaseCps call.
+              //
+              // in such case direct context is an argument of inlined call.
+              //TODO: check Inline(Inline(...))
+              findCpsDirectArg(call) match
+                case Some(tree) =>
+                  println(s"found adoptCpsedCall with Inlined and CpsDirectArg argument: $a")
+                  val (tc, monadValDef) = tree match
+                    case CpsDirectHelper.ByInclusionCall(tf, tg, fctx, fginc) =>
+                      makeCpsTopLevelContext(fctx, summon[Context].owner, a.srcPos, DebugSettings.make(a), CpsTransformHelper.cpsMonadContextClassSymbol)
+                    case CpsDirectHelper.NewCall(fctx) =>
+                      makeCpsTopLevelContext(fctx, summon[Context].owner, a.srcPos, DebugSettings.make(a), CpsTransformHelper.cpsMonadContextClassSymbol)
+                    case other =>
+                      makeCpsTopLevelContext(other, summon[Context].owner, a.srcPos, DebugSettings.make(a), CpsTransformHelper.cpsDirectClassSymbol)
+                  val nTree = {
+                    given CpsTopLevelContext = tc
+                    RootTransform(a, summon[Context].owner, 0).transformed
+                  }
+                  // can strip adoptCpsedCall now.
+                  Block(monadValDef::Nil, nTree).withSpan(a.span)
+                case None =>
+                  // impossible bevause afopedCpsedCall is inserted by async macro arround apply with CpsDirect arg.
+                  report.warning(s"Unexpected argumnet of cps.plugin.scaffolding.adoptCpsedCall (should be apply) : ${a.show}", a.srcPos)
+                  super.transformApply(tree)
+            case _ =>
+              super.transformApply(tree)
       case _ => super.transformApply(tree)
 
  
@@ -374,6 +406,19 @@ class PhaseCps(settings: CpsPluginSettings,
     (tc, monadValDef)
   }
 
+  private def findCpsDirectArg(app: Tree)(using Context): Option[Tree]  = {
+    app match
+      case app: Apply =>
+        app.args.find(a => CpsTransformHelper.isCpsDirectType(a.tpe)).orElse {
+          findCpsDirectArg(app.fun)
+        }
+      case TypeApply(fun, args) =>
+        findCpsDirectArg(fun)
+      case Inlined(call,bindings, expansion) =>
+        findCpsDirectArg(expansion)
+      case _ =>
+        None
+  }
 
 }
 
