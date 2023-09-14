@@ -111,6 +111,18 @@ class Test15PE {
       )
     )
   }
+  
+
+  @Test
+  def testFizzBuzzWithInlineDirectRefM6() = {
+    compileAndRunTestAfterCommon("testdata/set15pe/m6", "cps.pe.TestFizzBuzzM6",
+      DotcInvocations.InvocationArgs(checkAll = false,
+        extraDotcArgs = List(
+          //"-Vprint:rssh.cps", "-Vprint:erasure"
+        )
+      )
+    )
+  }
 
 
 }
