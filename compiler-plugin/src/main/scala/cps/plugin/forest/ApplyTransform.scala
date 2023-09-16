@@ -97,7 +97,6 @@ object ApplyTransform {
                          if (fAsynchronizedCm.symbol == Symbols.requiredMethod("cps.asynchronized")) =>
               Log.trace(s"asynchronized at : ${term.show}", nesting)
               AsynchronizedTransform.fromApply(term, owner, nesting, tf, ta, a, fctx)
-
         case Apply(cnThrow, List(_)) if (cnThrow.symbol == defn.throwMethod) =>
              ThrowTransform(term, owner, nesting)
         case Apply(TypeApply(nonLocalRecturnCn, List(targ)), List(arg))

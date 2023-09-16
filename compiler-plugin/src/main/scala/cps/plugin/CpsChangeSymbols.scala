@@ -42,12 +42,23 @@ trait CpsChangeSymbols {
         sym.copySymDenotation(info = ntp)
       case None =>
             sym.info match
-              case mt: MethodOrPoly if (!sym.isAnonymousFunction) =>
-                findCpsDirectContextInParamss(sym.symbol, sym.rawParamss) match
-                  case Some(monadType) =>
-                    val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType)
-                    sym.copySymDenotation(info = ntp)
-                  case None =>
+              case mt0: MethodOrPoly if (!sym.isAnonymousFunction) =>
+                val timeTravelContext = summon[Context].fresh.setPhase(firstTransformPhase)
+                val cpsDirectSym = CpsTransformHelper.cpsDirectAliasSymbol(using timeTravelContext)
+                val oldSym = sym.current(using timeTravelContext)
+                oldSym.info match
+                  case mtf: MethodOrPoly =>
+                    println(s"transformSym: search for context param in ${mtf.show}")
+                    findCpsDirectContextInParamss(oldSym.symbol, mtf, timeTravelContext) match
+                      case Some(contextParamType) =>
+                        val monadType = CpsTransformHelper.extractMonadType(contextParamType, cpsDirectSym, oldSym.symbol.srcPos)(using timeTravelContext)
+                        println(s"transformSym: found context param in ${mtf.show} with monadType=${monadType.show}")
+                        val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType)
+                        sym.copySymDenotation(info = ntp)
+                      case None =>
+                        println(s"transformSym: not found context param in ${mtf.show}")
+                        sym
+                  case _ =>
                     sym
               case _ =>
                 sym
@@ -56,34 +67,31 @@ trait CpsChangeSymbols {
 
 
 
-  def findCpsDirectContextInParamss(sym: Symbol, paramss:List[List[Symbol]])(using ctx:Context): Option[Type] = {
-    paramss.flatten.find(
-      paramSym => {
-        if (paramSym.isTypeParam  ||  !(paramSym.flags.isOneOf(Flags.GivenOrImplicit)))
-          false
-        else
-          val retval = paramSym.info.widen.dealias match
-            case vt: ErasedValueType =>
-                 // for valueType
-                (vt.tycon <:< Symbols.requiredClassRef("cps.CpsDirect"))
-            case tr: TypeRef =>
-                tr <:< Symbols.requiredClassRef("cps.CpsDirect")
-            case _ =>
-              false
-          println(s"CpsChangeSymbols::checking CpsDirectContext for ${paramSym.info.widen.dealias}, result=${retval}")
-          retval
-      }
-    ).map { paramSym =>
-      val oldParamInfo = paramSym.current(using summon[Context].fresh.setPhase(firstTransformPhase)).info
-      oldParamInfo match
-        case AppliedType(tycon, args) =>
-          val monadType = args.head
-          monadType
-        case _ =>
-          report.warning("Unsupported type for CpsDirect param: ${oldParamInfo.show}, approximating to Wildcard")
-          Types.WildcardType
-    }
-  }
+  def findCpsDirectContextInParamss(sym: Symbol, mtf: MethodOrPoly, timeTravelContext: Context)(using ctx:Context): Option[Type] = {
+    println(s"findCpsDirectContextInParamss: search in ${mtf.show}")
+    mtf match
+      case pt: PolyType =>
+        pt.resType match
+          case mtf1: MethodOrPoly =>
+            findCpsDirectContextInParamss(sym, mtf1, timeTravelContext)
+          case _ =>
+            None
+      case mt: MethodType =>
+        val firstFound:Option[Type] =
+          if (!mt.isContextualMethod && !mt.isImplicitMethod) then
+            println(s"findCpsDirectContextInParamss: skip ${mt.show} as not contextual or implicit")
+            None
+          else
+            println(s"findCpsDirectContextInParamss: seach in ${mt.paramInfos}")
+            mt.paramInfos.find(t => CpsTransformHelper.isCpsDirectType(t, debug = true)(using timeTravelContext))
+        val paramFound = firstFound.orElse {
+          mtf.resType match
+            case mt: MethodOrPoly =>
+              findCpsDirectContextInParamss(sym, mt, timeTravelContext)
+            case _ => None
+        }
+        paramFound
+   }
 
 
 }

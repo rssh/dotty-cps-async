@@ -76,7 +76,7 @@ class PhaseCps(settings: CpsPluginSettings,
     val retval = selectRecord.kind match
       case USING_CONTEXT_PARAM(cpsMonadContextArg) =>
         val cpsMonadContext = ref(cpsMonadContextArg.symbol)
-        val (tc, monadValDef) = makeCpsTopLevelContext(cpsMonadContext,tree.symbol,tree.srcPos,debugSettings, CpsTransformHelper.cpsDirectClassSymbol)
+        val (tc, monadValDef) = makeCpsTopLevelContext(cpsMonadContext,tree.symbol,tree.srcPos,debugSettings, CpsTransformHelper.cpsDirectAliasSymbol)
         val nTpt = CpsTransformHelper.cpsTransformedType(tree.tpt.tpe, tc.monadType)
         selectRecord.monadType = tc.monadType
         //selectRecord.changedReturnType = nTpt
@@ -92,7 +92,7 @@ class PhaseCps(settings: CpsPluginSettings,
           case oldLambda@Block((ddef: DefDef)::Nil, closure: Closure) =>
             val nDefDef = transformDefDefInternal(ddef, DefDefSelectRecord(kind=internalKind,internal=true))
             val cpsDirectContext = ref(selectRecord.kind.getCpsDirectContext.symbol)
-            val fType = CpsTransformHelper.extractMonadType(cpsDirectContext.tpe, CpsTransformHelper.cpsDirectClassSymbol, tree.srcPos)
+            val fType = CpsTransformHelper.extractMonadType(cpsDirectContext.tpe, CpsTransformHelper.cpsDirectAliasSymbol, tree.srcPos)
             selectRecord.monadType = fType
             val nClosureType = CpsTransformHelper.cpsTransformedType(closure.tpe, fType)
             //selectRecord.changedReturnType = nClosureType
@@ -185,7 +185,7 @@ class PhaseCps(settings: CpsPluginSettings,
                     case CpsDirectHelper.NewCall(fctx) =>
                       makeCpsTopLevelContext(fctx, summon[Context].owner, a.srcPos, DebugSettings.make(a), CpsTransformHelper.cpsMonadContextClassSymbol)
                     case other =>
-                      makeCpsTopLevelContext(other, summon[Context].owner, a.srcPos, DebugSettings.make(a), CpsTransformHelper.cpsDirectClassSymbol)
+                      makeCpsTopLevelContext(other, summon[Context].owner, a.srcPos, DebugSettings.make(a), CpsTransformHelper.cpsDirectAliasSymbol)
                   val nTree = {
                     given CpsTopLevelContext = tc
                     RootTransform(a, summon[Context].owner, 0).transformed
@@ -372,13 +372,15 @@ class PhaseCps(settings: CpsPluginSettings,
    * @param cpsDirectOrSimpleContext - reference to cpsMonadContext.
    * @param srcPos - position whre show monadInit
    **/
-  private def makeCpsTopLevelContext(cpsDirectOrSimpleContext: Tree, owner:Symbol, srcPos: SrcPos, debugSettings:DebugSettings, wrapperSym: ClassSymbol)(using Context): (CpsTopLevelContext, ValDef) =  {
+  private def makeCpsTopLevelContext(cpsDirectOrSimpleContext: Tree, owner:Symbol, srcPos: SrcPos, debugSettings:DebugSettings, wrapperSym: Symbol)(using Context): (CpsTopLevelContext, ValDef) =  {
     cpsDirectOrSimpleContext match
       case vd: ValDef =>
         throw CpsTransformException("incorrect makeCpsTopLevelContext", srcPos)
       case _ =>
-    val monadInit = Select(cpsDirectOrSimpleContext, "monad".toTermName).withSpan(srcPos.span)
+    //val monadInit = Select(cpsDirectOrSimpleContext, "monad".toTermName).withSpan(srcPos.span)
     val monadType = CpsTransformHelper.extractMonadType(cpsDirectOrSimpleContext.tpe.widen, wrapperSym, srcPos)
+    val monadInit = genMonadInit(cpsDirectOrSimpleContext, srcPos, debugSettings, wrapperSym, monadType)
+
     val optRuntimeAwait = if(settings.useLoom) CpsTransformHelper.findRuntimeAwait(monadType, srcPos.span) else None
     val monadValDef = SyntheticValDef("m".toTermName, monadInit)(using summon[Context].fresh.setOwner(owner))
     val monadRef = ref(monadValDef.symbol)
@@ -418,6 +420,18 @@ class PhaseCps(settings: CpsPluginSettings,
         findCpsDirectArg(expansion)
       case _ =>
         None
+  }
+
+  private def genMonadInit(cpsDirectOrSimpleContext: Tree,srcPos: SrcPos, debugSettings:DebugSettings, wrapperSym: Symbol, monadType:Type)(using Context): Tree = {
+    if (wrapperSym.isOpaqueAlias) {
+      // then we should apply extension
+      val dc = cpsDirectOrSimpleContext
+      val method = ref(Symbols.requiredMethod("cps.CpsDirect.monad")).withSpan(srcPos.span)
+      Apply(TypeApply(method,List(TypeTree(monadType))),List(dc)).withSpan(srcPos.span)
+    } else {
+      val monadInit = Select(cpsDirectOrSimpleContext, "monad".toTermName).withSpan(srcPos.span)
+      monadInit
+    }
   }
 
 }

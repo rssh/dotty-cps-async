@@ -15,6 +15,8 @@ import cps.plugin.scaffolding.requiringCpsCompilerPlugin
  *  ```
  **/
 @experimental
+type CpsDirect[F[_]] = CpsDirect.Direct[F]
+/*
 class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends AnyVal {
 
   //def context: CpsTryMonadContext[F]
@@ -26,6 +28,8 @@ class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends AnyVal {
   def tryMonad: CpsTryMonad[F] = context.monad
 
 }
+
+ */
 
 
 //@experimental
@@ -45,12 +49,19 @@ class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends AnyVal {
 @experimental
 object CpsDirect  {
 
+  opaque type Direct[F[_]] = CpsTryMonadContext[F]
+
+  private[cps] def apply[F[_]](ctx: CpsTryMonadContext[F]): CpsDirect[F] = ctx
+
+  extension [F[_]](x: CpsDirect[F])
+    def context: CpsTryMonadContext[F] = x
+    def monad: CpsTryMonad[F] = x.context.monad
+    def throwMonad: CpsTryMonad[F] = x.context.monad
+    def tryMonad: CpsTryMonad[F] = x.context.monad
+
   @compileTimeOnly("CpsDirect consrtructioe should be removed by cps compiler plugin")
   given byInclusion[F[_], G[_]](using CpsTryMonadContext[F], CpsMonadContextInclusion[F,G]): CpsDirect[G] =
     ??? //CpsDirectId(await(summon[CpsMonad[G]].apply(ctx => ctx)))
-
-  //direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
-  //  new CpsDirect[F](context)
 
 
 }

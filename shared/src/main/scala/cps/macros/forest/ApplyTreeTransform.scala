@@ -483,12 +483,17 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
   }
 
   def genCpsDirectDefaultConstructor(tf: TypeTree, fctx: Term, posTerm:Term): Term =
-    val cpsDirectType = Symbol.requiredClass("cps.CpsDirect").typeRef.appliedTo(tf.tpe)
-    val cpsDirectConstructor = Select.unique(New(Inferred(cpsDirectType)),"<init>")
+    val cpsDirectApply = Symbol.requiredMethod("cps.CpsDirect.apply")
     Apply.copy(posTerm)(
-      TypeApply(cpsDirectConstructor, List(tf)),
+      TypeApply(Ref(cpsDirectApply), List(tf)),
       List(fctx)
     )
+    //val cpsDirectType = Symbol.requiredClass("cps.CpsDirect").typeRef.appliedTo(tf.tpe)
+    //val cpsDirectConstructor = Select.unique(New(Inferred(cpsDirectType)),"<init>")
+    //Apply.copy(posTerm)(
+    //  TypeApply(cpsDirectConstructor, List(tf)),
+    //  List(fctx)
+    //)
 
   def substituteCpsDirectArgRequired(term: Term, originCpsDirectArg: Term, nCpsDirectArg: Term): Term =
     substituteCpsDirectArg(term,originCpsDirectArg,nCpsDirectArg).getOrElse(

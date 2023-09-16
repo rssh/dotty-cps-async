@@ -28,14 +28,48 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
      def  isContext: Boolean
 
 
-     def  isCpsDirect(index:Int): Boolean =
-            isContext && (
-              paramType(index) match
-                case Some(t) =>
-                  t.derivesFrom(Symbol.requiredClass("cps.CpsDirect"))
-                  //t <:< TypeRepr.of[CpsDirect[F]]
-                case None => false
-            )
+
+     def  isCpsDirect(index:Int): Boolean = {
+
+       // currently,in TypeRepr dealiasKeepOpaque is missing,
+       //  so this is ugly and potentially incorrent workaround.
+       def isCpsDirectType(tpe:TypeRepr): Boolean = {
+         val retval = tpe match
+           case AppliedType(tpe, args) =>
+             isCpsDirectType(tpe)
+           case tr@TypeRef(prefix,name) =>
+             if tr.isOpaqueAlias && name == "Direct" then
+               println(s"CpsDirect candidate: $tr, prefix.typeSymbol=${prefix.typeSymbol}")
+               val cpsDirectModuleCompanionClass = Symbol.requiredModule("cps.CpsDirect").companionClass
+               //val cpsDirectCompanionModule = Symbol.requiredModule("cps.Direct")
+               val cpsDirectModuleModuleClass = Symbol.requiredModule("cps.CpsDirect").moduleClass
+               val cpsDirectClass = Symbol.requiredClass("cps.CpsDirect")
+               println(s"cpsDirectModuleCompanionClass=${cpsDirectModuleCompanionClass}")
+               //println(s"cpsDirectCompanionModule=${cpsDirectCompanionModule}")
+               println(s"cpsDirectModuleClass=${cpsDirectModuleModuleClass}")
+               println(s"cpsDirectClass=${cpsDirectClass}")
+               println(s"prefix=cpsDirectModuleClass=${prefix.typeSymbol == cpsDirectModuleModuleClass}")
+               //prefix
+               prefix.typeSymbol == Symbol.requiredModule("cps.CpsDirect").moduleClass
+             else if tpe.typeSymbol.isAliasType then
+               isCpsDirectType(tpe.dealias)
+             else
+               false
+           case AnnotatedType(tpe, annot) =>
+             isCpsDirectType(tpe)
+           case ByNameType(tpe) =>
+              isCpsDirectType(tpe)
+           case TypeBounds(low, hi) =>
+              isCpsDirectType(hi)
+           case _ => false
+         println(s"isCpsDirect: tpe=${tpe.show} retval=${retval}")
+         retval
+       }
+
+       isContext && isCpsDirectType(paramType(index).get)
+
+     }
+
 
      def  isByName(index: Int): Boolean =
            paramType(index) match
