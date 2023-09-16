@@ -39,17 +39,6 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
              isCpsDirectType(tpe)
            case tr@TypeRef(prefix,name) =>
              if tr.isOpaqueAlias && name == "Direct" then
-               println(s"CpsDirect candidate: $tr, prefix.typeSymbol=${prefix.typeSymbol}")
-               val cpsDirectModuleCompanionClass = Symbol.requiredModule("cps.CpsDirect").companionClass
-               //val cpsDirectCompanionModule = Symbol.requiredModule("cps.Direct")
-               val cpsDirectModuleModuleClass = Symbol.requiredModule("cps.CpsDirect").moduleClass
-               val cpsDirectClass = Symbol.requiredClass("cps.CpsDirect")
-               println(s"cpsDirectModuleCompanionClass=${cpsDirectModuleCompanionClass}")
-               //println(s"cpsDirectCompanionModule=${cpsDirectCompanionModule}")
-               println(s"cpsDirectModuleClass=${cpsDirectModuleModuleClass}")
-               println(s"cpsDirectClass=${cpsDirectClass}")
-               println(s"prefix=cpsDirectModuleClass=${prefix.typeSymbol == cpsDirectModuleModuleClass}")
-               //prefix
                prefix.typeSymbol == Symbol.requiredModule("cps.CpsDirect").moduleClass
              else if tpe.typeSymbol.isAliasType then
                isCpsDirectType(tpe.dealias)
@@ -62,7 +51,6 @@ trait MethodParamsDescriptorScope[F[_], CT, CC<:CpsMonadContext[F]]:
            case TypeBounds(low, hi) =>
               isCpsDirectType(hi)
            case _ => false
-         println(s"isCpsDirect: tpe=${tpe.show} retval=${retval}")
          retval
        }
 

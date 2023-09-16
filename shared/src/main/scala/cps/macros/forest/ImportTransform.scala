@@ -17,7 +17,7 @@ object ImportTransform:
      import quotes.reflect._
      import cpsCtx._
      if (cpsCtx.flags.debugLevel >= 10) {
-       println(s"Import:fromBlock, importTree=$importTree")
+       cpsCtx.log(s"Import:fromBlock, importTree=$importTree")
      }
      val posExpr = Block(List(importTree),Literal(UnitConstant())).asExpr
      // Import is not statement - so, it is impossible to create block with import in macros.

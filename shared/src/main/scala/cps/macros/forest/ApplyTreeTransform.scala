@@ -65,8 +65,8 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
 
   def sameSelect(funTerm:Term, name:String, targs:List[TypeTree], args:List[Term])(owner: Symbol):Option[Term] =
       if (cpsCtx.flags.debugLevel >= 15 && name=="apply")
-          println(s"sameSelect: funTerm=${funTerm}")
-          println(s"sameSelect: funTerm.tpe.typeSymbol=${funTerm.tpe.typeSymbol}")
+          cpsCtx.log(s"sameSelect: funTerm=${funTerm.show}")
+          cpsCtx.log(s"sameSelect: funTerm.tpe.typeSymbol=${funTerm.tpe.typeSymbol}")
       funTerm.tpe.typeSymbol.methodMember(name) match
         case Nil => None
         case m::Nil =>
@@ -437,7 +437,6 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
     cpsDirectArg match
       case Apply(TypeApply(byInclusionCn, List(tf, tg)), List(fctx, fgincl))
         if (byInclusionCn.symbol == Symbol.requiredMethod("cps.CpsDirect.byInclusion")) =>
-          println(s"found byInclusion, applyCall = ${applyCall.show}")
           if (tf.tpe =:= tg.tpe) then
             val nCpsDirectArg = genCpsDirectDefaultConstructor(tf,fctx,cpsDirectArg)
             val tree = applyCall
