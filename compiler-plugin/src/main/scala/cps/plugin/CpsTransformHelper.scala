@@ -55,15 +55,7 @@ object CpsTransformHelper {
          false
          //other.baseType(cpsDirectClassSymbol) != NoType
      if (debug)
-        println(s"isCpsDirectType, dealised=${tpe.dealiasKeepOpaques.show}")
-        val dtpe = tpe.dealiasKeepOpaques
-        dtpe match
-          case AppliedType(tycon, List(targ)) =>
-             println(s"isCpsDirectType: found AppliedType")
-             val directSym = Symbols.requiredModule("cps.CpsDirect").requiredType("Direct")
-             println(s"isCpsDirectType: tycon = ${tycon.show}, tycom.isOpaqueAlias=${tycon.typeSymbol.isOpaqueAlias}, ${tycon.typeSymbol}, ")
-          case _ =>
-        println(s"isCpsDirectType(${tpe.show} [tree:${tpe}]) = ${retval}")
+        report.debuglog(s"isCpsDirectType(${tpe.show} [tree:${tpe}]) = ${retval}")
      retval
   }
 

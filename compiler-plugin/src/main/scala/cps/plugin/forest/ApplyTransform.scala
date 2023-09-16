@@ -86,7 +86,6 @@ object ApplyTransform {
                   if (adoptCpsedCallCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")) =>
              //  this means that we walk over nesting async.
              //  leave one unchanged
-             println(s"ApplyTransfrom::apply adoptCpsedCall, a = ${a.show} (tree=$a)")
              a match
                case Inlined(call, bindings, expansion) =>
                   ???
@@ -370,7 +369,6 @@ object ApplyTransform {
 
   def adoptCallMode(origin: Tree, plainTree: Tree, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
     if (argss.exists(_.containsDirectContext) ) {
-      println(s"ApplyTransform: foundDirectContext in call ${origin.show}")
       val directContextArg = argss.find(_.containsDirectContext).flatMap(_.findDirectContext).get
       val adoptedTree = directContextArg match
             case dc@CpsDirectHelper.ByInclusionCall(tf,tg,fctx,fgincl) =>
@@ -407,7 +405,6 @@ object ApplyTransform {
                    })
                    CpsDirectHelper.genConventionCall(fctx,fgincl,origin.tpe.widen,lambda,origin.span)
             case other =>
-              println(s"this is not byInclusionCall: ${other.show}")
               Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
       //if (isImpure) {
       //  TODO: such situationis possible when we pass lamba with context parameters (can be inline)

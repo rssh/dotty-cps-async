@@ -178,7 +178,6 @@ class PhaseCps(settings: CpsPluginSettings,
               //TODO: check Inline(Inline(...))
               findCpsDirectArg(call) match
                 case Some(tree) =>
-                  println(s"found adoptCpsedCall with Inlined and CpsDirectArg argument: $a")
                   val (tc, monadValDef) = tree match
                     case CpsDirectHelper.ByInclusionCall(tf, tg, fctx, fginc) =>
                       makeCpsTopLevelContext(fctx, summon[Context].owner, a.srcPos, DebugSettings.make(a), CpsTransformHelper.cpsMonadContextClassSymbol)
