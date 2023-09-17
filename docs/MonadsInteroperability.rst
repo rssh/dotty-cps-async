@@ -135,7 +135,7 @@ We also can mix different monads in direct context encoding:
 
 
 As with plain `async`, we can call operation with monad `F[_]` in `G[_]` if given |CpsMonadConversion[F, G]|_ is defined.
-Additionally it is possible to fine tune inclusion of monad contexts by defining |CpsMonadContextInclusion[F, G]|_ which allows to 
+Additionally, it is possible to fine-tune the inclusion of monad contexts by defining |CpsMonadContextInclusion[F, G]|_, which allows us to 
 pass information into the monad context of the target call. 
 
 

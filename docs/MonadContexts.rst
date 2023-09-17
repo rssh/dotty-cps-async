@@ -88,6 +88,8 @@ Note that this is one variant of the code organization approach.  Alternatively,
 if we know that we  exclusively own ``f`` evaluation. This can be an approach for lazy effect.
 The design choice for possible solutions is quite large.
 
+With direct context encoding, you can pass information from the top-level context into subsequential computations via monad conversion boundaries with a custom implementation of |CpsMonadContextInclusion|_.
+
 For monad writers: as a general design rule, use monad context when you want to provide access to some API, which should be visible only inside a monad (i.e. inside |async|_ or direct context function).  For trivial cases, when you don't need a context API, you can mix |CpsMonadInstanceContext|_ into your implementation of trait |CpsMonad|_.  
 For more advanced cases, we advise using the |CpsContextMonad|_ trait.
 
@@ -112,10 +114,13 @@ Also, you can notice the compatibility of this context with |monadic-reflection|
 .. _CpsMonadContext: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadContext.scala#L11
 
 .. |CpsContextMonad| replace:: ``CpsContextMonad``
-.. _CpsContextMonad: https://github.com/rssh/dotty-cps-async/blob/a6f2bfdf83f4ffb9985b455c57e867e3e9b8c9da/shared/src/main/scala/cps/CpsMonadContext.scala#L47
+.. _CpsContextMonad: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadContext.scala#L47
 
 .. |CpsMonadInstanceContext| replace:: ``CpsMonadInstanceContext``
-.. _CpsMonadInstanceContext: https://github.com/rssh/dotty-cps-async/blob/a6f2bfdf83f4ffb9985b455c57e867e3e9b8c9da/shared/src/main/scala/cps/CpsMonadContext.scala#L22
+.. _CpsMonadInstanceContext: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadContext.scala#L22
+
+.. |CpsMonadContextInclusion| replace:: ``CpsMonadContextInclusion``
+.. _CpsMonadContextInclusion: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadContextInclusion.scala
 
 .. |Future| replace:: ``Future``
 .. _Future: https://www.scala-lang.org/api/current/scala/concurrent/Future.html
