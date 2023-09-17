@@ -72,7 +72,7 @@ lazy val CpsJS = config("cps.js")
 lazy val Root = config("root")
 
 
-lazy val cpsLoomJVM = project.in(file("jvm-loom"))
+lazy val cpsLoomTest = project.in(file("jvm-loom-test"))
                       .dependsOn(cps.jvm)
                       .disablePlugins(SitePreviewPlugin)
                       .settings(sharedSettings)
@@ -100,6 +100,16 @@ lazy val cpsLoomJVM = project.in(file("jvm-loom"))
                            "--add-modules", "jdk.incubator.concurrent"
                         )
                       )
+
+
+lazy val cpsLoomAddOn = project.in(file("jvm-loom-addon"))
+                      .dependsOn(cps.jvm)
+                      .disablePlugins(SitePreviewPlugin)
+                      .settings(sharedSettings)
+                      .settings(
+                         name := "dotty-cps-async-loom",
+                         scalacOptions ++= Seq( "-Xtarget:jvm-21")
+                       )
 
 
 lazy val compilerPlugin = project.in(file("compiler-plugin"))
