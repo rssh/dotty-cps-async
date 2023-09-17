@@ -109,6 +109,36 @@ i.e. with the following definitions:
 
 ``FromScalaExample.myFunction("string")`` can be used as |Promise|_ on the JavaScript side.
 
+Monad Context Inclusion
+-----------------------
+
+We also can mix different monads in direct context encoding:
+
+.. code-block:: scala
+
+  @experimental
+  object AsyncChannelExample:
+
+  type IOResourceDirect = CpsDirect[[X]=>>Resource[IO,X]]
+
+  def open(name: Path, options: OpenOption*)(using IOResourceDirect): AsynchronousFileChannel =
+    ...
+
+  def read(input: AsynchronousFileChannel, bufSize: Int)(using CpsDirect[IO]): ByteBuffer =
+    ...
+
+  def topLevelCall(name:String, data:String): Resorce[IO,Unit] = async[[X]=>>Resource[IO,X]] {
+     val file = open(name)
+     val data = read(input, MAX_BUFF_SIZE)
+     .....
+  }
+
+
+As with plain `async`, we can call operation with monad `F[_]` in `G[_]` if given |CpsMonadConversion[F, G]|_ is defined.
+Additionally it is possible to fine tune inclusion of monad contexts by defining |CpsMonadContextInclusion[F, G]|_ which allows to 
+pass information into the monad context of the target call. 
+
+
 
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
@@ -128,6 +158,9 @@ i.e. with the following definitions:
 .. |CpsMonadConversion[Future, Promise]| replace:: ``CpsMonadConversion[Future, Promise]``
 .. _CpsMonadConversion[Future, Promise]: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadConversion.scala
 
+.. |CpsMonadContextInclusion[F, G]| replace:: ``CpsMonadContextInclusion[F, G]``
+.. _CpsMonadContextInclusion[F, G]: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonadContextInclusion.scala
+
 .. |dotty-cps-async| replace:: **dotty-cps-async**
 .. _dotty-cps-async: https://github.com/rssh/dotty-cps-async#dotty-cps-async
 
@@ -136,6 +169,7 @@ i.e. with the following definitions:
 
 .. |FutureAsyncMonad.scala| replace:: ``FutureAsyncMonad.scala``
 .. _FutureAsyncMonad.scala: https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/monads/FutureAsyncMonad.scala
+
 
 .. |JSFuture| replace:: ``JSFuture``
 .. _JSFuture: https://github.com/rssh/dotty-cps-async/blob/master/js/src/main/scala/cps/monads/jsfuture/JSFuture.scala#L53
