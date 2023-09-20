@@ -9,8 +9,6 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
 
-//import cps.testconfig.given
-import cps.runtime.Loom
 
 trait ComputationBound[+T] {
  
@@ -312,7 +310,7 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
             case Success(cb) => cb
             case Failure(ex) => Error(ex)
           })
-          Loom.startVirtualThread{ () =>
+          Thread.startVirtualThread{ () =>
               try {
                 val r = thunk()
                 ref.set(Some(Success(r)))
