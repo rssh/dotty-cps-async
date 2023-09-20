@@ -2,7 +2,6 @@ package cpsloomtest
 
 import cps.*
 import cps.monads.{*,given}
-import cps.loom.{*,given}
 
 import scala.concurrent.*
 import scala.concurrent.duration.*

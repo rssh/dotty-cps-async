@@ -1,4 +1,4 @@
-package cps.loom
+package cps.monads
 
 import cps.CpsRuntimeAwait
 import cps.runtime.*
