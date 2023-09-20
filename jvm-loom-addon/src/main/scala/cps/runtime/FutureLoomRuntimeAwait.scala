@@ -23,19 +23,13 @@ object FutureLoomRuntimeAwait extends LoomRuntimeAwait[Future] {
   }
 
   override def await[A](fa: Future[A])(ctx: CpsTryMonadContext[Future]): A = {
-      import scala.concurrent.ExecutionContext.Implicits.global
-      if (Thread.currentThread().isVirtual()) then
+        import scala.concurrent.ExecutionContext.Implicits.global
         val completableFuture = new CompletableFuture[A]()
         fa.onComplete {
           case Success(r) => completableFuture.complete(r)
           case Failure(ex) => completableFuture.completeExceptionally(ex)
         }
         completableFuture.get()
-      else
-        blocking{
-          // TODO: output warning ?
-          Await.result(fa, Duration.Inf)
-        }
     }
 
 }
