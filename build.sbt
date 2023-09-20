@@ -19,7 +19,7 @@ val sharedSettings = Seq(
 
 lazy val root = project
   .in(file("."))
-  .aggregate(cps.js, cps.jvm, cps.native, compilerPlugin)
+  .aggregate(cps.js, cps.jvm, cps.native, compilerPlugin, cpsLoomAddOn)
   .settings(
     Sphinx / sourceDirectory := baseDirectory.value / "docs",
     SiteScaladocPlugin.scaladocSettings(CpsJVM, cps.jvm / Compile / packageDoc / mappings, "api/jvm"),
@@ -71,9 +71,18 @@ lazy val CpsJS = config("cps.js")
 //lazy val CpsNative = config("cps.native")
 lazy val Root = config("root")
 
+lazy val cpsLoomAddOn = project.in(file("jvm-loom-addon"))
+  .dependsOn(cps.jvm)
+  .disablePlugins(SitePreviewPlugin)
+  .settings(sharedSettings)
+  .settings(
+    name := "dotty-cps-async-loom",
+    scalacOptions ++= Seq("-Xtarget:21"),
+  )
 
-lazy val cpsLoomTest = project.in(file("jvm-loom-test"))
-                      .dependsOn(cps.jvm)
+
+lazy val cpsLoomTest = project.in(file("jvm-loom-tests"))
+                      .dependsOn(cps.jvm, cpsLoomAddOn)
                       .disablePlugins(SitePreviewPlugin)
                       .settings(sharedSettings)
                       .settings(name := "dotty-cps-async-loom-test")
@@ -91,25 +100,18 @@ lazy val cpsLoomTest = project.in(file("jvm-loom-test"))
                         libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
                         Test/fork := true,
                         //for macos
-                        Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
+                        //Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
                         //for linux:
                         //Test/javaHome := Some(file("/usr/lib/jvm/jdk-19")),
 
-                        Test/javaOptions ++= Seq(
-                           "--enable-preview", 
-                           "--add-modules", "jdk.incubator.concurrent"
-                        )
+                        //now we have jdk
+                        //Test/javaOptions ++= Seq(
+                        //   "--enable-preview", 
+                        //   "--add-modules", "jdk.incubator.concurrent"
+                        //)
                       )
 
 
-lazy val cpsLoomAddOn = project.in(file("jvm-loom-addon"))
-                      .dependsOn(cps.jvm)
-                      .disablePlugins(SitePreviewPlugin)
-                      .settings(sharedSettings)
-                      .settings(
-                         name := "dotty-cps-async-loom",
-                         scalacOptions ++= Seq( "-Xtarget:jvm-21")
-                       )
 
 
 lazy val compilerPlugin = project.in(file("compiler-plugin"))
