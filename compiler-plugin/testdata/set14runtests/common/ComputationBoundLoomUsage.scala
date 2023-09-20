@@ -3,7 +3,6 @@ package cps
 import scala.quoted._
 
 import cps.testconfig.given
-import cps.runtime.Loom
 
 
 object ComputationBoundLoomUsage {
