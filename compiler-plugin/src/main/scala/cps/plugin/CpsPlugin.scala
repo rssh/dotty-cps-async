@@ -27,7 +27,7 @@ class CpsPlugin extends StandardPlugin {
        new PhaseSelect(selectedNodes),
        new PhaseCps(settings,selectedNodes,shiftedSymbols, PhaseChangeSymbolsAndRemoveScaffolding.name),
      ) ++ {
-       if (settings.withShiftReplace) then
+       if (settings.withShiftReplaceStages) then
          List(
            new PhaseCpsAsyncShift(selectedNodes, shiftedSymbols),
            new PhaseCpsAsyncReplace(selectedNodes, shiftedSymbols),
@@ -48,7 +48,7 @@ class CpsPlugin extends StandardPlugin {
       } else if (option == "useLoom") {
         settings.useLoom = true
       } else if (option == "withShiftReplace") {
-        settings.withShiftReplace = true
+        settings.withShiftReplaceStages = true
       } else {
         throw new IllegalArgumentException(s"Unknown option for cps plugin: $option")
       }

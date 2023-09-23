@@ -253,6 +253,7 @@ object InlinedTransform {
                   cpsMonadRef = Select(gctx, "monad".toTermName),
                   cpsMonadContextRef = gctx,
                   optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(gMonadType, inlinedTerm.span),
+                  optRuntimeAwaitProvider = CpsTransformHelper.findRuntimeAwaitProvider(gMonadType, inlinedTerm.span),
                   optThrowSupport = CpsTransformHelper.findCpsThrowSupport(gMonadType, inlinedTerm.span),
                   optTrySupport = CpsTransformHelper.findCpsTrySupport(gMonadType, inlinedTerm.span),
                   debugSettings = summon[CpsTopLevelContext].debugSettings,

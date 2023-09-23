@@ -14,6 +14,7 @@ case class CpsTopLevelContext(
                                val cpsMonadRef: Tree, // m
                                val cpsMonadContextRef: Tree, // TODO: many contexts, if we have context per effect ?
                                val optRuntimeAwait: Option[Tree],
+                               val optRuntimeAwaitProvider: Option[Tree],
                                val optThrowSupport: Option[Tree],
                                val optTrySupport: Option[Tree],
                                val debugSettings: DebugSettings,
@@ -25,6 +26,8 @@ case class CpsTopLevelContext(
 
   def isAfterInliner = !isBeforeInliner
 
+  def supportsRuntimeAwait: Boolean =
+    optRuntimeAwait.isDefined || optRuntimeAwaitProvider.isDefined
 
 }
 

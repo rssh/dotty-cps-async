@@ -23,7 +23,8 @@ import cps.{CpsMonadContext, CpsMonadConversion}
 import inlines.Inlines
 import transform.Inlining
 
-import scala.util.control.NonFatal
+import scala.util.boundary
+import scala.util.boundary.break
 
 
 object ApplyTransform {
@@ -307,25 +308,24 @@ object ApplyTransform {
       val runShiftAsyncLambda = argss.exists(_.containsNotUnshiftableAsyncLambda)
       val containsAsync = argss.exists(_.isAsync)
       val retval = if (runShiftAsyncLambda) {
-        tctx.optRuntimeAwait match
-          case Some(runtimeAwait) =>
-            genApplication(origin,owner,nesting,NonShiftedFun(fun), argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC,Some(runtimeAwait)), callMode)
-          case None =>
+        if (tctx.pluginSettings.runtimeAwaitBeforeCps  && tctx.supportsRuntimeAwait) then
+            genApplicationWithRuntimeAwait(origin, owner, nesting, fun, argss, callMode)
+        else
             if (fun.denot != NoDenotation) {
                   // check -- can we add shifted version of fun
-                  val newFun = retrieveShiftedFun(origin,fun,owner, argss)
-                  val newCallMode = FunCallMode(AsyncKind.Sync,  ApplyArgCallMode.ASYNC_SHIFT, None,
-                     newFun.remainingShapeChange.p == ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM,
-                     callMode.fromCallChain)
-                  val r = genApplication(origin, owner, nesting, newFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), newCallMode)
-                  r
+                  retrieveShiftedFun(origin,fun,owner, argss) match
+                    case Right(newFun) =>
+                      val newCallMode = FunCallMode(AsyncKind.Sync, ApplyArgCallMode.ASYNC_SHIFT, None,
+                                          newFun.remainingShapeChange.p == ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM,
+                                          callMode.fromCallChain)
+                      genApplication(origin, owner, nesting, newFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), newCallMode)
+                    case Left(error) =>
+                      if (!tctx.pluginSettings.runtimeAwaitBeforeCps || !tctx.supportsRuntimeAwait) then
+                        throw CpsTransformException(error, origin.srcPos)
+                      else
+                        genApplicationWithRuntimeAwait(origin, owner, nesting, fun, argss, callMode)
             } else {
-              fun match
-                case QuoteLikeAPI.CheckLambda(params,body,bodyOwner) =>
-                  // Lambda transdorm
-                  ???
-                case _ =>
-                  throw CpsTransformException(s"Can't transform function ${fun}",fun.srcPos)
+                throw CpsTransformException(s"Can't transform function ${fun}",fun.srcPos)
             }
       } else if (containsAsync) {
         genApplication(origin, owner, nesting, NonShiftedFun(fun), argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, None), callMode)
@@ -729,7 +729,80 @@ object ApplyTransform {
     retval
   }
 
-
+  def genApplicationWithRuntimeAwait(origin: Apply, owner: Symbol, nesting: Int, fun: Tree, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
+     val tctx = summon[CpsTopLevelContext]
+     tctx.optRuntimeAwait match
+       case Some(runtimeAwait) =>
+         val retval = genApplication(origin, owner, nesting, NonShiftedFun(fun), argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, Some(runtimeAwait)), callMode)
+         retval
+       case None =>
+         tctx.optRuntimeAwaitProvider match
+           case Some(runtimeAwaitProvider) =>
+             val runtimeAwaitType = Symbols.requiredClassRef("cps.runtime.CpsRutimeAwait").appliedTo(List(tctx.monadType))
+             val runtimeAwaitSym = Symbols.newSymbol(owner, "runtimeAwait".toTermName, Flags.Synthetic, runtimeAwaitType , coord = origin.span)
+             val runtimeAwaitFormal = ref(runtimeAwaitSym)
+             val wrappedCall = genApplication(origin, owner, nesting, NonShiftedFun(fun), argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, Some(runtimeAwaitFormal)), callMode)
+             wrappedCall.unpure match
+               case Some(syncCall) =>
+                  val mt = MethodType(List("runtimeAwait".toTermName))(
+                      _ => List(Symbols.requiredClassRef("cps.CpsRutimeAwait").appliedTo(List(tctx.monadType))),
+                      _ => wrappedCall.originType
+                  )
+                  val meth = Symbols.newAnonFun(owner, mt)
+                  val raLambda = Closure(meth, tss => {
+                   val ctx = summon[Context].withOwner(meth)
+                   // we shoudl substParamsMap before changeOwner
+                   TransformUtil.substParamsMap(syncCall, Map(runtimeAwaitSym -> tss.head.head)).changeOwner(owner, meth)
+                  })
+                  val retval = Apply(
+                    Apply(
+                      TypeApply(
+                        Select(
+                          runtimeAwaitProvider,
+                          "apply".toTermName
+                        ),
+                        List(TypeTree(tctx.monadType.widen))
+                      ),
+                      List(raLambda)
+                    ),
+                    List(tctx.cpsMonadContextRef, tctx.cpsMonadRef)
+                  ).withSpan(origin.span)
+                  CpsTree.impure(origin, owner, retval, AsyncKind.Sync)
+               case None =>
+                  wrappedCall.asyncKind match
+                    case AsyncKind.Sync =>
+                      throw CpsTransformException(s"Impossible - asyncKind=Sync with unpure=None, cpsTree=${wrappedCall.show}", origin.srcPos)
+                    case AsyncKind.Async(internalKind) =>
+                      if (internalKind != AsyncKind.Sync) then
+                        throw CpsTransformException("Unsupported internal kind for provided runtime await", origin.srcPos)
+                      val mt = MethodType(List("runtimeAwait".toTermName))(
+                          _ => List(runtimeAwaitType),
+                          _ => wrappedCall.transformedType
+                      )
+                      val meth = Symbols.newAnonFun(owner, mt)
+                      val raLambda = Closure(meth, tss => {
+                        // we shoudl substParamsMap before changeOwner
+                        TransformUtil.substParamsMap(wrappedCall.transformed, Map(runtimeAwaitSym -> tss.head.head)).changeOwner(owner, meth)
+                      })
+                      val retval = Apply(
+                        Apply(
+                          TypeApply(
+                            Select(
+                              runtimeAwaitProvider,
+                              "applyAsync".toTermName
+                            ),
+                            List(TypeTree(tctx.monadType.widen))
+                          ),
+                          List(raLambda)
+                        ),
+                        List(tctx.cpsMonadContextRef, tctx.cpsMonadRef)
+                      ).withSpan(origin.span)
+                      CpsTree.impure(origin, owner, retval, internalKind)
+                    case AsyncKind.AsyncLambda(bodyKind) =>
+                      throw CpsTransformException("Unsupported internal kind for provided runtime await", origin.srcPos)
+           case None =>
+             throw CpsTransformException(s"Can't find runtime await support for ${tctx.monadType.show}", origin.srcPos)
+  }
 
 
   def makeArgList(term: Apply, mt: MethodParamsDescriptor, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): ApplyTermArgList = {
@@ -743,6 +816,7 @@ object ApplyTransform {
   }
 
 
+
   /**
    * @param origin
    * @param fun - fun,  which can be withFilter invocation.
@@ -751,7 +825,7 @@ object ApplyTransform {
    * @param CpsTopLevelContext
    * @return
    */
-  def retrieveShiftedFun(origin: Tree,  fun:Tree, owner: Symbol, argLists: List[ApplyArgList])(using Context, CpsTopLevelContext): ShiftedFun = {
+  def retrieveShiftedFun(origin: Tree,  fun:Tree, owner: Symbol, argLists: List[ApplyArgList])(using Context, CpsTopLevelContext): Either[String,ShiftedFun] = {
 
     val withFilterType = Symbols.requiredClassRef("scala.collection.WithFilter").appliedTo(List(WildcardType, WildcardType))
 
@@ -777,13 +851,13 @@ object ApplyTransform {
                 val newQual = Apply(withFilterSubstSelect, List(itObj, predicate)).withSpan(itObj.span)
                 val newSelect = Select(newQual, methodName)
                 val nTypeParams = if (methodTypeParams.isEmpty) List.empty else TypeTree(summon[CpsTopLevelContext].monadType) :: methodTypeParams
-                val newFun0 = if (methodTypeParams.isEmpty) {
-                  newSelect
-                } else {
-                  TypeApply(newSelect, nTypeParams)
-                }
-                val newFun = Apply(newFun0,List(summon[CpsTopLevelContext].cpsMonadRef)).withSpan(fun.span)
-                ShiftedFun(fun,
+                //val newFun0 = if (methodTypeParams.isEmpty) {
+                //  newSelect
+                //} else {
+                //  TypeApply(newSelect, nTypeParams)
+                //}
+                //val newFun = Apply(newFun0,List(summon[CpsTopLevelContext].cpsMonadRef)).withSpan(fun.span)
+                val retval = ShiftedFun(fun,
                   newQual,
                   methodName,
                   nTypeParams,
@@ -792,11 +866,14 @@ object ApplyTransform {
                   false,
                   ShiftedArgumentsShape.same
                 )
+                Right(retval)
               case Left(error) =>
-                throw CpsTransformException(s"Can't resolve shifted object for withFilter: ${error}", fun.srcPos)
+                Left(error)
+                //throw CpsTransformException(s"Can't resolve shifted object for withFilter: ${error}", fun.srcPos)
           case _ =>
             //TODO: expand set of possible withFilter consturctors
-            throw CpsTransformException("Can't retrieve underlaying collection from WithFilter instance", fun.srcPos)
+            Left("Can't retrieve underlaying collection from WithFilter instance")
+            //throw CpsTransformException("Can't retrieve underlaying collection from WithFilter instance", fun.srcPos)
       case _ => retrieveShiftedFunNoSpecial(origin, fun, owner, argLists)
   }
 
@@ -809,10 +886,9 @@ object ApplyTransform {
    * @param CpsTopLevelContext
    * @return  new function (with type arguments and additional parameter list if needed)
    */
-  def retrieveShiftedFunNoSpecial(origin: Tree,  fun:Tree, owner: Symbol, argLists: List[ApplyArgList])(using Context, CpsTopLevelContext): ShiftedFun = {
+  def retrieveShiftedFunNoSpecial(origin: Tree,  fun:Tree, owner: Symbol, argLists: List[ApplyArgList])(using Context, CpsTopLevelContext): Either[String,ShiftedFun] = {
 
     val tctx = summon[CpsTopLevelContext]
-
 
     def approxCompatibleTypes(inOrigin: Type, inCandidate: Type): Boolean = {
       val origin = inOrigin.dealias
@@ -1002,28 +1078,31 @@ object ApplyTransform {
         Left(s"Can't match parameters in ${showMethod(originMethod)} and ${showMethod(candidateMethod)}")
     }
 
-    def aggregate(shiftedFuns: List[ShiftedFun]): ShiftedFun = {
+    def aggregate(shiftedFuns: List[ShiftedFun]): Either[String,ShiftedFun] = {
       shiftedFuns match
         case Nil => throw CpsTransformException(s"Can't find shifted function for ${fun.show}", fun.srcPos)
-        case head::Nil => head
+        case head::Nil => Right(head)
         case head::tail =>
-          tail.foldLeft(head) { (acc, el) =>
-            if (acc.remainingShapeChange != el.remainingShapeChange) then
-              throw CpsTransformException(s"Can't aggregate shifted functions with different shapes: ${acc} and ${el}",fun.srcPos)
-            else if (el.additionalArgs.isDefined) then
-              if (acc.additionalArgs.isDefined) {
-                if (acc.additionalArgs.get.length != el.additionalArgs.get.length) then
-                  throw CpsTransformException(s"Can't select overloaded function with different length of additional args : ${acc} and ${el}",fun.srcPos)
-                else if (! (acc.additionalArgs.get.zip(el.additionalArgs.get).forall{ case (l,r) => l.tpe =:= r.tpe })) then
-                  throw CpsTransformException(s"Can't select overloaded function with different type of additional args : ${acc} and ${el}", fun.srcPos)
-              }
-              acc.copy(canBeOverloaded = true)
-            else if (el.targs.length != acc.targs.length) then
-              throw CpsTransformException(s"Can't select overloaded function with possible different length of type-parameter lists : ${acc} and ${el}",fun.srcPos)
-            else if (! (el.targs.zip(acc.targs).forall{ case (l,r) => l.tpe =:= r.tpe })) then
-              throw CpsTransformException(s"Can't select overloaded function with possible different type parameters : ${acc} and ${el}", fun.srcPos)
-            else
-              acc.copy(canBeOverloaded = true)
+          boundary {
+            val retval = tail.foldLeft(head) { (acc, el) =>
+              if (acc.remainingShapeChange != el.remainingShapeChange) then
+                break(Left(s"Can't aggregate shifted functions with different shapes: ${acc} and ${el}"))
+              else if (el.additionalArgs.isDefined) then
+                if (acc.additionalArgs.isDefined) {
+                  if (acc.additionalArgs.get.length != el.additionalArgs.get.length) then
+                    break(Left(s"Can't select overloaded function with different length of additional args : ${acc} and ${el}"))
+                  else if (! (acc.additionalArgs.get.zip(el.additionalArgs.get).forall{ case (l,r) => l.tpe =:= r.tpe })) then
+                    break(Left(s"Can't select overloaded function with different type of additional args : ${acc} and ${el}"))
+                }
+                acc.copy(canBeOverloaded = true)
+              else if (el.targs.length != acc.targs.length) then
+                break(Left(s"Can't select overloaded function with possible different length of type-parameter lists : ${acc} and ${el}"))
+              else if (! (el.targs.zip(acc.targs).forall{ case (l,r) => l.tpe =:= r.tpe })) then
+                break(Left(s"Can't select overloaded function with possible different type parameters : ${acc} and ${el}"))
+              else
+                acc.copy(canBeOverloaded = true)
+            }
+            Right(retval)
           }
     }
 
@@ -1054,7 +1133,11 @@ object ApplyTransform {
            case Nil =>
              throw CpsTransformException(s"Can't find async shifted method ${originMethod.name} for ${obj.tpe.widen.show}", fun.srcPos)
            case other =>
-             aggregate(candidates)
+             aggregate(candidates) match
+               case Left(err) =>
+                 throw CpsTransformException(s"Can't find async shifted method ${originMethod.name} for ${obj.tpe.widen.show}: ${err}", fun.srcPos)
+               case Right(retval) =>
+                 retval
     }
 
 
@@ -1065,7 +1148,7 @@ object ApplyTransform {
      * @param targs
      * @return
      */
-    def retrieveShiftedMethod(funSym: Symbol, obj: Tree, methodName: Name, targs:List[Tree] ): ShiftedFun = {
+    def retrieveShiftedMethod(funSym: Symbol, obj: Tree, methodName: Name, targs:List[Tree] ): Either[String, ShiftedFun] = {
 
 
       tryFindInplaceAsyncShiftedMethods(funSym, obj.tpe.widen.classSymbol, methodName, Set("_async","Async","$cps")) match
@@ -1085,7 +1168,8 @@ object ApplyTransform {
                 throw CpsTransformException(s"Can't find async-shifted method ${methodName} in ${nObj.show}", fun.srcPos)
               // TODO: collect previous errors to pass as parameter
               val mbInlinedObj = maybeInlineObject(nObj)
-              prepareAsyncShiftedMethodCall(fun.symbol, obj, mbInlinedObj, methods, targs)
+              val retval = prepareAsyncShiftedMethodCall(fun.symbol, obj, mbInlinedObj, methods, targs)
+              Right(retval)
             case Left(err1) =>
               val msg =
                 s"""
@@ -1093,8 +1177,7 @@ object ApplyTransform {
                  |method search: $inPlaceErrors
                  |implicit AsyncShift  object search: $err1
                  """.stripMargin('|')
-              report.error(msg, fun.srcPos)
-              throw CpsTransformException(msg, fun.srcPos)
+              Left(msg)
         case Right(methodsWithShape) =>
           // Not,
           val candidates = methodsWithShape.foldLeft(List.empty[ShiftedFun]) { (candidates, msh) =>
@@ -1138,7 +1221,7 @@ object ApplyTransform {
       case Select(obj,methodName) =>
         retrieveShiftedMethod(fun.symbol, obj,methodName,Nil)
       case _ =>
-        throw CpsTransformException(s"Can't find async-shifted method for ${fun.show}, unsupported fun tree ${fun}", fun.srcPos)
+        Left(s"Can't find async-shifted method for ${fun.show}, unsupported fun tree ${fun}")
 
     shiftedFun
 

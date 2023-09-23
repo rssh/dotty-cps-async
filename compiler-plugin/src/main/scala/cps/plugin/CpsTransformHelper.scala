@@ -237,7 +237,12 @@ object CpsTransformHelper {
   def findRuntimeAwait(monadType: Type, span: Span)(using ctx:Context): Option[Tree] = {
       findWrapperForMonad("cps.CpsRuntimeAwait", monadType, span)
   }
-  
+
+  def findRuntimeAwaitProvider(monadType: Type, span: Span)(using ctx: Context): Option[Tree] = {
+    findWrapperForMonad("cps.CpsRuntimeAwaitProvider", monadType, span)
+  }
+
+
   def findCpsThrowSupport(monadType:Type, span: Span)(using ctx:Context): Option[Tree] = {
       findWrapperForMonad("cps.CpsThrowSupport", monadType, span)
   }

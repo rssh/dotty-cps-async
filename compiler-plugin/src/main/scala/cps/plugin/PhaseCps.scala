@@ -381,6 +381,7 @@ class PhaseCps(settings: CpsPluginSettings,
     val monadInit = genMonadInit(cpsDirectOrSimpleContext, srcPos, debugSettings, wrapperSym, monadType)
 
     val optRuntimeAwait = if(settings.useLoom) CpsTransformHelper.findRuntimeAwait(monadType, srcPos.span) else None
+    val optRuntimeAwaitProvider = if (settings.useLoom) CpsTransformHelper.findRuntimeAwaitProvider(monadType, srcPos.span) else None
     val monadValDef = SyntheticValDef("m".toTermName, monadInit)(using summon[Context].fresh.setOwner(owner))
     val monadRef = ref(monadValDef.symbol)
     val optThrowSupport = CpsTransformHelper.findCpsThrowSupport(monadType, srcPos.span)
@@ -401,7 +402,8 @@ class PhaseCps(settings: CpsPluginSettings,
     } else None
     val customValueDiscard = automaticColoring.isDefined || CpsTransformHelper.findCustomValueDiscardTag(srcPos.span).isDefined
     val tc = CpsTopLevelContext(monadType, monadRef, cpsDirectOrSimpleContext,
-                                optRuntimeAwait, optThrowSupport, optTrySupport,
+                                optRuntimeAwait, optRuntimeAwaitProvider,
+                                optThrowSupport, optTrySupport,
                                 debugSettings, settings, isBeforeInliner,
                                 automaticColoring, customValueDiscard)
     (tc, monadValDef)
