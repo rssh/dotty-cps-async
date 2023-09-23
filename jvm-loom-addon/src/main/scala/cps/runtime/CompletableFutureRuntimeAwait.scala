@@ -23,7 +23,9 @@ object CompletableFutureRuntimeAwait extends LoomRuntimeAwait[CompletableFuture]
   }
 
   override def await[A](fa: CompletableFuture[A])(ctx: CpsTryMonadContext[CompletableFuture]): A = {
-    fa.get()
+    blocking(
+      fa.get()  
+    )
   }
 
 }
