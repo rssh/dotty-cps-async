@@ -592,18 +592,83 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
       if (targs.isEmpty) sel else TypeApply(sel,targs)
 
     val withAsync = argsSummaryProperties.hasAsync
+
+    def applyPartialShift(head: PartialShiftedApply): CpsTree = {
+      val callDelayed = head.withTailArgs(argTails, withAsync)
+      head.shiftType match {
+        case ApplicationShiftType.CPS_ONLY =>
+          val call = callDelayed('{ ??? }.asTerm)
+          shiftedResultCpsTree(applyTerm, call, argsSummaryProperties.cpsDirectArg)(owner)
+        case ApplicationShiftType.CPS_AWAIT =>
+          cpsCtx.runtimeAwait match
+            case Some(runtimeAwait) =>
+              val call = callDelayed(runtimeAwait.asTerm)
+              shiftedResultCpsTree(applyTerm, call, argsSummaryProperties.cpsDirectArg)(owner)
+            case None =>
+              cpsCtx.runtimeAwaitProvider match
+                case Some(runtimeAwaitProvider) =>
+                  argsSummaryProperties.cpsDirectArg match
+                    case Some(cpsDirectArg) =>
+                      //
+                      val raLambdaMt = MethodType(List("runtimeAwait"))(
+                        _ => List(TypeRepr.of[CpsRuntimeAwait[F]]),
+                        _ => TypeRepr.of[F].appliedTo(applyTerm.tpe.widen)
+                      )
+                      val raLambda = Lambda(owner, raLambdaMt, { (owner, params) =>
+                        val runtimeAwait = params.head.asInstanceOf[Term]
+                        // here is how constraint about owner can be violated.
+                        //  TODO:  add owner argument to call delayed,
+                        val funCall = callDelayed(runtimeAwait).changeOwner(owner)
+                        val cpsTree = wrapCallIntoCpsDirect(applyTerm,cpsDirectArg, funCall)(owner)
+                        cpsTree.transformed
+                      })
+                      val call = Apply.copy(applyTerm)(
+                        Apply(
+                          TypeApply(Select.unique(runtimeAwaitProvider.asTerm, "applyAsync"),
+                            List(Inferred(applyTerm.tpe.widen))),
+                          List(raLambda)
+                        ),
+                        List( cpsCtx.monadContext.asTerm, cpsCtx.monad.asTerm)
+                      )
+                      CpsTree.impure(owner, call, applyTerm.tpe.widen)
+                    case None =>
+                      val raLambdaMt = MethodType(List("runtimeAwait"))(
+                        _ => List(TypeRepr.of[CpsRuntimeAwait[F]]),
+                        _ => applyTerm.tpe.widen
+                      )
+                      val raLambda = Lambda(owner, raLambdaMt, { (owner, params) =>
+                          val runtimeAwait = params.head.asInstanceOf[Term]
+                          callDelayed(runtimeAwait).changeOwner(owner)
+                      })
+                      val call = Apply.copy(applyTerm)(
+                        Apply(
+                          TypeApply(Select.unique(runtimeAwaitProvider.asTerm, "apply"),
+                            List(Inferred(applyTerm.tpe.widen))),
+                          List(raLambda)
+                        ),
+                        List(cpsCtx.monadContext.asTerm, cpsCtx.monad.asTerm)
+                      )
+                      CpsTree.impure(owner, call, applyTerm.tpe.widen)
+                case None =>
+                  throw MacroError("Can't find runtime await provider", applyTerm.asExpr)
+      }
+
+
+    }
+
+
     
     funCpsTree.syncOrigin match
       case Some(origin) =>
-        val head = shiftedApplyTerm(origin, argRecords, argsSummaryProperties)
-        shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, argsSummaryProperties.hasAsync), argsSummaryProperties.cpsDirectArg)(owner)
+        val partialHead = shiftedApplyTerm(origin, argRecords, argsSummaryProperties)
+        applyPartialShift(partialHead)
       case None =>
         funCpsTree match
-           case _ : PureCpsTree  |  EmptyCpsTree => 
+           case _ : PureCpsTree  |  EmptyCpsTree =>
               // impossible
               val originTerm = funCpsTree.syncOrigin.get
               val head = shiftedApplyTerm(originTerm, argRecords, argsSummaryProperties)
-              shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails,withAsync),argsSummaryProperties.cpsDirectArg)(owner)
+              applyPartialShift(head)
            case SelectTypeApplyCpsTree(optOrigin,nested,targs,selects,otpe, changed) =>
               if (selects.isEmpty) then
                  if (targs.isEmpty) then
@@ -616,19 +681,20 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                  val current = selects.head
                  val prevSelects = selects.tail
                  val prev = SelectTypeApplyCpsTree.create(optOrigin,nested,targs,prevSelects,current.prevTpe, changed)
-                 prev.monadFlatMap({x => 
+                 prev.monadFlatMap({x =>
                        val funToShift = condTypeApply(Select(x,current.symbol),current.targs)
                        val head = shiftedApplyTerm(funToShift,argRecords,argsSummaryProperties)
-                       head.withTailArgs(argTails, withAsync)
+                       //head.withTailArgs(argTails, withAsync)
+                       applyPartialShift(head).transformed
                  }, applyTerm.tpe)
            case lt@AsyncLambdaCpsTree(owner,originLambda,params,body,otpe) =>
               val head = shiftedApplyTerm(lt.rLambda, argRecords, argsSummaryProperties)
-              shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, withAsync), argsSummaryProperties.cpsDirectArg)(owner)
+              applyPartialShift(head)
            case x: AsyncCpsTree =>
               // this can be only function, so, try to call apply method
-              x.monadMap({fun =>
+              x.monadFlatMap({fun =>
                   val head = shiftedApplyTerm(Select.unique(fun,"apply"), argRecords, argsSummaryProperties)
-                  head.withTailArgs(argTails, withAsync)
+                  applyPartialShift(head).transformed
               }, applyTerm.tpe)
            case BlockCpsTree(owner,stats, last) =>
                   BlockCpsTree(owner,stats,shiftedApplyCps(last,argRecords,
@@ -640,34 +706,41 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                   ValCpsTree(owner,valDef, rightPart, shiftedApplyCps(nested, argRecords,
                                         argTails, applyTerm, argsSummaryProperties)(owner), canBeLambda)
            case AppendCpsTree(frs, snd) =>
-                  AppendCpsTree(frs, 
+                  AppendCpsTree(frs,
                       shiftedApplyCps(snd,argRecords,argTails,applyTerm, argsSummaryProperties)(owner))
            case CallChainSubstCpsTree(owner, origin, shifted, otpe) =>
                   val head = shiftedApplyTerm(Select.unique(shifted,"apply"), argRecords, argsSummaryProperties)
-                  shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, withAsync), argsSummaryProperties.cpsDirectArg)(owner)
+                  applyPartialShift(head)
+                  //shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, withAsync), argsSummaryProperties.cpsDirectArg)(owner)
            case _ => // impossible, but let's check
                  throw MacroError(s"Unsupported fun: CpsTree:  $funCpsTree", applyTerm.asExpr)
-                  
-                  
+
+
 
   def shiftedApplyTerm(funTerm: Term, argRecords: Seq[ApplyArgRecord], argsSummaryProperties: ApplyArgsSummaryProperties): PartialShiftedApply =
 
     val monad = cpsCtx.monad.asTerm
 
-    def shiftArgs(shiftType: ApplicationShiftType): List[Term] =     
-      argRecords.map(_.shift(shiftType).identArg(argsSummaryProperties.hasAsync)).toList
+    def shiftArgs(): List[Term] =
+      argRecords.map(_.shift().identArg(argsSummaryProperties.hasAsync)).toList
+
+    def argsWithRuntimeAwait(runtimeAwait: Term): List[Term] =
+      argRecords.map(_.withRuntimeAwait(runtimeAwait).identArg(argsSummaryProperties.hasAsync)).toList
 
     def applyCpsOnlyShift(makeApply: List[Term] => Term): PartialShiftedApply =
-      val newArgs = shiftArgs(ApplicationShiftType.CPS_ONLY)
+      val newArgs = shiftArgs()
       val newApply = makeApply(newArgs)
-      PartialShiftedApply(ApplicationShiftType.CPS_ONLY, newApply)
+      PartialShiftedApply(ApplicationShiftType.CPS_ONLY, _ => newApply)
 
     def  applyCpsAwaitShift(): PartialShiftedApply =
-      val newArgs = shiftArgs(ApplicationShiftType.CPS_AWAIT)
-      // TODO: bring here ApplyTerm and use ApplyTerm.copy to save position
-      val newApply = Apply(funTerm, newArgs)
-      PartialShiftedApply(ApplicationShiftType.CPS_AWAIT, newApply)
-   
+      // TODO:  move up after refactoring
+      val delayedShift = (runtimeAwait: Term) => {
+        val newArgs = argsWithRuntimeAwait(runtimeAwait)
+        val newApply = Apply(funTerm, newArgs)
+        newApply
+      }
+      PartialShiftedApply(ApplicationShiftType.CPS_AWAIT, delayedShift)
+
 
     def checkInplaceAsyncMethodCandidate(methodSym: Symbol, qual: Term, targs: List[TypeTree]): Either[MessageWithPos,Boolean] =
        val paramSymss = methodSym.paramSymss
@@ -678,20 +751,20 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
            val typeArgsShifted = paramSymss.head.filter(_.isType)
            val nTypeArgsShifted = typeArgsShifted.length
            val nTypeArgs = targs.length
-           if (nTypeArgs != nTypeArgsShifted) && (nTypeArgsShifted != nTypeArgs + 1) then 
+           if (nTypeArgs != nTypeArgsShifted) && (nTypeArgsShifted != nTypeArgs + 1) then
               Left(MessageWithPos(s" ${methodSym.name} for qual=${qual} number of type arguments is impossible",mPos))
-           else 
+           else
               // TODO: additional check ?
               Right(nTypeArgsShifted == nTypeArgs + 1)
 
-    def findInplaceAsyncMethodCall(qual:Term, shiftedName: String, 
+    def findInplaceAsyncMethodCall(qual:Term, shiftedName: String,
                                    targs: List[TypeTree], pos: Position): Either[List[MessageWithPos],PartialShiftedApply] =
          //val qual = x.qualifier
 
          def withTargs(t:Term):Term =
-           if (targs.isEmpty) 
+           if (targs.isEmpty)
              t
-           else 
+           else
              TypeApply(t, targs)
 
          qual.tpe.typeSymbol.methodMember(shiftedName) match
@@ -701,13 +774,13 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
              checkInplaceAsyncMethodCandidate(m, qual, targs) match
                case Left(error) => Left(List(error))
                case Right(useExtraArgs) =>
-                 val newArgs = shiftArgs(ApplicationShiftType.CPS_ONLY) 
+                 val newArgs = shiftArgs()
                  val newApply = if (useExtraArgs) then {
                         Apply(TypeApply(Select.unique(qual,shiftedName), TypeTree.of[F]::targs), monad::newArgs)
                      } else {
                         Apply(withTargs(Select.unique(qual,shiftedName)), newArgs)
                      }
-                 Right(PartialShiftedApply(ApplicationShiftType.CPS_ONLY,newApply))
+                 Right(PartialShiftedApply(ApplicationShiftType.CPS_ONLY, _ => newApply))
            case overloaded =>
                var errors: List[MessageWithPos] = List.empty
                var foundUseExtra: List[Symbol] = List.empty
@@ -732,7 +805,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                       Right(applyCpsOnlyShift(
                          args => Select.overloaded(qual,shiftedName,TypeTree.of[F].tpe::targs.map(_.tpe), monad::args)
                       ))
-               else 
+               else
                    if (foundUseExtra.isEmpty) then
                      Right(applyCpsOnlyShift(
                         args => Select.overloaded(qual,shiftedName,targs.map(_.tpe), args)
@@ -742,7 +815,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                       Left(List(
                         MessageWithPos(s"More than one candidate for overloaded variant for method $shiftedName, qual=${qual.show}",pos)
                       ))
-            
+
 
     def shiftSelectTypeApplyApply(x: Select, targs: List[TypeTree]): PartialShiftedApply =
        // Looks like this code is obsolete when we have more general substitution.
@@ -756,22 +829,22 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
               case success: ImplicitSearchSuccess =>
                  val csf = success.tree
                  val withFilterSubstSelect = Select.unique(csf,"_cpsWithFilterSubst")
-                 val newQual = Apply(withFilterSubstSelect,List(col,predicate))       
+                 val newQual = Apply(withFilterSubstSelect,List(col,predicate))
                  val newSelect = Select.unique(newQual,x.name)
-                 val newArgs =  shiftArgs(ApplicationShiftType.CPS_ONLY)
+                 val newArgs =  shiftArgs()
                  // TODO:   set pos.  mb pass origin typeApply for this.
                  val newTerm = TypeApply(newSelect, TypeTree.of[F]::targs).appliedTo(monad).appliedToArgs(newArgs)
-                 PartialShiftedApply(ApplicationShiftType.CPS_ONLY, newTerm)
+                 PartialShiftedApply(ApplicationShiftType.CPS_ONLY, _ => newTerm)
               case failure: ImplicitSearchFailure =>
-                 if (cpsCtx.runtimeAwait.isDefined) then
+                 if (cpsCtx.runtimeAwait.isDefined || cpsCtx.runtimeAwaitProvider.isDefined) then
                     applyCpsAwaitShift()
                  else
                     throw MacroError(s"Can't resolve [${askedShiftedType.show}] when parsing withFilter ",posExpr(col))
          case _ =>
             shiftSelectTypeApplyApplyClear(x.qualifier, x, targs)
 
-                            
-            
+
+
     def shiftSelectTypeApplyApplyClear(qual:Term, x: Ref, targs:List[TypeTree]): PartialShiftedApply =
 
        //val qual = x.qualifier
@@ -786,10 +859,10 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
               report.warning(e.message)
             )
 
-       val shiftedName = xName + "_async"  
+       val shiftedName = xName + "_async"
        findInplaceAsyncMethodCall(qual, shiftedName,  targs, x.pos) match
          case Right(t) => t
-         case Left(funErrors) => 
+         case Left(funErrors) =>
            val funErrors0 = funErrors
            val shiftedName1 = xName + "Async"
            findInplaceAsyncMethodCall(qual, shiftedName1,  targs, x.pos) match
@@ -806,11 +879,11 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                                    }
                    shiftSymbol.methodMember(xName) match
                      case Nil =>
-                        cpsCtx.runtimeAwait match
-                           case None =>
-                              throw MacroError(s"Method (${xName}) is not defined in [${shiftType.show}], qual=${qual} ",posExpr(x))
-                           case Some(runtimeAwaitExpr) =>
-                              applyCpsAwaitShift()
+                        if (cpsCtx.runtimeAwait.isDefined || cpsCtx.runtimeAwaitProvider.isDefined) {
+                            applyCpsAwaitShift()
+                        } else {
+                            throw MacroError(s"Method (${xName}) is not defined in [${shiftType.show}], qual=${qual} ", posExpr(x))
+                        }
                      case m::Nil =>
                         applyCpsOnlyShift{ args =>
                            val newSelect = Select.unique(success2.tree, xName)
@@ -822,11 +895,11 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                            val shiftedArgTypes = args.map(_.tpe)
                            val expectedType = TransformUtil.createFunctionType(using qctx)(shiftedArgTypes, TypeBounds.empty)
                            val shiftedCaller = Select.overloaded(success2.tree, xName, (TypeTree.of[F]::targs).map(_.tpe), List(qual,monad), expectedType)
-                           Apply(shiftedCaller, shiftArgs(ApplicationShiftType.CPS_ONLY))
+                           Apply(shiftedCaller, shiftArgs())
                         }
                  case failure2: ImplicitSearchFailure =>
-                   if (cpsCtx.runtimeAwait.isDefined) then
-                     applyCpsAwaitShift() 
+                   if (cpsCtx.runtimeAwait.isDefined || cpsCtx.runtimeAwaitProvider.isDefined) then
+                     applyCpsAwaitShift()
                    else
                      traceFunNotFound(s"failed candidates for ${qual.show} ${shiftedName}",funErrors)
                      if cpsCtx.flags.debugLevel >= 15 then
@@ -856,18 +929,17 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
        //case TypeApply(x, targs) =>  // now scala hvw no multiple type params
        //           Apply(TypeApply(shiftCaller(x),targs),args)
        case Lambda(params, body) =>
-            if (cpsCtx.runtimeAwait.isDefined) {
+            if (cpsCtx.runtimeAwait.isDefined || cpsCtx.runtimeAwaitProvider.isDefined) then
                applyCpsAwaitShift()
-            } else {
-               //TODO: add specifal compile-only term for async lambda ???
-               ???
-            }
+            else
+               throw MacroError(s"Can't shift lambda ${funTerm.show} without runtime await",posExprs(funTerm))
        case Block(statements, last) =>
-                  // TODO: change cpsFun appropriative
+                  //  it's not eta-expandedn. (never happens?)
+                  // TODO: eta-expand to lambda themself ?
                   val pa = shiftedApplyTerm(last, argRecords, argsSummaryProperties)
-                  pa.copy(shifted = Block(statements,pa.shifted))
+                  pa.copy(shiftedDelayed = x => Block(statements,pa.shiftedDelayed(x)))
        case _ =>
-            if (cpsCtx.runtimeAwait.isDefined) then
+            if (cpsCtx.runtimeAwait.isDefined || cpsCtx.runtimeAwaitProvider.isDefined) then
                applyCpsAwaitShift()
             else
                report.warning(s"""
@@ -955,7 +1027,11 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
             else if (shifted.tpe <:< TypeRepr.of[cps.runtime.CallChainAsyncShiftSubst[F, ?, ?]]) then
                     CallChainSubstCpsTree(owner, origin, shifted, origin.tpe)
             else
-              CpsTree.impure(owner, shifted, origin.tpe)
+              optCpsDirectArg match
+                  case Some(cpsDirectArg) =>
+                    wrapCallIntoCpsDirect(origin, cpsDirectArg, shifted)(owner)
+                  case None =>
+                    CpsTree.impure(owner, shifted, origin.tpe)
   }
 
 

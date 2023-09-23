@@ -1,5 +1,6 @@
 package cps
 
+import scala.util._
 
 //
 //  map: A=>B
@@ -19,9 +20,22 @@ trait CpsRuntimeAwait[F[_]] {
     
     def runAsync[A,C <: CpsTryMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A]
 
+
     def await[A](fa: F[A])(ctx: CpsTryMonadContext[F]): A
 
+
 }
+
+trait CpsRuntimeAwaitProvider[F[_]] {
+
+  def apply[A](lambda: CpsRuntimeAwait[F] => A)(using ctx:CpsTryMonadContext[F], m:CpsAsyncEffectMonad[F]): F[A]
+
+  def applyAsync[A](lambda: CpsRuntimeAwait[F] => F[A])(using ctx:CpsTryMonadContext[F], m:CpsAsyncEffectMonad[F]): F[A] =
+      m.flatten(apply(lambda))
+
+}
+
+
 
 /**
  * Marker class which mean that CpsRuntimeAwait implemented in such way,

@@ -13,6 +13,7 @@ case class TransformationContext[F[_]:Type,T,C <: CpsMonadContext[F]](
    monadContext: Expr[C],
    memoization: Option[TransformationContext.Memoization[F]],
    runtimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
+   runtimeAwaitProvider: Option[Expr[CpsRuntimeAwaitProvider[F]]],
    flags: AsyncMacroFlags,
    observatory: Observatory.Scope#Observatory,
    nesting: Int,
@@ -34,7 +35,8 @@ case class TransformationContext[F[_]:Type,T,C <: CpsMonadContext[F]](
 
   def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], 
                                          muted: Boolean = flags.muted):   TransformationContext[F,S,C] =
-      TransformationContext(newPatternCode, newPatternType, /*monad,*/ monadContext, memoization, runtimeAwait,
+      TransformationContext(newPatternCode, newPatternType, /*monad,*/ monadContext, memoization,
+                             runtimeAwait, runtimeAwaitProvider,
                              flags.copy(muted=muted), 
                              observatory, 
                              nesting + 1, parent=Some(this) )

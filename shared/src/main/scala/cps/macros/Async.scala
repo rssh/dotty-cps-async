@@ -153,7 +153,8 @@ object Async {
                else
                   report.errorAndAbort(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Async, runtimeAwait = ${cpsRuntimeAwait.show}")
               } else {
-               val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization, optRuntimeAwait, flags,observatory, 0, None)
+               val optRuntimeAwaitProvider = Expr.summon[CpsRuntimeAwaitProvider[F]]
+               val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization, optRuntimeAwait, optRuntimeAwaitProvider, flags,observatory, 0, None)
                if (DEBUG) {
                  TransformUtil.dummyMapper(cpsExpr.transformed.asTerm, Symbol.spliceOwner)
                }
@@ -260,6 +261,7 @@ object Async {
   def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], dm:Expr[CpsMonad[F]], mc:Expr[C], 
                                       optMemoization: Option[TransformationContext.Memoization[F]],
                                       optRuntimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
+                                      optRuntimeAwaitProvider: Option[Expr[CpsRuntimeAwaitProvider[F]]],
                                       flags: AsyncMacroFlags,
                                       observatory: Observatory.Scope#Observatory,
                                       nesting: Int,
@@ -267,7 +269,9 @@ object Async {
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._    
-     val cpsCtx = TransformationContext[F,T,C](f,tType,/*dm,*/mc,optMemoization,optRuntimeAwait,
+     val cpsCtx = TransformationContext[F,T,C](f,tType,/*dm,*/mc,optMemoization,
+                                               optRuntimeAwait,
+                                               optRuntimeAwaitProvider,
                                                flags,observatory, nesting,parent)
      val retval = f match 
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
@@ -329,6 +333,7 @@ object Async {
                               )(using Quotes):CpsExpr[F,S]=
         rootTransform(f,cpsCtx.monad, cpsCtx.monadContext, cpsCtx.memoization,
                       cpsCtx.runtimeAwait,
+                      cpsCtx.runtimeAwaitProvider,
                       cpsCtx.flags,cpsCtx.observatory, 
                       cpsCtx.nesting+1, Some(cpsCtx))
 

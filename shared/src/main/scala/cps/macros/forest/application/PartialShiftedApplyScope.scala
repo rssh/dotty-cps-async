@@ -3,9 +3,21 @@ package cps.macros.forest.application
 import cps.*
 import cps.macros.forest.*
 
-enum ApplicationShiftType:
-  case CPS_ONLY, CPS_AWAIT
+/*
+sealed trait ApplicationShiftType
 
+object ApplicationShiftType {
+
+  case object CPS_ONLY extends ApplicationShiftType
+  case class CPS_AWAIT[F](runtimeAwait: Expr[CpsRuntimeAwait[F]]) extends ApplicationShiftType
+
+}
+
+ */
+
+enum ApplicationShiftType:
+  case CPS_ONLY
+  case CPS_AWAIT
 
 trait  PartialShiftedApplyScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
@@ -20,10 +32,22 @@ trait  PartialShiftedApplyScope[F[_], CT, CC<:CpsMonadContext[F]]:
   */
   case class PartialShiftedApply(
     shiftType: ApplicationShiftType,
-    shifted: Term
-  ):
 
-    def withTailArgs(argTails: List[Seq[ApplyArgRecord]], withAsync: Boolean): Term =
-        val shiftedTails = argTails.map(_.map(_.shift(shiftType).identArg(withAsync)).toList)
-        shifted.appliedToArgss(shiftedTails)
+    /**
+     * function, which will be applied
+     * argument is runtimeAwait, which is needed when type of shift is CPS_AWAIT.
+     * when type of shift is CPS_ONLY, runtimeAwait is not used (and can be emoty term)
+     */
+    shiftedDelayed: Term => Term,
+                                ):
+
+    def withTailArgs(argTails: List[Seq[ApplyArgRecord]], withAsync: Boolean): Term => Term =
+      runtimeAwait => {
+        val shiftedTails = shiftType match
+          case ApplicationShiftType.CPS_ONLY =>
+            argTails.map(_.map(_.shift().identArg(withAsync)).toList)
+          case ApplicationShiftType.CPS_AWAIT =>
+            argTails.map(_.map(_.withRuntimeAwait(runtimeAwait).identArg(withAsync)).toList)
+        shiftedDelayed(runtimeAwait).appliedToArgss(shiftedTails)
+      }
 
