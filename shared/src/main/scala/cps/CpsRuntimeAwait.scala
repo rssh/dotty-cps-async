@@ -14,12 +14,13 @@ import scala.util._
  **/
 trait CpsRuntimeAwait[F[_]] {
 
+  /*
     def async[A,C <: CpsTryMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A] = {
       m.flatDelay(runAsync(f)(m,ctx))
     }
     
     def runAsync[A,C <: CpsTryMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A]
-
+   */
 
     def await[A](fa: F[A])(ctx: CpsTryMonadContext[F]): A
 
@@ -28,10 +29,9 @@ trait CpsRuntimeAwait[F[_]] {
 
 trait CpsRuntimeAwaitProvider[F[_]] {
 
-  def apply[A](lambda: CpsRuntimeAwait[F] => A)(using ctx:CpsTryMonadContext[F], m:CpsAsyncEffectMonad[F]): F[A]
+  //def applySync[A](lambda: CpsRuntimeAwait[F] => A)(using ctx:CpsTryMonadContext[F]): F[A]
 
-  def applyAsync[A](lambda: CpsRuntimeAwait[F] => F[A])(using ctx:CpsTryMonadContext[F], m:CpsAsyncEffectMonad[F]): F[A] =
-      m.flatten(apply(lambda))
+  def withRuntimeAwait[A](lambda: CpsRuntimeAwait[F] => F[A])(using ctx:CpsTryMonadContext[F]): F[A]
 
 }
 

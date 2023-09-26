@@ -136,7 +136,7 @@ object Async {
         else None
       observatory.analyzeTree[F]
       val r = WithOptExprProxy("cpsMonad", dm){
-           dm => 
+           dm =>
               val optRuntimeAwait = Expr.summon[CpsRuntimeAwait[F]]
               if ( flags.useLoomAwait && optRuntimeAwait.isDefined && 
                                          optRuntimeAwait.forall(_.asTerm.tpe <:< TypeRepr.of[CpsFastRuntimeAwait[F]])  ) {
@@ -269,7 +269,8 @@ object Async {
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._    
-     val cpsCtx = TransformationContext[F,T,C](f,tType,/*dm,*/mc,optMemoization,
+     val cpsCtx = TransformationContext[F,T,C](f,tType, dm, mc,
+                                               optMemoization,
                                                optRuntimeAwait,
                                                optRuntimeAwaitProvider,
                                                flags,observatory, nesting,parent)

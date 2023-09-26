@@ -77,7 +77,7 @@ lazy val cpsLoomAddOn = project.in(file("jvm-loom-addon"))
   .settings(sharedSettings)
   .settings(
     name := "dotty-cps-async-loom",
-    scalacOptions ++= Seq("-Xtarget:21"),
+    scalacOptions ++= Seq("-Xtarget:21",  "-explain" /*, "-color:never"*/ ),
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
   )
 

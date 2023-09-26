@@ -9,7 +9,7 @@ import cps.macros.observatory.*
 case class TransformationContext[F[_]:Type,T,C <: CpsMonadContext[F]](
    patternCode: Expr[T],  // code, for which we build pattern expression
    patternType: Type[T],
-   //monad: Expr[CpsMonad[F]],
+   monad: Expr[CpsMonad[F]],
    monadContext: Expr[C],
    memoization: Option[TransformationContext.Memoization[F]],
    runtimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
@@ -20,9 +20,9 @@ case class TransformationContext[F[_]:Type,T,C <: CpsMonadContext[F]](
    parent: Option[TransformationContext[_,_,_]],
 )  {
 
-  def monad(using Quotes): Expr[CpsMonad[F]] =
-    import quotes.reflect.*
-    Select.unique(monadContext.asTerm, "monad").asExprOf[CpsMonad[F]]
+  //def monad(using Quotes): Expr[CpsMonad[F]] =
+  //  import quotes.reflect.*
+  //  Select.unique(monadContext.asTerm, "monad").asExprOf[CpsMonad[F]]
 
   def tryMonad(using Quotes): Expr[CpsTryMonad[F]] =
     import quotes.reflect.*
@@ -35,7 +35,7 @@ case class TransformationContext[F[_]:Type,T,C <: CpsMonadContext[F]](
 
   def nest[S](newPatternCode: Expr[S], newPatternType: Type[S], 
                                          muted: Boolean = flags.muted):   TransformationContext[F,S,C] =
-      TransformationContext(newPatternCode, newPatternType, /*monad,*/ monadContext, memoization,
+      TransformationContext(newPatternCode, newPatternType, monad, monadContext, memoization,
                              runtimeAwait, runtimeAwaitProvider,
                              flags.copy(muted=muted), 
                              observatory, 

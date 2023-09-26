@@ -5,6 +5,7 @@ import cps.runtime.*
 import java.util.concurrent.CompletableFuture
 import scala.util.*
 import scala.util.control.NonFatal
+import scala.concurrent.blocking
 
 
 object ComputationBoundRuntimeAwait extends LoomRuntimeAwait[ComputationBound] {
@@ -46,7 +47,9 @@ object ComputationBoundRuntimeAwait extends LoomRuntimeAwait[ComputationBound] {
               }
             }
          )
-         jcf.get()
+         blocking {
+           jcf.get()
+         }
   }
 
 

@@ -607,14 +607,14 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
             case None =>
               cpsCtx.runtimeAwaitProvider match
                 case Some(runtimeAwaitProvider) =>
-                  argsSummaryProperties.cpsDirectArg match
+                  val raLambdaMt = MethodType(List("runtimeAwait"))(
+                    _ => List(TypeRepr.of[CpsRuntimeAwait[F]]),
+                    _ => TypeRepr.of[F].appliedTo(applyTerm.tpe.widen)
+                  )
+                  val raLambda = argsSummaryProperties.cpsDirectArg match
                     case Some(cpsDirectArg) =>
                       //
-                      val raLambdaMt = MethodType(List("runtimeAwait"))(
-                        _ => List(TypeRepr.of[CpsRuntimeAwait[F]]),
-                        _ => TypeRepr.of[F].appliedTo(applyTerm.tpe.widen)
-                      )
-                      val raLambda = Lambda(owner, raLambdaMt, { (owner, params) =>
+                      Lambda(owner, raLambdaMt, { (owner, params) =>
                         val runtimeAwait = params.head.asInstanceOf[Term]
                         // here is how constraint about owner can be violated.
                         //  TODO:  add owner argument to call delayed,
@@ -622,33 +622,24 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                         val cpsTree = wrapCallIntoCpsDirect(applyTerm,cpsDirectArg, funCall)(owner)
                         cpsTree.transformed
                       })
-                      val call = Apply.copy(applyTerm)(
-                        Apply(
-                          TypeApply(Select.unique(runtimeAwaitProvider.asTerm, "applyAsync"),
-                            List(Inferred(applyTerm.tpe.widen))),
-                          List(raLambda)
-                        ),
-                        List( cpsCtx.monadContext.asTerm, cpsCtx.monad.asTerm)
-                      )
-                      CpsTree.impure(owner, call, applyTerm.tpe.widen)
                     case None =>
-                      val raLambdaMt = MethodType(List("runtimeAwait"))(
-                        _ => List(TypeRepr.of[CpsRuntimeAwait[F]]),
-                        _ => applyTerm.tpe.widen
-                      )
-                      val raLambda = Lambda(owner, raLambdaMt, { (owner, params) =>
+                      Lambda(owner, raLambdaMt, { (owner, params) =>
                           val runtimeAwait = params.head.asInstanceOf[Term]
-                          callDelayed(runtimeAwait).changeOwner(owner)
+                          val plainCall = callDelayed(runtimeAwait).changeOwner(owner)
+                          Apply.copy(applyTerm)(
+                            TypeApply(Select.unique(cpsCtx.monad.asTerm, "pure"),List(Inferred(applyTerm.tpe.widen))),
+                            List(plainCall)
+                          )
                       })
-                      val call = Apply.copy(applyTerm)(
-                        Apply(
-                          TypeApply(Select.unique(runtimeAwaitProvider.asTerm, "apply"),
-                            List(Inferred(applyTerm.tpe.widen))),
-                          List(raLambda)
-                        ),
-                        List(cpsCtx.monadContext.asTerm, cpsCtx.monad.asTerm)
-                      )
-                      CpsTree.impure(owner, call, applyTerm.tpe.widen)
+                  val call = Apply.copy(applyTerm)(
+                              Apply(
+                                TypeApply(Select.unique(runtimeAwaitProvider.asTerm, "withRuntimeAwait"),
+                                          List(Inferred(applyTerm.tpe.widen))),
+                                List(raLambda)
+                             ),
+                             List(cpsCtx.monadContext.asTerm)
+                  )
+                  CpsTree.impure(owner, call, applyTerm.tpe.widen)
                 case None =>
                   throw MacroError("Can't find runtime await provider", applyTerm.asExpr)
       }
