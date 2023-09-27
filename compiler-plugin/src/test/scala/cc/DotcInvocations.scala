@@ -52,6 +52,10 @@ class DotcInvocations(silent: Boolean = false) {
 
   private def run(outDir: String, mainClass: String, timeout: FiniteDuration = 1.minute): (Int, String) = {
     val classpath = s"$outDir:${System.getProperty("java.class.path")}"
+    runInClasspath(outDir, mainClass, classpath, timeout)
+  }
+
+  private def runInClasspath(outDir: String, mainClass: String, classpath: String, timeout: FiniteDuration = 1.minute): (Int, String) = {
     val cmd = s"java -cp $classpath $mainClass"
     println(s"Running $cmd")
     val process = Runtime.getRuntime.exec(cmd)
@@ -69,6 +73,7 @@ class DotcInvocations(silent: Boolean = false) {
       }
     }
   }
+
 
   /**
    * Recursively list all scala files in a given path
@@ -107,6 +112,19 @@ class DotcInvocations(silent: Boolean = false) {
 
 case class TestRun(inputDir: String, mainClass: String, expectedOutput: String = "Ok\n")
 
+
+
+
+case class DotcInvocationArgs(
+                               extraDotcArgs: List[String] = List.empty,
+                               silent: Boolean = false,
+                               checkAll: Boolean = true,
+                             )
+
+
+
+
+
 object DotcInvocations {
 
   import org.junit.Assert.*
@@ -135,20 +153,17 @@ object DotcInvocations {
   }
 
 
-  case class InvocationArgs(
-                           extraDotcArgs: List[String] = List.empty,
-                           silent: Boolean = false,
-                           checkAll: Boolean = true
-                           )
 
-  def compileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Reporter = {
+
+
+  def compileFilesInDir(dir: String, invocationArgs: DotcInvocationArgs = DotcInvocationArgs()): Reporter = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
     dotcInvocations.compileFilesInDir(dir, dir, invocationArgs.extraDotcArgs, invocationArgs.checkAll)
     dotcInvocations.reporter
   }
 
 
-  def succesfullyCompileFilesInDir(dir: String, invocationArgs: InvocationArgs = InvocationArgs()): Unit = {
+  def succesfullyCompileFilesInDir(dir: String, invocationArgs: DotcInvocationArgs = DotcInvocationArgs()): Unit = {
     val reporter = compileFilesInDir(dir, invocationArgs)
     checkReporter(reporter)
   }
@@ -157,7 +172,7 @@ object DotcInvocations {
                                   dir: String,
                                   mainClass: String,
                                   expectedOutput: String = "Ok\n",
-                                  invocationArgs: InvocationArgs = InvocationArgs()
+                                  invocationArgs: DotcInvocationArgs = DotcInvocationArgs()
                                            ): Unit = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
 
@@ -172,7 +187,9 @@ object DotcInvocations {
 
   }
 
-  def checkRuns(selection: Regex = Regex(".*"), dotcArgs:InvocationArgs = InvocationArgs())(
+
+
+  def checkRuns(selection: Regex = Regex(".*"), dotcArgs: DotcInvocationArgs = DotcInvocationArgs())(
                  runs: TestRun*
                ): Unit = {
     for(r <- runs) {
@@ -181,6 +198,59 @@ object DotcInvocations {
        }
     }
   }
+
+  trait IsAlreadyCompiledFlag {
+    var isAlreadyComplied: Boolean
+  }
+
+
+  case class Dependency(
+                         sourceDir: String,
+                         outDir: String,
+                         compiledFlag: IsAlreadyCompiledFlag
+                       )
+
+
+  // TODO: move code to DotcInvocations to avoid duplication
+  def compileAndRunTestAfterDependency(dirname: String,
+                                   testClassName: String,
+                                   invocationArgs: DotcInvocationArgs = DotcInvocationArgs(),
+                                   dependency: Dependency
+                                  ): Unit = {
+    if (!dependency.compiledFlag.isAlreadyComplied) {
+      DotcInvocations.succesfullyCompileFilesInDir(dependency.sourceDir, invocationArgs)
+      dependency.compiledFlag.isAlreadyComplied = true
+    }
+    val classpath1 = s"${dependency.outDir}:${System.getProperty("java.class.path")}"
+    val secondInvokationArgs = invocationArgs.copy(extraDotcArgs = List("-classpath", classpath1) ++ invocationArgs.extraDotcArgs)
+    DotcInvocations.succesfullyCompileFilesInDir(dirname, secondInvokationArgs)
+    val classpath2 = s"${dirname}:${classpath1}"
+    val mainClass = "testUtil.JunitMain"
+    val cmd = s"java -cp $classpath2 $mainClass $testClassName"
+    println(s"Running $cmd")
+    val process = Runtime.getRuntime.exec(cmd)
+    val timeout = 1.minute
+    blocking {
+      val exitCode = process.waitFor(timeout.toSeconds, java.util.concurrent.TimeUnit.SECONDS)
+      if (exitCode) {
+        val output = scala.io.Source.fromInputStream(process.getInputStream).mkString
+        val errorOutput = scala.io.Source.fromInputStream(process.getErrorStream).mkString
+        if (!output.endsWith("Ok\n")) {
+          println(s"output=${output}")
+          println(s"error=${errorOutput}")
+          throw new RuntimeException(s"Process $cmd failed")
+        }
+      } else {
+        val output = scala.io.Source.fromInputStream(process.getInputStream).mkString
+        val errorOutput = scala.io.Source.fromInputStream(process.getErrorStream).mkString
+        println(s"output=${output}")
+        println(s"error=${errorOutput}")
+        process.destroy()
+        throw new RuntimeException(s"Process $cmd timed out")
+      }
+    }
+  }
+
 
   def reportErrors(reporter: Reporter): Unit = {
     if (!reporter.allErrors.isEmpty) {

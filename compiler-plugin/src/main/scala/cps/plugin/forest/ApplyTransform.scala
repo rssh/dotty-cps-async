@@ -23,6 +23,7 @@ import cps.{CpsMonadContext, CpsMonadConversion}
 import inlines.Inlines
 import transform.Inlining
 
+import scala.collection.immutable.List
 import scala.util.boundary
 import scala.util.boundary.break
 
@@ -742,32 +743,29 @@ object ApplyTransform {
              val runtimeAwaitSym = Symbols.newSymbol(owner, "runtimeAwait".toTermName, Flags.Synthetic, runtimeAwaitType , coord = origin.span)
              val runtimeAwaitFormal = ref(runtimeAwaitSym)
              val wrappedCall = genApplication(origin, owner, nesting, NonShiftedFun(fun), argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, Some(runtimeAwaitFormal)), callMode)
-             wrappedCall.unpure match
+             val mt = MethodType(List("runtimeAwait".toTermName))(
+               _ => List(Symbols.requiredClassRef("cps.CpsRutimeAwait").appliedTo(List(tctx.monadType))),
+               _ => wrappedCall.transformedType
+             )
+             val meth = Symbols.newAnonFun(owner, mt)
+             val (raLambda, internalKind) = wrappedCall.unpure match
                case Some(syncCall) =>
-                  val mt = MethodType(List("runtimeAwait".toTermName))(
-                      _ => List(Symbols.requiredClassRef("cps.CpsRutimeAwait").appliedTo(List(tctx.monadType))),
-                      _ => wrappedCall.originType
-                  )
-                  val meth = Symbols.newAnonFun(owner, mt)
-                  val raLambda = Closure(meth, tss => {
-                   val ctx = summon[Context].withOwner(meth)
-                   // we shoudl substParamsMap before changeOwner
-                   TransformUtil.substParamsMap(syncCall, Map(runtimeAwaitSym -> tss.head.head)).changeOwner(owner, meth)
+                  val lambda = Closure(meth, tss => {
+                    val ctx = summon[Context].withOwner(meth)
+                    // we shoudl substParamsMap before changeOwner
+                    val callInLambda = TransformUtil.substParamsMap(syncCall, Map(runtimeAwaitSym -> tss.head.head)).changeOwner(owner, meth)
+                    {
+                        given Context = ctx
+                        Apply(
+                          TypeApply(
+                            Select(tctx.cpsMonadRef, "pure".toTermName),
+                            List(TypeTree(wrappedCall.originType.widen))
+                          ),
+                          List(callInLambda)
+                        ).withSpan(origin.span)
+                    }
                   })
-                  val retval = Apply(
-                    Apply(
-                      TypeApply(
-                        Select(
-                          runtimeAwaitProvider,
-                          "apply".toTermName
-                        ),
-                        List(TypeTree(tctx.monadType.widen))
-                      ),
-                      List(raLambda)
-                    ),
-                    List(tctx.cpsMonadContextRef, tctx.cpsMonadRef)
-                  ).withSpan(origin.span)
-                  CpsTree.impure(origin, owner, retval, AsyncKind.Sync)
+                  (lambda, AsyncKind.Sync)
                case None =>
                   wrappedCall.asyncKind match
                     case AsyncKind.Sync =>
@@ -775,31 +773,27 @@ object ApplyTransform {
                     case AsyncKind.Async(internalKind) =>
                       if (internalKind != AsyncKind.Sync) then
                         throw CpsTransformException("Unsupported internal kind for provided runtime await", origin.srcPos)
-                      val mt = MethodType(List("runtimeAwait".toTermName))(
-                          _ => List(runtimeAwaitType),
-                          _ => wrappedCall.transformedType
-                      )
-                      val meth = Symbols.newAnonFun(owner, mt)
-                      val raLambda = Closure(meth, tss => {
+                      val lambda = Closure(meth, tss => {
                         // we shoudl substParamsMap before changeOwner
                         TransformUtil.substParamsMap(wrappedCall.transformed, Map(runtimeAwaitSym -> tss.head.head)).changeOwner(owner, meth)
                       })
-                      val retval = Apply(
-                        Apply(
-                          TypeApply(
-                            Select(
-                              runtimeAwaitProvider,
-                              "applyAsync".toTermName
-                            ),
-                            List(TypeTree(tctx.monadType.widen))
-                          ),
-                          List(raLambda)
-                        ),
-                        List(tctx.cpsMonadContextRef, tctx.cpsMonadRef)
-                      ).withSpan(origin.span)
-                      CpsTree.impure(origin, owner, retval, internalKind)
+                      (lambda, internalKind)
                     case AsyncKind.AsyncLambda(bodyKind) =>
                       throw CpsTransformException("Unsupported internal kind for provided runtime await", origin.srcPos)
+             val retval = Apply(
+               Apply(
+                 TypeApply(
+                   Select(
+                     runtimeAwaitProvider,
+                     "withRuntimeAwait".toTermName
+                   ),
+                   List(TypeTree(tctx.monadType.widen))
+                 ),
+                 List(raLambda)
+               ),
+               List(tctx.cpsMonadContextRef, tctx.cpsMonadRef)
+             ).withSpan(origin.span)
+             CpsTree.impure(origin, owner, retval, internalKind)
            case None =>
              throw CpsTransformException(s"Can't find runtime await support for ${tctx.monadType.show}", origin.srcPos)
   }

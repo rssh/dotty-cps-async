@@ -18,7 +18,7 @@ class Test14Run {
   def compileAndRunTestAfterCommon(dirname: String, testClassName:String): Unit = {
     compileCommon()
     val classpath1 = s"testdata/set14runtests/common:${System.getProperty("java.class.path")}"
-    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath1))
+    val secondInvokationArgs = DotcInvocationArgs(extraDotcArgs = List("-classpath", classpath1))
     DotcInvocations.succesfullyCompileFilesInDir(dirname, secondInvokationArgs)
     val classpath2 = s"${dirname}:${classpath1}"
     val mainClass = "testUtil.JunitMain"

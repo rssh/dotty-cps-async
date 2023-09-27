@@ -18,7 +18,7 @@ class Test13TestCases {
   def compileAfterCommon(dirname: String): Unit = {
     compileCommon()
     val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
-    val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath))
+    val secondInvokationArgs = DotcInvocationArgs(extraDotcArgs = List("-classpath", classpath))
     DotcInvocations.succesfullyCompileFilesInDir(dirname, secondInvokationArgs)
   }
 

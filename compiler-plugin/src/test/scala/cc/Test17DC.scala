@@ -10,7 +10,7 @@ class Test17DC {
       "testdata/set17/m1",
       "cpstest.TestShiftedDirectM1",
       "Ok\n",
-      invocationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-Vprint:rssh.cps")),
+      invocationArgs = DotcInvocationArgs(extraDotcArgs = List("-Vprint:rssh.cps")),
     )
   }
 

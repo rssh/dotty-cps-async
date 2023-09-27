@@ -7,6 +7,7 @@ import scala.concurrent.duration.*
 
 class Test15PE {
 
+  // TODO: move code to DotcInvocations
   def compileCommon(): Unit = {
     if (!Test15PE.commonCompiled) {
       DotcInvocations.succesfullyCompileFilesInDir("testdata/set15pe/common")
@@ -15,7 +16,8 @@ class Test15PE {
     }
   }
 
-  def compileAndRunTestAfterCommon(dirname: String, testClassName: String, invocationArgs: DotcInvocations.InvocationArgs = DotcInvocations.InvocationArgs()): Unit = {
+  // TODO: move code to DotcInvocations to avoid duplication
+  def compileAndRunTestAfterCommon(dirname: String, testClassName: String, invocationArgs: DotcInvocationArgs = DotcInvocationArgs()): Unit = {
     compileCommon()
     val classpath1 = s"testdata/set15pe/common:${System.getProperty("java.class.path")}"
     val secondInvokationArgs = invocationArgs.copy(extraDotcArgs = List("-classpath", classpath1)++invocationArgs.extraDotcArgs)
@@ -52,7 +54,7 @@ class Test15PE {
   @Test
   def testFizzBuzz() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m1", "cps.pe.TestFizzBuzz",
-      DotcInvocations.InvocationArgs(checkAll = true,
+      DotcInvocationArgs(checkAll = true,
         extraDotcArgs = List(
          // "-Vprint:rssh.cps"
         )
@@ -67,7 +69,7 @@ class Test15PE {
   @Test
   def testFizzBuzzLocalDirectRef() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m2", "cps.pe.TestFizzBuzz",
-      DotcInvocations.InvocationArgs(checkAll = true,
+      DotcInvocationArgs(checkAll = true,
         extraDotcArgs = List(
           // "-Vprint:rssh.cps", "-Vprint:erasure"
         )
@@ -79,7 +81,7 @@ class Test15PE {
   @Test
   def testUseResourceM3() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m3", "cps.pe.TestUseResource",
-      DotcInvocations.InvocationArgs(checkAll = true,
+      DotcInvocationArgs(checkAll = true,
         extraDotcArgs = List(
          // "-Vprint:rssh.cps", "-Vprint:erasure"
         )
@@ -91,7 +93,7 @@ class Test15PE {
   @Test
   def testUseResourceM4() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m4", "cps.pe.TestUseResourceFromPlugin",
-      DotcInvocations.InvocationArgs(checkAll = true,
+      DotcInvocationArgs(checkAll = true,
         extraDotcArgs = List(
          //  "-Vprint:rssh.cps", "-Vprint:erasure"
         )
@@ -104,7 +106,7 @@ class Test15PE {
   @Test
   def testFizzBuzzWithInlineDirectRefM5() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m5", "cps.pe.TestFizzBuzzM5",
-      DotcInvocations.InvocationArgs(checkAll = false,
+      DotcInvocationArgs(checkAll = false,
         extraDotcArgs = List(
           //"-Vprint:rssh.cps", "-Vprint:erasure"
         )
@@ -116,7 +118,7 @@ class Test15PE {
   @Test
   def testFizzBuzzWithInlineDirectRefM6() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m6", "cps.pe.TestFizzBuzzM6",
-      DotcInvocations.InvocationArgs(checkAll = false,
+      DotcInvocationArgs(checkAll = false,
         extraDotcArgs = List(
           //"-Vprint:rssh.cps", "-Vprint:erasure"
         )
@@ -129,7 +131,7 @@ class Test15PE {
   @Test
   def testFizzBuzzWithInlineDirectRefM7() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m7", "cps.pe.TestFizzBuzzM7",
-      DotcInvocations.InvocationArgs(checkAll = false,
+      DotcInvocationArgs(checkAll = false,
         extraDotcArgs = List(
           //"-Vprint:rssh.cps", "-Vprint:erasure"
         )
@@ -141,7 +143,7 @@ class Test15PE {
   @Test
   def testInlineOpInResourceM8() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m8", "cps.pe.TestInlineOpInResourceM8",
-      DotcInvocations.InvocationArgs(checkAll = true,
+      DotcInvocationArgs(checkAll = true,
         extraDotcArgs = List(
           "-Vprint:rssh.cps", "-Vprint:erasure"
         )
