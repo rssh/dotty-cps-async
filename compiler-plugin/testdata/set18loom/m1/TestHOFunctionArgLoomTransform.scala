@@ -3,12 +3,13 @@ package cpsloomtest
 import cps.*
 import cps.monads.{*,given}
 
+import scala.annotation.experimental
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import org.junit.{Test,Ignore}
 
 
-
+@experimental
 class TestHOFunctionArgLoomTransform {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,7 +17,7 @@ class TestHOFunctionArgLoomTransform {
   def fetch(url:String):Future[String] =
     Future successful s"fetched(${url})"
 
-  def runAwaitInMap(using CpsDirect[Future]): List[String] = {
+  def runAwaitInMap(using CpsDirect[Future]): MyList[String] = {
     val list = MyList.create("http://example1.com", "http://example2.com", "http://example3.org")
     val fetched = list.map{ url =>
       await(fetch(url))

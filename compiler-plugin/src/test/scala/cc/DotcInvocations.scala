@@ -200,26 +200,27 @@ object DotcInvocations {
   }
 
   trait IsAlreadyCompiledFlag {
-    var isAlreadyComplied: Boolean
+    var isAlreadyCompiled: Boolean
   }
 
 
   case class Dependency(
                          sourceDir: String,
-                         outDir: String,
                          compiledFlag: IsAlreadyCompiledFlag
-                       )
+                       ) {
+    def outDir = sourceDir
+  }
 
 
-  // TODO: move code to DotcInvocations to avoid duplication
-  def compileAndRunTestAfterDependency(dirname: String,
-                                   testClassName: String,
-                                   invocationArgs: DotcInvocationArgs = DotcInvocationArgs(),
-                                   dependency: Dependency
+  def compileAndRunJunitTestAfterDependency(dirname: String,
+                                            testClassName: String,
+                                            invocationArgs: DotcInvocationArgs = DotcInvocationArgs(),
+                                            dependency: Dependency
                                   ): Unit = {
-    if (!dependency.compiledFlag.isAlreadyComplied) {
+    if (!dependency.compiledFlag.isAlreadyCompiled) {
       DotcInvocations.succesfullyCompileFilesInDir(dependency.sourceDir, invocationArgs)
-      dependency.compiledFlag.isAlreadyComplied = true
+      dependency.compiledFlag.isAlreadyCompiled = true
+      println("-----finish common compilation-----")
     }
     val classpath1 = s"${dependency.outDir}:${System.getProperty("java.class.path")}"
     val secondInvokationArgs = invocationArgs.copy(extraDotcArgs = List("-classpath", classpath1) ++ invocationArgs.extraDotcArgs)

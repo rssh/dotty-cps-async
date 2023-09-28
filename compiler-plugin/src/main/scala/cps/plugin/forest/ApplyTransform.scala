@@ -322,6 +322,7 @@ object ApplyTransform {
                       genApplication(origin, owner, nesting, newFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), newCallMode)
                     case Left(error) =>
                       if (!tctx.pluginSettings.runtimeAwaitBeforeCps || !tctx.supportsRuntimeAwait) then
+                        println("tctx.supportsRuntimeAwait: " + tctx.supportsRuntimeAwait)
                         throw CpsTransformException(error, origin.srcPos)
                       else
                         genApplicationWithRuntimeAwait(origin, owner, nesting, fun, argss, callMode)
@@ -791,7 +792,7 @@ object ApplyTransform {
                  ),
                  List(raLambda)
                ),
-               List(tctx.cpsMonadContextRef, tctx.cpsMonadRef)
+               List(tctx.cpsDirectOrSimpleContextRef, tctx.cpsMonadRef)
              ).withSpan(origin.span)
              CpsTree.impure(origin, owner, retval, internalKind)
            case None =>

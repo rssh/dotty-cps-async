@@ -430,7 +430,7 @@ sealed trait AsyncCpsTree extends CpsTree {
       ),
       List(
         tctx.cpsMonadRef,
-        tctx.cpsMonadContextRef
+        tctx.cpsDirectOrSimpleContextRef
       )
     ).withSpan(origin.span)
     CpsTree.pure(origin,owner,tree)
@@ -837,21 +837,35 @@ case class LambdaCpsTree(
         this
       case AsyncKind.Async(internal) =>
         val awaitMethod = Select(runtimeAwait,"await".toTermName)
-        val nBody = Apply(
-          Apply(
-            TypeApply(awaitMethod, List(TypeTree(cpsBody.originType.widen))),
-            List(cpsBody.transformed)
-          ),
-          List(
-            tctx.cpsMonadRef,
-            tctx.cpsMonadContextRef
-          )
+        // TODO: write a test, when originType is a SAM type
+        val mt = MethodType(originDefDef.termParamss.head.map(_.name))(
+          _ => originDefDef.termParamss.head.map(_.tpe.widen),
+          _ => cpsBody.originType.widen
         )
-        val nDefDef =  ???
-        val nLambda: Tree = ???
-        CpsTree.pure(origin,owner,nLambda)
+        val meth = Symbols.newAnonFun(owner,mt)
+        val closure = Closure(meth,tss => {
+          val nBody = Apply(
+            Apply(
+              TypeApply(awaitMethod, List(TypeTree(cpsBody.originType.widen))),
+              List(cpsBody.transformed)
+            ),
+            List(
+              tctx.cpsNonDirectContext
+            )
+          )
+          if (tss.isEmpty) then
+            println(s"tss.isEmpty, originParans=${originParams}, tss=${tss}")
+            println(s"originType=${originType.show}, originClosureType=${originClosureType.show}")
+          TransformUtil.substParams(nBody, originParams, tss.head).changeOwner(cpsBody.owner, meth)
+        })
+        CpsTree.pure(origin,owner,closure)
       case AsyncKind.AsyncLambda(internalAsync) =>
-        ???
+        cpsBody.unpure match
+          case None =>
+             val nCpsBody = cpsBody.applyRuntimeAwait(runtimeAwait)
+             LambdaCpsTree(origin,owner,originDefDef,originClosureType,nCpsBody)
+          case Some(_) =>
+            this
 
 
   override def show(using Context): String = {
@@ -962,7 +976,7 @@ case class OpaqueAsyncLambdaTermCpsTree(
           ),
           List(
             tctx.cpsMonadRef,
-            tctx.cpsMonadContextRef
+            tctx.cpsDirectOrSimpleContextRef
           )
         )
         nBody

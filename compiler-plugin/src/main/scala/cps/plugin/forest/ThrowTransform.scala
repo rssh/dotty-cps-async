@@ -51,10 +51,10 @@ object ThrowTransform {
     val throwMonad = {
       if (tctx.cpsMonadRef.tpe <:<  AppliedType(Symbols.requiredClassRef("cps.CpsThrowMonad"),List(WildcardType))) {
           tctx.cpsMonadRef
-      } else if (tctx.cpsMonadContextRef.tpe <:< AppliedType(Symbols.requiredClassRef("cps.CpsDirect"),List(WildcardType))) {
-          Select(tctx.cpsMonadContextRef, "throwMonad".toTermName)
-      } else if (tctx.cpsMonadContextRef.tpe <:< AppliedType(Symbols.requiredClassRef("cps.CpsThrowMonadContext"),List(WildcardType))) {
-          Select(tctx.cpsMonadContextRef, "monad".toTermName)
+      } else if (tctx.cpsDirectOrSimpleContextRef.tpe <:< AppliedType(Symbols.requiredClassRef("cps.CpsDirect"),List(WildcardType))) {
+          Select(tctx.cpsDirectOrSimpleContextRef, "throwMonad".toTermName)
+      } else if (tctx.cpsDirectOrSimpleContextRef.tpe <:< AppliedType(Symbols.requiredClassRef("cps.CpsThrowMonadContext"),List(WildcardType))) {
+          Select(tctx.cpsDirectOrSimpleContextRef, "monad".toTermName)
       } else {
         // TODO: lool at throw support ?
         throw CpsTransformException(s"throw is not supported for such monad ${tctx.cpsMonadRef.tpe.widen.show}", origin.srcPos)

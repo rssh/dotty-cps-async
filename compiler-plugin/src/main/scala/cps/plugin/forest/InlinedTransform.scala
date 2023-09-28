@@ -251,7 +251,7 @@ object InlinedTransform {
                   monadType = gMonadType,
                   //cpsMonadValDef = EmptyTree, // TODO: remove cpsMonadValDef from top-level context
                   cpsMonadRef = Select(gctx, "monad".toTermName),
-                  cpsMonadContextRef = gctx,
+                  cpsDirectOrSimpleContextRef = gctx,
                   optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(gMonadType, inlinedTerm.span),
                   optRuntimeAwaitProvider = CpsTransformHelper.findRuntimeAwaitProvider(gMonadType, inlinedTerm.span),
                   optThrowSupport = CpsTransformHelper.findCpsThrowSupport(gMonadType, inlinedTerm.span),

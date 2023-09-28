@@ -44,7 +44,7 @@ object CpsTransformHelper {
      // variant:
      //isCpsDirectSymbol(tpe.dealiasKeepOpaques.typeSymbol)
 
-     val retval = tpe.dealiasKeepOpaques match
+     val retval = tpe.widen.dealiasKeepOpaques match
        case AppliedType(tycon, List(targ)) if isCpsDirectSymbol(tycon.typeSymbol)=>
          true
        case tr: TypeRef if isCpsDirectSymbol(tr.symbol) =>
