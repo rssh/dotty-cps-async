@@ -9,17 +9,29 @@ class Test18Loom {
     DotcInvocations.compileAndRunJunitTestAfterDependency(dirname, testClassName, invocationArgs, Test18Loom.commonDependency)
   }
 
+
   @Test
   def testHOFunctionArg() = {
     compileAndRunTestAfterCommon("testdata/set18loom/m1", "cpsloomtest.TestHOFunctionArgLoomTransform",
       DotcInvocationArgs(checkAll = true,
         extraDotcArgs = List(
-           "-Vprint:rssh.cps"
+          // "-Vprint:rssh.cps"
         )
       )
     )
   }
+  
 
+  @Test
+  def testTwiceWithFuture() = {
+    compileAndRunTestAfterCommon("testdata/set18loom/m2", "cpsloomtest.TestTwice",
+      DotcInvocationArgs(checkAll = true,
+        extraDotcArgs = List(
+          // "-Vprint:rssh.cps"
+        )
+      )
+    )
+  }
 
 }
 
