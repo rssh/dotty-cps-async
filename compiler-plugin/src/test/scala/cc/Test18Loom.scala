@@ -20,7 +20,7 @@ class Test18Loom {
       )
     )
   }
-  
+
 
   @Test
   def testTwiceWithFuture() = {
