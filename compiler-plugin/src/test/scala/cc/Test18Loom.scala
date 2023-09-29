@@ -33,6 +33,32 @@ class Test18Loom {
     )
   }
 
+
+
+  @Test
+  def testPME() = {
+    compileAndRunTestAfterCommon("testdata/set18loom/m3", "cpsloomtest.TestPME",
+      DotcInvocationArgs(checkAll = true,
+        extraDotcArgs = List(
+          // "-Vprint:rssh.cps"
+        )
+      )
+    )
+  }
+
+
+  @Test
+  def testIncrMin() = {
+    compileAndRunTestAfterCommon("testdata/set18loom/m4", "cpsloomtest.TestIncrMin",
+      DotcInvocationArgs(checkAll = true,
+        extraDotcArgs = List(
+         // "-Vprint:rssh.cps"
+        )
+      )
+    )
+  }
+
+
 }
 
 object Test18Loom {

@@ -322,7 +322,6 @@ object ApplyTransform {
                       genApplication(origin, owner, nesting, newFun, argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC_SHIFT, None), newCallMode)
                     case Left(error) =>
                       if (!tctx.pluginSettings.runtimeAwaitBeforeCps || !tctx.supportsRuntimeAwait) then
-                        println("tctx.supportsRuntimeAwait: " + tctx.supportsRuntimeAwait)
                         throw CpsTransformException(error, origin.srcPos)
                       else
                         genApplicationWithRuntimeAwait(origin, owner, nesting, fun, argss, callMode)
@@ -731,7 +730,7 @@ object ApplyTransform {
     retval
   }
 
-  def genApplicationWithRuntimeAwait(origin: Apply, owner: Symbol, nesting: Int, fun: Tree, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
+  private def genApplicationWithRuntimeAwait(origin: Apply, owner: Symbol, nesting: Int, fun: Tree, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
      val tctx = summon[CpsTopLevelContext]
      tctx.optRuntimeAwait match
        case Some(runtimeAwait) =>
@@ -740,13 +739,13 @@ object ApplyTransform {
        case None =>
          tctx.optRuntimeAwaitProvider match
            case Some(runtimeAwaitProvider) =>
-             val runtimeAwaitType = Symbols.requiredClassRef("cps.runtime.CpsRutimeAwait").appliedTo(List(tctx.monadType))
+             val runtimeAwaitType = Symbols.requiredClassRef("cps.CpsRuntimeAwait").appliedTo(List(tctx.monadType))
              val runtimeAwaitSym = Symbols.newSymbol(owner, "runtimeAwait".toTermName, Flags.Synthetic, runtimeAwaitType , coord = origin.span)
              val runtimeAwaitFormal = ref(runtimeAwaitSym)
              val wrappedCall = genApplication(origin, owner, nesting, NonShiftedFun(fun), argss, arg => arg.exprInCall(ApplyArgCallMode.ASYNC, Some(runtimeAwaitFormal)), callMode)
              val mt = MethodType(List("runtimeAwait".toTermName))(
-               _ => List(Symbols.requiredClassRef("cps.CpsRutimeAwait").appliedTo(List(tctx.monadType))),
-               _ => wrappedCall.transformedType
+               _ => List(runtimeAwaitType),
+               _ => wrappedCall.transformedType.widen
              )
              val meth = Symbols.newAnonFun(owner, mt)
              val (raLambda, internalKind) = wrappedCall.unpure match
@@ -788,13 +787,14 @@ object ApplyTransform {
                      runtimeAwaitProvider,
                      "withRuntimeAwait".toTermName
                    ),
-                   List(TypeTree(tctx.monadType.widen))
+                   List(TypeTree(wrappedCall.originType.widen))
                  ),
                  List(raLambda)
                ),
-               List(tctx.cpsDirectOrSimpleContextRef, tctx.cpsMonadRef)
+               List(tctx.cpsNonDirectContext)
              ).withSpan(origin.span)
-             CpsTree.impure(origin, owner, retval, internalKind)
+             val fullOrigin = if (argss.isEmpty) origin else argss.last.origin
+             CpsTree.impure(fullOrigin, owner, retval, internalKind)
            case None =>
              throw CpsTransformException(s"Can't find runtime await support for ${tctx.monadType.show}", origin.srcPos)
   }

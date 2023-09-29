@@ -34,6 +34,7 @@ object ValDefTransform {
                                    }
                              case None => cpsRhs0
                   case _ => cpsRhs0
+
             cpsRhs.asyncKind match
                   case AsyncKind.Sync =>
                         if (cpsRhs.isOriginEqSync) then
@@ -57,12 +58,13 @@ object ValDefTransform {
                                     CpsTree.unit(owner)
                               )
 
-                        MapCpsTree(
+                        val retval = MapCpsTree(
                               term,
                               owner,
                               cpsRhs.changeOwner(owner),
                               mapCpsTreeArgument
                         )
+                        retval
                   case rhsFunJind: AsyncKind.AsyncLambda =>
                         // here value is a function.
                         cpsRhs.unpure match

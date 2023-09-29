@@ -49,7 +49,8 @@ object BlockTransform {
                  case v: ValDef =>
                    val cpsV: CpsTree = ValDefTransform(v, owner, nesting + 1)
                    Log.trace(s"adding valdef to block ${cpsV}",nesting)
-                   s.appendInBlock(cpsV)
+                   val s1 = s.appendInBlock(cpsV)
+                   s1
                  case mDef =>
                    // templates and local function definitions will be processed py compiler plugin in own,
                    //  we just will not skip local templates and local function definitions during select phase as internal.
