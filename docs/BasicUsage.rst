@@ -4,17 +4,17 @@ Dependency
 Sbt Example
 -----------
 
-The current prerelease is |0.9.18| for using with Scala |3.3.0|_.
+The current prerelease is |0.9.19| for using with Scala |3.3.1|_.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.18"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.19"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.18"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.19"
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
@@ -24,7 +24,15 @@ For using direct context encoding you also need to add compiler-plugin:
  .. code-block:: scala
 
   autoCompilerPlugins := true
-  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.18")
+  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.19")
+
+If you use JDK-21 you can find helpful loom-based support for transforming arguments of high-order functions.
+To enable one, add `dotty-cps-async-loom` module to the dependencies:
+
+ .. code-block:: scala
+
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.19"
+
 
 
 Basic Usage

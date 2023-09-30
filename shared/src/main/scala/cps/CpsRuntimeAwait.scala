@@ -1,11 +1,5 @@
 package cps
 
-import scala.util._
-
-//
-//  map: A=>B
-//  map_async: A=>F[B] ???
-//  f': A=>F[B],    f'':  A=>runtime.await(F[B]) 
 
 /**
  * When this typeclass is implemented for a monad F, 
@@ -14,27 +8,22 @@ import scala.util._
  **/
 trait CpsRuntimeAwait[F[_]] {
 
-  /*
-    def async[A,C <: CpsTryMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A] = {
-      m.flatDelay(runAsync(f)(m,ctx))
-    }
-    
-    def runAsync[A,C <: CpsTryMonadContext[F]](f: C=>A)(m: CpsAsyncEffectMonad[F], ctx:C):F[A]
-   */
-
     def await[A](fa: F[A])(ctx: CpsTryMonadContext[F]): A
-
 
 }
 
+/**
+ * Indirect constructor for CpsRuntimeAwait[F] instance, which can be used in situation where
+ * runtime await instance can be build only inside of monad.  (Example - cats.effect.IO)
+ *
+ * When this typeclass is implemented for a monad F, we also can process arguments of high-order functions
+ * wihout requiring of shifted variants.
+ */
 trait CpsRuntimeAwaitProvider[F[_]] {
-
-  //def applySync[A](lambda: CpsRuntimeAwait[F] => A)(using ctx:CpsTryMonadContext[F]): F[A]
 
   def withRuntimeAwait[A](lambda: CpsRuntimeAwait[F] => F[A])(using ctx:CpsTryMonadContext[F]): F[A]
 
 }
-
 
 
 /**
