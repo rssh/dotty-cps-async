@@ -110,7 +110,7 @@ class DotcInvocations(silent: Boolean = false) {
 }
 
 
-case class TestRun(inputDir: String, mainClass: String, expectedOutput: String = "Ok\n")
+case class TestRun(inputDir: String, mainClass: String, expectedOutput: String = "Ok\n", extraDotcArgs:List[String] = List.empty)
 
 
 
@@ -194,7 +194,7 @@ object DotcInvocations {
                ): Unit = {
     for(r <- runs) {
        if (selection.matches(r.inputDir)) {
-         compileAndRunFilesInDirAndCheckResult(r.inputDir,r.mainClass,r.expectedOutput,dotcArgs)
+         compileAndRunFilesInDirAndCheckResult(r.inputDir,r.mainClass,r.expectedOutput,dotcArgs.copy(extraDotcArgs = dotcArgs.extraDotcArgs ++ r.extraDotcArgs))
        }
     }
   }

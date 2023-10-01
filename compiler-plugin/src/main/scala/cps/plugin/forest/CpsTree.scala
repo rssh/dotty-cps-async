@@ -514,7 +514,10 @@ case class MapCpsTree(
     mapFun.body.originType
 
   override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree = {
-    copy(mapFun = mapFun.copy(body = mapFun.body.castOriginType(ntpe)))
+    if (ntpe =:= originType) then
+      this
+    else
+      copy(mapFun = mapFun.copy(body = mapFun.body.castOriginType(ntpe)))
   }
 
   override def internalAsyncKind(using Context, CpsTopLevelContext) =
@@ -736,7 +739,9 @@ case class LambdaCpsTree(
   }
 
   override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree =
-    if (defn.isFunctionType(ntpe) || defn.isContextFunctionType(ntpe)) then
+    if (ntpe =:= originType) then
+      this
+    else if (defn.isFunctionType(ntpe) || defn.isContextFunctionType(ntpe)) then
       ntpe match
         case AppliedType(ntpfun, ntpargs) =>
           // TODO: check that params are the same.
@@ -853,9 +858,6 @@ case class LambdaCpsTree(
               tctx.cpsNonDirectContext
             )
           )
-          if (tss.isEmpty) then
-            println(s"tss.isEmpty, originParans=${originParams}, tss=${tss}")
-            println(s"originType=${originType.show}, originClosureType=${originClosureType.show}")
           TransformUtil.substParams(nBody, originParams, tss.head).changeOwner(cpsBody.owner, meth)
         })
         CpsTree.pure(origin,owner,closure)
@@ -921,7 +923,10 @@ case class OpaqueAsyncLambdaTermCpsTree(
   override def normalizeAsyncKind(using Context, CpsTopLevelContext) = this
 
   override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree = {
-    typed(Typed(origin,TypeTree(ntpe)))
+    if (origin.tpe =:= ntpe) then
+      this
+    else
+      typed(Typed(origin,TypeTree(ntpe)))
   }
 
   override def unpure(using Context, CpsTopLevelContext): Option[Tree] = None
