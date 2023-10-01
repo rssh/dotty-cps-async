@@ -294,7 +294,7 @@ given CpsRuntimeAwaitProvider[PoorManEffect] with {
 }
 
 @experimental
-class TestPE {
+class TestPME {
 
   def incr(x:Int): PoorManEffect[Int] = async[PoorManEffect] {
     x+1
