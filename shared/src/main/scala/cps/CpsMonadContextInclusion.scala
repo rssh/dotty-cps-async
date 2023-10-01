@@ -1,5 +1,9 @@
 package cps
 
+/**
+ * Typeclass for inclusion of one monad context into another.
+ * If this inclusion exists, that we can call direct context encoding method over G[_] in F[_].
+ */
 trait CpsMonadContextInclusion[F[_],G[_]] {
 
   def apply[T](fctx: CpsTryMonadContext[F])(fun: CpsTryMonadContext[G] => G[T]):F[T]

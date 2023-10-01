@@ -32,7 +32,7 @@ object PoorManEffect {
 
   case class Thunk[T](th: (RunAPI => PoorManEffect[T])) extends PoorManEffect[T]
 
-  object CpsPMEAsyncEffectMonad extends CpsTryMonad[PoorManEffect] with CpsTryMonadInstanceContext[PoorManEffect]  {
+  object CpsPMEMonad extends CpsTryMonad[PoorManEffect] with CpsTryMonadInstanceContext[PoorManEffect]  {
 
     def pure[T](t: T): PoorManEffect[T] = Pure(t)
 
@@ -56,7 +56,7 @@ object PoorManEffect {
 
   }
 
-  given CpsTryMonad[PoorManEffect] = CpsPMEAsyncEffectMonad
+  given CpsPMEMonad.type = CpsPMEMonad
 
 
   private class Runner[A] extends RunAPI  {
@@ -311,6 +311,24 @@ class TestPE {
     //val y = x * 2
     val r = PoorManEffect.run(pe)
     assert(r == 124*4)
+  }
+
+  @Test
+  def testPMECatchExceptionFromAwait(): Int = {
+    val c = async[PoorManEffect] {
+      val list0 = MyList.create(1, 2, 3, 4, 5)
+      try {
+        val list1 = list0.map[Int](x => await(PoorManEffect.Error(new RuntimeException("test"))))
+        assert(false)
+        1
+      } catch {
+        case ex: RuntimeException =>
+          assert(ex.getMessage() == "test")
+          2
+      }
+    }
+    val r = PoorManEffect.run(c)
+    assert(r==2)
   }
 
 

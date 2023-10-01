@@ -293,12 +293,16 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
               case None =>
                  if (existsLambdaUnshift) then
                     body.tpe.widen.asType match
+                      case '[Nothing] =>
+                        throw MacroError(s"Can't unshift lambda with Nothing type: ${body.tpe.widen.show}", posExpr(term))
                       case '[F[r]] if body.tpe.widen <:< TypeRepr.of[F[r]] =>
-                        val nBody = '{ ${cpsCtx.monad}.flatMap(
-                                             ${cpsBody.transformed.asExprOf[F[F[r]]]})((x:F[r])=>x) }.asTerm
-                        val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
-                        Lambda(owner, mt, 
-                              (owner,args) => changeArgs(params,args,nBody,owner).changeOwner(owner))
+                          val nBody = '{ ${ cpsCtx.monad }.flatMap(
+                            ${
+                              cpsBody.transformed.asExprOf[F[F[r]]]
+                             })((x: F[r]) => x) }.asTerm
+                          val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
+                          Lambda(owner, mt,
+                            (owner, args) => changeArgs(params, args, nBody, owner).changeOwner(owner))
                       case _ =>
                         throw MacroError(s"F[?] expected, we have ${body.tpe.widen.show}",term.asExpr)
                  else
