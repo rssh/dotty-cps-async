@@ -16,12 +16,13 @@ object FutureLoomRuntimeAwait extends LoomRuntimeAwait[Future] {
           case Success(r) => completableFuture.complete(r)
           case Failure(ex) => completableFuture.completeExceptionally(ex)
         }
-        // it's depend on implementation of thread pool,
-        //    in some cases this is not needed (because thread pool create virtual thread for each task),
-        //    but we can't know this. 
-        blocking(
-          completableFuture.get()
-        )
+        blocking {
+          try
+            completableFuture.get()
+          catch
+            case ec: ExecutionException =>
+              throw ec.getCause()
+        }
     }
 
 }

@@ -355,10 +355,6 @@ class TestPE {
         case ex: RuntimeException =>
           assert(ex.getMessage() == "test")
           2
-        case ex: Throwable =>
-          println("Catch non-tuntime exception")
-          ex.printStackTrace()
-          throw ex
       }
     }
     val r = PoorManEffect.run(c)

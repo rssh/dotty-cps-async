@@ -1,14 +1,13 @@
 package cpsloomtest
 
 import cps.*
-import cps.plugin.annotation.CpsDebugLevel
 
 import java.util.concurrent.{CompletableFuture, ConcurrentHashMap, ConcurrentLinkedQueue}
 import scala.annotation.experimental
 import scala.util.*
 import scala.collection.mutable.{Map, Queue}
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.{Await, BlockContext, CanAwait, blocking}
+import scala.concurrent.{Await, BlockContext, CanAwait, ExecutionException, blocking}
 import org.junit.{Ignore, Test}
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
@@ -41,24 +40,35 @@ object PoorManEffect {
     def error[T](e: Throwable): PoorManEffect[T] = Error(e)
 
     def map[A, B](fa: PoorManEffect[A])(f: A => B): PoorManEffect[B] = fa match
-      case Pure(t) => Pure(f(t))
+      case Pure(t) =>
+        inTry(Pure(f(t)))
       case Error(e) => Error(e)
-      case Thunk(th) => Thunk((d) => map(th(d))(f))
+      case Thunk(th) => Thunk((d) => map(inTry(th(d)))(f))
 
     def flatMap[A, B](fa: PoorManEffect[A])(f: A => PoorManEffect[B]): PoorManEffect[B] = fa match
-      case Pure(t) => f(t)
+      case Pure(t) =>
+        inTry(f(t))
       case Error(e) => Error(e)
-      case Thunk(th) => Thunk(d => flatMap(th(d))(f))
+      case Thunk(th) => Thunk(d => flatMap(inTry(th(d)))(f))
 
     def flatMapTry[A, B](fa: PoorManEffect[A])(f: Try[A] => PoorManEffect[B]): PoorManEffect[B] =
       fa match
-        case Pure(t) => f(Success(t))
-        case Error(e) => f(Failure(e))
-        case Thunk(th) => Thunk(d => flatMapTry(th(d))(f))
+        case Pure(t) =>
+          inTry(f(Success(t)))
+        case Error(e) =>
+          inTry(f(Failure(e)))
+        case Thunk(th) =>
+          Thunk(d => flatMapTry(inTry(th(d)))(f))
+
+    def inTry[X](op: =>PoorManEffect[X]): PoorManEffect[X] =
+      try
+        op
+      catch
+        case NonFatal(ex) =>
+          Error(ex)
 
   }
 
-  //given CpsTryMonad[PoorManEffect] = CpsPMEMonad
   given CpsPMEMonad.type = CpsPMEMonad
 
 
@@ -145,9 +155,12 @@ object PoorManEffect {
                 }
               }
             }
-            val retval = thunk
-            submitWaiter.synchronized {
-              submitWaiter.notifyAll()
+            val retval = try {
+              thunk
+            } finally {
+              submitWaiter.synchronized {
+                submitWaiter.notifyAll()
+              }
             }
             retval
           }
@@ -162,7 +175,8 @@ object PoorManEffect {
             val v = runQueue.dequeue()
             v.pe match
               case Pure(t) => setWaiterResult(v.id, Success(t))
-              case Error(e) => setWaiterResult(v.id, Failure(e))
+              case Error(e) =>
+                setWaiterResult(v.id, Failure(e))
               case Thunk(th) =>
                 // here we can have call of block-context.
                 nThunksInProcess.incrementAndGet()
@@ -206,7 +220,12 @@ object PoorManEffect {
       val runner = new Runner()
       val id0 = runner.submit[A](pe)
       val resultFuture = runner.listenSubmitted[A](id0)
-      runner.process()
+      try
+         runner.process()
+      catch
+        case NonFatal(ex) =>
+          println(s"Impossible, excwption from process: ${ex.getMessage}")
+          throw ex
       runner.checkSubmitted[A](id0) match
         case Some(Success(t)) => t.asInstanceOf[A]
         case Some(Failure(e)) => throw e
@@ -223,7 +242,11 @@ object PoorManEffect {
                      throw new RuntimeException(s"process finished, but no result for id ${id0}")
            } else {
              blocking {
-               resultFuture.get()
+               try
+                  resultFuture.get()
+               catch
+                 case ex: ExecutionException =>
+                   throw ex.getCause()
              }
            }
 
@@ -247,8 +270,13 @@ class PoorManEffectRuntimeAwait(rt:PoorManEffect.RunAPI) extends CpsRuntimeAwait
     val cf = rt.listenSubmitted[A](id)
     // here execution of main loop of runner.process will be moved to other virtual thread.
     blocking{
-      val retval = cf.get()
-      rt.forgetSubmitted(id)
+      val retval = try
+                      cf.get()
+                   catch
+                     case  ex: ExecutionException =>
+                       throw ex.getCause()
+                   finally
+                      rt.forgetSubmitted(id)
       retval
     }
   }
@@ -266,15 +294,14 @@ given CpsRuntimeAwaitProvider[PoorManEffect] with {
 }
 
 @experimental
-@CpsDebugLevel(20)
-class TestPME {
+class TestPE {
 
   def incr(x:Int): PoorManEffect[Int] = async[PoorManEffect] {
     x+1
   }
 
-  def runPoorManEffectList(using CpsDirect[PoorManEffect]): List[Int] = {
-    val l = List(1,2,3)
+  def runPoorManEffectList()(using CpsDirect[PoorManEffect]): List[Int] = {
+    val l = List(1, 2, 3)
     val l2 = l.map(x => await(incr(x)))
     l2
   }
@@ -282,14 +309,14 @@ class TestPME {
   @Test
   def testPoorManEffectList(): Unit = {
     val pe: PoorManEffect[List[Int]] = async[PoorManEffect] {
-      runPoorManEffectList
+      runPoorManEffectList()
     }
     val r = PoorManEffect.run[List[Int]](pe)
     assert (r == List(2,3,4))
   }
 
-  def runPoorManEffectMyList(using CpsDirect[PoorManEffect]): MyList[Int] = {
-    val l = MyList.create(1,2,3)
+  def runPoorManEffectMyList()(using CpsDirect[PoorManEffect]): MyList[Int] = {
+    val l = MyList.create(1, 2, 3)
     val l2 = l.map(x => await(incr(x)))
     l2
   }
@@ -297,7 +324,7 @@ class TestPME {
   @Test
   def testPoorManEffectMyList(): Unit = {
     val pe = async[PoorManEffect] {
-      runPoorManEffectMyList
+      runPoorManEffectMyList()
     }
     val r = PoorManEffect.run(pe)
     assert(r == MyList.create(2, 3, 4))
@@ -313,19 +340,44 @@ class TestPME {
         PoorManEffect.Pure(x * 2)
     }
 
-  def runPMETwice(using CpsDirect[PoorManEffect]): Int = {
-    val l124 = 124
-    val l125 = twice[Int](x => await(m2(x)))(l124)
-    l125
+  def runPMETwice()(using CpsDirect[PoorManEffect]): Int = {
+    val l = 124
+    val l2 = twice[Int](x => await(m2(x)))(124)
+    l2
   }
 
   @Test
   def testPMETwice(): Unit = {
-    val pe = async[PoorManEffect](runPMETwice)
-    //val x = 1
-    //val y = x * 2
+    val pe = async[PoorManEffect] {
+      runPMETwice()
+    }
     val r = PoorManEffect.run(pe)
     assert(r == 124*4)
+  }
+
+  def runPMECatchExceptionFromAwait(using CpsDirect[PoorManEffect]): Int = {
+    val list0 = MyList.create(1, 2, 3, 4, 5)
+    try {
+      val list1 = list0.map[Int](x => await(PoorManEffect.Error(new RuntimeException("test"))))
+      org.junit.Assert.assertTrue(false)
+      1
+    } catch {
+      case ex: RuntimeException =>
+        //dotty error durint -Ycheck:all
+        //  TODO: create test-case with issue
+        //assert(ex.getMessage() == "test")
+        org.junit.Assert.assertTrue(ex.getMessage() == "test")
+        2
+    }
+  }
+
+  @Test
+  def testPMECatchExceptionFromAwait(): Unit = {
+    val c = async[PoorManEffect] {
+      runPMECatchExceptionFromAwait
+    }
+    val r = PoorManEffect.run(c)
+    assert(r==2)
   }
 
 
