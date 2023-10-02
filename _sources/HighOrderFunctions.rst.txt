@@ -60,13 +60,16 @@ So, we can write something like
 Loom-based runtime await.
 -------------------------
 
-JDK-19 includes a set of interfaces (project Loom) that allows execution of code in virtual threads, 
+JDK-21 includes a set of interfaces (project Loom) that allows execution of code in virtual threads, 
 where runtime blocking wait is not blocking from OS view:  real thread can execute tasks from other virtual threads during the wait.   
-In this case, we don't need to substitute a high-order function but change instead the function argument to the original form,
-if our monad implements the `CpsRuntimeAwait <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsRuntimeAwait.scala>`_  typeclass.
+In this case, we don't need to substitute a high-order function but change instead the function argument to the original form.
+Target monad should implement one of the
+`CpsRuntimeAwait`  or
+`CpsRuntimeAwaitProvider` typeclasses
+(see
+`sources <https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsRuntimeAwait.scala>`_  )
 
-This experimental feature should be enabled by declaring the implicit value of cps.macros.flags.UsingLoomAwait
-
+For enabling this future, add `dotty-cps-async-loom` artifact to the dependencies of your project.
 
 
 How to provide shifted functions.

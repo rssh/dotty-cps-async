@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>High-order functions. &#8212; dotty-cps-async 0.9.18 documentation</title>
+    <title>High-order functions. &#8212; dotty-cps-async 0.9.19-SNAPSHOT documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.19-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>  
@@ -79,11 +79,15 @@
 </section>
 <section id="loom-based-runtime-await">
 <h2>Loom-based runtime await.<a class="headerlink" href="#loom-based-runtime-await" title="Permalink to this heading">¶</a></h2>
-<p>JDK-19 includes a set of interfaces (project Loom) that allows execution of code in virtual threads,
+<p>JDK-21 includes a set of interfaces (project Loom) that allows execution of code in virtual threads,
 where runtime blocking wait is not blocking from OS view:  real thread can execute tasks from other virtual threads during the wait.
-In this case, we don’t need to substitute a high-order function but change instead the function argument to the original form,
-if our monad implements the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsRuntimeAwait.scala">CpsRuntimeAwait</a>  typeclass.</p>
-<p>This experimental feature should be enabled by declaring the implicit value of cps.macros.flags.UsingLoomAwait</p>
+In this case, we don’t need to substitute a high-order function but change instead the function argument to the original form.
+Target monad should implement one of the
+<cite>CpsRuntimeAwait</cite>  or
+<cite>CpsRuntimeAwaitProvider</cite> typeclasses
+(see
+<a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsRuntimeAwait.scala">sources</a>  )</p>
+<p>For enabling this future, add <cite>dotty-cps-async-loom</cite> artifact to the dependencies of your project.</p>
 </section>
 <section id="how-to-provide-shifted-functions">
 <h2>How to provide shifted functions.<a class="headerlink" href="#how-to-provide-shifted-functions" title="Permalink to this heading">¶</a></h2>
@@ -283,7 +287,7 @@ We also  have the method <a class="reference external" href="https://github.com/
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.18 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.19-SNAPSHOT documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>

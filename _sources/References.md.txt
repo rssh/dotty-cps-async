@@ -30,6 +30,7 @@ Can we free concurrent programming from the monadic style:
  - Monadic-reflection <https://github.com/lampepfl/monadic-reflection>  (requires a [project Loom](https://openjdk.java.net/projects/loom/) enabled JVM)
 -  Thoughtworks DSL.scala recently ported to Scala 3:  <https://github.com/ThoughtWorksInc/Dsl.scala> 
 -  zio-direct (direct translation of a subset of scala on top of ZIO effect system) <https://github.com/zio/zio-direct>
+-  Scrout scala compiler plugin (direct context encoding, implemented as suspend FA on top of JVM): <https://github.com/47deg/scourt> and related SIP submission: <https://github.com/scala/improvement-proposals/pull/63>
 
 ## Related work in other languages
 
