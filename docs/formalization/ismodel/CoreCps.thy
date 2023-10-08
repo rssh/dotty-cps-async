@@ -11,7 +11,7 @@ datatype  typeexpr = AnyTp
       ArrowTp typeexpr typeexpr
      |
       MonadTp typeexpr
-     |
+    |
       ErrorTp
 
 
@@ -29,7 +29,11 @@ datatype expr = ConstantExpr int
    Lambda int typeexpr  expr 
   |
    App expr expr
-  |
+ |
+   Mpure expr
+ |
+   MflatMap expr expr
+ |
    Error string
 
 
@@ -64,7 +68,6 @@ fun lub :: "typeexpr \<Rightarrow> typeexpr \<Rightarrow> typeexpr" where
 type_synonym varIndex = int
 type_synonym typeVarState = "varIndex \<Rightarrow> typeexpr"
 
-fun lastExpression::(Block
 
 
 fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
@@ -93,6 +96,16 @@ fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
                      other \<Rightarrow> ErrorTp
                 )  
     "
+  |
+    "typeExpr (Mpure x) s = MonadTp (typeExpr x s)"
+  |
+    "typeExpr (MflatMap fa f) s = (
+        case (typeExpr fa s) of
+            MonadTp a \<Rightarrow> (case (typeExpr f s) of
+                            ArrowTp a1 a2 \<Rightarrow> ConstTp
+                          | other \<Rightarrow> ErrorTp)
+          | other \<Rightarrow> ErrorTp
+    )"
   | 
     "typeExpr (Error e) s = ErrorTp"
 
