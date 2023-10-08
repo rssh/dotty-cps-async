@@ -49,13 +49,17 @@ fun lub :: "typeexpr \<Rightarrow> typeexpr \<Rightarrow> typeexpr" where
   |
    "lub x ErrorTp = ErrorTp"
   |
-   "lub AnyTp x = AnyTp" 
+   "lub AnyTp x = (if (x = ErrorTp) then ErrorTp else AnyTp)" 
   |
-   "lub x AnyTp = AnyTp"
+   "lub x AnyTp = (if (x = ErrorTp) then ErrorTp else AnyTp)"
   |
-   "lub ConstTp (ArrowTp x y) = AnyTp"
+   "lub ConstTp x = AnyTp"
   |
-   "lub (ArrowTp x y) ConstTp = AnyTp"
+   "lub (ArrowTp x y) z = AnyTp"
+ |
+   "lub (MonadTp x) (MonadTp y) = MonadTp (lub x y)"
+ |
+   "lub (MonadTp x) y = AnyTp"
 
 type_synonym varIndex = int
 type_synonym typeVarState = "varIndex \<Rightarrow> typeexpr"
@@ -74,10 +78,12 @@ fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
     "typeExpr (Lambda  i tp body) s = (ArrowTp tp (typeExpr body (s(i:=tp))))"
   |
     "typeExpr (App x arg) s =
-               (if ((typeExpr x s) = (ArrowTp xt yt)) then
-                       (if (xt = (typeExpr arg s)) then yt else ErrorTp)
-                else
-                  ErrorTp)"
+                (case (typeExpr x s) of
+                     (ArrowTp xi xo) \<Rightarrow> if ((typeExpr arg s) = xi) then xo else ErrorTp
+                    |
+                     other \<Rightarrow> ErrorTp
+                )  
+    "
   | 
     "typeExpr (Error e) s = ErrorTp"
 
