@@ -20,8 +20,8 @@ datatype expr = ConstantExpr int
   |
    Let int typeexpr expr
   |
-   Block "expr list"
-  |
+   Block "expr list" 
+ |
    If expr expr expr
   |
    While expr expr 
@@ -64,12 +64,21 @@ fun lub :: "typeexpr \<Rightarrow> typeexpr \<Rightarrow> typeexpr" where
 type_synonym varIndex = int
 type_synonym typeVarState = "varIndex \<Rightarrow> typeexpr"
 
+fun lastExpression::(Block
+
+
 fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
     "typeExpr (ConstantExpr x) s = ConstTp"
   |
     "typeExpr (Let v vt body) s = (typeExpr body (s(v:=vt)) )"
   |
-    "typeExpr (Block list) s = (typeExpr (last(list)) s)"
+    "typeExpr (Block l) s = (case l of
+                               [] \<Rightarrow> ConstTp
+                              |
+                               x # [] \<Rightarrow>  (typeExpr x s)
+                              |
+                               h # t \<Rightarrow> (typeExpr (Block t) s)
+                            )"
   |
     "typeExpr (If cond ifTrue ifFalse) s = (lub (typeExpr ifTrue s) (typeExpr ifFalse s))"
   |
@@ -86,6 +95,7 @@ fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
     "
   | 
     "typeExpr (Error e) s = ErrorTp"
+
 
 
 end
