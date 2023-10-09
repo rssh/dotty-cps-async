@@ -18,7 +18,9 @@ datatype  typeexpr = AnyTp
 
 datatype expr = ConstantExpr int
   |
-   Let int typeexpr expr
+   Let int typeexpr expr expr
+  |
+   Ref int typeexpr
   |
    Block "expr list" 
  |
@@ -33,6 +35,8 @@ datatype expr = ConstantExpr int
    Mpure expr
  |
    MflatMap expr expr
+ |
+   ExternalFun int typeexpr
  |
    Error string
 
@@ -73,7 +77,9 @@ type_synonym typeVarState = "varIndex \<Rightarrow> typeexpr"
 fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
     "typeExpr (ConstantExpr x) s = ConstTp"
   |
-    "typeExpr (Let v vt body) s = (typeExpr body (s(v:=vt)) )"
+    "typeExpr (Let v vt vv body) s = (typeExpr body (s(v:=vt)) )"
+  |
+    "typeExpr (Ref i it) s = (if (it = s(i)) then it else ErrorTp)"
   |
     "typeExpr (Block l) s = (case l of
                                [] \<Rightarrow> ConstTp
@@ -106,9 +112,108 @@ fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
                           | other \<Rightarrow> ErrorTp)
           | other \<Rightarrow> ErrorTp
     )"
+  |
+    "typeExpr (ExternalFun fi ft) s = ft"
   | 
     "typeExpr (Error e) s = ErrorTp"
 
+datatype AsyncKind = AKSync | AKAsync AsyncKind | AKLambda AsyncKind | AKError
+
+datatype CpsTree =
+        CpsTreePure expr
+        |
+        CpsTreeFlatMap CpsTree int typeexpr CpsTree
+        |
+        CpsTreeAsync expr AsyncKind
+        |
+        CpsTreeLambda int typeexpr CpsTree
+        |
+        ErrorCpsTree
+
+
+fun asyncKind :: "CpsTree \<Rightarrow> AsyncKind" where
+    "asyncKind (CpsTreePure e) = AKSync"
+  |
+    "asyncKind (CpsTreeAsync e k) = k"
+  |
+    "asyncKind (CpsTreeFlatMap source i tp fbody) = (
+       case (asyncKind source) of
+           (AKAsync Sync) \<Rightarrow> (asyncKind fbody)
+          | other \<Rightarrow> AKError
+    )"
+  |
+   (* here is problem because lambda cab have 2 possible cps-ed representations:
+      Lambda: A\<Rightarrow>F[B]  and Pure: F[A\<Rightarrow>B] which is sometimes possible. (when body is sync)
+      For now we follow scala implementation, return lambda and check for possinility of
+      sync representation during transformation.
+    *)
+    "asyncKind (CpsTreeLambda i tp body) = AKLambda (asyncKind body)"
+  |
+    "asyncKind ErrorCpsTree = AKError"
+      
+(*
+ analog of CpsTree.transformed
+*)
+fun cpsTreeToExpr :: "CpsTree \<Rightarrow> expr" where 
+   "cpsTreeToExpr (CpsTreePure e) = Mpure e"
+ |
+   "cpsTreeToExpr (CpsTreeFlatMap arg v vt vbody) = 
+                                MflatMap (cpsTreeToExpr arg) (Lambda v vt (cpsTreeToExpr vbody))"
+ |
+   "cpsTreeToExpr (CpsTreeAsync e k) = (
+       case k of
+           AKSync \<Rightarrow> e
+         | other \<Rightarrow> Error ''Invalid async kind''
+   )"   (* TODO: handle AsynK*(Sync)  *)
+ |
+   "cpsTreeToExpr (CpsTreeLambda v vt vbody) = (Lambda v vt (cpsTreeToExpr vbody))"
+  |
+   "cpsTreeToExpr ErrorCpsTree = Error ''ErrorCpsTree'' "
+
+
+fun unpureCpsTree :: "CpsTree \<Rightarrow> (expr option)" where
+   "unpureCpsTree (CpsTreePure e) =  (Some e)"
+  | 
+   "unpureCpsTree (CpsTreeFlatMap source i tp fbody) = (
+       case (unpureCpsTree source) of 
+         None \<Rightarrow> None
+        |
+         Some(unpureSource) \<Rightarrow>
+           (case (unpureCpsTree fbody) of
+             None \<Rightarrow> None
+            |
+             Some unpureFbody \<Rightarrow> Some (Let i tp (unpureSource) (unpureFbody) )
+           )
+   )"
+  |
+   "unpureCpsTree (CpsTreeAsync e k) = None"
+  |
+   "unpureCpsTree (CpsTreeLambda i tpi cpsBody) = (
+      case (unpureCpsTree cpsBody) of
+         Some body \<Rightarrow> Some (Lambda i tpi body)
+        |
+         None \<Rightarrow> None
+   )"
+ |
+  "unpureCpsTree ErrorCpsTree = None" 
+
+(*
+ CpsTransform 
+*)
+fun exprToCpsTree :: "expr \<Rightarrow> CpsTree" where
+    "exprToCpsTree (ConstantExpr c) =  CpsTreePure (ConstantExpr c)"
+  |
+    "exprToCpsTree (Let v vt vv body) = (
+        let cpsv = exprToCpsTree vv in
+         let cpsbody = exprToCpsTree body in
+           case (asyncKind cpsv) of 
+              AKSync \<Rightarrow>
+                case (asyncKind cpsbody) of
+                   AKSync \<Rightarrow>
+                       CpsTreePure (Let v vt (unpureCpsTree vv) (unpureCpsTree cpsbody))
+    )"
+    
+    
 
 
 end
