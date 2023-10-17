@@ -31,6 +31,10 @@ trait CpsRuntimeAwaitProvider[F[_]] {
  * that performance penalty in comparison with cps run is relative low
  * and we can not to use cps transformation in async block for such monad.
  **/
-trait CpsFastRuntimeAwait[F[_]] extends CpsRuntimeAwait[F]
+trait CpsRuntimeAsyncAwait[F[_]] extends CpsRuntimeAwait[F] {
+
+  def async[A](a: CpsTryMonadContext[F] ?=> A): F[A]
+
+}
 
 

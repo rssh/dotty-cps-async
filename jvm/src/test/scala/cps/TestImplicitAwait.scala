@@ -8,11 +8,15 @@ import org.junit.Assert._
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.language.implicitConversions
 import scala.quoted._
 import scala.util.Success
 
 import cps.monads.given
+
+import scala.language.implicitConversions
+
+transparent inline given conversion[T, G[_]](using CpsMonadContext[G], CpsMonadConversion[Future, G]): Conversion[Future[T], T] =
+  x => await[Future, T, G](x)
 
 
 class TestImplicitAwait:
@@ -26,11 +30,11 @@ class TestImplicitAwait:
            Future successful 0
      def retrieveDMPInfo(url:String, theme: Int, userId: String): Future[String] =
            Future successful s"${url}:${theme}:${userId}"
-  
 
-  @Test def withImplicitAwait(): Unit = 
-     import cps.automaticColoring.{*,given}
-     //implicit val printCode = cps.macroFlags.PrintCode
+
+
+  @Test def withImplicitAwait(): Unit =
+    //implicit val printCode = cps.macroFlags.PrintCode
      //implicit val printTree = cps.macroFlags.PrintTree
      //implicit val debugLevel = cps.macroFlags.DebugLevel(20)
      val api = ApiEmulator

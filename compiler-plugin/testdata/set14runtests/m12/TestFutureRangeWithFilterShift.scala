@@ -12,7 +12,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import cps.*
 import cps.monads.given
-import cps.customValueDiscard
 import cps.testconfig.given
 import cps.plugin.annotation.CpsDebugLevel
 

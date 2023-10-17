@@ -221,7 +221,6 @@ class PhaseCps(settings: CpsPluginSettings,
       case _ => throw CpsTransformException(s"excepted that cpsMonadContext is ValDef, but we have ${cpsMonadContext.show}", asyncCallTree.srcPos)
     val (tctx, monadValDef) = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
     val ddefCtx = ctx.withOwner(ddef.symbol)
-    tctx.automaticColoring.foreach(_.analyzer.observe(ddef.rhs)(using ddefCtx))
     val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefCtx, tctx)
     val nRhsTerm = wrapTopLevelCpsTree(nRhsCps)(using ddefCtx, tctx)
     val nRhsType = nRhsTerm.tpe.widen
@@ -390,22 +389,10 @@ class PhaseCps(settings: CpsPluginSettings,
                           else if (runsAfter.contains(Inlining.name)) { false }
                           else
                              throw new CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
-    val automaticColoringTag = CpsTransformHelper.findAutomaticColoringTag(monadType, srcPos.span)
-    val automaticColoring = if (automaticColoringTag.isDefined) {
-      val memoization = CpsTransformHelper.findCpsMonadMemoization(monadType, srcPos.span)
-      if (memoization.isDefined) {
-        val analyzer = new AutomaticColoringAnalyzer()
-        Some(CpsAutomaticColoring(memoization.get,analyzer))
-      } else {
-        throw CpsTransformException(s"Can't find instance of cps.CpsMemoization for ${monadType.show}", srcPos)
-      }
-    } else None
-    val customValueDiscard = automaticColoring.isDefined || CpsTransformHelper.findCustomValueDiscardTag(srcPos.span).isDefined
     val tc = CpsTopLevelContext(monadType, monadRef, cpsDirectOrSimpleContext,
                                 optRuntimeAwait, optRuntimeAwaitProvider,
                                 optThrowSupport, optTrySupport,
-                                debugSettings, settings, isBeforeInliner,
-                                automaticColoring, customValueDiscard)
+                                debugSettings, settings, isBeforeInliner)
     (tc, monadValDef)
   }
 

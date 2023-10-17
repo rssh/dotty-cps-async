@@ -13,7 +13,7 @@ object ComputationBoundLoomUsage {
 
    def useLoomFastImpl(using Quotes): Expr[Boolean] = {
       val r = Expr.summon[cps.macros.flags.UseLoomAwait.type].isDefined && 
-              Expr.summon[CpsFastRuntimeAwait[ComputationBound]].isDefined
+              Expr.summon[CpsRuntimeAsyncAwait[ComputationBound]].isDefined
       Expr(r)        
    }
 
@@ -23,7 +23,7 @@ object ComputationBoundLoomUsage {
 
    def useLoomHybridImpl(using Quotes): Expr[Boolean] = {
       val r = Expr.summon[cps.macros.flags.UseLoomAwait.type].isDefined && 
-               !Expr.summon[CpsFastRuntimeAwait[ComputationBound]].isDefined
+               !Expr.summon[CpsRuntimeAsyncAwait[ComputationBound]].isDefined
       Expr(r)
    }
 

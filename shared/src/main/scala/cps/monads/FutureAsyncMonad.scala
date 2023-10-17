@@ -108,11 +108,6 @@ class FutureAsyncMonadAPI(using ExecutionContext) extends CpsSchedulingMonad[Fut
 
 given FutureAsyncMonad(using ec: ExecutionContext): FutureAsyncMonadAPI = new FutureAsyncMonadAPI
 
-given futureDiscard: cps.automaticColoring.WarnValueDiscard[Future] with {}
-
-
-given futureMemoization: CpsMonadMemoization.Default[Future] with {}
-
 
 
 given fromFutureConversion[G[_],T](using ex: ExecutionContext, m: CpsAsyncMonad[G]): CpsMonadConversion[Future,G] with

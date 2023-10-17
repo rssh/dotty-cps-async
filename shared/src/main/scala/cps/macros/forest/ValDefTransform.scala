@@ -27,76 +27,20 @@ object ValDefTransform:
             if cpsCtx.flags.debugLevel > 15 then
                cpsCtx.log(s"ValDef::rightPart is ${TransformUtil.safeShow(rhs)}")
             val cpsRight = Async.nestTransform(rhs.asExprOf[et],cpsCtx)
-            val memCpsRight:CpsExpr[F,et] = if (cpsCtx.flags.automaticColoring 
-                                              && cpsCtx.memoization.isDefined
-                                              && cpsCtx.memoization.get.kind != CpsMonadMemoization.Kind.BY_DEFAULT) {
-               rhsType match
-                 case '[F[r]] =>
-                    val refinedCpsRight = cpsRight.asInstanceOf[CpsExpr[F,F[r]]]
-                    val analysis = cpsCtx.observatory.effectColoring
-                    val usageRecord = analysis.usageRecords.get(valDef.symbol).getOrElse{
-                              val msg = "Can't find analysis record for usage of ${valDef.symbol}"
-                              throw MacroError(msg, rhs.asExpr)
-                    } 
-                    if (usageRecord.nInAwaits > 0 && usageRecord.nWithoutAwaits > 0) then
-                        // TODO:  diagnostic
-                        report.error(s"value ${valDef.symbol} passed in sync and async form at the same time",valDef.pos)
-                        usageRecord.reportCases()
-                    val toMemoize = usageRecord.nInAwaits > 0
-                    if (toMemoize) then
-                      val memoization = cpsCtx.memoization.get
-                      memoization.kind match
-                        case CpsMonadMemoization.Kind.BY_DEFAULT => cpsRight
-                        case CpsMonadMemoization.Kind.INPLACE => 
-                           val mm = memoization.monadMemoization.asExprOf[CpsMonadMemoization.Inplace[F]]
-                           if (cpsRight.isAsync) then
-                              refinedCpsRight.map( '{ (x:F[r]) => ${mm}.apply(x) } ).asInstanceOf[CpsExpr[F,et]]
-                           else
-                              val rhsExpr = cpsRight.syncOrigin.get
-                              val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
-                              CpsExpr.sync(monad, nextRhs, changed=true).asInstanceOf[CpsExpr[F,et]]
-                        case CpsMonadMemoization.Kind.PURE => 
-                           val mm = memoization.monadMemoization.asExprOf[CpsMonadMemoization.Pure[F]]
-                           if (cpsRight.isAsync) then
-                              refinedCpsRight.flatMap( '{ (x:F[r]) => ${mm}.apply(x) } ).asInstanceOf[CpsExpr[F,et]]
-                           else
-                              val rhsExpr = cpsRight.syncOrigin.get
-                              val nextRhs = '{ ${mm}.apply( ${rhsExpr.asExprOf[F[r]]} ) }
-                              CpsExpr.async(monad, nextRhs.asExprOf[F[F[r]]]).asInstanceOf[CpsExpr[F,et]]
-                        case CpsMonadMemoization.Kind.DYNAMIC => 
-                           Expr.summon[CpsMonadMemoization.DynamicAp[F,et]] match
-                               case Some(mm) => 
-                                 if (cpsRight.isAsync) then
-                                    refinedCpsRight.flatMap( '{ (x:F[r]) => ${mm}.apply(x.asInstanceOf[et]) } ).asInstanceOf[CpsExpr[F,et]]
-                                 else
-                                    val rhsExpr = cpsRight.syncOrigin.get
-                                    val nextRhs = '{ ${mm}.apply( ${rhsExpr} ) }
-                                    CpsExpr.async(monad, nextRhs.asExprOf[F[et]]).asInstanceOf[CpsExpr[F,et]]
-                               case None =>
-                                 // todo: use search instead summon for additional message in failure
-                                 val msg = 
-                                   s"Can't find given instance of ${TypeRepr.of[CpsMonadMemoization.DynamicAp[F,et]].show}"
-                                 throw MacroError(msg, rhs.asExpr)
-                    else
-                      cpsRight
-                 case _ => cpsRight
-            } else {
-               cpsRight
-            }
-            if (memCpsRight.isAsync) then
+            if (cpsRight.isAsync) then
                if (cpsCtx.flags.debugLevel > 15) 
                   cpsCtx.log(s"rightPart is async")
-               RhsFlatMappedCpsExpr(using quotes)(monad, Seq(), valDef, memCpsRight, CpsExpr.unit(monad))
+               RhsFlatMappedCpsExpr(using quotes)(monad, Seq(), valDef, cpsRight, CpsExpr.unit(monad))
             else 
                if (cpsCtx.flags.debugLevel > 15) 
-                 cpsCtx.log(s"ValDef: rightPart no async, rhs.isChanged = ${memCpsRight.isChanged}  memCpsRight.transformed=${TransformUtil.safeShow(memCpsRight.transformed.asTerm)}")
-               val rhsTerm = memCpsRight.syncOrigin.get.asTerm
-               val nextValDef = if (memCpsRight.isChanged) {
+                 cpsCtx.log(s"ValDef: rightPart no async, rhs.isChanged = ${cpsRight.isChanged}  cpsRight.transformed=${TransformUtil.safeShow(cpsRight.transformed.asTerm)}")
+               val rhsTerm = cpsRight.syncOrigin.get.asTerm
+               val nextValDef = if (cpsRight.isChanged) {
                                      ValDef(valDef.symbol, Some(rhsTerm.changeOwner(valDef.symbol)))
                                 } else 
                                      valDef
                ValWrappedCpsExpr(using quotes)(monad, Seq(), nextValDef,   CpsExpr.unit(monad) )
-        case other =>
+        case _ =>
             throw MacroError(s"Can't concretize type of right-part $rhs ", rhs.asExpr)
 
 

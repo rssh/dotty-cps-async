@@ -75,17 +75,6 @@ class TestJsPromiseInterop:
     }
 
    
-  @Test def testGoodWithAutomaticColoring(): Future[Try[Unit]] =
-    import cps.automaticColoring.given
-    val api = new JSPromiseBasedTestAPI()
-    val check = async[Future]{
-       val data = api.retrieveData("good")
-       data + "-23"
-    }
-    check.map{ v =>
-       assert( v == "resolved-data-23" )
-       Success(())
-    }
 
   /*
   @Test def testGoodWithCB() =

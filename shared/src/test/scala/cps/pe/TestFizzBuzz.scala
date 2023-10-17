@@ -6,10 +6,7 @@ import org.junit.Assert.*
 import scala.util.*
 
 import cps.*
-import cps.automaticColoring.given
 import cps.util.FutureCompleter
-import scala.language.implicitConversions
-
 import cps.testconfig.given
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -25,15 +22,15 @@ class TestFizzBuzz:
 
   @Test def testFizBuzz = 
      val c = async[PureEffect] {
-       val logger = PEToyLogger.make()
-       val counter = PEIntRef.make(-1)
+       val logger = await(PEToyLogger.make())
+       val counter = await(PEIntRef.make(-1))
        while {
-         val v = counter.increment()
-         logger.log(await(v).toString)
+         val v = await(counter.increment())
+         await(logger.log(v.toString))
          if (v % 3 == 0) then
-            logger.log("Fizz")
+            await(logger.log("Fizz"))
          if (v % 5 == 0) then
-            logger.log("Buzz")
+            await(logger.log("Buzz"))
          v < 10
        } do ()
        await(logger.all())

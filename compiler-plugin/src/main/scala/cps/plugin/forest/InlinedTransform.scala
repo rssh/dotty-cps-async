@@ -258,9 +258,7 @@ object InlinedTransform {
                   optTrySupport = CpsTransformHelper.findCpsTrySupport(gMonadType, inlinedTerm.span),
                   debugSettings = summon[CpsTopLevelContext].debugSettings,
                   pluginSettings = summon[CpsTopLevelContext].pluginSettings,
-                  isBeforeInliner = summon[CpsTopLevelContext].isBeforeInliner,
-                  automaticColoring = summon[CpsTopLevelContext].automaticColoring,
-                  customValueDiscard = summon[CpsTopLevelContext].customValueDiscard
+                  isBeforeInliner = summon[CpsTopLevelContext].isBeforeInliner
                 )
                 val List(ctx) = tss.head
                 val newContext = summon[Context].withOwner(inclusionLambdaSym)

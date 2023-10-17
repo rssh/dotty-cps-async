@@ -77,16 +77,37 @@ fun lub :: "typeexpr \<Rightarrow> typeexpr \<Rightarrow> typeexpr" where
  |
    "lub (MonadTp x) y = AnyTp"
 
+
 type_synonym varIndex = int
 type_synonym typeVarState = "varIndex \<Rightarrow> typeexpr"
+
+definition isCorrectVarType::" int \<Rightarrow> typeVarState \<Rightarrow> bool" where
+   "isCorrectVarType x s = (s(x) \<noteq> ErrorTp)"
+
+
+fun maxVarIndex:: "expr \<Rightarrow> int \<Rightarrow> int" where
+   "maxVarIndex (ConstantExpr x) a = a"
+ | "maxVarIndex (Let i tp init body) a = (maxVarIndex body (maxVarIndex init (max a i)))"
+ | "maxVarIndex (Ref i tp) a = max a i"
+ | "maxVarIndex (If c e1 e2) a = (maxVarIndex e2 (maxVarIndex e1 (maxVarIndex c a)))"
+ | "maxVarIndex (While e1 e2) a = (maxVarIndex e1 (maxVarIndex e2 a))"
+ | "maxVarIndex (Lambda i tp e) a = (maxVarIndex e (max a i))"
+ | "maxVarIndex (App e1 e2) a = (maxVarIndex e1 (maxVarIndex e2 a))"
+ | "maxVarIndex (Mpure e) a = maxVarIndex e a"
+ | "maxVarIndex (MflatMap e1 e2) a = maxVarIndex e1 (maxVarIndex e2 a)"
+ | "maxVarIndex (Await e) a = maxVarIndex e a"
+ | "maxVarIndex (ExternalFun i tp) a = a"
+ | "maxVarIndex (Error s) a = a"
 
 
 fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
     "typeExpr (ConstantExpr x) s = ConstTp"
   |
-    "typeExpr (Let v vt vv body) s = (typeExpr body (s(v:=vt)) )"
+    "typeExpr (Let v vt vv body) s = (
+        if (vt = ErrorTp) then ErrorTp else (typeExpr body (s(v:=vt)) )
+    )"
   |
-    "typeExpr (Ref i it) s = (if (it = s(i)) then it else ErrorTp)"
+    "typeExpr (Ref i it) s = (if (it = s(i))\<and>(it \<noteq> ErrorTp)  then it else ErrorTp)"
   |
     "typeExpr (If cond ifTrue ifFalse) s = (
         case (typeExpr cond s) of
@@ -102,7 +123,7 @@ fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
                 (case (typeExpr x s) of
                      ErrorTp \<Rightarrow> ErrorTp
                     |
-                     (ArrowTp xi xo) \<Rightarrow> if ((typeExpr arg s) = xi) then xo else ErrorTp
+                     (ArrowTp xi xo) \<Rightarrow> if ((typeExpr arg s) = xi)\<and>(xi \<noteq> ErrorTp) then xo else ErrorTp
                     |
                      other \<Rightarrow> ErrorTp
                 )  
@@ -115,9 +136,11 @@ fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
   |
     "typeExpr (MflatMap fa f) s = (
         case (typeExpr fa s) of
-            MonadTp a \<Rightarrow> (case (typeExpr f s) of
-                            ArrowTp a1 a2 \<Rightarrow> ConstTp
-                          | other \<Rightarrow> ErrorTp)
+             MonadTp ErrorTp \<Rightarrow> ErrorTp
+           | MonadTp a \<Rightarrow> (case (typeExpr f s) of
+                              ArrowTp a1 (MonadTp ErrorTp) \<Rightarrow> ErrorTp
+                           |  ArrowTp a1 (MonadTp a2) \<Rightarrow> a2
+                           | other \<Rightarrow> ErrorTp)
           | other \<Rightarrow> ErrorTp
     )"
   |
@@ -217,7 +240,9 @@ fun isCorrectExpr::"expr \<Rightarrow> typeVarState \<Rightarrow> bool" where
 
 fun isCorrectCps :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> bool" where
    "isCorrectCps t s = ((typeCpsTree t s) \<noteq> ErrorTp)"
- 
+
+
+
 
 fun asyncKind :: "CpsTree \<Rightarrow> AsyncKind" where
     "asyncKind (CpsTreePure e) = AKSync"
@@ -261,7 +286,8 @@ fun cpsTreeToExpr :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> expr" whe
          | AKAsync k1 \<Rightarrow> (
              case (typeExpr e s) of
                  (MonadTp et) \<Rightarrow> if (isCorrectTp et) then 
-                                    (MflatMap e (Lambda 1 et (Ref 1 et)))
+                                    (MflatMap (cpsTreeToExpr (CpsTreeAsync e k1) s) 
+                                              (Lambda 1 et (Ref 1 et)))
                                  else (Error ''AAA'')
                  |other \<Rightarrow> Error ''Invalud async kind''
            )
@@ -312,9 +338,25 @@ fun unpureCpsTree :: "CpsTree \<Rightarrow> (expr option)" where
 lemma correctNotError: "isCorrectCps (t::CpsTree) s \<Longrightarrow> t \<noteq> ErrorCpsTree"
   by auto
 
-lemma correctNoErrorKind: "(isCorrectCps (t::CpsTree) (s::typeVarState)) \<Longrightarrow> (asyncKind t) \<noteq> AKError"
+
+lemma correctFlatMapNoErrorKind: "
+   (isCorrectCps (source::CpsTree) s) \<and> (isCorrectCps (body::CpsTree) s) \<and> (vt \<noteq> ErrorTp)
+                                      \<Longrightarrow> isCorrectCps (CpsTreeFlatMap source v vt body) s"
+  nitpick
+  oops
+ 
+
+lemma correctNoErrorKind: "(isCorrectCpsTree (t::CpsTree) (s::typeVarState)) \<Longrightarrow> ((asyncKind t) \<noteq> AKError)"
   (*nitpick*)
+  apply(simp)
+  apply(induct_tac t)
+    subgoal apply(auto)
+      done
+    subgoal 
   
+  
+
+
   oops
   
 

@@ -18,22 +18,7 @@ object ValDefTransform {
             val tctx = summon[CpsTopLevelContext]
             if (term.rhs.isEmpty) then
                   throw CpsTransformException(s"ValDef without right part: $term", term.srcPos)
-            val cpsRhs0 = RootTransform(term.rhs,term.symbol,nesting+1)
-            val cpsRhs = tctx.automaticColoring match
-                  case Some(c) if (cpsRhs0.originType <:< tctx.monadType.appliedTo(Types.WildcardType)) =>
-                       c.analyzer.usageRecords.get(term.symbol) match
-                             case Some(record) =>
-                                   record.reportCases()
-                                   if (record.nInAwaits > 0 && record.nWithoutAwaits == 0) {
-                                     applyMemoization(cpsRhs0, owner, c.memoization, term)
-                                   } else if (record.nInAwaits >0 && record.nWithoutAwaits > 0) {
-                                     record.reportCases()
-                                     throw CpsTransformException(s"val ${term.name} used in both sync and async way with automatic coloring", term.srcPos)
-                                   } else {
-                                     cpsRhs0
-                                   }
-                             case None => cpsRhs0
-                  case _ => cpsRhs0
+            val cpsRhs = RootTransform(term.rhs,term.symbol,nesting+1)
 
             cpsRhs.asyncKind match
                   case AsyncKind.Sync =>

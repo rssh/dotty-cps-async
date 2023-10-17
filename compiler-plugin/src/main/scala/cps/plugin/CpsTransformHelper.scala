@@ -251,17 +251,6 @@ object CpsTransformHelper {
       findWrapperForMonad("cps.CpsTrySupport", monadType, span)
   }
 
-  def findAutomaticColoringTag(monadType: Type, span: Span)(using ctx: Context): Option[Tree] = {
-    findWrapperForMonad("cps.automaticColoring.AutomaticColoringTag", monadType, span)
-  }
-
-  def findCpsMonadMemoization(monadType: Type, span: Span)(using ctx: Context): Option[Tree] = {
-    findWrapperForMonad("cps.CpsMonadMemoization", monadType, span)
-  }
-
-  def findCustomValueDiscardTag(span: Span)(using ctx: Context): Option[Tree] = {
-    findImplicitInstance(Symbols.requiredClassRef("cps.ValueDiscard.CustomTag"), span)
-  }
 
 
 }
