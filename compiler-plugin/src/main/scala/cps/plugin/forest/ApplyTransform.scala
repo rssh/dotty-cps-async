@@ -82,8 +82,6 @@ object ApplyTransform {
              else
                Log.trace(s"cpsAwait not recognized",nesting)
                applyMArgs(term, owner, nesting, Nil)
-        case observatory.ImplicitAwaitCall(arg, tf, ta, tg, gContext, conversion) =>
-              AwaitTransform.fromApply(term, owner, nesting, tf, ta, tg, arg, gContext, conversion)
         case Apply(TypeApply(adoptCpsedCallCn,List(tf,ta)),List(a))
                   if (adoptCpsedCallCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")) =>
              //  this means that we walk over nesting async.

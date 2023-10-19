@@ -13,7 +13,6 @@ import cps.plugin.DefDefSelectKind.{RETURN_CONTEXT_FUN, USING_CONTEXT_PARAM}
 import plugins.*
 import cps.plugin.QuoteLikeAPI.*
 import cps.plugin.forest.*
-import cps.plugin.observatory.AutomaticColoringAnalyzer
 import dotty.tools.dotc.ast.{Trees, tpd}
 import dotty.tools.dotc.core.DenotTransformers.{InfoTransformer, SymTransformer}
 import dotty.tools.dotc.util.SrcPos
