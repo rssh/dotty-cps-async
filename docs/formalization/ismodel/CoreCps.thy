@@ -261,27 +261,79 @@ fun typeCpsTree:: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> typeexpr" wh
        "typeCpsTree ErrorCpsTree s = ErrorTp" 
 
 
-definition isCorrectExpr::"expr \<Rightarrow> typeVarState \<Rightarrow> bool" where
-       "isCorrectExpr e s \<equiv> ((typeExpr e s) \<noteq> ErrorTp)" 
+fun isCorrectExpr::"expr \<Rightarrow> typeVarState \<Rightarrow> bool" where
+       "isCorrectExpr e s = ((typeExpr e s) \<noteq> ErrorTp)" 
 
 fun isCorrectCps :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> bool" where
    "isCorrectCps t s = ((typeCpsTree t s) \<noteq> ErrorTp)"
 
 
-lemma noMonadTpErrprExpr: "isCorrectExpr t s \<Longrightarrow> (typeExpr t s \<noteq> MonadTp ErrorTp)"
-  nitpick
-  apply(induct t)
+
+lemma isCorrectExprLetBackward [simp]: 
+  "isCorrectExpr (Let v vt vv b) s \<Longrightarrow> (isCorrectExpr vv s)\<and>(isCorrectExpr b (s(v:=vt)))"
+  (*using [[simp_trace]]*)
+  apply(cases "isCorrectTp vt")
+   defer
   subgoal
-    apply(simp)
+    apply(auto)
     done
   subgoal
-    apply()
+    apply(cases "vt = typeExpr vv s")
+    defer
+    subgoal
+      apply(cases "vt")
+      apply(auto)
+      subgoal
+          apply(cases "typeExpr vv s"; auto)
+          done
+      subgoal
+          apply(cases "typeExpr vv s"; auto)
+          done
+      subgoal
+          apply(cases "typeExpr vv s"; auto)
+        done
+      subgoal
+        apply(cases "typeExpr vv s"; auto)
+        done
+      done
+    subgoal
+      apply(auto)
+      apply(cases "typeExpr vv s"; auto)
+      done
+    done
+  done
+
+
+lemma noMonadTpErrorExprNS: "isCorrectExpr t s \<Longrightarrow> (typeExpr t s \<noteq> MonadTp ErrorTp)"
+  (*nitpick*)
+  apply(cases "typeExpr t s"; auto)
+  apply(induction t)
+  subgoal
+    apply(auto)
+    done
+  subgoal
+    apply(case "isCorrectTp x2_")
+    sorry
+  sorry
+
+
+lemma noMonadTpErrorExprS: 
+  assumes "isCorrectExpr t s"
+  shows "(typeExpr t s \<noteq> MonadTp ErrorTp)"
+proof 
+  (cases "typeExpr t s")
+  case "AnyTp"
+    
+  
+  show ?thesis
+    sorry
+qed
 
 
 lemma noMonadTpErrorCps: "isCorrectCps tree s \<Longrightarrow> (typeCpsTree tree s) \<noteq> (MonadTp ErrorTp)"
   apply(auto)
   apply(induct tree)
-  subgoal
+  
   sorry
 
 
@@ -329,11 +381,16 @@ definition isRedusableCps::"CpsTree \<Rightarrow> typeVarState \<Rightarrow> boo
 (*
  analog of CpsTree.transformed
 *)
-function cpsTreeToExpr :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> expr" where 
+fun cpsTreeToExpr :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> expr" where 
    "cpsTreeToExpr (CpsTreePure e) s = Mpure e"
  |
-   "cpsTreeToExpr (CpsTreeFlatMap arg v vt vbody) s = 
-                   MflatMap (cpsTreeToExpr arg s) (Lambda v vt (cpsTreeToExpr vbody (s(v:=vt))))"
+   "cpsTreeToExpr (CpsTreeFlatMap arg v vbody) s = 
+        (case (typeCpsTree arg s) of
+            MonadTp vt \<Rightarrow>
+                   MflatMap (cpsTreeToExpr arg s) 
+                            (Lambda v vt (cpsTreeToExpr vbody (s(v:=vt))))
+           |other \<Rightarrow> Error ''Invalid CpsTreeFlatMap entry''
+       )"
  |
    "cpsTreeToExpr (CpsTreeAsync e k) s = (
        case k of
@@ -354,42 +411,46 @@ function cpsTreeToExpr :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> expr
    "cpsTreeToExpr (CpsTreeLet v vt vv cpsBody) s = (Let v vt vv (cpsTreeToExpr cpsBody (s(v:=vt))))"
   |
    "cpsTreeToExpr ErrorCpsTree s = Error ''ErrorCpsTree'' "
-  apply(auto)
-  sorry
+
+
+
  
 
-fun unpureCpsTree :: "CpsTree \<Rightarrow> (expr option)" where
-   "unpureCpsTree (CpsTreePure e) =  (Some e)"
+fun unpureCpsTree :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> (expr option)" where
+   "unpureCpsTree (CpsTreePure e) s =  (Some e)"
   | 
-   "unpureCpsTree (CpsTreeFlatMap source i tp fbody) = (
-       case (unpureCpsTree source) of 
+   "unpureCpsTree (CpsTreeFlatMap source i fbody) s = (
+       case (unpureCpsTree source s) of 
          None \<Rightarrow> None
         |
          Some(unpureSource) \<Rightarrow>
-           (case (unpureCpsTree fbody) of
+           (case (unpureCpsTree fbody s) of
              None \<Rightarrow> None
             |
-             Some unpureFbody \<Rightarrow> Some (Let i tp (unpureSource) (unpureFbody) )
+             Some unpureFbody \<Rightarrow> (
+                case typeCpsTree source s of
+                   MonadTp tp \<Rightarrow> Some (Let i tp (unpureSource) (unpureFbody) )
+             )
            )
    )"
   |
-   "unpureCpsTree (CpsTreeAsync e k) = None"
+   "unpureCpsTree (CpsTreeAsync e k) s = None"
   |
-   "unpureCpsTree (CpsTreeLambda i tpi cpsBody) = (
-      case (unpureCpsTree cpsBody) of
+   "unpureCpsTree (CpsTreeLambda i tpi cpsBody) s = (
+      case (unpureCpsTree cpsBody s) of
          Some body \<Rightarrow> Some (Lambda i tpi body)
         |
          None \<Rightarrow> None
    )"
  |
-  "unpureCpsTree (CpsTreeLet v vt vv cpsBody) = (
-      case (unpureCpsTree cpsBody) of
+  "unpureCpsTree (CpsTreeLet v vt vv cpsBody) s = (
+      case (unpureCpsTree cpsBody s) of
         Some body \<Rightarrow> Some (Let v vt (vv) (body))
         |
         None \<Rightarrow> None 
   )"
  |
-  "unpureCpsTree ErrorCpsTree = None" 
+  "unpureCpsTree ErrorCpsTree s = None" 
 
 lemma correctNotError: "isCorrectCps (t::CpsTree) s \<Longrightarrow> t \<noteq> ErrorCpsTree"
   by auto
@@ -415,8 +476,8 @@ lemma letUnputAsBody: "
     (isCorrectTp (vt::typeexpr))
     \<and>(isCorrectExpr (vv::expr) (s::typeVarState))
     \<and>(isCorrectCps (cpsBody::CpsTree) s)
-    \<and>((unpureCpsTree cpsBody) \<noteq> None) \<Longrightarrow>
-        (unpureCpsTree (CpsTreeLet (v::int) vt vv cpsBody)) \<noteq> None"
+    \<and>((unpureCpsTree cpsBody s) \<noteq> None) \<Longrightarrow>
+        (unpureCpsTree (CpsTreeLet (v::int) vt vv cpsBody) s) \<noteq> None"
   (*nitpick *)
   apply auto
   done
@@ -424,15 +485,13 @@ lemma letUnputAsBody: "
 lemma flatMapUnputAsBody: "
    (isCorrectCps (source::CpsTree) (s::typeVarState))
    \<and>
-   ((unpureCpsTree source) \<noteq> None)
-   \<and>
-   (isCorrectTp (vt::typeexpr))
+   ((unpureCpsTree source s) \<noteq> None)
    \<and>
    (isCorrectCps (fbody::CpsTree) s)
    \<and>
-   ((unpureCpsTree fbody) \<noteq> None)
+   ((unpureCpsTree fbody s) \<noteq> None)
            \<Longrightarrow>
-           unpureCpsTree((CpsTreeFlatMap source v vt fbody) ) \<noteq> None
+           unpureCpsTree (CpsTreeFlatMap source v fbody) s \<noteq> None
 "
   apply auto
   done
