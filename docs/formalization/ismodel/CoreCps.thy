@@ -3,21 +3,19 @@ theory CoreCps
 begin
 
 
-
-
-datatype  typeexpr = AnyTp
+datatype  TpExpr = AnyTp
      |
       ConstTp
      |
-      ArrowTp typeexpr typeexpr
+      ArrowTp TpExpr TpExpr
      |
-      MonadTp typeexpr
+      MonadTp TpExpr
     |
       ErrorTp
 
 
 (* TODO: use typeclasse s*)
-fun isCorrectTp :: "typeexpr \<Rightarrow> bool" where
+fun isCorrectTp :: "TpExpr \<Rightarrow> bool" where
   "isCorrectTp AnyTp = True"
  |"isCorrectTp ConstTp = True"
  |"isCorrectTp (ArrowTp t1 t2) = ((isCorrectTp t1)\<and>(isCorrectTp t2))"
@@ -27,65 +25,77 @@ fun isCorrectTp :: "typeexpr \<Rightarrow> bool" where
 
 
 
-datatype expr = ConstantExpr int
+datatype Expr = ConstantExpr int
   |
-   Let int typeexpr expr expr
+   Let int TpExpr Expr Expr
   |
-   Ref int typeexpr 
+   Ref int TpExpr 
   |
-   If expr expr expr
+   If Expr Expr Expr
   |
-   While expr expr 
+   While Expr Expr  (* TODO: introduce after extending type to unit *)
   |
-   Lambda int typeexpr  expr 
+   Lambda int TpExpr Expr 
   |
-   App expr expr
+   App Expr Expr
  |
-   Mpure expr
+   Mpure Expr
  |
-   MflatMap expr expr
+   MflatMap Expr Expr
  |
-   Await expr
+   Await Expr
  |
-   ExternalFun int typeexpr
+   ExternalFun int TpExpr
  |
    Error string
 
 
 
 
-fun lub :: "typeexpr \<Rightarrow> typeexpr \<Rightarrow> typeexpr" where
+fun lub :: "TpExpr \<Rightarrow> TpExpr \<Rightarrow> TpExpr" where
    "lub ConstTp ConstTp = ConstTp"
   |
-   "lub (ArrowTp a1 b1) (ArrowTp a2 b2) = 
-    (if (a1 = a2) then (ArrowTp a1 (lub b1 b2)) else AnyTp)
-   " 
+   lub_ArrowTpArrowTp: "lub (ArrowTp a1 b1) (ArrowTp a2 b2) = 
+    (if (isCorrectTp a1)\<and>
+        (isCorrectTp a2)\<and> 
+        (isCorrectTp b1)\<and>
+        (isCorrectTp b2) then (
+          if (a1 = a2) then (ArrowTp a1 (lub b1 b2)) 
+                       else AnyTp
+         ) else ErrorTp
+   )" 
   |
-   "lub ErrorTp x = ErrorTp"
+   "lub ErrorTp y = ErrorTp"
   |
    "lub x ErrorTp = ErrorTp"
   |
-   "lub AnyTp x = (if (x = ErrorTp) then ErrorTp else AnyTp)" 
+   "lub AnyTp x = (if (isCorrectTp x) then AnyTp else ErrorTp)" 
   |
-   "lub x AnyTp = (if (x = ErrorTp) then ErrorTp else AnyTp)"
+   "lub x AnyTp = (if (isCorrectTp x) then AnyTp else ErrorTp)"
   |
-   "lub ConstTp x = AnyTp"
+   "lub ConstTp x = (if (isCorrectTp x) then AnyTp else ErrorTp)"
   |
-   "lub (ArrowTp x y) z = AnyTp"
+   "lub (ArrowTp x y) z = (
+        if (isCorrectTp x)\<and>(isCorrectTp y)\<and>(isCorrectTp z) 
+            then AnyTp
+        else ErrorTp)"
  |
-   "lub (MonadTp x) (MonadTp y) = MonadTp (lub x y)"
+   "lub (MonadTp x) (MonadTp y) = (
+                if (isCorrectTp x)\<and>(isCorrectTp y) 
+                   then MonadTp (lub x y) else ErrorTp 
+  )"
  |
-   "lub (MonadTp x) y = AnyTp"
+   "lub (MonadTp x) y = (if (isCorrectTp x)\<and>(isCorrectTp y) then AnyTp else ErrorTp)"
 
 
-type_synonym varIndex = int
-type_synonym typeVarState = "varIndex \<Rightarrow> typeexpr"
+type_synonym VarIndex = int
+type_synonym TpVarState = "VarIndex \<Rightarrow> TpExpr"
 
-definition isCorrectVarType::" int \<Rightarrow> typeVarState \<Rightarrow> bool" where
+definition isCorrectVarType::" int \<Rightarrow> TpVarState \<Rightarrow> bool" where
    "isCorrectVarType x s = ((s(x)) \<noteq> ErrorTp)"
 
 
-fun maxVarIndex:: "expr \<Rightarrow> int \<Rightarrow> int" where
+fun maxVarIndex:: "Expr \<Rightarrow> int \<Rightarrow> int" where
    "maxVarIndex (ConstantExpr x) a = a"
  | "maxVarIndex (Let i tp init body) a = (maxVarIndex body (maxVarIndex init (max a i)))"
  | "maxVarIndex (Ref i tp) a = max a i"
@@ -100,7 +110,7 @@ fun maxVarIndex:: "expr \<Rightarrow> int \<Rightarrow> int" where
  | "maxVarIndex (Error s) a = a"
 
 
-fun typeExpr :: "expr \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
+fun typeExpr :: "Expr \<Rightarrow> TpVarState \<Rightarrow> TpExpr" where
     "typeExpr (ConstantExpr x) s = ConstTp"
   |
     "typeExpr (Let v vt vv body) s = (
@@ -214,20 +224,20 @@ fun isCompatibleAk :: "AsyncKind \<Rightarrow> AsyncKind \<Rightarrow> bool" whe
 
 
 datatype CpsTree =
-        CpsTreePure expr
+        CpsTreePure Expr
         |
         CpsTreeFlatMap CpsTree int CpsTree
         |
-        CpsTreeAsync expr AsyncKind
+        CpsTreeAsync Expr AsyncKind
         |
-        CpsTreeLambda int typeexpr CpsTree
+        CpsTreeLambda int TpExpr CpsTree
         |
          (* analog of SeqCpsTree *)
-        CpsTreeLet int typeexpr expr CpsTree 
+        CpsTreeLet int TpExpr Expr CpsTree 
         |
         ErrorCpsTree
 
-fun typeCpsTree:: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> typeexpr" where
+fun typeCpsTree:: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> TpExpr" where
        "typeCpsTree (CpsTreePure expr) s = (case (typeExpr expr s) of
              ErrorTp \<Rightarrow> ErrorTp
             | t \<Rightarrow> MonadTp t
@@ -261,15 +271,16 @@ fun typeCpsTree:: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> typeexpr" wh
        "typeCpsTree ErrorCpsTree s = ErrorTp" 
 
 
-fun isCorrectExpr::"expr \<Rightarrow> typeVarState \<Rightarrow> bool" where
+fun isCorrectExpr::"Expr \<Rightarrow> TpVarState \<Rightarrow> bool" where
        "isCorrectExpr e s = ((typeExpr e s) \<noteq> ErrorTp)" 
 
-fun isCorrectCps :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> bool" where
+fun isCorrectCps :: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> bool" where
    "isCorrectCps t s = ((typeCpsTree t s) \<noteq> ErrorTp)"
 
 
 
-lemma isCorrectExprLetBackward [simp]: 
+
+lemma isCorrectExpr_let_backward: 
   "isCorrectExpr (Let v vt vv b) s \<Longrightarrow> (isCorrectExpr vv s)\<and>(isCorrectExpr b (s(v:=vt)))"
   (*using [[simp_trace]]*)
   apply(cases "isCorrectTp vt")
@@ -297,36 +308,221 @@ lemma isCorrectExprLetBackward [simp]:
         done
       done
     subgoal
-      apply(auto)
       apply(cases "typeExpr vv s"; auto)
       done
     done
   done
 
+lemma isCorrectExpr_ref_backward:
+  "isCorrectExpr (Ref i tp) s \<Longrightarrow> (isCorrectTp tp) \<and> (isCorrectTp (s i))"
+  apply(cases "isCorrectTp tp"; auto)
+  apply(cases "(s i) = tp"; auto)
+  done
+
+lemma lub_x_errorTp: "lub x ErrorTp =  ErrorTp"
+  apply(cases "x"; auto)
+  done
+
+lemma lub_any_x_errorTp: "\<forall> x. lub x ErrorTp =  ErrorTp"
+  (* using [[simp_trace=true]] *)
+  apply(auto simp add: lub_x_errorTp)
+  done
+
+
+
+lemma isCorrectExpr_if_backward:
+  "isCorrectExpr (If c e1 e2) s \<Longrightarrow> (isCorrectExpr c s)\<and>(isCorrectExpr e1 s)\<and>(isCorrectExpr e2 s)"
+  apply(cases "typeExpr c s"; auto)
+  apply(simp add: lub_x_errorTp)
+  done
+
+lemma arrowTp_correct_forward: fixes a b :: TpExpr
+  assumes "isCorrectTp a" and "isCorrectTp b"
+  shows "isCorrectTp (ArrowTp a b)"
+proof -
+  show ?thesis
+    apply(subst isCorrectTp.simps; auto simp add: assms)
+    done
+qed
+
+lemma arrowTp_correct_backward: fixes a b :: TpExpr
+  assumes "isCorrectTp (ArrowTp a b)"
+  shows "isCorrectTp a \<and> isCorrectTp b"
+using assms proof (cases "isCorrectTp a")
+  case False
+  from assms show ?thesis by auto
+next
+  case a_corr:True
+  show ?thesis
+  proof (cases "isCorrectTp b")
+    case b_iv:False
+    from assms show ?thesis by auto
+  next
+    case b_corr:True
+    then show ?thesis by(auto simp add: a_corr)
+  qed
+qed
+
+
+
+lemma lub_correct_forward: fixes x y ::TpExpr 
+  assumes "(isCorrectTp (x))" and "(isCorrectTp (y))"
+  shows  "isCorrectTp (lub x y)"
+using assms proof (induction x y rule: lub.induct)
+  case 1
+  show ?case by auto
+next
+  case (2 a1 b1 a2 b2)
+  then show ?case
+  proof (cases "isCorrectTp a1 \<and> isCorrectTp b1\<and> isCorrectTp a2 \<and> isCorrectTp b2")
+    case all_correct:True
+    then show ?thesis
+    proof (cases "a1=a2")
+      case True
+      from this and all_correct show ?thesis by(auto simp add: 2)
+    next
+      case False
+      from this and all_correct show ?thesis by auto
+    qed
+  next
+    case False
+    from this and 2 show ?thesis by auto
+  qed
+next
+  case (3 y)
+  then show ?case by auto
+next
+  case ("4_1")
+  then show ?case by auto
+next
+  case ("4_2")
+  then show ?case by auto
+next
+  case ("4_3" xi xo)
+  then show ?case by auto
+next
+  case ("5_1")
+  
+        
+qed
+
+
+ 
+
+lemma lub_correct_backward:
+  "(isCorrectTp (lub (x1::TpExpr) (x2::TpExpr))) \<Longrightarrow> (isCorrectTp x1)\<and>(isCorrectTp x2)"
+  nitpick 
+  sorry
+
+
+
+
+
+lemma noMonadTpError1: "typeExpr t s \<noteq> MonadTp ErrorTp"
+proof(induction "t" arbitrary: "s") 
+  case (ConstantExpr x)
+  show ?case by auto
+next
+  case (Let v vt vv vbody)
+  let ?l = "Let v vt vv vbody"
+  show ?case
+  proof (cases "isCorrectTp vt")
+    case vt_err: False
+    have "typeExpr ?l s = ErrorTp" by(simp add: vt_err)
+    then show ?thesis by auto
+  next
+    case vt_corr: True
+    show ?thesis
+    proof (cases "typeExpr vv s")
+      case ErrorTp
+      have "typeExpr ?l s = ErrorTp" by(simp add: ErrorTp)
+      then show ?thesis by auto
+    next
+      case AnyTp
+      show ?thesis
+        apply(auto simp add: vt_corr AnyTp Let)
+        done
+    next
+      case ConstTp
+      show ?thesis
+        apply(auto simp add: vt_corr ConstTp Let)
+        done
+    next
+      case (ArrowTp ti to)
+      show ?thesis by (auto simp add: vt_corr ArrowTp Let)
+    next
+      case (MonadTp t)
+      show ?thesis by (auto simp add: vt_corr MonadTp Let)
+    qed
+  qed
+next
+  case (Ref v vt) 
+  show ?case by auto
+next
+  case (If cond t1 t2)
+  show ?case
+  proof (cases "(typeExpr cond s)")
+    case ConstTp
+    then show ?thesis
+      apply(simp)
+
+
+  next
+    case other
+    then show ?thesis by auto
+
+qed
+
+
+         
+
+
+
+lemma noMonadTpErrorExprNSI: "(isCorrectExpr t s) \<Longrightarrow> (typeExpr t s \<noteq> MonadTp ErrorTp)"
+proof (cases "t"  ) 
+  assume "typeExpr t s = ConstTp"
+  then show ?thesis by auto
+next
+  fix ti to assume "typeExpr t s = ArrowTp ti to"
+  then show ?thesis by auto
+next
+  fix x assume "typeExpr t s = MonadTp x"
+  then have "(x \<noteq> ErrorTp)"
+
+
+
+
 
 lemma noMonadTpErrorExprNS: "isCorrectExpr t s \<Longrightarrow> (typeExpr t s \<noteq> MonadTp ErrorTp)"
   (*nitpick*)
-  apply(cases "typeExpr t s"; auto)
-  apply(induction t)
+  apply(auto)
+  apply(case_tac "t")
   subgoal
     apply(auto)
     done
   subgoal
-    apply(case "isCorrectTp x2_")
+    apply(rename_tac x)
+    apply(auto)
     sorry
   sorry
 
 
-lemma noMonadTpErrorExprS: 
+lemma noMonadTpErrorExprS:
+  fixes t::expr and s::typeVarState
   assumes "isCorrectExpr t s"
   shows "(typeExpr t s \<noteq> MonadTp ErrorTp)"
 proof 
-  (cases "typeExpr t s")
-  case "AnyTp"
+  assume "t = ConstantExpr x"
+  then have "typeExpr t s = ConstTp" by auto
+  then have "typeExpr t s \<noteq> (MonadTp ErrorTp)" by simp 
+next
     
+
+ 
   
-  show ?thesis
-    sorry
+  show False  
+  
+  
 qed
 
 
@@ -462,12 +658,8 @@ lemma correctNoErrorKind: "(isCorrectCps (t::CpsTree) (s::typeVarState)) \<Longr
   nitpick
   apply(induct_tac t, auto)
   subgoal
-    apply(split asyncKind.split)
-
-
-  
-
-  oops
+    apply(split: asyncKind.split)
+    sorry
   
 
 
