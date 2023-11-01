@@ -237,6 +237,9 @@ datatype CpsTree =
         |
         ErrorCpsTree
 
+fun errorCpsTree:: "string \<Rightarrow> CpsTree" where
+    "errorCpsTree message = ErrorCpsTree"
+
 fun typeCpsTree:: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> TpExpr" where
        "typeCpsTree (CpsTreePure expr) s = (case (typeExpr expr s) of
              ErrorTp \<Rightarrow> ErrorTp
@@ -401,136 +404,61 @@ next
   case ("4_3" xi xo)
   then show ?case by auto
 next
+  case ("4_4" mx)
+  then show ?case by auto
+next
   case ("5_1")
-  
-        
+  then show ?case by auto
+next
+  case ("5_2")
+  then show ?case by auto
+next
+  case ("5_3" xi xy)
+  then show ?case by auto
+next
+  case ("5_4" x)
+  then show ?case by auto
+next
+  case ("6_1")
+  then show ?case by auto
+next
+  case ("6_2" xi xo)
+  then show ?case by auto
+next
+  case ("6_3" x)
+  then show ?case by auto
+next
+  case ("7_1"  yi yo)
+  then show ?case by auto
+next
+  case ("7_2" my)
+  then show ?case by auto
+next
+  case ("8_1" xi xo)
+  then show ?case by auto
+next
+  case ("8_2" xi xo mt)
+  then show ?case by auto
+next
+  case (9 x y)
+  then show ?case by auto
+next
+  case ("10_1" mx)
+  then show ?case by auto
+next
+  case ("10_2" mx xi xo)
+  then show ?case by auto  
 qed
-
-
- 
-
-lemma lub_correct_backward:
-  "(isCorrectTp (lub (x1::TpExpr) (x2::TpExpr))) \<Longrightarrow> (isCorrectTp x1)\<and>(isCorrectTp x2)"
-  nitpick 
-  sorry
-
-
-
-
-
-lemma noMonadTpError1: "typeExpr t s \<noteq> MonadTp ErrorTp"
-proof(induction "t" arbitrary: "s") 
-  case (ConstantExpr x)
-  show ?case by auto
-next
-  case (Let v vt vv vbody)
-  let ?l = "Let v vt vv vbody"
-  show ?case
-  proof (cases "isCorrectTp vt")
-    case vt_err: False
-    have "typeExpr ?l s = ErrorTp" by(simp add: vt_err)
-    then show ?thesis by auto
-  next
-    case vt_corr: True
-    show ?thesis
-    proof (cases "typeExpr vv s")
-      case ErrorTp
-      have "typeExpr ?l s = ErrorTp" by(simp add: ErrorTp)
-      then show ?thesis by auto
-    next
-      case AnyTp
-      show ?thesis
-        apply(auto simp add: vt_corr AnyTp Let)
-        done
-    next
-      case ConstTp
-      show ?thesis
-        apply(auto simp add: vt_corr ConstTp Let)
-        done
-    next
-      case (ArrowTp ti to)
-      show ?thesis by (auto simp add: vt_corr ArrowTp Let)
-    next
-      case (MonadTp t)
-      show ?thesis by (auto simp add: vt_corr MonadTp Let)
-    qed
-  qed
-next
-  case (Ref v vt) 
-  show ?case by auto
-next
-  case (If cond t1 t2)
-  show ?case
-  proof (cases "(typeExpr cond s)")
-    case ConstTp
-    then show ?thesis
-      apply(simp)
-
-
-  next
-    case other
-    then show ?thesis by auto
-
-qed
-
 
          
-
-
-
-lemma noMonadTpErrorExprNSI: "(isCorrectExpr t s) \<Longrightarrow> (typeExpr t s \<noteq> MonadTp ErrorTp)"
-proof (cases "t"  ) 
-  assume "typeExpr t s = ConstTp"
-  then show ?thesis by auto
-next
-  fix ti to assume "typeExpr t s = ArrowTp ti to"
-  then show ?thesis by auto
-next
-  fix x assume "typeExpr t s = MonadTp x"
-  then have "(x \<noteq> ErrorTp)"
-
-
-
-
-
-lemma noMonadTpErrorExprNS: "isCorrectExpr t s \<Longrightarrow> (typeExpr t s \<noteq> MonadTp ErrorTp)"
-  (*nitpick*)
-  apply(auto)
-  apply(case_tac "t")
-  subgoal
-    apply(auto)
-    done
-  subgoal
-    apply(rename_tac x)
-    apply(auto)
-    sorry
-  sorry
-
-
-lemma noMonadTpErrorExprS:
-  fixes t::expr and s::typeVarState
-  assumes "isCorrectExpr t s"
-  shows "(typeExpr t s \<noteq> MonadTp ErrorTp)"
-proof 
-  assume "t = ConstantExpr x"
-  then have "typeExpr t s = ConstTp" by auto
-  then have "typeExpr t s \<noteq> (MonadTp ErrorTp)" by simp 
-next
-    
-
- 
-  
-  show False  
-  
-  
-qed
-
-
-lemma noMonadTpErrorCps: "isCorrectCps tree s \<Longrightarrow> (typeCpsTree tree s) \<noteq> (MonadTp ErrorTp)"
-  apply(auto)
-  apply(induct tree)
-  
-  sorry
+datatype AsyncKindRepr = 
+   AKRPure Expr
+  |
+   AKRAsync AsyncKind CpsTree
+ |
+   AKRLambda AsyncKind CpsTree
+ |
+   AKRError
 
 
 lemma correctFlatMapNoErrorKind: "
@@ -541,18 +469,15 @@ lemma correctFlatMapNoErrorKind: "
                        \<Longrightarrow> isCorrectCps (CpsTreeFlatMap source v body) s"
   nitpick
   apply(auto)
-  done
-
-
-
-
+  sorry
+  
 
 fun asyncKind :: "CpsTree \<Rightarrow> AsyncKind" where
     "asyncKind (CpsTreePure e) = AKSync"
   |
     "asyncKind (CpsTreeAsync e k) = AKAsync k"
   |
-    "asyncKind (CpsTreeFlatMap source i tp fbody) = (
+    "asyncKind (CpsTreeFlatMap source i fbody) = (
        case (asyncKind source) of
             (AKSync) \<Rightarrow> AKAsync (asyncKind fbody)
           | (AKAsync Sync) \<Rightarrow> AKAsync (asyncKind fbody) 
@@ -569,15 +494,35 @@ fun asyncKind :: "CpsTree \<Rightarrow> AsyncKind" where
     "asyncKind (CpsTreeLet v vt vv cpsBody) = asyncKind cpsBody"
   |
     "asyncKind ErrorCpsTree = AKError"
-    
-definition isRedusableCps::"CpsTree \<Rightarrow> typeVarState \<Rightarrow> bool" where
-   "isRedusableCps t s \<longleftrightarrow> (isCorrectCps t s) \<and> ((asyncKind t) \<noteq> AKError)"
+
+
+
+
+fun complexityAsyncKind::"AsyncKind \<Rightarrow> nat" where
+    "complexityAsyncKind  AKSync = 1"
+  | "complexityAsyncKind  (AKAsync k) = 1 + (complexityAsyncKind k)"
+  | "complexityAsyncKind  (AKLambda k) = 1 + (complexityAsyncKind k)"
+  | "complexityAsyncKind  AKError = 0"
+  
+
+
+fun complexityCpsTree::"CpsTree  \<Rightarrow> nat" where
+   "complexityCpsTree (CpsTreePure expr) = 1"
+ | "complexityCpsTree (CpsTreeFlatMap vsource v vbody) = 
+           (complexityCpsTree vsource) + (complexityCpsTree vbody) + 1"
+ | "complexityCpsTree (CpsTreeAsync expr ak) = (complexityAsyncKind ak)"
+ | "complexityCpsTree (CpsTreeLambda v vt vbody) = 1 + (complexityCpsTree vbody)"
+ | "complexityCpsTree (CpsTreeLet v vt init vbody) = 
+      1 + (complexityCpsTree vbody)"
+ | "complexityCpsTree ErrorCpsTree = 1"
+
+
 
 
 (*
  analog of CpsTree.transformed
 *)
-fun cpsTreeToExpr :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> expr" where 
+function (sequential) cpsTreeToExpr :: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> Expr" where 
    "cpsTreeToExpr (CpsTreePure e) s = Mpure e"
  |
    "cpsTreeToExpr (CpsTreeFlatMap arg v vbody) s = 
@@ -607,12 +552,16 @@ fun cpsTreeToExpr :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> expr" whe
    "cpsTreeToExpr (CpsTreeLet v vt vv cpsBody) s = (Let v vt vv (cpsTreeToExpr cpsBody (s(v:=vt))))"
   |
    "cpsTreeToExpr ErrorCpsTree s = Error ''ErrorCpsTree'' "
-
+  by pat_completeness auto
+termination
+  apply( relation "measure (\<lambda> x. case x of (tree, tps) \<Rightarrow> (complexityCpsTree tree))" )
+  apply( auto )
+  done
 
 
  
 
-fun unpureCpsTree :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> (expr option)" where
+fun unpureCpsTree :: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> (Expr option)" where
    "unpureCpsTree (CpsTreePure e) s =  (Some e)"
   | 
    "unpureCpsTree (CpsTreeFlatMap source i fbody) s = (
@@ -648,89 +597,83 @@ fun unpureCpsTree :: "CpsTree \<Rightarrow> typeVarState \<Rightarrow> (expr opt
  |
   "unpureCpsTree ErrorCpsTree s = None" 
 
-lemma correctNotError: "isCorrectCps (t::CpsTree) s \<Longrightarrow> t \<noteq> ErrorCpsTree"
-  by auto
+
+fun asyncKindRepr :: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> AsyncKindRepr" where
+  "asyncKindRepr (CpsTreePure expr) tps = AKRPure expr"
+ |
+  "asyncKindRepr (CpsTreeFlatMap s v b) tps = (
+     case (asyncKind (CpsTreeFlatMap s v b)) of
+        AKAsync ak \<Rightarrow> AKRAsync ak (CpsTreeFlatMap s v b)
+      | AKSync \<Rightarrow> AKRError
+      | AKLambda ik \<Rightarrow> AKRError
+      | AKError \<Rightarrow> AKRError
+  )"
+|
+  "asyncKindRepr (CpsTreeAsync expr ik) tps = AKRAsync ik (CpsTreeAsync expr ik)" 
+|
+  "asyncKindRepr (CpsTreeLambda i tp body) tps =(
+      case (asyncKind body) of
+        AKSync \<Rightarrow> (case (unpureCpsTree body tps) of
+                      Some sbody \<Rightarrow> AKRPure (Lambda i tp sbody)
+                    | None \<Rightarrow> AKRError
+                  )
+       |
+        AKAsync ik \<Rightarrow> AKRError 
+       |
+        AKLambda bk \<Rightarrow> AKRLambda bk (CpsTreeLambda i tp body)
+       |
+        AKError \<Rightarrow> AKRError
+     )"
+ |
+  "asyncKindRepr (CpsTreeLet v vt vv body) tps = (
+     case (asyncKindRepr body (tps(v:=vt))) of
+      AKRPure be \<Rightarrow> AKRPure (Let v vt vv be)
+     | AKRAsync ak bCps \<Rightarrow> AKRAsync ak (CpsTreeLet v vt vv bCps)
+     | AKRLambda bk bCps \<Rightarrow> AKRLambda bk (CpsTreeLet v vt vv body)
+     | AKRError \<Rightarrow> AKRError
+  )"
+ |
+  "asyncKindRepr ErrorCpsTree tps = AKRError" 
 
 
- 
-
-lemma correctNoErrorKind: "(isCorrectCps (t::CpsTree) (s::typeVarState)) \<Longrightarrow> ((asyncKind t) \<noteq> AKError)"
-  nitpick
-  apply(induct_tac t, auto)
-  subgoal
-    apply(split: asyncKind.split)
-    sorry
-  
 
 
-
-lemma letUnputAsBody: " 
-    (isCorrectTp (vt::typeexpr))
-    \<and>(isCorrectExpr (vv::expr) (s::typeVarState))
-    \<and>(isCorrectCps (cpsBody::CpsTree) s)
-    \<and>((unpureCpsTree cpsBody s) \<noteq> None) \<Longrightarrow>
-        (unpureCpsTree (CpsTreeLet (v::int) vt vv cpsBody) s) \<noteq> None"
-  (*nitpick *)
-  apply auto
-  done
-
-lemma flatMapUnputAsBody: "
-   (isCorrectCps (source::CpsTree) (s::typeVarState))
-   \<and>
-   ((unpureCpsTree source s) \<noteq> None)
-   \<and>
-   (isCorrectCps (fbody::CpsTree) s)
-   \<and>
-   ((unpureCpsTree fbody s) \<noteq> None)
-           \<Longrightarrow>
-           unpureCpsTree (CpsTreeFlatMap source v fbody) s \<noteq> None
-"
-  apply auto
-  done
-
-lemma syncHaveUnpure: "(isCorrectCps (t::CpsTree) (s::typeVarState) )\<and>(asyncKind(t) = AKSync) \<Longrightarrow> unpureCpsTree(t) \<noteq> None"
-  nitpick
-  apply(induct t)
-  apply auto
-  apply (smt (verit, del_insts) AsyncKind.distinct(1) AsyncKind.simps(15) AsyncKind.simps(16) AsyncKind.simps(17) AsyncKind.simps(18) isCorrectAk.cases)
-  sorry
 
 
 (*
  CpsTransform 
 *)
-fun exprToCpsTree :: "expr \<Rightarrow> typeVarState \<Rightarrow> CpsTree" where
+fun exprToCpsTree :: "Expr \<Rightarrow> TpVarState \<Rightarrow> CpsTree" where
     "exprToCpsTree (ConstantExpr c) s =  CpsTreePure (ConstantExpr c)"
   |
     "exprToCpsTree (Ref i tp) s = CpsTreePure (Ref i tp)"
   |
     "exprToCpsTree (Let v vt vv body) s = (
-        let cpsv = (exprToCpsTree vv s) in (
-         let cpsbody = (exprToCpsTree body s) in
-           (case (unpureCpsTree cpsv) of
-             Some pureV \<Rightarrow> 
-               (case (unpureCpsTree cpsbody) of
-                   Some pureBody \<Rightarrow> CpsTreePure (Let v vt (pureV) (pureBody))
-                  |None \<Rightarrow> CpsTreeLet v vt (pureV) cpsbody
-               )
-             |None \<Rightarrow>
-                (case (asyncKind cpsv) of
-                    AKAsync ik \<Rightarrow> 
-                     (CpsTreeFlatMap (cpsv) v vt (cpsbody))
-                    | AKLambda bk \<Rightarrow> ErrorCpsTree
-                )
+        let cpsv = (exprToCpsTree vv s);
+            cpsbody = (exprToCpsTree body s) in
+           (case (asyncKindRepr cpsv s) of
+             AKRPure pureV \<Rightarrow>
+               (case (asyncKindRepr cpsbody (s(v:=vt))) of
+                   AKRPure pureBody \<Rightarrow> (CpsTreePure (Let v vt pureV pureBody)) 
+                  |AKRAsync ik cpsbody1 \<Rightarrow> CpsTreeLet v vt pureV cpsbody
+                  |AKRLambda bk cpsbody \<Rightarrow> CpsTreeLet v vt pureV cpsbody
+                  |AKRError \<Rightarrow> errorCpsTree ''translation failed'' 
+               ) 
+             |AKRAsync vk cpsv \<Rightarrow>
+               CpsTreeFlatMap cpsv v cpsbody
+             |AKRLambda bk bodyb \<Rightarrow>
+                 errorCpsTree ''functional variables are not supported yet''
            )
-        )
+        
     )"
   |
-   (* TODO *)
    "exprToCpsTree (If c e1 e2) s = (
     let cpsC = (exprToCpsTree c s); 
         cpsE1 = (exprToCpsTree e1 s);
         cpsE2 = (exprToCpsTree e2 s) in (
-       ErrorCpsTree 
-    )
-   )"
+      errorCpsTree ''TODO''  
+   ))"
+  
     
     
 
