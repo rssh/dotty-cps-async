@@ -10,6 +10,8 @@ datatype  TpExpr = AnyTp
       ArrowTp TpExpr TpExpr
      |
       MonadTp TpExpr
+    |   
+      UnitTp  
     |
       ErrorTp
 
@@ -20,6 +22,7 @@ fun isCorrectTp :: "TpExpr \<Rightarrow> bool" where
  |"isCorrectTp ConstTp = True"
  |"isCorrectTp (ArrowTp t1 t2) = ((isCorrectTp t1)\<and>(isCorrectTp t2))"
  |"isCorrectTp (MonadTp t) = isCorrectTp t"
+ |"isCorrectTp UnitTp = True"
  |"isCorrectTp ErrorTp = False"
 
 
@@ -33,7 +36,7 @@ datatype Expr = ConstantExpr int
   |
    If Expr Expr Expr
   |
-   While Expr Expr  (* TODO: introduce after extending type to unit *)
+   While Expr Expr  
   |
    Lambda int TpExpr Expr 
   |
@@ -46,6 +49,10 @@ datatype Expr = ConstantExpr int
    Await Expr
  |
    ExternalFun int TpExpr
+ |
+   Assign int Expr
+ |
+   Block "Expr list" Expr 
  |
    Error string
 
@@ -86,6 +93,10 @@ fun lub :: "TpExpr \<Rightarrow> TpExpr \<Rightarrow> TpExpr" where
   )"
  |
    "lub (MonadTp x) y = (if (isCorrectTp x)\<and>(isCorrectTp y) then AnyTp else ErrorTp)"
+ | 
+   "lub UnitTp UnitTp = UnitTp"
+ |
+   "lub UnitTp x = (if (isCorrectTp x) then AnyTp else ErrorTp)"
 
 
 type_synonym VarIndex = int
@@ -95,19 +106,31 @@ definition isCorrectVarType::" int \<Rightarrow> TpVarState \<Rightarrow> bool" 
    "isCorrectVarType x s = ((s(x)) \<noteq> ErrorTp)"
 
 
-fun maxVarIndex:: "Expr \<Rightarrow> int \<Rightarrow> int" where
-   "maxVarIndex (ConstantExpr x) a = a"
- | "maxVarIndex (Let i tp init body) a = (maxVarIndex body (maxVarIndex init (max a i)))"
- | "maxVarIndex (Ref i tp) a = max a i"
- | "maxVarIndex (If c e1 e2) a = (maxVarIndex e2 (maxVarIndex e1 (maxVarIndex c a)))"
- | "maxVarIndex (While e1 e2) a = (maxVarIndex e1 (maxVarIndex e2 a))"
- | "maxVarIndex (Lambda i tp e) a = (maxVarIndex e (max a i))"
- | "maxVarIndex (App e1 e2) a = (maxVarIndex e1 (maxVarIndex e2 a))"
- | "maxVarIndex (Mpure e) a = maxVarIndex e a"
- | "maxVarIndex (MflatMap e1 e2) a = maxVarIndex e1 (maxVarIndex e2 a)"
- | "maxVarIndex (Await e) a = maxVarIndex e a"
- | "maxVarIndex (ExternalFun i tp) a = a"
- | "maxVarIndex (Error s) a = a"
+fun maxVarIndexExpr:: "Expr \<Rightarrow> int" where
+   "maxVarIndexExpr (ConstantExpr x) = 0"
+ | "maxVarIndexExpr (Let i tp init body) = (max (maxVarIndexExpr body) 
+                                                (max (maxVarIndexExpr init) i))"
+ | "maxVarIndexExpr (Ref i tp) = i"
+ | "maxVarIndexExpr (If c e1 e2) = max  (maxVarIndexExpr c)
+                                        (max (maxVarIndexExpr e2) (maxVarIndexExpr e1))"
+ | "maxVarIndexExpr (While e1 e2) = (max (maxVarIndexExpr e1) (maxVarIndexExpr e2))"
+ | "maxVarIndexExpr (Lambda i tp e) = (max i (maxVarIndexExpr e))"
+ | "maxVarIndexExpr (App e1 e2)  = max (maxVarIndexExpr e1) (maxVarIndexExpr e2)"
+ | "maxVarIndexExpr (Mpure e) = maxVarIndexExpr e "
+ | "maxVarIndexExpr (MflatMap e1 e2) = (max (maxVarIndexExpr e1) (maxVarIndexExpr e2))"
+ | "maxVarIndexExpr (Await e)  = maxVarIndexExpr e "
+ | "maxVarIndexExpr (ExternalFun i tp) = 0"
+ | "maxVarIndexExpr (Assign i e) = max i (maxVarIndexExpr e)"
+ | "maxVarIndexExpr (Block l e) = max (Max (set (map (\<lambda> x. (maxVarIndexExpr x)) l))) (maxVarIndexExpr e)"
+ | "maxVarIndexExpr (Error s) = 0"
+
+fun maxVarIndexExpr2 :: "Expr \<Rightarrow> Expr \<Rightarrow> int" where
+ "maxVarIndexExpr2 x y = max (maxVarIndexExpr x) (maxVarIndexExpr y)"
+
+fun maxVarIndexExpr3 :: "Expr \<Rightarrow> Expr \<Rightarrow> Expr \<Rightarrow> int" where
+ "maxVarIndexExpr3 x y z = max (max (maxVarIndexExpr x) (maxVarIndexExpr y))
+                               (maxVarIndexExpr z)"
+
 
 
 fun typeExpr :: "Expr \<Rightarrow> TpVarState \<Rightarrow> TpExpr" where
@@ -134,7 +157,7 @@ fun typeExpr :: "Expr \<Rightarrow> TpVarState \<Rightarrow> TpExpr" where
           | other \<Rightarrow> ErrorTp 
     )"
   |
-    "typeExpr (While e1 e2) s = ConstTp"
+    "typeExpr (While e1 e2) s = UnitTp"
   |
     "typeExpr (Lambda i tp body) s = (
       if \<not>(isCorrectTp tp) then
@@ -182,12 +205,24 @@ fun typeExpr :: "Expr \<Rightarrow> TpVarState \<Rightarrow> TpExpr" where
     )"
   |
     "typeExpr (ExternalFun fi ft) s = (if (isCorrectTp ft) then ft else ErrorTp)"
-  | 
+  |
+    "typeExpr (Assign i e) s = UnitTp"
+  |
+    "typeExpr (Block l e) s = typeExpr e s"
+  |
     "typeExpr (Error e) s = ErrorTp"
   
 
 
 datatype AsyncKind = AKSync | AKAsync AsyncKind | AKLambda AsyncKind | AKError
+
+fun complexityAsyncKind::"AsyncKind \<Rightarrow> nat" where
+    "complexityAsyncKind  AKSync = 1"
+  | "complexityAsyncKind  (AKAsync k) = 1 + (complexityAsyncKind k)"
+  | "complexityAsyncKind  (AKLambda k) = 1 + (complexityAsyncKind k)"
+  | "complexityAsyncKind  AKError = 0"
+  
+
 
 fun isCorrectAk :: "AsyncKind \<Rightarrow> bool" where
    " isCorrectAk AKSync = True "
@@ -240,6 +275,19 @@ datatype CpsTree =
 fun errorCpsTree:: "string \<Rightarrow> CpsTree" where
     "errorCpsTree message = ErrorCpsTree"
 
+
+
+fun complexityCpsTree::"CpsTree  \<Rightarrow> nat" where
+   "complexityCpsTree (CpsTreePure expr) = 1"
+ | "complexityCpsTree (CpsTreeFlatMap vsource v vbody) = 
+           (complexityCpsTree vsource) + (complexityCpsTree vbody) + 1"
+ | "complexityCpsTree (CpsTreeAsync expr ak) = (complexityAsyncKind ak)"
+ | "complexityCpsTree (CpsTreeLambda v vt vbody) = 1 + (complexityCpsTree vbody)"
+ | "complexityCpsTree (CpsTreeLet v vt init vbody) = 
+      1 + (complexityCpsTree vbody)"
+ | "complexityCpsTree ErrorCpsTree = 1"
+
+
 fun typeCpsTree:: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> TpExpr" where
        "typeCpsTree (CpsTreePure expr) s = (case (typeExpr expr s) of
              ErrorTp \<Rightarrow> ErrorTp
@@ -281,6 +329,57 @@ fun isCorrectCps :: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> bool" where
    "isCorrectCps t s = ((typeCpsTree t s) \<noteq> ErrorTp)"
 
 
+function protoTypeCpsTree :: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> TpExpr" where
+   "protoTypeCpsTree  (CpsTreePure expr) s = typeExpr expr s"
+ | 
+   "protoTypeCpsTree  (CpsTreeFlatMap src i fbody) s = 
+       protoTypeCpsTree fbody (s(i:=(protoTypeCpsTree src s)))"
+ |
+   "protoTypeCpsTree  (CpsTreeAsync e k) s = (
+       case k of
+         AKSync \<Rightarrow> (
+           case (typeExpr e s) of
+             MonadTp bt \<Rightarrow> bt
+            | x \<Rightarrow> ErrorTp   
+         )
+         |
+         AKAsync k1 \<Rightarrow> (
+           case (protoTypeCpsTree (CpsTreeAsync e k1) s) of
+              MonadTp bt \<Rightarrow> bt
+            | x \<Rightarrow> ErrorTp
+         )
+         |
+         AKLambda ik \<Rightarrow> ErrorTp
+   )"
+ |
+   "protoTypeCpsTree (CpsTreeLambda vi vt cpsB) s = 
+            ArrowTp vt (protoTypeCpsTree cpsB (s(vi:=vt)))"
+ | 
+   "protoTypeCpsTree (CpsTreeLet v vt init body) s =
+            protoTypeCpsTree body (s(v:=vt))
+   " 
+ |
+   "protoTypeCpsTree ErrorCpsTree s = ErrorTp"
+by pat_completeness auto
+termination
+  apply( relation "measure (\<lambda> x. case x of (tree, tps) \<Rightarrow> (complexityCpsTree tree))" )
+  apply( auto )
+  done
+
+fun maxVarIndexCpsTree:: "CpsTree \<Rightarrow> int" where
+  "maxVarIndexCpsTree (CpsTreePure expr) = maxVarIndexExpr expr"
+| "maxVarIndexCpsTree (CpsTreeFlatMap src i fbody) = (max (maxVarIndexCpsTree src) (maxVarIndexCpsTree fbody))"
+| "maxVarIndexCpsTree (CpsTreeAsync e k) = maxVarIndexExpr e"
+| "maxVarIndexCpsTree (CpsTreeLambda v vt rhs) = max v (maxVarIndexCpsTree rhs)"
+| "maxVarIndexCpsTree (CpsTreeLet v vt init body) = ( max (max v (maxVarIndexExpr init)) (maxVarIndexCpsTree body))"
+| "maxVarIndexCpsTree ErrorCpsTree = 0"
+
+fun maxVarIndexCpsTree2:: "CpsTree \<Rightarrow> CpsTree \<Rightarrow> int" where
+  "maxVarIndexCpsTree2 x y = max (maxVarIndexCpsTree x) (maxVarIndexCpsTree y)"
+
+fun maxVarIndexCpsTree3:: "CpsTree \<Rightarrow> CpsTree \<Rightarrow> CpsTree \<Rightarrow> int" where
+  "maxVarIndexCpsTree3 x y z = (max (max (maxVarIndexCpsTree x) (maxVarIndexCpsTree y)) 
+                                    (maxVarIndexCpsTree z) )"
 
 
 lemma isCorrectExpr_let_backward: 
@@ -305,6 +404,9 @@ lemma isCorrectExpr_let_backward:
           done
       subgoal
           apply(cases "typeExpr vv s"; auto)
+        done
+      subgoal
+        apply(cases "typeExpr vv s"; auto)
         done
       subgoal
         apply(cases "typeExpr vv s"; auto)
@@ -407,6 +509,9 @@ next
   case ("4_4" mx)
   then show ?case by auto
 next
+  case ("4_5")
+  then show ?case by auto
+next
   case ("5_1")
   then show ?case by auto
 next
@@ -419,6 +524,9 @@ next
   case ("5_4" x)
   then show ?case by auto
 next
+  case ("5_5")
+  then show ?case by auto
+next
   case ("6_1")
   then show ?case by auto
 next
@@ -428,16 +536,25 @@ next
   case ("6_3" x)
   then show ?case by auto
 next
+  case ("6_4")
+  then show ?case by auto
+next
   case ("7_1"  yi yo)
   then show ?case by auto
 next
   case ("7_2" my)
   then show ?case by auto
 next
+  case ("7_3")
+  then show ?case by auto
+next
   case ("8_1" xi xo)
   then show ?case by auto
 next
   case ("8_2" xi xo mt)
+  then show ?case by auto
+next
+  case ("8_3")
   then show ?case by auto
 next
   case (9 x y)
@@ -447,7 +564,22 @@ next
   then show ?case by auto
 next
   case ("10_2" mx xi xo)
-  then show ?case by auto  
+  then show ?case by auto
+next
+  case ("10_3" x)
+  then show ?case by auto
+next
+  case ("11")
+  then show ?case by auto
+next
+  case ("12_1")
+  then show ?case by auto
+next
+  case ("12_2" x y)
+  then show ?case by auto
+next
+  case ("12_3" mx)
+  then show ?case by auto
 qed
 
          
@@ -497,24 +629,6 @@ fun asyncKind :: "CpsTree \<Rightarrow> AsyncKind" where
 
 
 
-
-fun complexityAsyncKind::"AsyncKind \<Rightarrow> nat" where
-    "complexityAsyncKind  AKSync = 1"
-  | "complexityAsyncKind  (AKAsync k) = 1 + (complexityAsyncKind k)"
-  | "complexityAsyncKind  (AKLambda k) = 1 + (complexityAsyncKind k)"
-  | "complexityAsyncKind  AKError = 0"
-  
-
-
-fun complexityCpsTree::"CpsTree  \<Rightarrow> nat" where
-   "complexityCpsTree (CpsTreePure expr) = 1"
- | "complexityCpsTree (CpsTreeFlatMap vsource v vbody) = 
-           (complexityCpsTree vsource) + (complexityCpsTree vbody) + 1"
- | "complexityCpsTree (CpsTreeAsync expr ak) = (complexityAsyncKind ak)"
- | "complexityCpsTree (CpsTreeLambda v vt vbody) = 1 + (complexityCpsTree vbody)"
- | "complexityCpsTree (CpsTreeLet v vt init vbody) = 
-      1 + (complexityCpsTree vbody)"
- | "complexityCpsTree ErrorCpsTree = 1"
 
 
 
@@ -637,7 +751,31 @@ fun asyncKindRepr :: "CpsTree \<Rightarrow> TpVarState \<Rightarrow> AsyncKindRe
 
 
 
-
+fun exprToCpsTreeSyncIf::"Expr \<Rightarrow> CpsTree \<Rightarrow> CpsTree \<Rightarrow> TpVarState \<Rightarrow> CpsTree" where
+   "exprToCpsTreeSyncIf cond  condTrue condFalse tps =
+     (case (asyncKindRepr condTrue tps) of
+        AKRPure pct \<Rightarrow> 
+           (case (asyncKindRepr condFalse tps) of
+               AKRPure pcf \<Rightarrow> CpsTreePure (If cond pct pcf)
+              |AKRAsync ak1 apcf \<Rightarrow> (
+                 if (ak1 \<noteq> AKSync) then ErrorCpsTree
+                  else (CpsTreeAsync (If cond (cpsTreeToExpr condTrue tps) 
+                                              (cpsTreeToExpr condFalse tps) ) AKSync )
+                 )
+              |AKRLambda bk lcf \<Rightarrow> ErrorCpsTree
+              |AKRError \<Rightarrow> ErrorCpsTree
+           )
+        |AKRAsync ak apct \<Rightarrow> (
+             if (ak \<noteq> AKSync) then ErrorCpsTree
+              else (case (asyncKindRepr condFalse tps) of
+                AKRPure pcf \<Rightarrow> (CpsTreeAsync (
+                                If cond (cpsTreeToExpr condTrue tps)
+                                        (cpsTreeToExpr condFalse tps)
+                              ) AKSync )
+               
+              )
+           )
+     )" 
 
 
 (*
@@ -671,7 +809,16 @@ fun exprToCpsTree :: "Expr \<Rightarrow> TpVarState \<Rightarrow> CpsTree" where
     let cpsC = (exprToCpsTree c s); 
         cpsE1 = (exprToCpsTree e1 s);
         cpsE2 = (exprToCpsTree e2 s) in (
-      errorCpsTree ''TODO''  
+      case (asyncKindRepr cpsC s) of
+        AKRPure pureC \<Rightarrow> (exprToCpsTreeSyncIf pureC cpsE1 cpsE2 s)
+       |
+        AKRAsync ik asyncC \<Rightarrow> (let i = ((maxVarIndexExpr3 c e1 e2)+1) in (
+            CpsTreeFlatMap asyncC i (exprToCpsTreeSyncIf (Ref i ConstTp) cpsE1 cpsE2 (s(i:=ConstTp)))
+           ) )
+       |
+        AKRLambda bk lambdaC \<Rightarrow> errorCpsTree  ''Impossible ''
+       | 
+        AKRError \<Rightarrow> errorCpsTree ''Can't get asyncKindRepr from condition ''
    ))"
   
     
