@@ -28,7 +28,10 @@ fun isCorrectTp :: "TpExpr \<Rightarrow> bool" where
 
 
 
-datatype Expr = ConstantExpr int
+datatype Expr = 
+   ConstantExpr int
+  |
+   UnitExpr
   |
    Let int TpExpr Expr Expr
   |
@@ -108,6 +111,7 @@ definition isCorrectVarType::" int \<Rightarrow> TpVarState \<Rightarrow> bool" 
 
 fun maxVarIndexExpr:: "Expr \<Rightarrow> int" where
    "maxVarIndexExpr (ConstantExpr x) = 0"
+ | "maxVarIndexExpr UnitExpr = 0"
  | "maxVarIndexExpr (Let i tp init body) = (max (maxVarIndexExpr body) 
                                                 (max (maxVarIndexExpr init) i))"
  | "maxVarIndexExpr (Ref i tp) = i"
@@ -135,6 +139,8 @@ fun maxVarIndexExpr3 :: "Expr \<Rightarrow> Expr \<Rightarrow> Expr \<Rightarrow
 
 fun typeExpr :: "Expr \<Rightarrow> TpVarState \<Rightarrow> TpExpr" where
     "typeExpr (ConstantExpr x) s = ConstTp"
+  |
+    "typeExpr UnitExpr s = UnitTp"
   |
     "typeExpr (Let v vt vv body) s = (
         if \<not> (isCorrectTp vt) then ErrorTp else
@@ -784,6 +790,8 @@ fun exprToCpsTreeSyncIf::"Expr \<Rightarrow> CpsTree \<Rightarrow> CpsTree \<Rig
 fun exprToCpsTree :: "Expr \<Rightarrow> TpVarState \<Rightarrow> CpsTree" where
     "exprToCpsTree (ConstantExpr c) s =  CpsTreePure (ConstantExpr c)"
   |
+    "exprToCpsTree UnitExpr s = CpsTreePure UnitExpr"
+  |
     "exprToCpsTree (Ref i tp) s = CpsTreePure (Ref i tp)"
   |
     "exprToCpsTree (Let v vt vv body) s = (
@@ -820,6 +828,42 @@ fun exprToCpsTree :: "Expr \<Rightarrow> TpVarState \<Rightarrow> CpsTree" where
        | 
         AKRError \<Rightarrow> errorCpsTree ''Can't get asyncKindRepr from condition ''
    ))"
+ |
+  "exprToCpsTree (While cond body) tps = (
+    let cpsCond = (exprToCpsTree cond tps);
+        cpsBody = (exprToCpsTree body tps) in (
+      case (asyncKind cpsCond) of
+         AKSync \<Rightarrow> 
+           (case (asyncKind cpsBody) of
+              AKSync \<Rightarrow> CpsTreePure (While cond body)
+             |
+              AKAsync ak \<Rightarrow> (if ak = AKSync then
+                               ( let i1 = (maxVarIndexExpr2 cond body)+1 ;
+                                     i2 = i1+1;
+                                     contTp = ArrowTp ConstTp (MonadTp UnitTp);
+                                     lmbTp = ArrowTp contTp (MonadTp UnitTp);
+                                     lmb = (Lambda i1 contTp
+                                            (If cond 
+                                                 (MflatMap body (Lambda i2 (MonadTp UnitTp) 
+                                                                    (App (Ref i1 contTp) (Mpure UnitExpr) ))
+                                                 ) 
+                                                 (Mpure UnitExpr) )
+                                           ) 
+                                       in (CpsTreeAsync (App lmb lmb) ak)
+                                 )
+                             else ErrorCpsTree )
+             |
+              AKLambda ik \<Rightarrow> errorCpsTree ''body of while loop can't be lambda''
+           )
+        | AKAsync ak \<Rightarrow> (
+            if (ak = AKSync) then
+              errorCpsTree ''TODO''
+            else
+              errorCpsTree ''shape is not supported''
+           )   
+    )
+  )"
+
   
     
     
