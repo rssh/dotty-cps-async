@@ -314,8 +314,6 @@ object AsyncList {
   def empty[F[_]: CpsConcurrentMonad] : AsyncList[F,Nothing] =
      Empty[F]()
 
-
-
   def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]]): AsyncList[F,T] =
       Wait(
         summon[CpsConcurrentMonad[F]].map(f(s0)){ r =>
@@ -338,8 +336,9 @@ object AsyncList {
 
   given absorber[F[_],C<:CpsMonadContext[F],T](using ExecutionContext, CpsConcurrentMonad.Aux[F,C]): CpsAsyncEmitAbsorber4[AsyncList[F,T],F,C,T] =
           AsyncListEmitAbsorber[F,C,T]()
+  
 
-
+  
   given [F[_]:CpsConcurrentMonad]: CpsMonad[[T] =>> AsyncList[F,T]] with CpsPureMonadInstanceContext[[T]=>>AsyncList[F,T]] with
      def pure[A](a:A): AsyncList[F,A] =
           AsyncList.Cons(a,() => AsyncList.empty)
