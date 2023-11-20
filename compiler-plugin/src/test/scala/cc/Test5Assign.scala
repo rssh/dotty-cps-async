@@ -9,7 +9,7 @@ class Test5Assign {
   def testCompileAndRunSimpleAssign_m1(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
       "testdata/set5Assign/m1",
       "testdata/set5Assign/m1/target",
       "cpstest.Test5m1"
@@ -30,7 +30,7 @@ class Test5Assign {
   def testSelectAssyncAssign_m2(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
       "testdata/set5Assign/m2",
       "testdata/set5Assign/m2/target",
       "cpstest.Test5m2"

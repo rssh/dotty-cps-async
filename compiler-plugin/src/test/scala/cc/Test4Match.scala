@@ -44,7 +44,7 @@ class Test4Match {
   def testCompileAndRunFlatMappedMatch_4m3(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
       "testdata/set4/m3",
       "testdata/set4/m3/target",
       "cpstest.s4.m3.Test4m3"

@@ -8,7 +8,7 @@ class Test2Inline {
   def testCompileAndRunExample2(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
-    val (code, output0) = dotcInvocations.compileAndRunFilesInDirs(
+    val (code, output0) = dotcInvocations.compileAndRunFilesInDirsJVM(
       List("testdata/set2_inlinefun"),
       "testdata/set2/target",
       "cpstest.Example2Inline",

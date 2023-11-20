@@ -8,7 +8,7 @@ class Test6Throw {
   def testCompileAndRunThrow_m1(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
       "testdata/set6Throw/m1",
       "testdata/set6Throw/m1/target",
       "cpstest.Test6m1"
@@ -28,7 +28,7 @@ class Test6Throw {
   def testCompileAndRunThrow_m2(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
       "testdata/set6Throw/m2",
       "testdata/set6Throw/m2/target",
       "cpstest.Test6m2"

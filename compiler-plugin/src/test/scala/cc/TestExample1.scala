@@ -25,7 +25,7 @@ class TestExample1 {
   def testCompileAndRunExample1(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
-    val (code,output0) = dotcInvocations.compileAndRunFilesInDirs(
+    val (code,output0) = dotcInvocations.compileAndRunFilesInDirsJVM(
       List("testdata/set1/src/cpstest"),
       "testdata/set1/target",
       "cpstest.TestExample1"

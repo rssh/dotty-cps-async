@@ -13,7 +13,7 @@ class Test12 {
     val dotcInvocations = new DotcInvocations()
     try {
       val (code, output) =
-        dotcInvocations.compileAndRunFilesInDir("testdata/set12/m1", "cpstest.Test12m1")
+        dotcInvocations.compileAndRunFilesInDirJVM("testdata/set12/m1", "cpstest.Test12m1")
       val reporter       = dotcInvocations.reporter
       println("summary: " + reporter.summary)
       println(s"output=${output}")
@@ -40,7 +40,7 @@ class Test12 {
     val dotcInvocations = new DotcInvocations()
     try {
       val (code, output) =
-        dotcInvocations.compileAndRunFilesInDir("testdata/set12/m3", "cpstest.Test12m3")
+        dotcInvocations.compileAndRunFilesInDirJVM("testdata/set12/m3", "cpstest.Test12m3")
       val reporter       = dotcInvocations.reporter
       println("summary: " + reporter.summary)
       println(s"output=${output}")
