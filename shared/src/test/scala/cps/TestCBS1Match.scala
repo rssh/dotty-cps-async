@@ -32,7 +32,8 @@ class TestBS1Match:
 
   @Test def tMatchC1_01(): Unit = 
      val c = async[ComputationBound]{
-       1 match {
+       val x = 1
+       x match {
          case 1 => await(T1.cbi(4))
          case _ => 101
        }
