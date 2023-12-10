@@ -36,16 +36,17 @@ object DBAccess1 {
 
   object User {
     import FakeDB._
-
-
+    
     val userFact = Fact.derived[User]
 
     given Unifiable[User] with
 
-      override def classTag: ClassTag[User] = summon[ClassTag[User]]
+      override type Environment[R[+_]] = UnificationEnvironment[R]
 
-      override def unify[R[+_] : UnificationEnvironment,D](value: User, term: LogicalTerm, bindings:Bindings)(using instanceData: LogicEngineInstanceData[D]): R[Bindings] = {
-        val connection = instanceData.get.asInstanceOf[ConnectionProvider].connection
+      override type InstanceData = ConnectionProvider
+
+      override def unify[R[+_] : UnificationEnvironment](value: User, term: LogicalTerm, bindings:Bindings)(using instanceData: LogicEngineInstanceData[ConnectionProvider]): R[Bindings] = {
+        val connection = instanceData.get.connection
         term match
           case lv:LogicalVariable =>
             // retrieva all the users from the database.
@@ -53,14 +54,14 @@ object DBAccess1 {
             disjunction(users.map(u=>bindings.bind(lv,u)(using userFact)):_*)
           case lc@LogicalConstant(value) =>
             connection.collection[User]("users").findOne(Map{ "id" -> value }) match
-              case Some(userInDb) => userFact.unify[R,D](userInDb, lc, bindings)
+              case Some(userInDb) => userFact.unify[R](userInDb, lc, bindings)
               case None => failure()
           case LogicalFunctionSymbol(unifiable, args) =>
             if (unifiable.checkType[User]) then
               val query = Map.empty ++ args(0).ground.map{  "id" -> _ } ++ args(1).ground.map{  "name" -> _ } ++
                           args(2).ground.map{  "email" -> _ } ++ args(3).ground.map{  "phoneNumber" -> _ }
               val users = connection.collection[User]("users").find(query)
-              or(users.map(u => userFact.unify[R,D](u, term, bindings)))
+              or(users.map(u => userFact.unify[R](u, term, bindings)))
             else
               failure()
       }
@@ -86,22 +87,18 @@ object DBAccess2 {
 
     given Unifiable[User] with
 
-      override def classTag: ClassTag[User] = summon[ClassTag[User]]
+      override type Environment[R[+_]] = (AsyncUnificationEnvironment.AuxF[Future] && DelayUnificationEnvironment)[R]
+      override type InstanceData = ConnectionProvider
 
-      override def unify[R[+_] : UnificationEnvironment : DelayUnificationEnvironment, D](value: User, term: LogicalTerm, bindings: Bindings)(using data: LogicEngineInstanceData[D]):R[Bindings] = {
-        ???
-      }
-
-      /*
-      override def unify[R[+_] : AsyncUnificationEnvironment.AuxF[Future] && DelayUnificationEnvironment, D](value: User, term: LogicalTerm, bindings: Bindings)(using instanceData: LogicEngineInstanceData[D]): R[Bindings] = reify[R] {
-        val connection = instanceData.get.asInstanceOf[ConnectionProvider].connection
+      override def unify[R[+_] : Environment](value: User, term: LogicalTerm, bindings: Bindings)(using instanceData: LogicEngineInstanceData[ConnectionProvider]): R[Bindings] = reify[R] {
+        val connection = instanceData.get.connection
         reflect(waitResolved(term)) match
           case lv: LogicalVariable =>
             // v was not resolved.
             reflect(logicError("Term for all users should be resolved"))
           case lc@LogicalConstant(value) =>
             connection.collection[User]("users").findOne(Map("id" -> value)) match
-              case Some(userInDb) => reflect(userFact.unify[R,D](userInDb, lc, bindings))
+              case Some(userInDb) => reflect(userFact.unify[R](userInDb, lc, bindings))
               case None => reflect(failure())
           case LogicalFunctionSymbol(unifiable, args) =>
             if (unifiable.checkType[User]) then
@@ -116,12 +113,10 @@ object DBAccess2 {
                 "phoneNumber" -> _
               }
               val users = connection.collection[User]("users").find(query)
-              reflect(or(users.map(u => userFact.unify[R,D](u, term, bindings))))
+              reflect(or(users.map(u => userFact.unify[R](u, term, bindings))))
             else
               reflect(failure())
       }
-
-       */
 
 
   }
@@ -141,7 +136,10 @@ object DBAccess3 {
 
     given Unifiable[QueryAllUsers] with
 
-      override def unify[R[+_] : AsyncUnificationEnvironment.AuxF[Future], D <: ConnectionProvider](value: QueryAllUsers , term: LogicalTerm, bindings: Bindings)(using instanceData: LogicEngineInstanceData[D]): R[Bindings] = reify[R] {
+      override type Environment[R[+_]] = AsyncUnificationEnvironment.AuxF[Future][R]
+      override type InstanceData = ConnectionProvider
+
+      override def unify[R[+_] : AsyncUnificationEnvironment.AuxF[Future] ](value: QueryAllUsers , term: LogicalTerm, bindings: Bindings)(using instanceData: LogicEngineInstanceData[ConnectionProvider]): R[Bindings] = reify[R] {
         val collection = instanceData.get.connection.collection[User]("users")
         term match
           case lv: LogicalVariable =>

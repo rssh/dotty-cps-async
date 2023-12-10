@@ -17,9 +17,10 @@ object Queens {
 
   given Unifiable[Queens] with
 
-    override def classTag: ClassTag[Queens] = summon[ClassTag[Queens]]
-
-    def unify[R[+_]:UnificationEnvironment,D](value: Queens, term: LogicalTerm, bindings: Bindings)(using LogicEngineInstanceData[D]):R[Bindings] = reify[R]{
+    override type Environment[R[+_]] = UnificationEnvironment[R]
+    override type InstanceData = Any
+    
+    def unify[R[+_]:UnificationEnvironment](value: Queens, term: LogicalTerm, bindings: Bindings)(using LogicEngineInstanceData[Any]):R[Bindings] = reify[R]{
       ??? //TODO
     }
 

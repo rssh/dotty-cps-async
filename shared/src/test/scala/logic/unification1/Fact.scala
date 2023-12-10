@@ -4,6 +4,10 @@ import scala.quoted._
 import scala.reflect.ClassTag
 
 trait Fact[T] extends Unifiable[T] {
+
+  override type Environment[R[+_]] = UnificationEnvironment[R]
+  override type InstanceData = Any
+
   def asHornClause(t:T): HornClause  = HornClause(LogicalConstant[T](t)(using this), IndexedSeq.empty)
 }
 
@@ -15,10 +19,9 @@ object Fact {
     import quotes.reflect._
     Expr.summon[ClassTag[T]] match
       case Some(ct) =>
-        '{
+        '{ given ClassTag[T] = $ct
             new Fact[T] {
-              def classTag: ClassTag[T] = $ct
-              def unify[R[+_]:UnificationEnvironment,D](value: T, term: LogicalTerm, bindings: Bindings)(using LogicEngineInstanceData[D]):R[Bindings] = ??? // TODO
+              override def unify[R[+_]:UnificationEnvironment](value: T, term: LogicalTerm, bindings: Bindings)(using LogicEngineInstanceData[Any]):R[Bindings] = ??? // TODO
             }
           }
       case None => report.error("No ClassTag found for type T"); ???
