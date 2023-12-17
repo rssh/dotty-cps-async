@@ -11,16 +11,16 @@ import reporting.*
 import scala.util.matching.Regex
 
 
-class DotcInvocations(silent: Boolean = false) {
+class DotcInvocations(silent: Boolean = false, scalaJs: Boolean = false) {
 
   def compileFiles(files: List[String], outDir: String, extraArgs: List[String]=List.empty, checkAll: Boolean = true): Reporter = {
     val args = List("-d", outDir) ++
-             List("-Xplugin:src/main/resources", "-usejavacp") ++
+             List("-Xplugin:src/main/resources") ++
+             compilerClasspathOption ++
              extraArgs ++
              DotcInvocations.defaultCompileOpts ++
              (if (checkAll) List("-Ycheck:all") else List.empty)
     println("compile args: " + args.mkString(" "))
-    println("invoation.classpath=" + System.getProperty("java.class.path"))
     compileFilesWithFullArgs(files, outDir, args)
   }
 
@@ -28,7 +28,6 @@ class DotcInvocations(silent: Boolean = false) {
     val outPath = Path(outDir)
     if (!outPath.exists) outPath.createDirectory()
     val argsWithFiles = args ++ files
-    println("argsWithFiles: " + argsWithFiles.mkString(" "))
     val filledReporter = Main.process(argsWithFiles.toArray, reporter, callback)
     filledReporter
   }
@@ -126,6 +125,15 @@ class DotcInvocations(silent: Boolean = false) {
     }
 
   }
+
+  private def compilerClasspathOption: List[String] = {
+    if (scalaJs) {
+      List("-classpath", DotcInvocations.currentJsClasspath)
+    } else {
+      List("-usejavacp")
+    }
+  }
+
 }
 
 
@@ -138,6 +146,7 @@ case class DotcInvocationArgs(
                                extraDotcArgs: List[String] = List.empty,
                                silent: Boolean = false,
                                checkAll: Boolean = true,
+                               useScalaJsLib: Boolean = false
                              )
 
 
@@ -241,7 +250,8 @@ object DotcInvocations {
       dependency.compiledFlag.isAlreadyCompiled = true
       println("-----finish common compilation-----")
     }
-    val classpath1 = s"${dependency.outDir}:${System.getProperty("java.class.path")}"
+    val baseClassPath = if (invocationArgs.useScalaJsLib) currentJsClasspath else System.getProperty("java.class.path")
+    val classpath1 = s"${dependency.outDir}:${baseClassPath}"
     val secondInvokationArgs = invocationArgs.copy(extraDotcArgs = List("-classpath", classpath1) ++ invocationArgs.extraDotcArgs)
     DotcInvocations.succesfullyCompileFilesInDir(dirname, secondInvokationArgs)
     val classpath2 = s"${dirname}:${classpath1}"
@@ -283,6 +293,13 @@ object DotcInvocations {
   private def checkReporter(reporter: Reporter): Unit = {
     reportErrors(reporter)
     assert(reporter.allErrors.isEmpty, "There should be no errors")
+  }
+
+  private def currentJsClasspath: String = {
+    // substitue the jvm cps classes to js cps classes
+    val classpath = System.getProperty("java.class.path")
+    val jsClasspath = classpath.replaceAll("dotty-cps-async/jvm/target/scala-3.3.1/classes", "dotty-cps-async/js/target/scala-3.3.1/classes")
+    jsClasspath
   }
 
 }

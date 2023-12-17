@@ -84,26 +84,30 @@ object ApplyTransform {
                applyMArgs(term, owner, nesting, Nil)
         case Apply(TypeApply(adoptCpsedCallCn,List(tf,ta)),List(a))
                   if (adoptCpsedCallCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")) =>
-             //  this means that we walk over nesting async.
-             //  leave one unchanged
-             a match
-               case Inlined(call, bindings, expansion) =>
-                  ???
-               case _ =>
-                 Log.trace(s"adoptCpsedCall form at : ${term.show}", nesting)
-                 CpsTree.unchangedPure(term, owner)
+              //  this means that we walk over nesting async.
+              //  leave one unchanged
+              Log.trace(s"adoptCpsedCall form at : ${term.show}", nesting)
+              CpsTree.unchangedPure(term, owner)        
+        case Apply(TypeApply(fun@adoptCpsedCallCn,List(tf,ta)),List(a))
+              if (adoptCpsedCallCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCallCompileTimeOnly")) =>
+              //  macro generate compile-time only variant of adoptCpsedCall to be stopped if plugin is not present.
+              //  change to adoptCpsedCall
+              Log.trace(s"adoptCpsedCallCompileTimeOnly form at : ${term.show}", nesting)
+              val nFun = ref(Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")).withSpan(fun.span)
+              val nTree = Apply(TypeApply(nFun,List(tf,ta)),List(a)).withSpan(term.span)
+              CpsTree.pure(term, owner, nTree)
         case Apply(Apply(TypeApply(fAsynchronizedCm,List(tf,ta)),List(a)),List(fctx))
                          if (fAsynchronizedCm.symbol == Symbols.requiredMethod("cps.asynchronized")) =>
               Log.trace(s"asynchronized at : ${term.show}", nesting)
               AsynchronizedTransform.fromApply(term, owner, nesting, tf, ta, a, fctx)
         case Apply(cnThrow, List(_)) if (cnThrow.symbol == defn.throwMethod) =>
-             ThrowTransform(term, owner, nesting)
+              ThrowTransform(term, owner, nesting)
         case Apply(TypeApply(nonLocalRecturnCn, List(targ)), List(arg))
                          if (nonLocalRecturnCn.symbol == Symbols.requiredMethod("scala.util.control.NonLocalReturns.returning")) =>
-             NonLocalReturnsReturningTransform.apply(term, owner, nesting, targ, arg)
+              NonLocalReturnsReturningTransform.apply(term, owner, nesting, targ, arg)
         case Apply(Apply(TypeApply(throwReturnCn, targs2), List(arg2) ), List(arg1))
                 if (throwReturnCn.symbol == Symbols.requiredMethod("scala.util.control.NonLocalReturns.throwReturn")) =>
-             NonLocalReturnsThrowReturnTransform.apply(term, owner, nesting, throwReturnCn, targs2, arg2, arg1)
+              NonLocalReturnsThrowReturnTransform.apply(term, owner, nesting, throwReturnCn, targs2, arg2, arg1)
         case _ =>
             if (summon[CpsTopLevelContext].isBeforeInliner && atPhase(inliningPhase)(Inlines.needsInlining(term))) {
               val inlined = atPhase(inliningPhase)(Inlines.inlineCall(term))
