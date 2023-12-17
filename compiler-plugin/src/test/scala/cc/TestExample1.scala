@@ -11,7 +11,7 @@ class TestExample1 {
     val reporter = dotcInvocations.compileFilesInDir(
       "testdata/set1/src/cpstest",
       "testdata/set1/target",
-      List("-Vprint:rssh.cps")
+      List.empty  //List("-Vprint:rssh.cps")
     )
 
     println("summary: " + reporter.summary)
