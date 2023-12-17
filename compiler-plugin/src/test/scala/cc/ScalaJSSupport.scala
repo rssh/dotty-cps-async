@@ -71,6 +71,10 @@ object ScalaJSSupport {
       .map(replaceDotcCpsAsyncClasses(_))
       .mkString(File.pathSeparator)
 
+    val outputDirPath = Paths.get(outputDir)
+    if (!outputDirPath.toFile.exists()) {
+      outputDirPath.toFile.mkdirs()
+    }
 
     val linkScript = s"java -classpath ${jsClasspath}  cc.ScalaJSLink ${jsClasspath} ${mainClass} ${outputDir}"
     println("ScalaJSLink: linkScript: " + linkScript)
