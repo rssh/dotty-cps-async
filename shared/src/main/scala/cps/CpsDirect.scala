@@ -22,7 +22,7 @@ type CpsDirect[F[_]] = CpsDirect.Direct[F]
 object CpsDirect  {
 
   opaque type Direct[F[_]] = CpsTryMonadContext[F]
-
+  
   private[cps] def apply[F[_]](ctx: CpsTryMonadContext[F]): CpsDirect[F] = ctx
 
   extension [F[_]](x: CpsDirect[F])
