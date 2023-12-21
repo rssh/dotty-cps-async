@@ -8,7 +8,21 @@ import cps.testconfig.given
 
 import futureScope.*
 
+/**
+ * Motivation Example for joinads.
+ * See 
+ * Tomas Petricek and Don Syme. 2011. 
+ * Joinads: a retargetable control-flow construct for reactive, parallel and concurrent programming. 
+ * In Proceedings of the 13th international conference on Practical aspects of declarative languages (PADL'11). 
+ * Springer-Verlag, Berlin, Heidelberg, 205–219.
+ *
+ * https://dl.acm.org/doi/10.5555/1946313.1946336
+ */
 
+
+/**
+ * Binary tree with ordering, we want to search for data in this tree in parallel.
+ */
 enum BinaryTree[+T:Ordering] {
   case Empty extends BinaryTree[Nothing]
   case Node[T:Ordering](value: T, left: BinaryTree[T], right: BinaryTree[T]) extends BinaryTree[T]
