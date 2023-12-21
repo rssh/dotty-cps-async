@@ -13,7 +13,8 @@ import cps.testconfig.given
 
 /**
  * Model for implementation if happy eyeball algorithm (see RFC 8305)
- * in somplicified version, to allow dirext comparison wt
+ * in somplicified version, to allow dirext comparison with ZIO version
+ * (see https://blog.softwaremill.com/happy-eyeballs-algorithm-using-zio-120997ba5152)
  **/
 object LiteHappyEyeballs {
 
