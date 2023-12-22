@@ -605,7 +605,7 @@ lemma correctFlatMapNoErrorKind: "
   \<and> (isCorrectCps (body::CpsTree) (s(v:=ts)) ) 
   \<and> ((typeCpsTree body (s(v:=ts))) = MonadTp tb)
                        \<Longrightarrow> isCorrectCps (CpsTreeFlatMap source v body) s"
-  nitpick
+  (* nitpick *)
   apply(auto)
   sorry
   
@@ -784,6 +784,56 @@ fun exprToCpsTreeSyncIf::"Expr \<Rightarrow> CpsTree \<Rightarrow> CpsTree \<Rig
      )" 
 
 
+fun exprToCpsTreeWhileAsync::"CpsTree \<Rightarrow> CpsTree \<Rightarrow> TpVarState \<Rightarrow> CpsTree" where
+  "exprToCpsTreeWhileAsync aCond aBody tps = 
+    (let i1 = (max (maxVarIndexCpsTree aCond) (maxVarIndexCpsTree aBody)) + 1;
+         i2 = i1 + 1;
+         lambdaBody = (Lambda i1 ConstTp 
+                     (If (Ref i1 ConstTp)
+                         (MflatMap (cpsTreeToExpr aBody tps) (Ref i2 (ArrowTp UnitTp UnitTp)))
+                         (Mpure UnitExpr)
+                  )  );
+         aExpr = Let i2 (ArrowTp UnitTp UnitTp) lambdaBody (MflatMap (cpsTreeToExpr aCond tps) lambdaBody)
+         in (
+          CpsTreeAsync aExpr AKSync
+         )
+    )
+  "
+
+
+fun exprToCpsTreeWhile::"CpsTree \<Rightarrow> CpsTree \<Rightarrow> TpVarState \<Rightarrow> CpsTree" where
+  "exprToCpsTreeWhile cpsCond cpsBody tps = 
+   ( case (asyncKindRepr cpsCond tps) of
+      AKRPure cond \<Rightarrow> (case (asyncKindRepr cpsBody tps) of
+                         AKRPure body \<Rightarrow> CpsTreePure (While cond body)
+                        |
+                         AKRAsync AKSync aBody \<Rightarrow> exprToCpsTreeWhileAsync (CpsTreePure cond) aBody tps 
+                        |
+                         AKRAsync x aBody \<Rightarrow> errorCpsTree ''Async kind is not supported''
+                        |
+                         AKRLambda bk body \<Rightarrow> errorCpsTree ''Lambda can not to be While body'' 
+                        |
+                         AKRError \<Rightarrow> errorCpsTree ''Invalid ak representation for while body''
+                      )
+    | 
+     AKRAsync AKSync cpsCond \<Rightarrow> (case (asyncKindRepr cpsBody tps) of
+                                 AKRPure body \<Rightarrow> exprToCpsTreeWhileAsync cpsCond (CpsTreePure body) tps
+                                |
+                                 AKRAsync AKSync cpsBody \<Rightarrow> exprToCpsTreeWhileAsync cpsCond cpsBody tps
+                                |
+                                 AKRLambda bk body \<Rightarrow> errorCpsTree ''Lambda can not to be While body''
+                                |
+                                 AKRError \<Rightarrow> errorCpsTree ''Invalid ak representation for while body''
+                              )  
+    |
+     AKRAsync k cpsCond \<Rightarrow> errorCpsTree ''Unsupported ak-kind''
+    |
+     AKRLambda bk body \<Rightarrow> errorCpsTree ''Arrow can not be while condition''
+   )"
+
+
+    
+
 (*
  CpsTransform 
 *)
@@ -831,39 +881,15 @@ fun exprToCpsTree :: "Expr \<Rightarrow> TpVarState \<Rightarrow> CpsTree" where
  |
   "exprToCpsTree (While cond body) tps = (
     let cpsCond = (exprToCpsTree cond tps);
-        cpsBody = (exprToCpsTree body tps) in (
-      case (asyncKind cpsCond) of
-         AKSync \<Rightarrow> 
-           (case (asyncKind cpsBody) of
-              AKSync \<Rightarrow> CpsTreePure (While cond body)
-             |
-              AKAsync ak \<Rightarrow> (if ak = AKSync then
-                               ( let i1 = (maxVarIndexExpr2 cond body)+1 ;
-                                     i2 = i1+1;
-                                     contTp = ArrowTp ConstTp (MonadTp UnitTp);
-                                     lmbTp = ArrowTp contTp (MonadTp UnitTp);
-                                     lmb = (Lambda i1 contTp
-                                            (If cond 
-                                                 (MflatMap body (Lambda i2 (MonadTp UnitTp) 
-                                                                    (App (Ref i1 contTp) (Mpure UnitExpr) ))
-                                                 ) 
-                                                 (Mpure UnitExpr) )
-                                           ) 
-                                       in (CpsTreeAsync (App lmb lmb) ak)
-                                 )
-                             else ErrorCpsTree )
-             |
-              AKLambda ik \<Rightarrow> errorCpsTree ''body of while loop can't be lambda''
-           )
-        | AKAsync ak \<Rightarrow> (
-            if (ak = AKSync) then
-              errorCpsTree ''TODO''
-            else
-              errorCpsTree ''shape is not supported''
-           )   
-    )
+        cpsBody = (exprToCpsTree body tps)
+         in (exprToCpsTreeWhile cpsCond cpsBody tps)
   )"
-
+ |
+  "exprToCpsTree (Lambda x tpx body) tps = (
+     CpsTreeLambda x tpx (exprToCpsTree body tps)
+  )"
+ |
+  "exprToCpsTree (App f v) tps = (errorCpsTree ''TODO'' )" 
   
     
     
