@@ -829,9 +829,28 @@ fun exprToCpsTreeWhile::"CpsTree \<Rightarrow> CpsTree \<Rightarrow> TpVarState 
      AKRAsync k cpsCond \<Rightarrow> errorCpsTree ''Unsupported ak-kind''
     |
      AKRLambda bk body \<Rightarrow> errorCpsTree ''Arrow can not be while condition''
+    |
+     AKRError \<Rightarrow> errorCpsTree ''Error in codition kind ''
    )"
 
 
+fun exprToCpsTreeApp :: "CpsTree \<Rightarrow> CpsTree \<Rightarrow> TpVarState \<Rightarrow> CpsTree" where
+   "exprToCpsTreeApp cpsFun cpsArg tps = (
+     case (asyncKindRepr cpsFun tps) of
+       AKRPure fun \<Rightarrow> 
+          (case (asyncKindRepr cpsArg tps) of
+             AKRPure arg \<Rightarrow> CpsTreePure (App fun arg)
+            |
+             AKRAsync AKSync cpsArg \<Rightarrow>
+                        CpsTreeAsync (MflatMap (cpsTreeToExpr cpsArg tps) (Mpure fun)) AKSync
+            |
+             AKRLambda bk cpsBody \<Rightarrow>
+                     case fun of
+                        ExternalFun fi tp \<Rightarrow>  errorCpsTree ''TODO''
+                       |  
+                        x \<Rightarrow> errorCpsTree ''TODO''
+          ) 
+   )"
     
 
 (*
