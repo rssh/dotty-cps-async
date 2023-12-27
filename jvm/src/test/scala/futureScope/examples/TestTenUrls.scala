@@ -1,22 +1,19 @@
 package futureScope.examples
 
 import java.io.IOException
-
 import scala.concurrent.*
 import scala.concurrent.duration.*
 import scala.util.*
-
 import cps.*
-import cps.monads.{*,given}
+import cps.monads.{*, given}
 import futureScope.*
-
 import cps.*
-import cps.monads.{*,given}
+import cps.monads.{*, given}
 import cps.util.FutureCompleter
 import cps.testconfig.given
-
-import org.junit.{Test,Ignore}
+import org.junit.{Ignore, Test}
 import org.junit.Assert.*
+
 
 class TestTenUrls {
 
@@ -30,8 +27,7 @@ class TestTenUrls {
 
     class NetworkApiMock(records:Map[String,FetchResult]) extends TenUrls.NetworkApi {
 
-      //val nOpened
-
+      
       override def fetch(url: String)(using ctx: FutureScopeContext): Future[String] = async[Future].in(Scope.child(ctx)) {
         records.get(url) match
           case Some(record) =>

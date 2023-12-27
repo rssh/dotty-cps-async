@@ -208,7 +208,8 @@ class FutureScopeContext(m: CpsTryMonad[Future], ec: ExecutionContext, parentSco
 
   def spawnTimeout(duration: FiniteDuration): CancellableFuture[Nothing] = {
     val retval = TimeOperations.waiting(duration){
-      throw TimeoutException()
+      this.cancel(ScopeCancellationException("spawn timeout",new TimeoutException()))  
+      throw new TimeoutException()
     }
     addCancellableFuture(retval)
     retval

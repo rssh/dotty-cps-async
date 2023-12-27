@@ -27,6 +27,7 @@ object TenUrls {
 
   trait NetworkApi {
 
+    
     def fetch(url: String)(using ctx: FutureScopeContext): Future[String] 
 
  }
