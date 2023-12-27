@@ -13,7 +13,7 @@ class QueensTest {
     import QueensTest.*
     val r = queens[LogicM](8).observeN(2)
     // observer monad is identity monad here.
-
+    println(s"QueensTest:r=$r")
     assert(r.size == 2)
     assert(QueensTest.isCorrect(r(0)))
     assert(QueensTest.isCorrect(r(1)))

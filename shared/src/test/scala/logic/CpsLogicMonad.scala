@@ -4,11 +4,13 @@ import scala.util.*
 
 import cps.*
 
-trait CpsLogicMonad[M[+_]] extends CpsTryMonad[M] {
+trait CpsLogicMonad[M[_]] extends CpsTryMonad[M] {
 
-  def mzero: M[Nothing]
+  override type Context <: CpsLogicMonadContext[M]
 
-  def mplus[A](a: M[A], b: M[A]): M[A]
+  def mzero[A]: M[A]
+
+  def mplus[A](a: M[A], b: => M[A]): M[A]
 
   def msplit[A](c: M[A]): M[Option[(Try[A], M[A])]]
 
@@ -59,7 +61,7 @@ trait CpsLogicMonad[M[+_]] extends CpsTryMonad[M] {
 
   type Observer[A]
 
-  def observerCpsMonad: CpsMonad[Observer]
+  def observerCpsMonad: CpsTryMonad[Observer]
 
   def mObserveOne[A](ma:M[A]): Observer[Option[A]]
 
@@ -68,7 +70,12 @@ trait CpsLogicMonad[M[+_]] extends CpsTryMonad[M] {
       observerCpsMonad.flatMap(observer)(seq => observerCpsMonad.map(fa)(a => seq :+ a))
     }
 
-  def mFoldLeft[A,B](ma:M[A], zero:Observer[B], op: (Observer[B],Observer[A])=>Observer[B]): Observer[B]
+  def mObserveAll[A](ma: M[A]): Observer[Seq[A]] =
+    mFoldLeft(ma, observerCpsMonad.pure(IndexedSeq.empty[A])) { (observer, fa) =>
+      observerCpsMonad.flatMap(observer)(seq => observerCpsMonad.map(fa)(a => seq :+ a))
+    }
+
+  def mFoldLeft[A,B](ma:M[A], zero:Observer[B])(op: (Observer[B],Observer[A])=>Observer[B]): Observer[B]
 
   def mFoldLeftN[A,B](ma: M[A], zero: Observer[B], n: Int)(op: (Observer[B],Observer[A])=>Observer[B]): Observer[B]
 
@@ -83,17 +90,17 @@ object CpsLogicMonad {
 }
 
 
-trait CpsLogicMonadContext[M[+_]] extends CpsTryMonadContext[M] {
+trait CpsLogicMonadContext[M[_]] extends CpsTryMonadContext[M] {
 
   override def monad: CpsLogicMonad[M]
 
 }
 
-class CpsLogicMonadInstanceContextBody[M[+_]](m:CpsLogicMonad[M]) extends CpsLogicMonadContext[M] {
+class CpsLogicMonadInstanceContextBody[M[_]](m:CpsLogicMonad[M]) extends CpsLogicMonadContext[M] {
   override def monad: CpsLogicMonad[M] = m
 }
 
-trait CpsLogicMonadInstanceContext[M[+_]] extends CpsLogicMonad[M]  {
+trait CpsLogicMonadInstanceContext[M[_]] extends CpsLogicMonad[M]  {
 
   override type Context = CpsLogicMonadInstanceContextBody[M]
 
@@ -103,7 +110,7 @@ trait CpsLogicMonadInstanceContext[M[+_]] extends CpsLogicMonad[M]  {
 
 }
 
-def all[M[+_],A](collection: IterableOnce[A])(using m:CpsLogicMonad[M]): M[A] =
+def all[M[_],A](collection: IterableOnce[A])(using m:CpsLogicMonad[M]): M[A] =
    def allIt(it: Iterator[A]): M[A] =
       if (it.hasNext) {
         m.mplus(m.pure(it.next()), allIt(it))
@@ -113,7 +120,10 @@ def all[M[+_],A](collection: IterableOnce[A])(using m:CpsLogicMonad[M]): M[A] =
    allIt(collection.iterator)
 
 
-extension [M[+_],A](ma: M[A])(using m:CpsLogicMonad[M])
+
+
+
+extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
 
   def filter(p: A => Boolean): M[A] =
     m.flatMap(m.msplit(ma)) { sc =>
@@ -133,3 +143,18 @@ extension [M[+_],A](ma: M[A])(using m:CpsLogicMonad[M])
 
   def observeN(n: Int): m.Observer[Seq[A]] =
     m.mObserveN(ma,n)
+
+  def observeOne: m.Observer[Option[A]] =
+    m.mObserveOne(ma)
+
+  def observeAll: m.Observer[Seq[A]] =
+    m.mObserveAll(ma)
+
+  def |+|(mb: =>M[A]): M[A] =
+    m.mplus(ma,mb)
+
+
+transparent inline def guard[M[_]:CpsLogicMonad](p: =>Boolean)(using mc:CpsLogicMonadContext[M]): Unit =
+  reflect{
+    if (p) mc.monad.pure(()) else mc.monad.mzero
+  }
