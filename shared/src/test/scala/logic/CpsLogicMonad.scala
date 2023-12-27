@@ -152,6 +152,12 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
 
   def |+|(mb: =>M[A]): M[A] =
     m.mplus(ma,mb)
+    
+  def ||(mb: =>M[A]): M[A] =
+    m.mplus(ma,mb)
+    
+  def |(mb: =>M[A]): M[A] =
+    m.interleave(ma,mb)  
 
 
 transparent inline def guard[M[_]:CpsLogicMonad](p: =>Boolean)(using mc:CpsLogicMonadContext[M]): Unit =

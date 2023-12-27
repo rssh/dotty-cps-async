@@ -64,7 +64,8 @@ object LogicSKFK {
                 new SuccessContinuation[F,A,R] {
                   override def apply(ta: Try[A])(fk: =>F[R]): F[R] =
                       ta match
-                        case Success(a) => sk(Success(f(a)))(fk)
+                        case Success(a) =>
+                          sk(Success(f(a)))(fk)
                         case Failure(ex) => sk(Failure(ex))(fk)
                 }
           }(fk)
@@ -187,7 +188,7 @@ object LogicSKFK {
                       observerCpsMonad.error(ex)
               case Failure(ex) =>
                 observerCpsMonad.error(ex)
-        })(zero)  
+        })(zero)
     }
 
   }
