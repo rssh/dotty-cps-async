@@ -106,14 +106,6 @@ trait CpsPureMonadInstanceContext[F[_]] extends CpsMonad[F] {
     op(CpsPureMonadInstanceContextBody(this))
 
 
-   ///**
-   //* If is it statically known, that monad is evaluated in this context, then
-   //* this call is completely eliminated by dotty-cps-async macro
-   //*@return fa
-   //**/
-   //def adoptAwait[A](fa:F[A]):F[A] = fa
-
-
 }
 
 class CpsThrowMonadInstanceContextBody[F[_]](val m: CpsThrowMonadInstanceContext[F]) extends CpsThrowMonadContext[F]  {

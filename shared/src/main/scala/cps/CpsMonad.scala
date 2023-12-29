@@ -377,12 +377,22 @@ trait CpsEffectMonad[F[_]] extends CpsMonad[F] {
 
 }
 
+object CpsEffectMonad {
+
+  type Aux[F[_],C<:CpsMonadContext[F]] = CpsEffectMonad[F] { type Context = C }
+
+}
+
+/**
+ * Effect with Try support
+ **/
+trait CpsTryEffectMonad[F[_]] extends CpsEffectMonad[F] with CpsTryMonad[F] 
 
 
 /**
  * Async Effect Monad
  */
-trait CpsAsyncEffectMonad[F[_]] extends CpsAsyncMonad[F] with CpsEffectMonad[F]
+trait CpsAsyncEffectMonad[F[_]] extends CpsAsyncMonad[F] with CpsTryEffectMonad[F]
 
 
 
