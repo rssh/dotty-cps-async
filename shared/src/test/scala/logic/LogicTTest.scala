@@ -10,38 +10,49 @@ class LogicTTest {
 
   import LogicTTest.*
 
-  type LogicSKFKCB[A] = LogicT[ComputationBound,A]
+  type LogicSKFKCB[A] = LogicTSKFK[ComputationBound,A]
 
+  def runNatCB[M[_]]()(using m:CpsLogicMonad[M] { type Observer[A] = ComputationBound[A] } ): Unit = {
+    
+    val cbNat = nats[M]
+
+    val cb4 = cbNat.observeN(4)
+    assert(cb4.run(1.second) == Success(Seq(1,2,3,4)))
+
+    //val cbStream = cbNat
+
+    val cbOdds = odds[M]
+    val odds4 = cbOdds.observeN(4)
+    assert(odds4.run(1.second) == Success(Seq(1,3,5,7)))
+
+    val cbOdds2unfair = cbOdds  || m.pure(2)
+
+    val cbOdds2fair = cbOdds | m.pure(2)
+
+    val odds2unfair4 = cbOdds2unfair.observeN(4)
+    assert(odds2unfair4.run(1.second) == Success(Seq(1,3,5,7)))
+
+    val odds2fair4 = cbOdds2fair.observeN(4)
+    val odds4fair2result = odds2fair4.run(1.second).get
+    assert(odds4fair2result.contains(1))
+    assert(odds4fair2result.contains(2))
+    assert(odds4fair2result.contains(3))
+    assert(odds4fair2result.contains(5))
+    assert(odds4fair2result.size == 4)
+    
+  }
+    
 
   @Test
-  def testNatCB():Unit = {
-
-     val cbNat = nats[LogicSKFKCB]
-
-     val cb4 = cbNat.observeN(4)
-     assert(cb4.run(1.second) == Success(Seq(1,2,3,4)))
-
-     //val cbStream = cbNat
-
-     val cbOdds = odds[LogicSKFKCB]
-     val odds4 = cbOdds.observeN(4)
-     assert(odds4.run(1.second) == Success(Seq(1,3,5,7)))
-
-     val cbOdds2unfair = cbOdds  || summon[CpsLogicMonad[LogicSKFKCB]].pure(2)
-
-     val cbOdds2fair = cbOdds | summon[CpsLogicMonad[LogicSKFKCB]].pure(2)
-
-     val odds2unfair4 = cbOdds2unfair.observeN(4)
-     assert(odds2unfair4.run(1.second) == Success(Seq(1,3,5,7)))
-
-     val odds2fair4 = cbOdds2fair.observeN(4)
-     val odds4fair2result = odds2fair4.run(1.second).get
-     assert(odds4fair2result.contains(1))
-     assert(odds4fair2result.contains(2))
-     assert(odds4fair2result.contains(3))
-     assert(odds4fair2result.contains(5))
-     assert(odds4fair2result.size == 4)
+  def testNatCBSKFK():Unit = {
+    runNatCB[LogicSKFKCB]()
   }
+
+  @Test
+  def testNatCBSeq(): Unit = {
+    runNatCB[[A]=>>LazyLogicSeqT[ComputationBound,A]]()
+  }
+
 
   @Test
   def testNatCbOnce(): Unit = {

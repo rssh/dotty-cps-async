@@ -8,7 +8,7 @@ import logic.*
 
 import scala.annotation.tailrec
 
-type LogicM[A] = LogicT[CpsIdentity,A]
+type LogicMSKFK[A] = LogicTSKFK[CpsIdentity,A]
 
 
 given logicMonadM: LogicSKFK.LogicSKFKMonad[CpsIdentity] = LogicSKFK.logicMonadT[CpsIdentity]
@@ -17,7 +17,7 @@ given logicMonadM: LogicSKFK.LogicSKFKMonad[CpsIdentity] = LogicSKFK.logicMonadT
 /**
  * Dependency-less port of haskell's LogicT monad transformer.
  */
-type LogicT[F[_],+A] = LogicSKFK.CallbackAcceptor[F,A]
+type LogicTSKFK[F[_],+A] = LogicSKFK.CallbackAcceptor[F,A]
 
 object LogicSKFK {
 
@@ -97,6 +97,8 @@ object LogicSKFK {
 
     override def mplus[A](a: CallbackAcceptor[F, A], b: =>CallbackAcceptor[F, A]): CallbackAcceptor[F, A] =
       new CallbackAcceptor[F,A] {
+        // scalability problem -- right argument deeper in stack.
+        // in real world need to think about tramplining.
         override def apply[R](sk: SuccessContinuation[F,A,R])(fk: =>F[R]): F[R] =
           a.apply(sk)(b.apply(sk)(fk))
       }

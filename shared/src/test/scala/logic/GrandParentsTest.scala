@@ -10,15 +10,25 @@ import org.junit.Test
 class GrandParentsTest {
 
   @Test
-  def testLogicM() = {
+  def testLogicMSKF() = {
      import GrandParentsTest.*
-     val r = grandParent[LogicM]("Anne").observeAll
-     println(s"GrandParentTest: r=$r")
+     val r = grandParent[LogicMSKFK]("Anne").observeAll
+     //println(s"GrandParentTest: r=$r")
      assert(r.size == 2)
      assert(r.contains("Sarah"))
      assert(r.contains("Arnold"))
   }
 
+  @Test
+  def testLogicSeqM() = {
+      import GrandParentsTest.*
+      val r = grandParent[LogicSeqLM]("Anne").observeAll.get
+      println(s"GrandParentTest:LogicSeq: r=$r")
+      assert(r.size == 2)
+      assert(r.contains("Sarah"))
+      assert(r.contains("Arnold"))
+    
+  }
 
 
 }

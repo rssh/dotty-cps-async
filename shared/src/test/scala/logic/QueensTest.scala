@@ -1,6 +1,7 @@
 package logic
 
 import cps.*
+import cps.monads.{*,given}
 import logic.logict.{*,given}
 import org.junit.{Ignore, Test}
 
@@ -9,11 +10,20 @@ import org.junit.{Ignore, Test}
 class QueensTest {
 
   @Test
-  def testLogicM() = {
+  def testLogicMSKFK() = {
     import QueensTest.*
-    val r = queens[LogicM](8).observeN(2)
+    val r = queens[LogicMSKFK](8).observeN(2)
     // observer monad is identity monad here.
     //println(s"QueensTest:r=$r")
+    assert(r.size == 2)
+    assert(QueensTest.isCorrect(r(0)))
+    assert(QueensTest.isCorrect(r(1)))
+  }
+
+  @Test
+  def testLogicSeqM() = {
+    import QueensTest.*
+    val r = queens[LogicSeqM](8).observeN(2)
     assert(r.size == 2)
     assert(QueensTest.isCorrect(r(0)))
     assert(QueensTest.isCorrect(r(1)))
@@ -31,7 +41,7 @@ object QueensTest {
   def isFree(p:Pos, prefix:IndexedSeq[Pos]):Boolean =
     prefix.forall(pp => !isBeat(p, pp))
 
-  def queens[M[+_]:CpsLogicMonad](n:Int, prefix:IndexedSeq[Pos]=IndexedSeq.empty): M[IndexedSeq[Pos]] = reify[M] {
+  def queens[M[_]:CpsLogicMonad](n:Int, prefix:IndexedSeq[Pos]=IndexedSeq.empty): M[IndexedSeq[Pos]] = reify[M] {
     if (prefix.length >= n) then
       prefix
     else
