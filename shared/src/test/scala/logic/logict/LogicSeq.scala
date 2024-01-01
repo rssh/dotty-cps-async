@@ -35,31 +35,83 @@ import cps.monads.{*,given}
 import scala.collection.immutable.Queue
 import scala.util.*
 import logic.*
-import logic.logict.LogicSeqT.LQueue
 
 
 import scala.annotation.unchecked.uncheckedVariance
 
-sealed trait LogicSeqT[F[_]:CpsTryEffectMonad, A] {
 
-  def map[B](f: A=>B): LogicSeqT[F,B]
+import LogicSeqT.*
 
-  def flatMap[B](f: A=>LogicSeqT[F,B]): LogicSeqT[F,B]
+case class LogicSeqT[F[_] : CpsTryEffectMonad, A](val queue: Queue[F[Option[(Try[A], LogicSeqT[F, A])]]]) {
 
-  def flatMapTry[B](f: Try[A]=>LogicSeqT[F,B]): LogicSeqT[F,B]
+  def map[B](f: A => B): LogicSeqT[F, B] =
+    LogicSeqT(queue.map { fa =>
+      summon[CpsTryMonad[F]].map(fa) { opt =>
+        opt.map { case (ta, cont) =>
+          (ta.map(f), cont.map(f))
+        }
+      }
+    })
 
-  def fsplit: F[Option[(Try[A], LogicSeqT[F,A])]]
+  def flatMap[B](f: A => LogicSeqT[F, B]): LogicSeqT[F, B] =
+    LogicSeqT(queue.map { fa =>
+      summon[CpsTryMonad[F]].flatMap(fa) { opt =>
+        opt match
+          case None => summon[CpsTryMonad[F]].pure(None)
+          case Some((ta, cont)) =>
+            ta match
+              case Success(a) =>
+                val mAB = f(a)
+                mAB.mplus(cont.flatMap(f)).fsplit
+              case Failure(ex) =>
+                summon[CpsTryMonad[F]].error(ex)
+      }
+    })
 
-  def msplit: LogicSeqT[F,Option[(Try[A], LogicSeqT[F,A])]]
+  def flatMapTry[B](f: Try[A] => LogicSeqT[F, B]): LogicSeqT[F, B] = {
+    LogicSeqT(queue.map { fa =>
+      summon[CpsTryMonad[F]].flatMap(fa) { opt =>
+        opt match
+          case None => summon[CpsTryMonad[F]].pure(None)
+          case Some((ta, cont)) =>
+            val mAB = f(ta)
+            mAB.mplus(cont.flatMapTry(f)).fsplit
+      }
+    })
 
-  def mplus(other: => LogicSeqT[F,A]): LogicSeqT[F,A]
+  }
 
-  def queue: Queue[F[Option[(Try[A], LogicSeqT[F, A])]]]
+  def fsplit: F[Option[(Try[A], LogicSeqT[F, A])]] =
+    queue.dequeueOption match
+      case None => summon[CpsTryMonad[F]].pure(None)
+      case Some((fhead, tail)) =>
+        summon[CpsTryMonad[F]].flatMap(fhead) { opt =>
+          opt match
+            case None => LogicSeqT(tail).fsplit
+            case Some((ta, cont)) =>
+              summon[CpsTryMonad[F]].pure(Some((ta, cont.appendQueue(tail))))
+        }
 
-  def appendQueue(y: Queue[F[Option[(Try[A], LogicSeqT[F, A])]]]): LogicSeqT[F,A]
+  def msplit: LogicSeqT[F, Option[(Try[A], LogicSeqT[F, A])]] = {
+    LogicSeqT.lift(fsplit)
+  }
 
+  def mplus(other: => LogicSeqT[F, A]): LogicSeqT[F, A] =
+    // here is a problem for an infinite sequencts.
+    // we should have somethig like fully-suspended state
+    //
+    //LQueue(queue ++ other.queue)
+    // instead: still lazy,
+    val suspendendSecond = summon[CpsTryEffectMonad[F]].flatMap(
+      summon[CpsTryEffectMonad[F]].delay(other))(_.fsplit)
+    LogicSeqT(queue.appended(suspendendSecond))
+
+
+  def appendQueue(y: Queue[F[Option[(Try[A], LogicSeqT[F, A])]]]): LogicSeqT[F, A] =
+    LogicSeqT(queue ++ y)
 
 }
+
 
 type LogicSeqLM[A] = LogicSeqT[LazyValue, A]
 
@@ -68,113 +120,12 @@ type LogicSeqM[A] = LazyLogicSeqT[CpsIdentity, A]
 object LogicSeqT {
 
   type Part[F[_],A] = Option[(Try[A], LogicSeqT[F,A])]
-
-  case class LQueue[F[_]:CpsTryEffectMonad,A](override val queue: Queue[F[Option[(Try[A], LogicSeqT[F,A])]]] ) extends LogicSeqT[F,A] {
-
-    override def map[B](f: A=>B): LogicSeqT[F,B] =
-       LQueue(queue.map{ fa =>
-          summon[CpsTryMonad[F]].map(fa){ opt =>
-            opt.map{ case (ta,cont) =>
-              (ta.map(f), cont.map(f))
-            }
-          }
-        })
-
-    override def flatMap[B](f: A=>LogicSeqT[F,B]): LogicSeqT[F,B] =
-      LQueue(queue.map{ fa =>
-        summon[CpsTryMonad[F]].flatMap(fa){ opt =>
-          opt match
-            case None => summon[CpsTryMonad[F]].pure(None)
-            case Some((ta,cont)) =>
-              ta match
-                case Success(a) =>
-                  val mAB = f(a)
-                  mAB.mplus(cont.flatMap(f)).fsplit
-                case Failure(ex) =>
-                  summon[CpsTryMonad[F]].error(ex)
-        }
-      })
-
-    override def flatMapTry[B](f: Try[A] => LogicSeqT[F, B]): LogicSeqT[F, B] = {
-      LQueue(queue.map{ fa =>
-        summon[CpsTryMonad[F]].flatMap(fa){ opt =>
-          opt match
-            case None => summon[CpsTryMonad[F]].pure(None)
-            case Some((ta,cont)) =>
-              val mAB = f(ta)
-              mAB.mplus(cont.flatMapTry(f)).fsplit
-        }
-      })
-
-    }
-
-    override def fsplit: F[Option[(Try[A], LogicSeqT[F, A])]] =
-      queue.dequeueOption match
-        case None => summon[CpsTryMonad[F]].pure(None)
-        case Some((fhead,tail)) =>
-          summon[CpsTryMonad[F]].flatMap(fhead){ opt =>
-            opt match
-              case None => LQueue(tail).fsplit
-              case Some((ta,cont)) =>
-                summon[CpsTryMonad[F]].pure(Some((ta, cont.appendQueue(tail))))
-          }
-
-    override def msplit: LogicSeqT[F, Option[(Try[A], LogicSeqT[F, A])]] = {
-        LogicSeqT.lift(fsplit)
-    }
-
-    override def mplus(other: => LogicSeqT[F,A]): LogicSeqT[F,A] =
-      // here is a problem for an infinite sequencts.
-      // we should have somethig like fully-suspended state
-      //
-      //LQueue(queue ++ other.queue)
-      // instead: still lazy,
-      val suspendendSecond = summon[CpsTryEffectMonad[F]].flatMap(
-                                  summon[CpsTryEffectMonad[F]].delay(other))(_.fsplit)
-      LQueue(queue.appended(suspendendSecond))
-
-
-
-
-    override def appendQueue(y: Queue[F[Option[(Try[A], LogicSeqT[F, A])]]]): LogicSeqT[F,A] =
-      LQueue(queue ++ y)
-
-  }
-
-  // to prevent creation of wrapper object
-  case class Empty[F[_]:CpsTryEffectMonad,A]() extends LogicSeqT[F,A] {
-
-    override def map[B](f: A=>B): LogicSeqT[F,B] =
-      this.asInstanceOf[LogicSeqT[F,B]]
-
-    override def flatMap[B](f: A=>LogicSeqT[F,B]): LogicSeqT[F,B] =
-      this.asInstanceOf[LogicSeqT[F,B]]
-
-    override def flatMapTry[B](f: Try[A] => LogicSeqT[F, B]): LogicSeqT[F, B] =
-      this.asInstanceOf[LogicSeqT[F,B]]
-
-    override def fsplit: F[Option[(Try[A], LogicSeqT[F, A])]] =
-      summon[CpsTryMonad[F]].pure(None)
-
-    override def msplit: LogicSeqT[F, Option[(Try[A], LogicSeqT[F, A])]] =
-       this.asInstanceOf[LogicSeqT[F,Option[(Try[A], LogicSeqT[F,A])]]]
-
-    override def mplus(other: => LogicSeqT[F,A]): LogicSeqT[F,A] =
-      other
-
-    override def queue: Queue[F[Option[(Try[A], LogicSeqT[F, A])]]] =
-      Queue.empty
-
-    override def appendQueue(y: Queue[F[Option[(Try[A], LogicSeqT[F, A])]]]): LogicSeqT[F,A] =
-      LQueue(y)
-
-  }
-
+  
   def empty[F[_]:CpsTryEffectMonad,A]: LogicSeqT[F,A] =
-    Empty()
+    LogicSeqT(Queue.empty)
 
   def mpure[F[_]:CpsTryEffectMonad,A](a:A): LogicSeqT[F,A] =
-    LQueue(Queue(summon[CpsTryMonad[F]].pure(Some((Success(a), Empty.asInstanceOf[LogicSeqT[F,A]])))))
+    LogicSeqT(Queue(summon[CpsTryMonad[F]].pure(Some((Success(a), empty)))))
 
   def msingle[F[_]:CpsTryEffectMonad,A](a:A): LogicSeqT[F,Option[(Try[A],LogicSeqT[F,A])]] = {
     mpure(Some(Success(a), empty))
@@ -182,7 +133,7 @@ object LogicSeqT {
 
 
   def lift[F[_],A](fa: F[A])(using CpsTryEffectMonad[F]): LogicSeqT[F,A] =
-    LQueue(Queue(summon[CpsTryMonad[F]].map(fa){ a =>
+    LogicSeqT(Queue(summon[CpsTryMonad[F]].map(fa){ a =>
       Some((Success(a), empty))
     }))
 
@@ -194,7 +145,7 @@ object LogicSeqT {
     override def observerCpsMonad = summon[CpsTryEffectMonad[F]]
 
     override def pure[A](a:A):LogicSeqT[F,A] =
-      LQueue(Queue(observerCpsMonad.pure(Some((Try(a),empty)))))
+      LogicSeqT(Queue(observerCpsMonad.pure(Some((Try(a),empty)))))
 
     override def map[A,B](fa:LogicSeqT[F,A])(f:A=>B):LogicSeqT[F,B] =
       fa.map(f)
@@ -206,10 +157,10 @@ object LogicSeqT {
       fa.flatMapTry(f)
 
     override def error[A](e: Throwable): LogicSeqT[F, A] = {
-      LQueue(Queue(observerCpsMonad.error(e)))
+      LogicSeqT(Queue(observerCpsMonad.error(e)))
     }
 
-    override def mzero[A]:LogicSeqT[F,A] = Empty()
+    override def mzero[A]:LogicSeqT[F,A] = LogicSeqT(Queue.empty)
 
     override def mplus[A](fa:LogicSeqT[F,A], fb: => LogicSeqT[F,A]):LogicSeqT[F,A] =
       fa.mplus(fb)
@@ -330,12 +281,12 @@ object LazyLogicSeqT {
       }.get
     }
 
-    
+
 
   }
 
   given logicSeqLazyMonad[F[_]](using tm: CpsTryMonad[F], nem: NotGiven[CpsTryEffectMonad[F]]): LogicSeqLazyMonad[F] = LogicSeqLazyMonad[F]()
-  
+
 }
 
 
