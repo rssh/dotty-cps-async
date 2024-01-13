@@ -90,7 +90,6 @@ object Point {
               yrBindings
             }
           }
-        case _ => failure()
     }
 
   }

@@ -64,6 +64,8 @@ object DBAccess1 {
               or(users.map(u => userFact.unify[R](u, term, bindings)))
             else
               failure()
+          case CheckedLogicalTerm(term, cast, check) =>
+            ???
       }
 
   }
@@ -116,6 +118,10 @@ object DBAccess2 {
               reflect(or(users.map(u => userFact.unify[R](u, term, bindings))))
             else
               reflect(failure())
+          case CheckedLogicalTerm(term, cast, check) =>
+
+              ???
+
       }
 
 
@@ -144,7 +150,7 @@ object DBAccess3 {
         term match
           case lv: LogicalVariable =>
             reflect(asyncOr(collection.asyncFind().map(u => bindings.bind(lv, QueryAllUsers(u)))))
-          case lc@LogicalConstant(value) =>
+          case _ =>
             ??? // logic similar to the previous example
       }
 
