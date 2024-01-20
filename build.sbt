@@ -24,6 +24,8 @@ lazy val root = project
     Sphinx / sourceDirectory := baseDirectory.value / "docs",
     SiteScaladocPlugin.scaladocSettings(CpsJVM, cps.jvm / Compile / packageDoc / mappings, "api/jvm"),
     SiteScaladocPlugin.scaladocSettings(CpsJS,  cps.js / Compile / packageDoc / mappings, "api/js"),
+    SiteScaladocPlugin.scaladocSettings(CpsNative,  cps.native / Compile / packageDoc / mappings, "api/native"),
+    SiteScaladocPlugin.scaladocSettings(Root,  logic.jvm / Compile / packageDoc / mappings, "api/logic/jvm"),
     siteDirectory :=  baseDirectory.value / "target" / "site",    
     git.remoteRepo := "git@github.com:rssh/dotty-cps-async.git",
     publishArtifact := false,
@@ -68,7 +70,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 
 lazy val CpsJVM = config("cps.jvm")
 lazy val CpsJS = config("cps.js")
-//lazy val CpsNative = config("cps.native")
+lazy val CpsNative = config("cps.native")
 lazy val Root = config("root")
 
 lazy val cpsLoomAddOn = project.in(file("jvm-loom-addon"))

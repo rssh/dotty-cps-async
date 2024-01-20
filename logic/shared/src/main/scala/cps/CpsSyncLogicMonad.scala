@@ -8,9 +8,13 @@ trait CpsSyncLogicMonad[M[_]] extends CpsLogicMonad[M] {
   override type Observer[T] = T
 
   override def observerCpsMonad: CpsTryMonad[Observer] = CpsIdentityMonad
-  
+
   def toLazyList[T](m:M[T]): LazyList[T]
-  
+
 }
 
 
+extension [M[_]:CpsSyncLogicMonad,A](ma:M[A]) 
+
+  def toLazyList: LazyList[A] =
+    summon[CpsSyncLogicMonad[M]].toLazyList(ma)
