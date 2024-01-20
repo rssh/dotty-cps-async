@@ -3,6 +3,7 @@ package logic
 import scala.concurrent.duration.*
 import scala.util.*
 import cps.*
+import logic.logict.LogicStreamT.MPlusSeq
 import logict.*
 import org.junit.Test
 
@@ -33,7 +34,9 @@ class LogicTTest {
     assert(odds2unfair4.run(1.second) == Success(Seq(1,3,5,7)))
 
     val odds2fair4 = cbOdds2fair.observeN(4)
-    val odds4fair2result = odds2fair4.run(1.second).get
+    val odds4fair2result = odds2fair4.run(2.second).get
+
+
     assert(odds4fair2result.contains(1))
     assert(odds4fair2result.contains(2))
     assert(odds4fair2result.contains(3))
@@ -41,7 +44,28 @@ class LogicTTest {
     assert(odds4fair2result.size == 4)
     
   }
-    
+
+  @Test
+  def runLogicStreamOdds2Fair(): Unit = {
+    val m = summon[CpsLogicMonad[[A]=>>LogicStreamT[ComputationBound,A]]]
+    val cbNat = nats[[T]=>>LogicStreamT[ComputationBound,T]]
+    val cbOdds = odds[[T]=>>LogicStreamT[ComputationBound,T]]
+
+    cbOdds.observeN(4).run(1.second) match
+      case Success(v) =>
+        println(s"cbOddsForLogStream=$v")
+      case Failure(ex) =>
+        ex.printStackTrace()
+
+    val cbOdds2fair = cbOdds | m.pure(2)
+
+    val odds2fair4 = cbOdds2fair.observeN(5)
+    val odds4fair2result = odds2fair4.run(2.second).get
+
+
+    assert(odds4fair2result.contains(5))
+
+  }
 
   @Test
   def testNatCBSKFK():Unit = {
@@ -53,6 +77,10 @@ class LogicTTest {
     runNatCB[[A]=>>LazyLogicSeqT[ComputationBound,A]]()
   }
 
+  @Test
+  def testNatCBLogicStream(): Unit = {
+    runNatCB[[A]=>>LogicStreamT[ComputationBound,A]]()
+  }
 
   @Test
   def testNatCbOnce(): Unit = {

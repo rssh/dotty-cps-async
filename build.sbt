@@ -189,5 +189,13 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                               Test / unmanagedSources / excludeFilter := "TestSF1W1.scala" || "TestSL3.scala"
                            )
 
+lazy val logic = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .in(file("logic"))
+  .dependsOn(cps)
+  .settings(sharedSettings)
+  .settings(
+    name := "dotty-cps-async-logic",
+    libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
+  )
 
 

@@ -29,6 +29,15 @@ class QueensTest {
     assert(QueensTest.isCorrect(r(1)))
   }
 
+  @Test
+  def testLogicStream() = {
+    import QueensTest.*
+    val r = (queens[LogicStream](8).observeN(2))
+    assert(r.size == 2)
+    assert(QueensTest.isCorrect(r(0)))
+    assert(QueensTest.isCorrect(r(1)))
+  }
+
 }
 
 object QueensTest {
@@ -49,11 +58,14 @@ object QueensTest {
       reflect(queens(n, prefix :+ reflect(all(nextPos))))
   }
 
+
   def isCorrect(queens:IndexedSeq[Pos]):Boolean = {
     queens.forall(p1 => queens.forall(p2 =>
        (p1 == p2) || !isBeat(p1,p2)
     ))
   }
+
+
 
 
 

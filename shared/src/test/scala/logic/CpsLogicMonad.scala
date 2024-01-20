@@ -23,7 +23,9 @@ trait CpsLogicMonad[M[_]] extends CpsTryMonad[M] {
     }
   }
 
-  // >>- in haskell LogicT
+  /**
+   *   >>- in haskell LogicT
+   */
   def fairFlatMap[A, B](ma: M[A], mb: A => M[B]): M[B] = {
     flatMap(msplit(ma)) { sa =>
       sa match
@@ -69,7 +71,7 @@ trait CpsLogicMonad[M[_]] extends CpsTryMonad[M] {
     mFoldLeftN(ma, observerCpsMonad.pure(IndexedSeq.empty[A]), n) { (observer, fa) =>
       observerCpsMonad.flatMap(observer)(seq => observerCpsMonad.map(fa)(a => seq :+ a))
     }
-
+  
   def mObserveAll[A](ma: M[A]): Observer[Seq[A]] =
     mFoldLeft(ma, observerCpsMonad.pure(IndexedSeq.empty[A])) { (observer, fa) =>
       observerCpsMonad.flatMap(observer)(seq => observerCpsMonad.map(fa)(a => seq :+ a))
