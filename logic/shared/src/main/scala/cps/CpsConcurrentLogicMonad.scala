@@ -1,6 +1,8 @@
 package cps
 
 import cps.stream.*
+
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import scala.concurrent.*
 import scala.util.*
 
@@ -15,7 +17,7 @@ trait CpsConcurrentLogicMonad[M[_],F[_]:CpsConcurrentMonad] extends CpsLogicMona
 
   override type Observer[T] = F[T]
 
-  override def observerCpsMonad: CpsConcurrentMonad[F] = summon[CpsConcurrentMonad[F]]
+  override val observerCpsMonad: CpsConcurrentMonad[F] = summon[CpsConcurrentMonad[F]]
 
   /**
    * convert M[A] to AsyncList[F,A] 
@@ -50,7 +52,58 @@ trait CpsConcurrentLogicMonad[M[_],F[_]:CpsConcurrentMonad] extends CpsLogicMona
         }
       }
     }
-  
+
+    
+
+   
+  def parOr[A](a: M[A], b: M[A]): M[A] = {
+    val firstFlag = new AtomicBoolean(false)
+    def cont(r: Option[(Try[A],M[A])], 
+               other: observerCpsMonad.Spawned[Option[(Try[A],M[A])]],  
+               cb: Try[M[A]]=>Unit ): F[Option[(Try[A],M[A])]] = {
+         r match
+           case None =>
+             if (firstFlag.compareAndSet(false,true)) {
+               observerCpsMonad.map(observerCpsMonad.join(other)) {
+                 case None => 
+                   cb(Success(empty[A]))
+                   None
+                 case Some((a,rest)) => 
+                   cb(Success(unsplit(a,rest)))
+                   r
+               }
+             } else observerCpsMonad.pure(r)
+           case Some((a,rest)) =>
+              if (firstFlag.compareAndSet(false,true)) {
+                cb(Success(unsplit(a, 
+                  parOr(
+                    flattenObserver(
+                      observerCpsMonad.flatMap(observerCpsMonad.join(other)){
+                        case None => observerCpsMonad.pure(empty[A])
+                        case Some((a,rest)) => observerCpsMonad.pure(unsplit(a,rest))
+                      }
+                    ), 
+                    rest
+                  )
+                )))
+              }
+              observerCpsMonad.pure(r)
+    }
+    val fma = observerCpsMonad.adoptCallbackStyle[M[A]](
+        cb => async[F] {
+          val spawnA = await(observerCpsMonad.spawnEffect(fsplit(a)))
+          val spawnB = await(observerCpsMonad.spawnEffect(
+            observerCpsMonad.flatMap(fsplit(b)) { r =>
+              cont(r, spawnA, cb)
+            }
+          ))
+          val ra = await(observerCpsMonad.join(spawnA))
+          val unused = await(cont(ra, spawnB, cb))
+        }
+    )
+    flattenObserver(fma)
+  }
+
 
 }
 

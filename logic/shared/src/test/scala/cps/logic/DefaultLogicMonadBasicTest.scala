@@ -40,7 +40,15 @@ class DefaultLogicMonadBasicTest {
     val m2 = once(m1)
     assert(m2.toLazyList.toSeq == Seq(1))
   }
-  
+
+  @Test
+  def testBaiscOnceEmpty(): Unit = {
+    val m1 = LogicStream.fromCollection(List.empty[Int])
+    val m2 = once(m1)
+    assert(m2.toLazyList.isEmpty)
+  }
+
+
   @Test
   def testEmpty() = {
     val m1 = LogicStream.fromCollection(List.empty[Int])
@@ -51,6 +59,19 @@ class DefaultLogicMonadBasicTest {
     assert(m3.toLazyList.toSeq == Seq(1,2))
   }
 
+  @Test
+  def testOtherwiseFull(): Unit = {
+    val m1 = LogicStream.fromCollection(List(1, 2))
+    val m2 = m1.otherwise(LogicStream.pure(12))
+    assert(m2.toLazyList.toSeq == Seq(1,2))
+  }
+
+  @Test
+  def testOtherwiseEmpty(): Unit = {
+    val m1 = LogicStream.empty[Int]
+    val m2 = m1.otherwise(LogicStream.pure(12))
+    assert(m2.toLazyList.toSeq == Seq(12))
+  }
 
 
 }

@@ -32,8 +32,7 @@ object PrimesTest {
   def primes: LogicStream[Int] = {
     eratosphen(2, TreeSet.empty[Int])
   }
-
-
+  
   def eratosphen(c:Int, knownPrimes: TreeSet[Int]): LogicStream[Int] = reify[LogicStream]{
         guard(
           knownPrimes.takeWhile(x => x*x <= c).forall(x => c % x != 0)
