@@ -4,7 +4,7 @@
 val dottyVersion = "3.3.1"
 
 
-ThisBuild/version := "0.9.20-SNAPSHOT"
+ThisBuild/version := "0.9.20"
 ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 
