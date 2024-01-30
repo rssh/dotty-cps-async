@@ -2,6 +2,7 @@ package cps
 
 import cps.monads.logic.LogicStream
 
+import scala.annotation.tailrec
 import scala.util.*
 
 /**
@@ -172,9 +173,16 @@ trait CpsLogicMonad[M[_]] extends CpsTryMonad[M] {
       }
     }
   }
-  
-  def fromCollection(it: IterableOnce[A]): M[A] =
-    it.iterator.foldLeft(mzero[A])((s,a) => mplus(pure(a),s))
+
+  def fromCollection[A](collect: IterableOnce[A]): M[A] = {
+    def fromIt(it: Iterator[A]): M[A] =
+      if (it.hasNext) {
+        mplus(pure(it.next()), fromIt(it))
+      } else {
+        mzero
+      }
+    fromIt(collect.iterator)
+  }
 
 }
 
@@ -347,24 +355,24 @@ transparent inline def guard[M[_]](p: =>Boolean)(using mc:CpsLogicMonadContext[M
 
 /**
  * Should be used inside of reify block over CpsLogicMonad.
- * The next sequent code will be executed for all elements of <code> collection </code> 
+ * The next sequent code will be executed for all elements of <code> collection </code>
  * @param collection - collection to iterate over
  * @param mc - monad context
  * @tparam M
  */
-transparent inline def choicesFrom[A](collection: IterableOnce[A])(using mc:CpsLogicMonadContext[M]): A =
+transparent inline def choicesFrom[M[_],A](collection: IterableOnce[A])(using mc:CpsLogicMonadContext[M]): A =
   reflect{
-    mc.monad.fromCollection(it)
+    mc.monad.fromCollection(collection)
   }
 
 /**
  * Should be used inside of reify block over CpsLogicMonad.
- * The next sequent code will be executed for all <code> values </code> 
+ * The next sequent code will be executed for all <code> values </code>
  * @param values - values to iterate over
  * @param mc - monad context
  * @tparam M
  */
-transparent inline def choices[A](values: A*)(using mc:CpsLogicMonadContext[M]): A =
+transparent inline def choices[M[_],A](values: A*)(using mc:CpsLogicMonadContext[M]): A =
   reflect{
     mc.monad.fromCollection(values)
   }

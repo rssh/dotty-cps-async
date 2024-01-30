@@ -285,6 +285,9 @@ object LogicStreamT {
   // TODO: check, move to low-leve in case of conflict.
   given cpsLogicStreamMonad: CpsLogicStreamSyncMonad.type = CpsLogicStreamSyncMonad
 
+  def current[F[_]](using CpsLogicMonadContext[[A]=>>LogicStreamT[F,A]]): CpsLogicMonadContext[[A]=>>LogicStreamT[F,A]] =
+    summon[CpsLogicMonadContext[[A]=>>LogicStreamT[F,A]]]
+
 }
 
 

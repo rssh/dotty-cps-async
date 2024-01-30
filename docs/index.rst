@@ -33,7 +33,7 @@ API docs
 * `cps for JVM <api/jvm/index.html>`_  
 * `cps for JS <api/js/index.html>`_  
 
-* `logic <logic/jvm/api/index.html>`_
+* `logic <api/logic/jvm/index.html>`_
 
 Indices and tables
 ==================

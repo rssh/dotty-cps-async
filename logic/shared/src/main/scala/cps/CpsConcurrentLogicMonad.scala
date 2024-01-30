@@ -10,8 +10,6 @@ import scala.util.*
 /**
  * Logic monad, where computation is done into known async concurrent monad F[_].
  *
- * @tparam M
- * @tparam F
  */
 trait CpsConcurrentLogicMonad[M[_],F[_]:CpsConcurrentMonad] extends CpsLogicMonad[M] {
 
@@ -53,36 +51,42 @@ trait CpsConcurrentLogicMonad[M[_],F[_]:CpsConcurrentMonad] extends CpsLogicMona
       }
     }
 
-    
 
-   
+  /**
+   * parallel or:  a and b are evaluated concurrently in different fibers
+   * results are merged in one stream without delays.
+   * @param a
+   * @param b
+   * @tparam A
+   * @return
+   */
   def parOr[A](a: M[A], b: M[A]): M[A] = {
     val firstFlag = new AtomicBoolean(false)
-    def cont(r: Option[(Try[A],M[A])], 
-               other: observerCpsMonad.Spawned[Option[(Try[A],M[A])]],  
+    def cont(r: Option[(Try[A],M[A])],
+               other: observerCpsMonad.Spawned[Option[(Try[A],M[A])]],
                cb: Try[M[A]]=>Unit ): F[Option[(Try[A],M[A])]] = {
          r match
            case None =>
              if (firstFlag.compareAndSet(false,true)) {
                observerCpsMonad.map(observerCpsMonad.join(other)) {
-                 case None => 
+                 case None =>
                    cb(Success(empty[A]))
                    None
-                 case Some((a,rest)) => 
+                 case Some((a,rest)) =>
                    cb(Success(unsplit(a,rest)))
                    r
                }
              } else observerCpsMonad.pure(r)
            case Some((a,rest)) =>
               if (firstFlag.compareAndSet(false,true)) {
-                cb(Success(unsplit(a, 
+                cb(Success(unsplit(a,
                   parOr(
                     flattenObserver(
                       observerCpsMonad.flatMap(observerCpsMonad.join(other)){
                         case None => observerCpsMonad.pure(empty[A])
                         case Some((a,rest)) => observerCpsMonad.pure(unsplit(a,rest))
                       }
-                    ), 
+                    ),
                     rest
                   )
                 )))
@@ -124,6 +128,12 @@ extension [M[_],F[_]:CpsConcurrentMonad,A](ma:M[A])(using m:CpsConcurrentLogicMo
    */
   def toStream[R](using R: CpsAsyncEmitAbsorber.Aux[R,F,?,A]): R =
     m.toStream[R,A](ma)
+
+  /**
+   * parallel or.
+   */
+  def parOr(mb: M[A]): M[A] =
+    m.parOr(ma,mb)
 
 end extension
 
