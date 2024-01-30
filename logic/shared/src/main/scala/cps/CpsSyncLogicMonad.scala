@@ -1,4 +1,4 @@
-package cps
+package cps.monads.logic
 
 import cps.*
 import cps.monads.{*, given}

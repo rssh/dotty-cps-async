@@ -19,7 +19,7 @@ val sharedSettings = Seq(
 
 lazy val root = project
   .in(file("."))
-  .aggregate(cps.js, cps.jvm, cps.native, compilerPlugin, cpsLoomAddOn)
+  .aggregate(cps.js, cps.jvm, cps.native, compilerPlugin, cpsLoomAddOn, logic.jvm, logic.js, logic.native)
   .settings(
     Sphinx / sourceDirectory := baseDirectory.value / "docs",
     SiteScaladocPlugin.scaladocSettings(CpsJVM, cps.jvm / Compile / packageDoc / mappings, "api/jvm"),
@@ -195,12 +195,17 @@ lazy val logic = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("logic"))
   .dependsOn(cps)
   .settings(sharedSettings)
+  .disablePlugins(SitePreviewPlugin)
   .settings(
     name := "dotty-cps-async-logic",
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
   ).jsSettings(
     scalaJSUseMainModuleInitializer := true,
     libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
+  ).nativeSettings(
+    libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
+    libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
+    addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
   )
 
 

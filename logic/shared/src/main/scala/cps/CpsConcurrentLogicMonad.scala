@@ -1,5 +1,6 @@
-package cps
+package cps.monads.logic
 
+import cps.*
 import cps.stream.*
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}

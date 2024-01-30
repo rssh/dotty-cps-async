@@ -1,9 +1,9 @@
-package cps
-
-import cps.monads.logic.LogicStream
+package cps.monads.logic
 
 import scala.annotation.tailrec
 import scala.util.*
+
+import cps.*
 
 /**
  * Typeclass for monad with backtracking logic operations.
@@ -262,10 +262,15 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
    * get first N values of computation, discarding all other.
    * @param n - how many values to get
    * @return - sequence of values in observer monad
+   * @see cps.monads.logic.CpsLogicMonad.mObserveN        
    */
   def observeN(n: Int): m.Observer[IndexedSeq[A]] =
     m.mObserveN(ma,n)
 
+  /**
+   * get first value of computation.
+   * @see cps.monads.logic.CpsLogicMonad.mObserveOne
+   */
   def observeOne: m.Observer[Option[A]] =
     m.mObserveOne(ma)
 
@@ -277,12 +282,14 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
    * Synonym for 'mplus'.
    * @param mb - computation to add
    * @return - stream, which contains values from <code> ma </code> and when <code> ma </code> is exhaused - <code> mb </code>
+   * @see cps.monads.logic.CpsLogicMonad.mplus        
    */
   def |+|(mb: =>M[A]): M[A] =
     m.mplus(ma,mb)
 
   /**
    * Synonym for 'mplus'.
+   * @see cps.monads.logic.CpsLogicMonad.mplus 
    */  
   def ||(mb: =>M[A]): M[A] =
     m.mplus(ma,mb)
@@ -291,6 +298,7 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
    * interleave current computation with <code> mb </code>
    * @param mb computation to interleave.
    * @return - stream, which contains values from <code> ma </code> and <code> mb </code> in interleaved order.
+   * @see cps.monads.logic.CpsLogicMonad.interleave        
    */
   def |(mb: =>M[A]): M[A] =
     m.interleave(ma,mb)
@@ -299,7 +307,9 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
    * Synonym for 'fairFlatMap' or haskell >>-
    * @param f
    * @tparam B
-   * @return
+   * @return - stream, which contains values from <code> ma </code> and <code> f </code> applied to each value of <code> ma </code>
+   *         in interleaved order.
+   * @see cps.monads.logic.CpsLogicMonad.fairFlatMap         
    */
   def &>>[B](f: A=>M[B]): M[B] =
     m.fairFlatMap(ma,f)
@@ -308,6 +318,7 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
    * Version of flatMap, which interleave all results of ma
    * (i.e. horizontal search instead of bfs).
     * @param f - function to apply to each value of <code> ma </code>
+   *  @see cps.monads.logic.CpsLogicMonad.fairFlatMap        
    */  
   def fairFlatMap[B](f: A=>M[B]): M[B] =
     m.fairFlatMap(ma,f)
@@ -315,6 +326,7 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
   /**
    * retrieve only first value of computation.
    * @return - stream, which contains only first value of <code> ma </code>
+   * @see cps.monads.logic.CpsLogicMonad.once        
    */
   def once: M[A] =
     m.once(ma)
@@ -325,6 +337,7 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
    * @param elsep
    * @tparam B
    * @return
+   * @see cps.monads.logic.CpsLogicMonad.ifte
    */
   def ifThenElse[B](thenp: A => M[B], elsep: M[B]): M[B] =
     m.ifte(ma, thenp, elsep)
@@ -333,6 +346,7 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
    * Run <code> thenp </code> if <code> ma </code> is empty.
    * @param thenp
    * @return
+   * @see cps.monads.logic.CpsLogicMonad.otherwise
    */
   def otherwise(thenp: =>M[A]): M[A] =
     m.ifte(ma, (a:A) => m.pure(a), thenp) 
