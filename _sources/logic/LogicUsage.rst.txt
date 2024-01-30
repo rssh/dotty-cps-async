@@ -55,7 +55,7 @@ haskell LogicT monad transformer, described in `Backtracking, Interleaving, and 
 Monad Transformers <https://okmij.org/ftp/papers/LogicT.pdf>`_.
 
 The main operators are described below.
-Complete API documentation is avaialable `here <../api/logic/jvm/cps/monads/logic.html>`_.
+Complete API documentation is avaialable `here <api/logic/jvm/cps/monads/logic.html>`_.
 
 
 seqOr
