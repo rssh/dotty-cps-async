@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>LogicStream: Monadic Logic Programming &#8212; dotty-cps-async 0.9.20-SNAPSHOT documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/s4defs-roles.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.20-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">LogicStream: Monadic Logic Programming</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="logicstream-monadic-logic-programming">
+<h1>LogicStream: Monadic Logic Programming<a class="headerlink" href="#logicstream-monadic-logic-programming" title="Permalink to this heading">¶</a></h1>
+<p><cite>dotty-cps-async-logic</cite> is an additional library for programming with backtracking in scala 3.</p>
+<p>Note, that logic programming here is understanded in limited sence, as a programming with backtracking.
+Embedding of full logic language is not in the current scope.</p>
+<section id="dependency">
+<h2>Dependency<a class="headerlink" href="#dependency" title="Permalink to this heading">¶</a></h2>
+<blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async-logic&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;&lt;version&gt;&quot;</span><span class="w"></span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="basic-usage">
+<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this heading">¶</a></h2>
+<p>Simple example:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nn">cps</span><span class="p">.</span><span class="n">_</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">cps</span><span class="p">.</span><span class="nn">monads</span><span class="p">.</span><span class="nn">logic</span><span class="p">.</span><span class="n">*</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">primes</span><span class="p">:</span><span class="w"> </span><span class="nc">LogicStream</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">eratosphen</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nc">TreeSet</span><span class="p">.</span><span class="n">empty</span><span class="p">[</span><span class="nc">Int</span><span class="p">])</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">eratosphen</span><span class="p">(</span><span class="n">c</span><span class="p">:</span><span class="nc">Int</span><span class="p">,</span><span class="w"> </span><span class="n">knownPrimes</span><span class="p">:</span><span class="w"> </span><span class="nc">TreeSet</span><span class="p">[</span><span class="nc">Int</span><span class="p">]):</span><span class="w"> </span><span class="nc">LogicStream</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reify</span><span class="p">[</span><span class="nc">LogicStream</span><span class="p">]{</span><span class="w"></span>
+<span class="w">     </span><span class="n">guard</span><span class="p">(</span><span class="w"></span>
+<span class="w">       </span><span class="n">knownPrimes</span><span class="p">.</span><span class="n">takeWhile</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">x</span><span class="o">*</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">c</span><span class="p">).</span><span class="n">forall</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">     </span><span class="p">)</span><span class="w"></span>
+<span class="w">     </span><span class="n">c</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="o">|+|</span><span class="w"> </span><span class="n">eratosphen</span><span class="p">(</span><span class="n">c</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">knownPrimes</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="w"></span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">first100</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">primes</span><span class="p">.</span><span class="n">toLazyList</span><span class="p">.</span><span class="n">take</span><span class="p">(</span><span class="mi">100</span><span class="p">).</span><span class="n">toSeq</span><span class="w"></span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>dotty-cps-asyn-logic provides a monad typeclasses for logic programming:</dt><dd><ul class="simple">
+<li><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/CpsLogicMonad.scala#L18">CpsLogicMonad</a> basic logical operators.</p></li>
+<li><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/CpsSyncLogicMonad.scala">CpsSyncLogicMonad</a> specialization for synchronous style of programming.</p></li>
+<li><p><a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/CpsConcurrentLogicMonad.scala">CpsConcurrentLogicMonad</a> monad transformer over concurrent monad.</p></li>
+</ul>
+</dd>
+</dl>
+<p>And implementation  <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/monads/logic/LogicStreamT.scala">LogicStreamT</a>.</p>
+</section>
+<section id="logical-operators">
+<h2>Logical operators<a class="headerlink" href="#logical-operators" title="Permalink to this heading">¶</a></h2>
+<p>Basically LogicStream is a computation, which produces a lazy sequence of values. API follows the interface of
+haskell LogicT monad transformer, described in <a class="reference external" href="https://okmij.org/ftp/papers/LogicT.pdf">Backtracking, Interleaving, and Terminating
+Monad Transformers</a>.</p>
+<p>The main operators are described below.
+Complete API documentation is avaialable <a class="reference external" href="../api/logic/jvm/cps/monads/logic.html">here</a>.</p>
+<section id="seqor">
+<h3>seqOr<a class="headerlink" href="#seqor" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">extension</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">])</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">seqOr</span><span class="p">(</span><span class="n">y</span><span class="p">:</span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">]):</span><span class="w"> </span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span><span class="w"></span>
+</pre></div>
+</div>
+<p>We can compose two such computations using <cite>|+|</cite> operator, with meaning of concatenation of argument streams.
+(appropriative alphanumeric method is ‘seqOr’ ).</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n1</span><span class="p">:</span><span class="nc">Int</span><span class="p">,</span><span class="w"> </span><span class="n">n2</span><span class="p">:</span><span class="nc">Int</span><span class="p">):</span><span class="w"> </span><span class="nc">LogicStream</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reify</span><span class="p">[</span><span class="nc">LogicStream</span><span class="p">]{</span><span class="w"></span>
+<span class="w">   </span><span class="n">n1</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="o">|+|</span><span class="w"> </span><span class="n">fib</span><span class="p">(</span><span class="n">n2</span><span class="p">,</span><span class="w"> </span><span class="n">n1</span><span class="o">+</span><span class="n">n2</span><span class="p">)</span><span class="w"></span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">fibs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fib</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">).</span><span class="n">toLazyList</span><span class="p">.</span><span class="n">take</span><span class="p">(</span><span class="mi">10</span><span class="p">).</span><span class="n">toSeq</span><span class="w"></span>
+<span class="c1">// fibs == Seq(1,1,2,3,5,8,13,21,34,55)</span>
+</pre></div>
+</div>
+<p><cite>seqOr</cite> implements backtracking with search in depth.  In the next expression</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">fib</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">|+|</span><span class="w"> </span><span class="n">primes</span><span class="w"></span>
+</pre></div>
+</div>
+<p>We will get a sequence of fibonacci and <cite>primes</cite> will never be observer.</p>
+</section>
+<section id="interleave">
+<h3>interleave:<a class="headerlink" href="#interleave" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">extension</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">])</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">interleave</span><span class="p">(</span><span class="n">y</span><span class="p">:</span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">]):</span><span class="w"> </span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span><span class="w"></span>
+</pre></div>
+</div>
+<p>or some cases it is more appropriate to use search in width.
+For this we can use <cite>interleave</cite> operator, often named as ‘fair or’. (appropriative symbolic name is ‘|’ ).</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">fib</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">primes</span><span class="w">   </span><span class="c1">//  synonim is  fib(1,1) interleave primes</span>
+</pre></div>
+</div>
+<p>will produce sequence of fibonacci and primes interleaved.</p>
+</section>
+<section id="once">
+<h3>once<a class="headerlink" href="#once" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">extension</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">])</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">once</span><span class="p">:</span><span class="w"> </span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Once return a stream with only first value (or empty stream if original stream is empty).
+The usage of ònce` allows to reduce the search space.  Appropriative functionality in Prolog is <cite>cut</cite>.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">firstPrime</span><span class="p">:</span><span class="w"> </span><span class="nc">LogicStream</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">primes</span><span class="p">.</span><span class="n">once</span><span class="w"></span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">firstPrime</span><span class="p">.</span><span class="n">toLazyList</span><span class="p">.</span><span class="n">headOption</span><span class="w"></span>
+<span class="c1">// first == Some(2)</span>
+</pre></div>
+</div>
+</section>
+<section id="ifthenelse">
+<h3>ifThenElse<a class="headerlink" href="#ifthenelse" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">extension</span><span class="w"> </span><span class="p">(</span><span class="n">cond</span><span class="p">:</span><span class="nc">M</span><span class="p">[</span><span class="nc">Boolean</span><span class="p">])</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">ifThenElse</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="n">thenBranch</span><span class="p">:</span><span class="w"> </span><span class="o">=&gt;</span><span class="nc">M</span><span class="p">[</span><span class="nc">T</span><span class="p">],</span><span class="w"> </span><span class="n">elseBranch</span><span class="p">:</span><span class="w"> </span><span class="o">=&gt;</span><span class="nc">M</span><span class="p">[</span><span class="nc">T</span><span class="p">]):</span><span class="w"> </span><span class="nc">M</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span><span class="w"></span>
+</pre></div>
+</div>
+<p>ifThenElse is like a conditional operator, but value are logical streams.  It takes three arguments: condition, then branch and else branch.
+If <cite>cond</cite> is not empty, then <cite>thenBranch</cite> is flatMapped, otherwise <cite>elseBranch</cite> is streamed.</p>
+<p>Inside of monadic brackets we can use <cite>guard</cite>, <cite>choices</cite> and <cite>fail</cite> operators.</p>
+</section>
+<section id="guard">
+<h3>guard<a class="headerlink" href="#guard" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">inline</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">guard</span><span class="p">[</span><span class="nc">M</span><span class="p">[</span><span class="n">_</span><span class="p">]](</span><span class="n">cond</span><span class="p">:</span><span class="nc">Boolean</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsLogicMonadContext</span><span class="p">[</span><span class="nc">M</span><span class="p">]):</span><span class="w"> </span><span class="nc">Unit</span><span class="w"></span>
+</pre></div>
+</div>
+<p>guard takes a boolean condition and returns empty stream if condition is false, and stream with single value <cite>()</cite> if condition is true.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">evens</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="nc">LogicStream</span><span class="p">[</span><span class="nc">Int</span><span class="p">]):</span><span class="w"> </span><span class="nc">LogicStream</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reify</span><span class="p">[</span><span class="nc">LogicStream</span><span class="p">]{</span><span class="w"></span>
+<span class="w">   </span><span class="kd">val</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reflect</span><span class="p">(</span><span class="n">input</span><span class="p">)</span><span class="w"></span>
+<span class="w">   </span><span class="n">guard</span><span class="p">(</span><span class="n">n</span><span class="o">%</span><span class="mi">2</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">   </span><span class="n">n</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">evenNumbers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">even</span><span class="p">(</span><span class="n">nat</span><span class="p">).</span><span class="n">toLazyList</span><span class="p">.</span><span class="n">take</span><span class="p">(</span><span class="mi">10</span><span class="p">).</span><span class="n">toSeq</span><span class="w"></span>
+<span class="c1">// evenNumbers == Seq(2,4,6,8,10,12,14,16,18,20)</span>
+</pre></div>
+</div>
+</section>
+<section id="choices">
+<h3>choices<a class="headerlink" href="#choices" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">inline</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">choices</span><span class="p">[</span><span class="nc">M</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="nc">A</span><span class="p">](</span><span class="n">xs</span><span class="p">:</span><span class="nc">A</span><span class="o">*</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="nc">CpsLogicMonadContext</span><span class="p">[</span><span class="nc">M</span><span class="p">]):</span><span class="w"> </span><span class="nc">A</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Explore all choices from an arguments.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">choiceTest</span><span class="p">:</span><span class="w"> </span><span class="nc">LogicStream</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reify</span><span class="p">[</span><span class="nc">LogicStream</span><span class="p">]{</span><span class="w"></span>
+<span class="w">   </span><span class="kd">val</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">choices</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="w">   </span><span class="n">x</span><span class="o">*</span><span class="mi">2</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">choiceTestResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">choiceTest</span><span class="p">.</span><span class="n">toLazyList</span><span class="p">.</span><span class="n">toSeq</span><span class="w"></span>
+<span class="c1">// choiceTestResult == Seq(2,4,6)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="synchronous-style">
+<h2>Synchronous style<a class="headerlink" href="#synchronous-style" title="Permalink to this heading">¶</a></h2>
+<p><cite>CpsSyncLogicMonad</cite> typeclass is a specialization of <cite>CpsLogicMonad</cite> for synchronous style of programming
+with the abiltiy to transform output result to LazyList.</p>
+</section>
+<section id="asynchronous-style">
+<h2>Asynchronous style<a class="headerlink" href="#asynchronous-style" title="Permalink to this heading">¶</a></h2>
+<p><cite>CpsConcurrentLogicMonad</cite> defines a monad transformer over concurrent monad, which can stream result
+into asynchronous stream and define <cite>parOr</cite> operator.</p>
+<section id="paror">
+<h3>parOr<a class="headerlink" href="#paror" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">extension</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">])</span><span class="w"> </span><span class="k">def</span><span class="w"> </span><span class="nf">parOr</span><span class="p">(</span><span class="n">y</span><span class="p">:</span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">]):</span><span class="w"> </span><span class="nc">M</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span><span class="w"></span>
+</pre></div>
+</div>
+<p><cite>parOr</cite> is a parallel or operator, which can be used to compose two computations in parallel.
+The result stream will contain values from both streams, interleaved in some order.</p>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">LogicStream: Monadic Logic Programming</a><ul>
+<li><a class="reference internal" href="#dependency">Dependency</a></li>
+<li><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
+<li><a class="reference internal" href="#logical-operators">Logical operators</a><ul>
+<li><a class="reference internal" href="#seqor">seqOr</a></li>
+<li><a class="reference internal" href="#interleave">interleave:</a></li>
+<li><a class="reference internal" href="#once">once</a></li>
+<li><a class="reference internal" href="#ifthenelse">ifThenElse</a></li>
+<li><a class="reference internal" href="#guard">guard</a></li>
+<li><a class="reference internal" href="#choices">choices</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#synchronous-style">Synchronous style</a></li>
+<li><a class="reference internal" href="#asynchronous-style">Asynchronous style</a><ul>
+<li><a class="reference internal" href="#paror">parOr</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/logic/LogicUsage.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../index.html">dotty-cps-async 0.9.20-SNAPSHOT documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">LogicStream: Monadic Logic Programming</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020-2024, Ruslan Shevchenko.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.3.
+    </div>
+  </body>
+</html>

@@ -22,6 +22,7 @@ User Manual
    RuntimeAwait
    Features
    Migration
+   AdditionalModules
    random-notes/index.rst
    FAQ
    References
@@ -31,6 +32,7 @@ API docs
 
 * `cps for JVM <api/jvm/index.html>`_  
 * `cps for JS <api/js/index.html>`_  
+* `Logic <api/logic/jvm/cps/monads/logic.html>`_
 
 Indices and tables
 ==================

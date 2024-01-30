@@ -1,0 +1,1930 @@
+<!DOCTYPE html><html data-pathToRoot="../../"><head><meta charset="utf-8"></meta><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"></meta><title>cps.monads.logic</title><link rel="shortcut icon" type="image/x-icon" href="../../favicon.ico"></link><script type="text/javascript" src="../../scripts/theme.js"></script><script type="text/javascript" src="../../scripts/searchData.js" defer="true"></script><script type="text/javascript" src="../../scripts/scastieConfiguration.js" defer="true"></script><link rel="stylesheet" href="../../styles/theme/bundle.css"></link><link rel="stylesheet" href="../../styles/theme/components/bundle.css"></link><link rel="stylesheet" href="../../styles/theme/components/button/bundle.css"></link><link rel="stylesheet" href="../../styles/theme/layout/bundle.css"></link><link rel="stylesheet" href="../../styles/nord-light.css"></link><link rel="stylesheet" href="../../styles/dotty-icons.css"></link><link rel="stylesheet" href="../../styles/filter-bar.css"></link><link rel="stylesheet" href="../../styles/code-snippets.css"></link><link rel="stylesheet" href="../../styles/searchbar.css"></link><link rel="stylesheet" href="../../styles/social-links.css"></link><link rel="stylesheet" href="../../styles/versions-dropdown.css"></link><link rel="stylesheet" href="../../styles/content-contributors.css"></link><link rel="stylesheet" href="../../styles/fontawesome.css"></link><script type="text/javascript" src="../../hljs/highlight.pack.js" defer="true"></script><script type="text/javascript" src="../../scripts/hljs-scala3.js" defer="true"></script><script type="text/javascript" src="../../scripts/ux.js" defer="true"></script><script type="text/javascript" src="../../scripts/common/component.js" defer="true"></script><script type="text/javascript" src="../../scripts/common/utils.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/FilterBar.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/DocumentableList.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/Input.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/FilterGroup.js" defer="true"></script><script type="text/javascript" src="../../scripts/components/Filter.js" defer="true"></script><script type="text/javascript" src="../../scripts/scaladoc-scalajs.js" defer="true"></script><script type="text/javascript" src="../../scripts/contributors.js" defer="true"></script><script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js" defer="true"></script><script type="text/javascript" src="https://d3js.org/d3.v6.min.js" defer="true"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.2/dist/graphlib-dot.min.js" defer="true"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.6.1/dagre-d3.min.js" defer="true"></script><script type="text/javascript" src="https://scastie.scala-lang.org/embedded.js" defer="true"></script><script type="text/javascript" src="../../scripts/data.js" defer="true"></script><link rel="stylesheet" href="../../styles/apistyles.css"></link><script>var pathToRoot = "../../";</script></head><body><div id=""><div id="header" class="body-small"><div class="header-container-left"><a href="../../" class="logo-container"><span class="project-name h300">dotty-cps-async-logic</span></a><span onclick="dropdownHandler(event)" class="text-button with-arrow" id="dropdown-trigger"><a></a></span><div id="version-dropdown" class="dropdown-menu"></div></div><div class="header-container-right"><button id="search-toggle" class="icon-button"></button><span id="theme-toggle" class="icon-button"></span><span id="mobile-menu-toggle" class="icon-button hamburger"></span></div></div><div id="mobile-menu"><div class="mobile-menu-header body-small"><span class="mobile-menu-logo"><span class="project-name h300">dotty-cps-async-logic</span></span><button id="mobile-menu-close" class="icon-button close"></button></div><div class="mobile-menu-container body-medium"><input id="mobile-scaladoc-searchbar-input" class="scaladoc-searchbar-input" type="search" placeholder="Find anything"></input><span id="mobile-theme-toggle" class="mobile-menu-item mode"></span></div></div><span id="mobile-sidebar-toggle" class="floating-button"></span><div id="leftColumn" class="body-small"><div class="switcher-container"><a id="api-nav-button" class="switcher h100 selected" href="../../index.html">API</a></div><nav id="api-nav" class="side-menu"><div class="ni n0 expanded"><span class="nh h100 selected"><button class="ar icon-button expanded"></button><a href="#"><span class="micon pa"></span><span>cps.monads.logic</span></a></span><div class="ni n1 "><span class="nh "><a href="logic/CpsConcurrentLogicMonad.html"><span class="micon tr"></span><span>CpsConcurrentLogicMonad</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsConcurrentLogicMonadContext.html"><span class="micon tr"></span><span>CpsConcurrentLogicMonadContext</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsConcurrentLogicMonadInstanceContext.html"><span class="micon tr"></span><span>CpsConcurrentLogicMonadInstanceContext</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsConcurrentLogicMonadInstanceContextBody.html"><span class="micon cl"></span><span>CpsConcurrentLogicMonadInstanceContextBody</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsLogicMonad.html"><span class="micon tr"></span><span>CpsLogicMonad</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsLogicMonad$.html"><span class="micon ob"></span><span>CpsLogicMonad</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsLogicMonadContext.html"><span class="micon tr"></span><span>CpsLogicMonadContext</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsLogicMonadInstanceContext.html"><span class="micon tr"></span><span>CpsLogicMonadInstanceContext</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsLogicMonadInstanceContextBody.html"><span class="micon cl"></span><span>CpsLogicMonadInstanceContextBody</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsLogicStreamConcurrenctMonad.html"><span class="micon cl"></span><span>CpsLogicStreamConcurrenctMonad</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsLogicStreamMonadBase.html"><span class="micon tr"></span><span>CpsLogicStreamMonadBase</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsLogicStreamSyncMonad$.html"><span class="micon ob"></span><span>CpsLogicStreamSyncMonad</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsLogicStreamTryMonad.html"><span class="micon cl"></span><span>CpsLogicStreamTryMonad</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/CpsSyncLogicMonad.html"><span class="micon tr"></span><span>CpsSyncLogicMonad</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/LogicStream$.html"><span class="micon ob"></span><span>LogicStream</span></a></span></div><div class="ni n1 "><span class="nh "><a href="logic/LogicStreamT.html"><span class="micon tr"></span><span>LogicStreamT</span></a></span></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="logic/LogicStreamT$.html"><span class="micon ob"></span><span>LogicStreamT</span></a></span><div class="ni n2 "><span class="nh "><a href="logic/LogicStreamT$$Cons.html"><span class="micon cl"></span><span>Cons</span></a></span></div><div class="ni n2 "><span class="nh "><a href="logic/LogicStreamT$$Empty.html"><span class="micon cl"></span><span>Empty</span></a></span></div><div class="ni n2 "><span class="nh "><a href="logic/LogicStreamT$$Error.html"><span class="micon cl"></span><span>Error</span></a></span></div><div class="ni n2 "><span class="nh "><a href="logic/LogicStreamT$$MPlusSeq.html"><span class="micon cl"></span><span>MPlusSeq</span></a></span></div><div class="ni n2 "><span class="nh "><a href="logic/LogicStreamT$$Pure.html"><span class="micon cl"></span><span>Pure</span></a></span></div><div class="ni n2 "><span class="nh "><a href="logic/LogicStreamT$$Suspend.html"><span class="micon cl"></span><span>Suspend</span></a></span></div><div class="ni n2 "><span class="nh "><a href="logic/LogicStreamT$$WaitF.html"><span class="micon cl"></span><span>WaitF</span></a></span></div></div></div></nav></div><div id="footer" class="body-small"><div class="left-container">Generated with</div><div class="right-container"><div class="text"></div></div><div class="text-mobile"></div></div><div id="scaladoc-searchBar"></div><div id="main"><div class="breadcrumbs container"><a href="../../index.html">dotty-cps-async-logic</a>/<a href="logic.html">cps.monads.logic</a></div><div id="content" class="body-medium"><div><div class="cover-header">
+ <span class="icon"><span class="micon pa"></span></span>
+ <h1 class="h600 single">cps.monads.logic</h1>
+</div>
+<div class="fqname body-large">
+ <span></span>
+</div>
+<div class="main-signature mono-small-block">
+ <div class="signature">
+  <span class="modifiers"></span><span class="kind"><span t="k">package </span></span><a href="logic.html" t="n" class="documentableName ">cps.monads.logic</a>
+ </div>
+</div>
+<section id="members-list">
+ <h2 class="h500">Members list</h2>
+ <div class="documentableFilter">
+  <div class="filtersContainer"></div>
+  <input class="filterableInput" placeholder="Filter by any phrase" data-test-id="filterBarInput" type="search"><button class="clearButton label-only-button" data-test-id="filterBarClearButton">Clear all</button>
+ </div>
+ <div class="membersList expand">
+  <div class="tabs">
+   <div class="contents">
+    <section id="Type-members">
+     <div data-togglable="Type members" class="tab expand">
+      <div class="member-group-header">
+       <h3 data-togglable="Type members" class="h400">Type members</h3>
+      </div>
+      <section id="Classlikes">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Classlikes</h4>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="logic/CpsConcurrentLogicMonad.html" t="n" class="documentableName ">CpsConcurrentLogicMonad</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>]]<span t="k"> extends </span><a href="logic/CpsLogicMonad.html" t="t">CpsLogicMonad</a>[<span t="t">M</span>]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Logic monad, where computation is done into known async concurrent monad F[_].</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Logic monad, where computation is done into known async concurrent monad F[_].</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsLogicMonad.html" t="n">CpsLogicMonad</a>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTrySupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowSupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Known subtypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block subtypes">
+                <div>
+                 trait <a href="logic/CpsConcurrentLogicMonadInstanceContext.html" t="n">CpsConcurrentLogicMonadInstanceContext</a>[<span t="t">M</span>, <span t="t">F</span>]
+                </div>
+                <div>
+                 class <a href="logic/CpsLogicStreamConcurrenctMonad.html" t="n">CpsLogicStreamConcurrenctMonad</a>[<span t="t">F</span>]
+                </div><span></span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="logic/CpsConcurrentLogicMonadContext.html" t="n" class="documentableName ">CpsConcurrentLogicMonadContext</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>]]<span t="k"> extends </span><a href="logic/CpsLogicMonadContext.html" t="t">CpsLogicMonadContext</a>[<span t="t">M</span>]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsLogicMonadContext.html" t="n">CpsLogicMonadContext</a>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Known subtypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block subtypes">
+                <div>
+                 class <a href="logic/CpsConcurrentLogicMonadInstanceContextBody.html" t="n">CpsConcurrentLogicMonadInstanceContextBody</a>[<span t="t">M</span>, <span t="t">F</span>]
+                </div><span></span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="logic/CpsConcurrentLogicMonadInstanceContext.html" t="n" class="documentableName ">CpsConcurrentLogicMonadInstanceContext</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>]]<span t="k"> extends </span><a href="logic/CpsConcurrentLogicMonad.html" t="t">CpsConcurrentLogicMonad</a>[<span t="t">M</span>, <span t="t">F</span>]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsConcurrentLogicMonad.html" t="n">CpsConcurrentLogicMonad</a>[<span t="t">M</span>, <span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicMonad.html" t="n">CpsLogicMonad</a>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTrySupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowSupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Known subtypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block subtypes">
+                <div>
+                 class <a href="logic/CpsLogicStreamConcurrenctMonad.html" t="n">CpsLogicStreamConcurrenctMonad</a>[<span t="t">F</span>]
+                </div><span></span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">class </span></span><a href="logic/CpsConcurrentLogicMonadInstanceContextBody.html" t="n" class="documentableName ">CpsConcurrentLogicMonadInstanceContextBody</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>]](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">m</span>: <a href="logic/CpsConcurrentLogicMonad.html" t="t">CpsConcurrentLogicMonad</a>[<span data-unresolved-link="" t="t">M</span>, <span data-unresolved-link="" t="t">F</span>])<span t="k"> extends </span><a href="logic/CpsConcurrentLogicMonadContext.html" t="t">CpsConcurrentLogicMonadContext</a>[<span t="t">M</span>, <span t="t">F</span>]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsConcurrentLogicMonadContext.html" t="n">CpsConcurrentLogicMonadContext</a>[<span t="t">M</span>, <span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicMonadContext.html" t="n">CpsLogicMonadContext</a>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="logic/CpsLogicMonad.html" t="n" class="documentableName ">CpsLogicMonad</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>]]<span t="k"> extends </span><span data-unresolved-link="" t="t">CpsTryMonad</span>[<span t="t">M</span>]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Typeclass for monad with backtracking logic operations. We can interpret it as a monad with non-deterministic choice or as a potentialy infinite stream of values corresponding to possible choices.</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Typeclass for monad with backtracking logic operations. We can interpret it as a monad with non-deterministic choice or as a potentialy infinite stream of values corresponding to possible choices.</p> 
+              <p>The default implementation is LogicStream (for no need in async operations) or LogicStreamT[F] (for need in async operations)</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Companion
+              </dt>
+              <dd class="body-medium">
+               <a href="logic/CpsLogicMonad$.html">object</a>
+              </dd>
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTrySupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowSupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Known subtypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block subtypes">
+                <div>
+                 trait <a href="logic/CpsConcurrentLogicMonad.html" t="n">CpsConcurrentLogicMonad</a>[<span t="t">M</span>, <span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsConcurrentLogicMonadInstanceContext.html" t="n">CpsConcurrentLogicMonadInstanceContext</a>[<span t="t">M</span>, <span t="t">F</span>]
+                </div>
+                <div>
+                 class <a href="logic/CpsLogicStreamConcurrenctMonad.html" t="n">CpsLogicStreamConcurrenctMonad</a>[<span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicMonadInstanceContext.html" t="n">CpsLogicMonadInstanceContext</a>[<span t="t">M</span>]
+                </div>
+                <div>
+                 object <a href="logic/CpsLogicStreamSyncMonad$.html" t="n">CpsLogicStreamSyncMonad</a>.type
+                </div>
+                <div>
+                 class <a href="logic/CpsLogicStreamTryMonad.html" t="n">CpsLogicStreamTryMonad</a>[<span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicStreamMonadBase.html" t="n">CpsLogicStreamMonadBase</a>[<span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsSyncLogicMonad.html" t="n">CpsSyncLogicMonad</a>[<span t="t">M</span>]
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">object </span></span><a href="logic/CpsLogicMonad$.html" t="n" class="documentableName ">CpsLogicMonad</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Companion
+              </dt>
+              <dd class="body-medium">
+               <a href="logic/CpsLogicMonad.html">trait</a>
+              </dd>
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="logic/CpsLogicMonad$.html" t="n">CpsLogicMonad</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="logic/CpsLogicMonadContext.html" t="n" class="documentableName ">CpsLogicMonadContext</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>]]<span t="k"> extends </span><span data-unresolved-link="" t="t">CpsTryMonadContext</span>[<span t="t">M</span>]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Known subtypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block subtypes">
+                <div>
+                 trait <a href="logic/CpsConcurrentLogicMonadContext.html" t="n">CpsConcurrentLogicMonadContext</a>[<span t="t">M</span>, <span t="t">F</span>]
+                </div>
+                <div>
+                 class <a href="logic/CpsConcurrentLogicMonadInstanceContextBody.html" t="n">CpsConcurrentLogicMonadInstanceContextBody</a>[<span t="t">M</span>, <span t="t">F</span>]
+                </div>
+                <div>
+                 class <a href="logic/CpsLogicMonadInstanceContextBody.html" t="n">CpsLogicMonadInstanceContextBody</a>[<span t="t">M</span>]
+                </div><span></span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="logic/CpsLogicMonadInstanceContext.html" t="n" class="documentableName ">CpsLogicMonadInstanceContext</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>]]<span t="k"> extends </span><a href="logic/CpsLogicMonad.html" t="t">CpsLogicMonad</a>[<span t="t">M</span>]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsLogicMonad.html" t="n">CpsLogicMonad</a>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTrySupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowSupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Known subtypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block subtypes">
+                <div>
+                 object <a href="logic/CpsLogicStreamSyncMonad$.html" t="n">CpsLogicStreamSyncMonad</a>.type
+                </div>
+                <div>
+                 class <a href="logic/CpsLogicStreamTryMonad.html" t="n">CpsLogicStreamTryMonad</a>[<span t="t">F</span>]
+                </div><span></span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">class </span></span><a href="logic/CpsLogicMonadInstanceContextBody.html" t="n" class="documentableName ">CpsLogicMonadInstanceContextBody</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>]](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">m</span>: <a href="logic/CpsLogicMonad.html" t="t">CpsLogicMonad</a>[<span data-unresolved-link="" t="t">M</span>])<span t="k"> extends </span><a href="logic/CpsLogicMonadContext.html" t="t">CpsLogicMonadContext</a>[<span t="t">M</span>]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsLogicMonadContext.html" t="n">CpsLogicMonadContext</a>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonadContext</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">class </span></span><a href="logic/CpsLogicStreamConcurrenctMonad.html" t="n" class="documentableName ">CpsLogicStreamConcurrenctMonad</a>[<span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>]]<span t="k"> extends </span><a href="logic/CpsLogicStreamMonadBase.html" t="t">CpsLogicStreamMonadBase</a>[<span t="t">F</span>]<span t="k">, </span></span><span class="signature-long"><a href="logic/CpsConcurrentLogicMonad.html" t="t">CpsConcurrentLogicMonad</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>], <span t="t">F</span>]<span t="k">, </span><a href="logic/CpsConcurrentLogicMonadInstanceContext.html" t="t">CpsConcurrentLogicMonadInstanceContext</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>], <span t="t">F</span>]</span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsConcurrentLogicMonadInstanceContext.html" t="n">CpsConcurrentLogicMonadInstanceContext</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>], <span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsConcurrentLogicMonad.html" t="n">CpsConcurrentLogicMonad</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>], <span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicStreamMonadBase.html" t="n">CpsLogicStreamMonadBase</a>[<span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicMonad.html" t="n">CpsLogicMonad</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonad</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTrySupport</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonad</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowSupport</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonad</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="logic/CpsLogicStreamMonadBase.html" t="n" class="documentableName ">CpsLogicStreamMonadBase</a>[<span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>]]<span t="k"> extends </span><a href="logic/CpsLogicMonad.html" t="t">CpsLogicMonad</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsLogicMonad.html" t="n">CpsLogicMonad</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonad</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTrySupport</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonad</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowSupport</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonad</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Known subtypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block subtypes">
+                <div>
+                 class <a href="logic/CpsLogicStreamConcurrenctMonad.html" t="n">CpsLogicStreamConcurrenctMonad</a>[<span t="t">F</span>]
+                </div>
+                <div>
+                 object <a href="logic/CpsLogicStreamSyncMonad$.html" t="n">CpsLogicStreamSyncMonad</a>.type
+                </div>
+                <div>
+                 class <a href="logic/CpsLogicStreamTryMonad.html" t="n">CpsLogicStreamTryMonad</a>[<span t="t">F</span>]
+                </div><span></span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">object </span></span><a href="logic/CpsLogicStreamSyncMonad$.html" t="n" class="documentableName ">CpsLogicStreamSyncMonad</a><span t="k"> extends </span><a href="logic/CpsLogicStreamMonadBase.html" t="t">CpsLogicStreamMonadBase</a>[<span data-unresolved-link="" t="t">CpsIdentity</span>]<span t="k">, </span></span><span class="signature-long"><a href="logic/CpsSyncLogicMonad.html" t="t">CpsSyncLogicMonad</a>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]<span t="k">, </span><a href="logic/CpsLogicMonadInstanceContext.html" t="t">CpsLogicMonadInstanceContext</a>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]</span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsLogicMonadInstanceContext.html" t="n">CpsLogicMonadInstanceContext</a>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsSyncLogicMonad.html" t="n">CpsSyncLogicMonad</a>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicStreamMonadBase.html" t="n">CpsLogicStreamMonadBase</a>[<span data-unresolved-link="" t="t">CpsIdentity</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicMonad.html" t="n">CpsLogicMonad</a>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonad</span>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTrySupport</span>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonad</span>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowSupport</span>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonad</span>[<a href="logic.html#LogicStream-0" t="t">LogicStream</a>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="logic/CpsLogicStreamSyncMonad$.html" t="n">CpsLogicStreamSyncMonad</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">class </span></span><a href="logic/CpsLogicStreamTryMonad.html" t="n" class="documentableName ">CpsLogicStreamTryMonad</a>[<span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>]]<span t="k"> extends </span><a href="logic/CpsLogicStreamMonadBase.html" t="t">CpsLogicStreamMonadBase</a>[<span t="t">F</span>]<span t="k">, </span></span><span class="signature-long"><a href="logic/CpsLogicMonadInstanceContext.html" t="t">CpsLogicMonadInstanceContext</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]</span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsLogicMonadInstanceContext.html" t="n">CpsLogicMonadInstanceContext</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicStreamMonadBase.html" t="n">CpsLogicStreamMonadBase</a>[<span t="t">F</span>]
+                </div>
+                <div>
+                 trait <a href="logic/CpsLogicMonad.html" t="n">CpsLogicMonad</a>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonad</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTrySupport</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonad</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowSupport</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonad</span>[[<span t="t">A</span>]<span t="k"> =&gt;&gt; </span><a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span t="t">F</span>, <span t="t">A</span>]]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="logic/CpsSyncLogicMonad.html" t="n" class="documentableName ">CpsSyncLogicMonad</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>]]<span t="k"> extends </span><a href="logic/CpsLogicMonad.html" t="t">CpsLogicMonad</a>[<span t="t">M</span>]</span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <a href="logic/CpsLogicMonad.html" t="n">CpsLogicMonad</a>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTryMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsTrySupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsThrowSupport</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">CpsMonad</span>[<span t="t">M</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Known subtypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block subtypes">
+                <div>
+                 object <a href="logic/CpsLogicStreamSyncMonad$.html" t="n">CpsLogicStreamSyncMonad</a>.type
+                </div><span></span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">object </span></span><a href="logic/LogicStream$.html" t="n" class="documentableName ">LogicStream</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="logic/LogicStream$.html" t="n">LogicStream</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" data-f-keywords="sealed">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">sealed </span></span><span class="kind"><span t="k">trait </span></span><a href="logic/LogicStreamT.html" t="n" class="documentableName ">LogicStreamT</a>[<span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">A</span>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Companion
+              </dt>
+              <dd class="body-medium">
+               <a href="logic/LogicStreamT$.html">object</a>
+              </dd>
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Known subtypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block subtypes">
+                <div>
+                 class <a href="logic/LogicStreamT$$Cons.html" t="n">Cons</a>[<span t="t">F</span>, <span t="t">A</span>]
+                </div>
+                <div>
+                 class <a href="logic/LogicStreamT$$Empty.html" t="n">Empty</a>[<span t="t">F</span>, <span t="t">A</span>]
+                </div>
+                <div>
+                 class <a href="logic/LogicStreamT$$Error.html" t="n">Error</a>[<span t="t">F</span>, <span t="t">A</span>]
+                </div>
+                <div>
+                 class <a href="logic/LogicStreamT$$MPlusSeq.html" t="n">MPlusSeq</a>[<span t="t">F</span>, <span t="t">A</span>]
+                </div>
+                <div>
+                 class <a href="logic/LogicStreamT$$Pure.html" t="n">Pure</a>[<span t="t">F</span>, <span t="t">A</span>]
+                </div>
+                <div>
+                 class <a href="logic/LogicStreamT$$Suspend.html" t="n">Suspend</a>[<span t="t">F</span>, <span t="t">A</span>]
+                </div>
+                <div>
+                 class <a href="logic/LogicStreamT$$WaitF.html" t="n">WaitF</a>[<span t="t">F</span>, <span t="t">A</span>]
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">object </span></span><a href="logic/LogicStreamT$.html" t="n" class="documentableName ">LogicStreamT</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Companion
+              </dt>
+              <dd class="body-medium">
+               <a href="logic/LogicStreamT.html">trait</a>
+              </dd>
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="logic/LogicStreamT$.html" t="n">LogicStreamT</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+      <section id="Types">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Types</h4>
+        </div>
+        <div class="documentableElement" id="LogicStream-0">
+         <div class="documentableElement-expander">
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">type </span></span><a href="logic.html#LogicStream-0" t="n" class="documentableName ">LogicStream</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>] = <a href="logic/LogicStreamT.html" t="t">LogicStreamT</a>[<span data-unresolved-link="" t="t">CpsIdentity</span>, <span data-unresolved-link="" t="t">A</span>]
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+     </div>
+    </section>
+    <section id="Value-members">
+     <div data-togglable="Value members" class="tab expand">
+      <div class="member-group-header">
+       <h3 data-togglable="Value members" class="h400">Value members</h3>
+      </div>
+      <section id="Concrete-methods">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Concrete methods</h4>
+        </div>
+        <div class="documentableElement" id="all-fffff141">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#all-fffff141" t="n" class="documentableName ">all</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">collection</span>: <span data-unresolved-link="" t="t">IterableOnce</span>[<span t="t">A</span>])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">m</span>: <a href="logic/CpsLogicMonad.html" t="t">CpsLogicMonad</a>[<span t="t">M</span>]): <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">A</span>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Transform collection into logical stream, which include all elements.</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Transform collection into logical stream, which include all elements.</p> 
+             </div>
+             <h2 class="h200">Value parameters</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               collection
+              </dt>
+              <dd class="body-medium">
+               <ul> 
+                <li>collection to transform</li> 
+               </ul> 
+              </dd>
+              <dt class="body-small">
+               m
+              </dt>
+              <dd class="body-medium">
+               <ul> 
+                <li>logical monad to use.</li> 
+               </ul> 
+              </dd>
+             </dl>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="choices-fffff340" data-f-keywords="transparent,inline">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">transparent inline </span></span><span class="kind"><span t="k">def </span></span><a href="logic.html#choices-fffff340" t="n" class="documentableName ">choices</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">values</span>: <span t="t">A</span>*)(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">mc</span>: <a href="logic/CpsLogicMonadContext.html" t="t">CpsLogicMonadContext</a>[<span t="t">M</span>]): <span data-unresolved-link="" t="t">A</span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Should be used inside of reify block over CpsLogicMonad. The next sequent code will be executed for all <code> values </code></p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Should be used inside of reify block over CpsLogicMonad. The next sequent code will be executed for all <code> values </code></p> 
+             </div>
+             <h2 class="h200">Value parameters</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               mc
+              </dt>
+              <dd class="body-medium">
+               <ul> 
+                <li>monad context</li> 
+               </ul> 
+              </dd>
+              <dt class="body-small">
+               values
+              </dt>
+              <dd class="body-medium">
+               <ul> 
+                <li>values to iterate over</li> 
+               </ul> 
+              </dd>
+             </dl>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="choicesFrom-fffff1b4" data-f-keywords="transparent,inline">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">transparent inline </span></span><span class="kind"><span t="k">def </span></span><a href="logic.html#choicesFrom-fffff1b4" t="n" class="documentableName ">choicesFrom</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">collection</span>: <span data-unresolved-link="" t="t">IterableOnce</span>[<span t="t">A</span>])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">mc</span>: <a href="logic/CpsLogicMonadContext.html" t="t">CpsLogicMonadContext</a>[<span t="t">M</span>]): <span data-unresolved-link="" t="t">A</span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Should be used inside of reify block over CpsLogicMonad. The next sequent code will be executed for all elements of <code> collection </code></p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Should be used inside of reify block over CpsLogicMonad. The next sequent code will be executed for all elements of <code> collection </code></p> 
+             </div>
+             <h2 class="h200">Value parameters</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               collection
+              </dt>
+              <dd class="body-medium">
+               <ul> 
+                <li>collection to iterate over</li> 
+               </ul> 
+              </dd>
+              <dt class="body-small">
+               mc
+              </dt>
+              <dd class="body-medium">
+               <ul> 
+                <li>monad context</li> 
+               </ul> 
+              </dd>
+             </dl>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="guard-b17" data-f-keywords="transparent,inline">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">transparent inline </span></span><span class="kind"><span t="k">def </span></span><a href="logic.html#guard-b17" t="n" class="documentableName ">guard</a>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>]](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">p</span>: <span t="k">=&gt; </span><span data-unresolved-link="" t="t">Boolean</span>)(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">mc</span>: <a href="logic/CpsLogicMonadContext.html" t="t">CpsLogicMonadContext</a>[<span t="t">M</span>]): <span data-unresolved-link="" t="t">Unit</span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Should be used inside of reify block over CpsLogicMonad. The next sequent code will be executed only if <code> p </code> is true, otherwise the computation of the current value of logical stream will be terminated.</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Should be used inside of reify block over CpsLogicMonad. The next sequent code will be executed only if <code> p </code> is true, otherwise the computation of the current value of logical stream will be terminated.</p> 
+             </div>
+             <h2 class="h200">Value parameters</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               mc
+              </dt>
+              <dd class="body-medium">
+               <ul> 
+                <li>monad context</li> 
+               </ul> 
+              </dd>
+              <dt class="body-small">
+               p
+              </dt>
+              <dd class="body-medium">
+               <ul> 
+                <li>predicate to check</li> 
+               </ul> 
+              </dd>
+             </dl>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+     </div>
+    </section>
+    <section id="Extensions">
+     <div data-togglable="Extensions" class="tab expand">
+      <div class="member-group-header">
+       <h3 data-togglable="Extensions" class="h400">Extensions</h3>
+      </div>
+      <section id="Extensions">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Extensions</h4>
+        </div>
+        <div>
+         <span class="groupHeader"><span t="k">extension </span>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">ma</span>: <span t="t">M</span>[<span t="t">A</span>])</span>
+         <div class="documentableElement" id="toLazyList-4c1">
+          <div class="documentableElement-expander">
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#toLazyList-4c1" t="n" class="documentableName ">toLazyList</a>: <span data-unresolved-link="" t="t">LazyList</span>[<span data-unresolved-link="" t="t">A</span>]
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div>
+         <span class="groupHeader"><span t="k">extension </span>[<span t="k"></span><span data-unresolved-link="" t="t">M</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">ma</span>: <span t="t">M</span>[<span t="t">A</span>])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">m</span>: <a href="logic/CpsLogicMonad.html" t="t">CpsLogicMonad</a>[<span t="t">M</span>])</span>
+         <div class="documentableElement" id="&amp;>>-fffff65d">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#&amp;>>-fffff65d" t="n" class="documentableName ">&amp;&gt;&gt;</a>[<span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span t="t">A</span><span t="k"> =&gt; </span><span t="t">M</span>[<span t="t">B</span>]): <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">B</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Synonym for 'fairFlatMap' or haskell &gt;&gt;-</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Synonym for 'fairFlatMap' or haskell &gt;&gt;-</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                Returns
+               </dt>
+               <dd class="body-medium">
+                <ul> 
+                 <li>stream, which contains values from <code> ma </code> and <code> f </code> applied to each value of <code> ma </code> in interleaved order.</li> 
+                </ul> 
+               </dd>
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.fairFlatMap</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="fairFlatMap-fffff65d">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#fairFlatMap-fffff65d" t="n" class="documentableName ">fairFlatMap</a>[<span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span t="t">A</span><span t="k"> =&gt; </span><span t="t">M</span>[<span t="t">B</span>]): <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">B</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Version of flatMap, which interleave all results of ma (i.e. horizontal search instead of bfs).</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Version of flatMap, which interleave all results of ma (i.e. horizontal search instead of bfs).</p> 
+              </div>
+              <h2 class="h200">Value parameters</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                f
+               </dt>
+               <dd class="body-medium">
+                <ul> 
+                 <li>function to apply to each value of <code> ma </code></li> 
+                </ul> 
+               </dd>
+              </dl>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.fairFlatMap</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="filter-25a">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#filter-25a" t="n" class="documentableName ">filter</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">p</span>: <span t="t">A</span><span t="k"> =&gt; </span><span data-unresolved-link="" t="t">Boolean</span>): <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">A</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>filter values, which satisfy predicate.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>filter values, which satisfy predicate.</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small"></dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="ifThenElse-5f0">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#ifThenElse-5f0" t="n" class="documentableName ">ifThenElse</a>[<span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">thenp</span>: <span t="t">A</span><span t="k"> =&gt; </span><span t="t">M</span>[<span t="t">B</span>], <span t="k"></span><span data-unresolved-link="" t="n">elsep</span>: <span t="t">M</span>[<span t="t">B</span>]): <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">B</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>If <code> ma </code> is note empty, then run <code> thenp </code> on it else <code> elsep </code>,</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>If <code> ma </code> is note empty, then run <code> thenp </code> on it else <code> elsep </code>,</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.ifte</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="observeN-170">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#observeN-170" t="n" class="documentableName ">observeN</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">n</span>: <span data-unresolved-link="" t="t">Int</span>): <a href="logic/CpsLogicMonad.html#Observer-0" t="t">Observer</a>[<span data-unresolved-link="" t="t">IndexedSeq</span>[<span data-unresolved-link="" t="t">A</span>]]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>get first N values of computation, discarding all other.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>get first N values of computation, discarding all other.</p> 
+              </div>
+              <h2 class="h200">Value parameters</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                n
+               </dt>
+               <dd class="body-medium">
+                <ul> 
+                 <li>how many values to get</li> 
+                </ul> 
+               </dd>
+              </dl>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                Returns
+               </dt>
+               <dd class="body-medium">
+                <ul> 
+                 <li>sequence of values in observer monad</li> 
+                </ul> 
+               </dd>
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.mObserveN</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="observeOne-e1d">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#observeOne-e1d" t="n" class="documentableName ">observeOne</a>: <a href="logic/CpsLogicMonad.html#Observer-0" t="t">Observer</a>[<span data-unresolved-link="" t="t">Option</span>[<span data-unresolved-link="" t="t">A</span>]]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>get first value of computation.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>get first value of computation.</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.mObserveOne</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="once-e1d">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#once-e1d" t="n" class="documentableName ">once</a>: <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">A</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>retrieve only first value of computation.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>retrieve only first value of computation.</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                Returns
+               </dt>
+               <dd class="body-medium">
+                <ul> 
+                 <li>stream, which contains only first value of <code> ma </code></li> 
+                </ul> 
+               </dd>
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.once</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="otherwise-fffff459">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#otherwise-fffff459" t="n" class="documentableName ">otherwise</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">thenp</span>: <span t="k">=&gt; </span><span t="t">M</span>[<span t="t">A</span>]): <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">A</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Run <code> thenp </code> if <code> ma </code> is empty.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Run <code> thenp </code> if <code> ma </code> is empty.</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.otherwise</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="|-fffff459">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#|-fffff459" t="n" class="documentableName ">|</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">mb</span>: <span t="k">=&gt; </span><span t="t">M</span>[<span t="t">A</span>]): <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">A</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>interleave current computation with <code> mb </code></p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>interleave current computation with <code> mb </code></p> 
+              </div>
+              <h2 class="h200">Value parameters</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                mb
+               </dt>
+               <dd class="body-medium">
+                <p>computation to interleave.</p> 
+               </dd>
+              </dl>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                Returns
+               </dt>
+               <dd class="body-medium">
+                <ul> 
+                 <li>stream, which contains values from <code> ma </code> and <code> mb </code> in interleaved order.</li> 
+                </ul> 
+               </dd>
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.interleave</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="|+|-fffff459">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#|+|-fffff459" t="n" class="documentableName ">|+|</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">mb</span>: <span t="k">=&gt; </span><span t="t">M</span>[<span t="t">A</span>]): <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">A</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Synonym for 'mplus'.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Synonym for 'mplus'.</p> 
+              </div>
+              <h2 class="h200">Value parameters</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                mb
+               </dt>
+               <dd class="body-medium">
+                <ul> 
+                 <li>computation to add</li> 
+                </ul> 
+               </dd>
+              </dl>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                Returns
+               </dt>
+               <dd class="body-medium">
+                <ul> 
+                 <li>stream, which contains values from <code> ma </code> and when <code> ma </code> is exhaused - <code> mb </code></li> 
+                </ul> 
+               </dd>
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.mplus</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="||-fffff459">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="logic.html#||-fffff459" t="n" class="documentableName ">||</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">mb</span>: <span t="k">=&gt; </span><span t="t">M</span>[<span t="t">A</span>]): <span data-unresolved-link="" t="t">M</span>[<span data-unresolved-link="" t="t">A</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Synonym for 'mplus'.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Synonym for 'mplus'.</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small">
+               <dt class="body-small">
+                See also
+               </dt>
+               <dd class="body-medium">
+                <div>
+                 <div>
+                  <p>cps.monads.logic.CpsLogicMonad.mplus</p> 
+                 </div>
+                </div>
+               </dd>
+              </dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+     </div>
+    </section>
+   </div>
+  </div>
+ </div>
+</section></div><div id="toc" class="body-small"><div id="toc-container"><span class="toc-title h200">In this article</span><nav class="toc-nav"><ul class="toc-list"><li><a href="#members-list">Members list</a><ul><li><a href="#Type-members">Type members</a><ul><li><a href="#Classlikes">Classlikes</a></li><li><a href="#Types">Types</a></li></ul></li><li><a href="#Value-members">Value members</a><ul><li><a href="#Concrete-methods">Concrete methods</a></li></ul></li><li><a href="#Extensions">Extensions</a><ul><li><a href="#Extensions">Extensions</a></li></ul></li></ul></li></ul></nav></div></div></div><div id="footer" class="body-small mobile-footer"><div class="left-container">Generated with</div><div class="right-container"><a href="https://github.com/lampepfl/dotty"><button class="icon-button gh"></button></a><a href="https://twitter.com/scala_lang"><button class="icon-button twitter"></button></a><a href="https://discord.com/invite/scala"><button class="icon-button discord"></button></a><a href="https://gitter.im/scala/scala"><button class="icon-button gitter"></button></a><div class="text"></div></div><div class="text-mobile"></div></div></div></div></body></html>
