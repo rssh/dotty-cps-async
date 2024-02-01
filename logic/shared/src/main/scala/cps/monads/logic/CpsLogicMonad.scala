@@ -1,9 +1,9 @@
 package cps.monads.logic
 
+import cps.*
+
 import scala.annotation.tailrec
 import scala.util.*
-
-import cps.*
 
 /**
  * Typeclass for monad with backtracking logic operations.

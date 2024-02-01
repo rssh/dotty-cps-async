@@ -32,7 +32,8 @@ class TestBasicLogicT {
                 }
               case None => Future successful false
             }
-
+          case None =>
+            throw new RuntimeException("unexpected end of stream")
        }
        Await.result(fr, 1.second)
   }
