@@ -1,3 +1,3 @@
 
 .. include:: logic/LogicUsage.rst
-.. include:: logic/References.md
+.. include:: logic/References.rst

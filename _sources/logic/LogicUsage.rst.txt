@@ -39,11 +39,13 @@ Simple example:
 
 
 dotty-cps-asyn-logic provides a monad typeclasses for logic programming:
- -   `CpsLogicMonad <https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/CpsLogicMonad.scala#L18>`_ basic logical operators.
- -   `CpsSyncLogicMonad <https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/CpsSyncLogicMonad.scala>`_ specialization for synchronous style of programming.
- -   `CpsConcurrentLogicMonad <https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/CpsConcurrentLogicMonad.scala>`_ monad transformer over concurrent monad.
+ -   `CpsLogicMonad <https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/monads/logic/CpsLogicMonad.scala#L18>`_ basic logical operators.
+ -   `CpsSyncLogicMonad <https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/monads/logic/CpsSyncLogicMonad.scala>`_ specialization for synchronous style of programming.
+ -   `CpsConcurrentLogicMonad <https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/monads/logic/CpsConcurrentLogicMonad.scala>`_ monad transformer over concurrent monad.
 
-And implementation  `LogicStreamT <https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/monads/logic/LogicStreamT.scala>`_.
+And implementation
+   - `LogicStreamT <https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/monads/logic/LogicStreamT.scala>`_.
+   - `LazyList based implementation <https://github.com/rssh/dotty-cps-async/blob/master/logic/shared/src/main/scala/cps/monads/logic/LazyListCpsLogicMonad.scala>`_.
 
 
 Logical operators
