@@ -34,7 +34,8 @@ sealed trait LogicStreamT[F[_]:CpsTryMonad,A] {
 
   def fsplit: F[Option[(Try[A],LogicStreamT[F,A])]]
   def msplit: LogicStreamT[F,Option[(Try[A],LogicStreamT[F,A])]]
-
+  
+  
 }
 
 object LogicStreamT {

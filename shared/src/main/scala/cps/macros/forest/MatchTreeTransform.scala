@@ -23,7 +23,7 @@ trait MatchTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
          cpsCtx.log(s"matchTransform: matchTerm.tpe=${matchTerm.tpe}")
          cpsCtx.log(s"matchTransform: matchTerm.tpe.widen=${matchTerm.tpe.widen}")
          cpsCtx.log(s"matchTransform: veryWiden(matchTerm.tpe)=${TransformUtil.veryWiden(matchTerm.tpe)}")
-     //val widenOtpe = TransformUtil.veryWiden(matchTerm.tpe)
+     val widenOtpe = TransformUtil.veryWiden(matchTerm.tpe)
      //val otpe = widenOtpe
      val otpe = matchTerm.tpe
      val scrutinee = matchTerm.scrutinee
@@ -35,7 +35,7 @@ trait MatchTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
         cpsCtx.log(s"matchTransform: asyncCases=${asyncCases}, changedCases=${changedCases}")
      val nCases = if (asyncCases) {
                       (matchTerm.cases zip cpsCases).map{(old,cpstree) =>
-                         CaseDef.copy(old)(old.pattern, old.guard, cpstree.transformed)
+                         CaseDef.copy(old)(old.pattern, old.guard, cpstree.castOtpe(widenOtpe).transformed)
                       }   
                    } else if (changedCases) {
                       (matchTerm.cases zip cpsCases).map{(old,cpstree) =>
