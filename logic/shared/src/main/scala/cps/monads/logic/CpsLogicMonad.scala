@@ -390,3 +390,8 @@ transparent inline def choices[M[_],A](values: A*)(using mc:CpsLogicMonadContext
   reflect{
     mc.monad.fromCollection(values)
   }
+
+
+transparent inline def noChoices[M[_]](using mc: CpsLogicMonadContext[M]) =
+  reflect(mc.monad.mzero)
+

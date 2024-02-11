@@ -29,6 +29,9 @@ object LogicStream {
   def fromCollection[A](s: Iterable[A]): LogicStream[A] =
     s.foldLeft(empty[A])((s,a)=>s.mplus(pure(a)))
 
+  transparent inline def noChoices[A](using CpsLogicMonadContext[LogicStream]): A =
+    reflect(empty[A])
+
 }
 
 sealed trait LogicStreamT[F[_]:CpsTryMonad,A] {
