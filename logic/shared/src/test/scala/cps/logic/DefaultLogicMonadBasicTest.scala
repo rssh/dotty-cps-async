@@ -73,6 +73,27 @@ class DefaultLogicMonadBasicTest {
     assert(m2.toLazyList.toSeq == Seq(12))
   }
 
+  @Test
+  def testIfThenElse(): Unit = {
+    val m1 = LogicStream.fromCollection(List(1, 2))
+    val m2 = m1.ifThenElseM(
+      x => LogicStream.pure(10+x)
+    )(
+      LogicStream.pure(20)
+    )
+    assert(m2.toLazyList.toIndexedSeq == Seq(11,12))
+  }
+
+  @Test
+  def testMsplitEmpty(): Unit = {
+    val m1 = LogicStream.empty[Int]
+    val m2 = m1.msplit
+    val m2r = m2.toLazyList
+    assert(m2r.nonEmpty)
+    assert(m2r.head == None)
+    assert(m2r.tail.isEmpty)
+
+  }
 
 }
 

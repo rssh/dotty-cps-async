@@ -125,7 +125,7 @@ trait CpsLogicMonad[M[_]] extends CpsTryMonad[M] {
    * @param thenp - what to do after <code> a </code>
    * @param elsep - what to do if <code> a </code> is empty
    */
-  def ifte[A, B](a: M[A], thenp: A => M[B], elsep: M[B]): M[B] = {
+  def ifte[A, B](a: M[A], thenp: A => M[B], elsep: => M[B]): M[B] = {
     flatMap(msplit(a)) { sc =>
       sc match
         case None => elsep
@@ -339,9 +339,12 @@ extension [M[_],A](ma: M[A])(using m:CpsLogicMonad[M])
    * @return
    * @see cps.monads.logic.CpsLogicMonad.ifte
    */
-  def ifThenElse[B](thenp: A => M[B], elsep: M[B]): M[B] =
+  def ifThenElseM[B](thenp: A => M[B])(elsep: => M[B]): M[B] =
     m.ifte(ma, thenp, elsep)
-  
+
+  transparent inline def ifThenElse[B](inline thenp: A => B)(inline elsep: => B): M[B] =
+    m.ifte(ma, a => reify(thenp(a)), reify(elsep))
+
   /**
    * Run <code> thenp </code> if <code> ma </code> is empty.
    * @param thenp
@@ -381,17 +384,44 @@ transparent inline def choicesFrom[M[_],A](collection: IterableOnce[A])(using mc
 
 /**
  * Should be used inside of reify block over CpsLogicMonad.
- * The next sequent code will be executed for all <code> values </code>
- * @param values - values to iterate over
+ * Form mini-DSL after <code>choice</code> prefux
+ * @param mc
+ * @tparam M
+ */
+class Choices[M[_]](using mc:CpsLogicMonadContext[M]) {
+
+  /**
+   * Should be used inside of reify block over CpsLogicMonad.
+   * The next sequent code will be executed for all <code> values </code>
+   *
+   * @param values - values to iterate over
+   * @param mc     - monad context
+   * @tparam M
+   */
+  transparent inline def apply[A](values: A*): A =
+    reflect {
+      mc.monad.fromCollection(values)
+    }
+
+  transparent inline def from[A](values: IterableOnce[A]): A =
+    reflect {
+      mc.monad.fromCollection(values)
+    }
+
+  transparent inline def empty[A]: A =
+    reflect {
+      mc.monad.empty[A]
+    }
+
+
+}
+
+/**
+ * Should be used inside of reify block over CpsLogicMonad.
+ * Create a Choices instance, which can be used for 'injecting'
+ * value of collection into logical stream via mini-DSL.
  * @param mc - monad context
  * @tparam M
  */
-transparent inline def choices[M[_],A](values: A*)(using mc:CpsLogicMonadContext[M]): A =
-  reflect{
-    mc.monad.fromCollection(values)
-  }
-
-
-transparent inline def noChoices[M[_]](using mc: CpsLogicMonadContext[M]) =
-  reflect(mc.monad.mzero)
-
+def choices[M[_]](using mc:CpsLogicMonadContext[M]): Choices[M] =
+  new Choices[M]()
