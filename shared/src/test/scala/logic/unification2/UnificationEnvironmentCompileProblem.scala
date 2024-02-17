@@ -345,9 +345,6 @@ object UniWrapperCP1 {
             summon[CpsTryMonad[F]].pure(Some(Success(l:LogicalTerm)), currentBinding)
           case l: LogicalFunctionalTerm[t] =>
             val s0: (IndexedSeq[LogicalTerm], LongMap[SplittedLVarBingingRecord[F, ?]]) = (IndexedSeq.empty, currentBinding)
-            ???
-            // error here.
-            /*
             reify[F] {
               boundary[(Option[Try[LogicalTerm]], LongMap[SplittedLVarBingingRecord[F, ?]])] {
                 val s = l.args.foldLeft(s0) { (s, e) =>
@@ -359,17 +356,19 @@ object UniWrapperCP1 {
                     case Some(tryArg) =>
                       tryArg match
                         case Failure(ex) =>
-                          break((Some(Failure(ex)), currentBinding))
+                          break((Some(Failure(ex):Try[LogicalTerm]), currentBinding))
                         case Success(arg) =>
                           (args :+ arg) -> nextBinding
                   s1
                 }
                 val (nextArgs, nextBinding) = s
                 val lt: LogicalTerm = LogicalFunctionalTerm(nextArgs)(using l.symbol)
-                (Some(Success(lt)), nextBinding)
+                // error if we put this expression in pair
+                val retval: Option[Try[LogicalTerm]] = Some(Success(lt))
+                (retval, nextBinding)
               }
             }
-            */
+
 
 
       }
