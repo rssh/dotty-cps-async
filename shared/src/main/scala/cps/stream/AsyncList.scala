@@ -74,8 +74,18 @@ sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
   def takeAll[CC[_]](n:Int)(using Factory[T,CC[T]@uncheckedVariance]):F[CC[T]@uncheckedVariance] =
      take[CC](-1)
 
+  //@infix
   def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S]
 
+  /**
+   * alias for merge
+   * @param other
+   * @tparam S
+   * @return
+   */
+  //@infix
+  def ><[S >: T](other: AsyncList[F,S]): AsyncList[F,S] = merge(other)
+  
   def skip(n:Int): AsyncList[F,T]
 
   def iterator(using ExecutionContext): AsyncIterator[F,T@uncheckedVariance] =
