@@ -15,7 +15,7 @@ import dotty.tools.dotc.core.TypeErasure.ErasedValueType
 import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.{CompilationUnit, report}
 import dotty.tools.dotc.transform.{Erasure, PureStats, VCElideAllocations}
-import dotty.tools.dotc.transform.TypeUtils.*
+//import dotty.tools.dotc.transform.TypeUtils.*
 import dotty.tools.dotc.plugins.PluginPhase
 
 

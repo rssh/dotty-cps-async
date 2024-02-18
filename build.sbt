@@ -1,13 +1,12 @@
 //val dottyVersion = "3.4.0-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.3.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.3.1-RC4"
-val dottyVersion = "3.3.2"
+val dottyVersion = "3.4.0"
 
 
 ThisBuild/version := "0.9.21-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
-
 
 
 val sharedSettings = Seq(

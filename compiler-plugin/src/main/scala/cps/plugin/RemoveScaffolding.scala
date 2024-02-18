@@ -14,7 +14,6 @@ import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.core.Phases.*
 import dotty.tools.dotc.{CompilationUnit, report}
 import dotty.tools.dotc.transform.{Erasure, PureStats, VCElideAllocations,Inlining}
-import dotty.tools.dotc.transform.TypeUtils.*
 import dotty.tools.dotc.plugins.PluginPhase
 
 
