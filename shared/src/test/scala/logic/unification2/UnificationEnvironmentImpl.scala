@@ -333,14 +333,24 @@ object UniWrapper {
                                  F[(Option[Try[LogicalTerm]],LongMap[SplittedLVarBingingRecord[F,?]])] = {
 
             term match
-              case l: LogicalVariable[t] =>
+              case l: LogicalVariable[?] =>
+                summon[CpsTryMonad[F]].map(getVarBinding(l.id, currentBinding)) {
+                  case (optTryA, nextBinding) =>
+                    val optTerm: Option[Try[LogicalTerm]] = optTryA.map(_.map(a =>
+                      LogicalConstant[l.Type](a.asInstanceOf[l.Type])(using l.symbol)
+                    ))
+                    (optTerm, nextBinding)
+                }
+                /*
                 reify[F] {
                   val (optTryA, nextBinding) = reflect(getVarBinding(l.id, currentBinding))
                   val optTerm: Option[Try[LogicalTerm]] = optTryA.map(_.map(a =>
-                    LogicalConstant[t](a.asInstanceOf[t])(using l.symbol)
+                    LogicalConstant[l.Type](a.asInstanceOf[l.Type])(using l.symbol)
                   ))
                   (optTerm, nextBinding)
                 }
+
+                 */
               case l: LogicalConstant[t] =>
                 summon[CpsTryMonad[F]].pure(Some(Success(l:LogicalTerm)), currentBinding)
               case l: LogicalFunctionalTerm[t] =>
