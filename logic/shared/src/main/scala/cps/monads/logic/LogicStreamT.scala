@@ -291,6 +291,10 @@ object LogicStreamT {
   def current[F[_]](using CpsLogicMonadContext[[A]=>>LogicStreamT[F,A]]): CpsLogicMonadContext[[A]=>>LogicStreamT[F,A]] =
     summon[CpsLogicMonadContext[[A]=>>LogicStreamT[F,A]]]
 
+  given observeConversion[F[_]:CpsTryMonad]: CpsMonadConversion[F, [A]=>>LogicStreamT[F,A]] with
+    def apply[T](ft: F[T]): LogicStreamT[F,T] =
+      LogicStreamT.WaitF(summon[CpsTryMonad[F]].map(ft)(LogicStreamT.mpure(_)))
+
 }
 
 
