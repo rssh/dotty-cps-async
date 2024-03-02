@@ -348,6 +348,3 @@ object TransformUtil:
       case _ => Symbol.noSymbol
   }
 
-  def termWithSamePos(using Quotes)(tree: quotes.reflect.Term, posTree: quotes.reflect.Term): quotes.reflect.Term =
-    import quotes.reflect._
-    ???
