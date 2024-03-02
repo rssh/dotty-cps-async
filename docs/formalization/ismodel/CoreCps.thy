@@ -53,11 +53,16 @@ datatype Expr =
  |
    ExternalFun int TpExpr
  |
+   ShiftedExternalFun int TpExpr
+ |
    Assign int Expr
  |
    Block "Expr list" Expr 
  |
    Error string
+ 
+
+
 
 
 
@@ -845,10 +850,11 @@ fun exprToCpsTreeApp :: "CpsTree \<Rightarrow> CpsTree \<Rightarrow> TpVarState 
                         CpsTreeAsync (MflatMap (cpsTreeToExpr cpsArg tps) (Mpure fun)) AKSync
             |
              AKRLambda bk cpsBody \<Rightarrow>
-                     case fun of
+                     (case fun of
                         ExternalFun fi tp \<Rightarrow>  errorCpsTree ''TODO''
                        |  
                         x \<Rightarrow> errorCpsTree ''TODO''
+                     )
           ) 
    )"
     

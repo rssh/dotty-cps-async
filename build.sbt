@@ -9,12 +9,16 @@ ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 
 
+
 val sharedSettings = Seq(
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
     name := "dotty-cps-async",
+    crossScalaVersions := Seq("3.3.2")
+
 )
-  
+
+
 
 lazy val root = project
   .in(file("."))
@@ -66,6 +70,8 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
         addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
     )
+
+
 
 lazy val CpsJVM = config("cps.jvm")
 lazy val CpsJS = config("cps.js")

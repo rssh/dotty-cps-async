@@ -112,7 +112,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                   CpsTree.pure(owner, applyTerm, false)
                else
                   CpsTree.pure(owner,
-                               Apply( 
+                               Apply.copy(applyTerm)( 
                                  Select(xx,fun.symbol),
                                  List(yy)
                                )
