@@ -17,9 +17,9 @@ object FindPathes {
   }
 
   val facts = Datalog{
-       Path(1,2) |- true
-       Path(2,3) |- true
-       Path(3,4) |- true
+       Edge(1,2) |- true
+       Edge(2,3) |- true
+       Edge(3,4) |- true
   }
 
   val facts2 = Prolog.asFacts(Path(1,2), Path(2,3), Path(3,4))
