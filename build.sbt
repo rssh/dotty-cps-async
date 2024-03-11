@@ -1,7 +1,7 @@
 //val dottyVersion = "3.4.0-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.3.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.3.1-RC4"
-val dottyVersion = "3.3.3"
+val dottyVersion = "3.4.0"
 
 
 ThisBuild/version := "0.9.21-SNAPSHOT"
@@ -13,7 +13,7 @@ ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 val sharedSettings = Seq(
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
-    name := "dotty-cps-async"
+    name := "dotty-cps-async-for34"
 )
 
 
