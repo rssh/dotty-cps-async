@@ -165,6 +165,11 @@ class PhaseCps(settings: CpsPluginSettings,
              List(absorber, ctxFun)
            ) if (cpsAsyncStreamApplyCn.symbol == Symbols.requiredMethod("cps.plugin.cpsAsyncStreamApply")) =>
         transformCpsAsyncStreamApply(tree,absorber,ctxFun)
+      case app@Apply(tapp@TypeApply(adoptCpsedCallCompileTimeOnlyCn, List(tf, ta)), List(a))
+        if (adoptCpsedCallCompileTimeOnlyCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCallCompileTimeOnly")) =>
+           val adoptCpsedCall = ref(Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")).withSpan(adoptCpsedCallCompileTimeOnlyCn.span)
+           val nApp = Apply(TypeApply(adoptCpsedCall, List(tf, ta)), List(a)).withSpan(app.span)
+           transformApplyInternal(nApp)
       case Apply(TypeApply(adoptCpsedCallCn, List(tf, ta)), List(a))
         if (adoptCpsedCallCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")) =>
           a match

@@ -14,7 +14,7 @@ class Test15PE {
     DotcInvocations.compileAndRunJunitTestAfterDependency(dirname, testClassName, invocationArgs, Test15PE.dependency)
   }
 
-  
+
   @Test
   def testFizzBuzz() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m1", "cps.pe.TestFizzBuzz",
@@ -106,11 +106,12 @@ class Test15PE {
     compileAndRunTestAfterCommon("testdata/set15pe/m8", "cps.pe.TestInlineOpInResourceM8",
       DotcInvocationArgs(checkAll = true,
         extraDotcArgs = List(
-          "-Vprint:rssh.cps", "-Vprint:erasure"
+         // "-Vprint:rssh.cps", "-Vprint:erasure"
         )
       )
     )
   }
+
 
 
 }

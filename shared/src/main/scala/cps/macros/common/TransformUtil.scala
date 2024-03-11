@@ -348,3 +348,22 @@ object TransformUtil:
       case _ => Symbol.noSymbol
   }
 
+  /**
+   * @param fun  expression,  part of (Apply(fun, args)).  Extract function symbols from carried applications:
+   *             Apply( ... Apply(fun1, args1), ..., argsN)  => fun1
+   * @return  extracted function symbol, (or just fun.symbol is this is not a carried application).
+   */
+  def extractCarriedFunSym(using Quotes)(fun: quotes.reflect.Term): quotes.reflect.Symbol = {
+    import quotes.reflect.*
+    fun match
+      case Block((d:DefDef)::Nil, Closure(_, _)) => d.symbol
+      case Inlined(call,binding,body) => extractCarriedFunSym(body)
+      case TypeApply(Select(obj,"apply"),targs)
+        if obj.tpe.widen.isFunctionType || obj.tpe.widen.isContextFunctionType =>
+                   extractCarriedFunSym(obj)
+      case Select(obj,"apply")
+        if obj.tpe.widen.isFunctionType || obj.tpe.widen.isContextFunctionType =>
+                   extractCarriedFunSym(obj)
+      case _ =>
+        fun.symbol
+  }

@@ -9,7 +9,8 @@ class Test8WhileDo {
       DotcInvocations.compileAndRunFilesInDirAndCheckResult(
         "testdata/set8WhileDo/m1",
         "cpstest.Test8m1",
-        "myurl:3\n"
+        "myurl:3\n",
+        //DotcInvocationArgs(extraDotcArgs = List("-Vprint:rssh.cps"))
       )
   }
 
@@ -42,5 +43,7 @@ class Test8WhileDo {
       "myurl:1\nmyurl:2\nmyurl:3\n()\n"
     )
   }
+
+
 
 }

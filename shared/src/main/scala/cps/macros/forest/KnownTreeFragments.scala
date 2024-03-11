@@ -55,7 +55,9 @@ trait KnownTreeFragments[F[_], CT, CC <: CpsMonadContext[F]]:
   lazy val logicalNotSym = defn.BooleanClass.declaredMethod("unary_!").head
 
   lazy val cpsNotChangeSymbol = Symbol.classSymbol("cps.plugin.annotation.CpsNotChange")
-  lazy val adoptCpsedCallSymbol = Symbol.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")
+  lazy val cpsTransformedSymbol = Symbol.classSymbol("cps.plugin.annotation.CpsTransformed")
+  lazy val adoptCpsedCallCompileTimeOnlySymbol = Symbol.requiredMethod("cps.plugin.scaffolding.adoptCpsedCallCompileTimeOnly")
+
 
 
 

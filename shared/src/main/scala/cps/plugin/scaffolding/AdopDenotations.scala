@@ -36,7 +36,7 @@ def adoptCpsedCall[F[_],T](f: T): F[T] = {
 }
 
 
-@compileTimeOnly("adoptCpsedCall should be removed on compiler plugin after symbol dentations will changed")
+@compileTimeOnly("lools like you using direct context function API without dotty-cps-async-compiler-plugin")
 def adoptCpsedCallCompileTimeOnly[F[_],T](f: T): F[T] = {
   // will be changed by plugin to adoptCpsedCall
   ???

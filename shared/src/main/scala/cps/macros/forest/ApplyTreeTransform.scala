@@ -349,6 +349,17 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         val callCpsDirect =  existsCpsDirect && !fun.symbol.hasAnnotation(cpsNotChangeSymbol)
                                                        //  && !fun.symbol.flags.is(Flags.Inline)
                                                          && !fun.symbol.name.contains("$")
+        if (callCpsDirect && !fun.symbol.flags.is(Flags.Inline)) then
+              val funSym = TransformUtil.extractCarriedFunSym(fun)
+              println(s"funSym=${funSym}")
+              if(!funSym.isDefinedInCurrentRun &&
+                 !funSym.flags.is(Flags.Inline) &&
+                 !funSym.hasAnnotation(cpsTransformedSymbol)  ) then
+                 // situation, when external function is not transformed by cps-async.
+                 //  note, that we can't determinate for function in the current compilation run, because
+                 //  we can ba called from transparent inline function which run0s before compiler-plusing phase.
+                   println(s"!11:fun=${fun}, fun.symbol.fullName=${fun.symbol.fullName}, hashCode=${fun.symbol.hashCode} isDefinedInCurrentRun=${fun.symbol.isDefinedInCurrentRun}, flags=${fun.symbol.flags}")
+                   throw MacroError(s"Function ${fun.symbol} is cps-=direct function compiled without dotty-cps-async-compiler plugin", applyTerm.asExpr)
         if cpsCtx.flags.debugLevel >= 15 then
             cpsCtx.log(s" existsShiftedLambda=${existsShiftedLambda}")
             cpsCtx.log(s" existsAsyncArg=${existsAsyncArg}")
@@ -441,7 +452,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
             val nCpsDirectArg = genCpsDirectDefaultConstructor(tf,fctx,cpsDirectArg)
             val tree = applyCall
             val adoptedTree = Apply.copy(origin)(
-              TypeApply(Ref(adoptCpsedCallSymbol),
+              TypeApply(Ref(adoptCpsedCallCompileTimeOnlySymbol),
                 List(TypeTree.of[F], Inferred(origin.tpe.widen))),
                 List(substituteCpsDirectArgRequired(tree, cpsDirectArg, nCpsDirectArg))
             )
@@ -457,7 +468,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
               val tree = applyCall
               // TODO:mb move substirute args to the later step
               val adoptedTree = Apply.copy(origin)(
-                TypeApply(Ref(adoptCpsedCallSymbol),
+                TypeApply(Ref(adoptCpsedCallCompileTimeOnlySymbol),
                   List(tg, Inferred(origin.tpe.widen))),
                   List(substituteCpsDirectArgRequired(tree, cpsDirectArg, nCpsDirectArg))
               )
@@ -474,7 +485,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
       case _ =>
         val tree = applyCall
         val adoptedTree = Apply.copy(origin)(
-          TypeApply(Ref(adoptCpsedCallSymbol),
+          TypeApply(Ref(adoptCpsedCallCompileTimeOnlySymbol),
             List(Inferred(TypeRepr.of[F]), Inferred(origin.tpe.widen))),
           List(tree)
         )

@@ -16,16 +16,23 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
 
   val phaseName = PhaseSelect.phaseName
 
-  override val runsAfter = Set(SetRootTree.name, Pickler.name)
-  override val runsBefore = Set(PhaseCps.name)
+  override val runsAfter = Set(SetRootTree.name)
+  override val runsBefore = Set(Pickler.name, PhaseCps.name)
+
+
 
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
+
+
+      lazy val cpsTransformedAnnot = Symbols.requiredClass("cps.plugin.annotation.CpsTransformed")
+
       if (tree.symbol.denot.is(Flags.Inline)) then
         tree
       else
         val topTree = tree
         val optKind = SelectedNodes.detectDefDefSelectKind(tree)
         optKind.foreach{kind =>
+          tree.symbol.addAnnotation(cpsTransformedAnnot)
           selectedNodes.addDefDef(tree.symbol,kind)
         }
         // TODO:  try run this onlu on selected nodes

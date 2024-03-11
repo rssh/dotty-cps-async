@@ -13,14 +13,14 @@ import scala.util.matching.Regex
 
 class DotcInvocations(silent: Boolean = false, scalaJs: Boolean = false) {
 
-  def compileFiles(files: List[String], outDir: String, extraArgs: List[String]=List.empty, checkAll: Boolean = true): Reporter = {
+  def compileFiles(files: List[String], outDir: String, extraArgs: List[String]=List.empty, checkAll: Boolean = true, usePlugin: Boolean=true): Reporter = {
     val args = List("-d", outDir) ++
-             List("-Xplugin:src/main/resources") ++
+             (if (usePlugin) then List("-Xplugin:src/main/resources") else List.empty) ++
              compilerClasspathOption ++
              extraArgs ++
              DotcInvocations.defaultCompileOpts ++
              (if (checkAll) List("-Ycheck:all") else List.empty)
-    println("compile args: " + args.mkString(" "))
+    println(s"compile args: ${args}, usePlugin=${usePlugin}")
     compileFilesWithFullArgs(files, outDir, args)
   }
 
@@ -40,20 +40,19 @@ class DotcInvocations(silent: Boolean = false, scalaJs: Boolean = false) {
   }
 
 
-  def compileFilesInDirs(dirs: List[String], outDir: String, extraArgs: List[String] = List.empty, checkAll: Boolean = true): Reporter = {
+  def compileFilesInDirs(dirs: List[String], outDir: String, extraArgs: List[String] = List.empty, checkAll: Boolean = true, usePlugin: Boolean=true): Reporter = {
     val files = dirs.flatMap { dir => scalaFilesIn(Path(dir)) }
-    compileFiles(files, outDir, extraArgs, checkAll)
+    compileFiles(files, outDir, extraArgs, checkAll, usePlugin)
   }
 
-  def compileFilesInDir(dir: String, outDir: String, extraArgs: List[String]=List.empty, checkAll:Boolean = true): Reporter = {
-    compileFilesInDirs(List(dir), outDir, extraArgs, checkAll)
+  def compileFilesInDir(dir: String, outDir: String, extraArgs: List[String]=List.empty, checkAll:Boolean = true, usePlugin: Boolean = true): Reporter = {
+    compileFilesInDirs(List(dir), outDir, extraArgs, checkAll, usePlugin)
   }
 
 
 
-
-  def compileAndRunFilesInDirsJVM(dirs: List[String], outDir: String, mainClass:String = "Main", extraArgs: List[String] = List.empty): (Int,String) = {
-    val reporter = compileFilesInDirs(dirs, outDir, extraArgs)
+  def compileAndRunFilesInDirsJVM(dirs: List[String], outDir: String, mainClass:String = "Main", extraArgs: List[String] = List.empty, checkAll: Boolean=true, usePlugin: Boolean=true): (Int,String) = {
+    val reporter = compileFilesInDirs(dirs, outDir, extraArgs, checkAll, usePlugin)
     if (reporter.hasErrors) {
       println(s"Compilation failed in dirs ${dirs}")
       DotcInvocations.reportErrors(reporter)
@@ -64,32 +63,13 @@ class DotcInvocations(silent: Boolean = false, scalaJs: Boolean = false) {
   }
 
 
-  def compileAndRunFilesInDirJVM(dir: String, outDir: String, mainClass:String = "Main", extraArgs: List[String] = List.empty): (Int,String) = {
-    compileAndRunFilesInDirsJVM(List(dir), outDir, mainClass, extraArgs)
+  def compileAndRunFilesInDirJVM(dir: String, outDir: String, mainClass:String = "Main", extraArgs: List[String] = List.empty, checkAll: Boolean=true, usePlugin: Boolean=true): (Int,String) = {
+    compileAndRunFilesInDirsJVM(List(dir), outDir, mainClass, extraArgs, checkAll, usePlugin)
   }
 
   private def runJVM(outDir: String, mainClass: String, timeout: FiniteDuration = 1.minute): (Int, String) = {
     val classpath = s"$outDir:${System.getProperty("java.class.path")}"
-    runJVMInClasspath(outDir, mainClass, classpath, timeout)
-  }
-
-  private def runJVMInClasspath(outDir: String, mainClass: String, classpath: String, timeout: FiniteDuration = 1.minute): (Int, String) = {
-    val cmd = s"java -cp $classpath $mainClass"
-    println(s"Running $cmd")
-    val process = Runtime.getRuntime.exec(cmd)
-    blocking {
-      val exitCode = process.waitFor(timeout.toSeconds, java.util.concurrent.TimeUnit.SECONDS)
-      if (exitCode) {
-        val output = scala.io.Source.fromInputStream(process.getInputStream).mkString
-        val errorOutput = scala.io.Source.fromInputStream(process.getErrorStream).mkString
-        println(s"output=${output}")
-        println(s"error=${errorOutput}")
-        (process.exitValue(), output)
-      } else {
-        process.destroy()
-        throw new RuntimeException(s"Process $cmd timed out")
-      }
-    }
+    DotcInvocations.runJVMInClasspath(mainClass, classpath, timeout)
   }
 
 
@@ -146,7 +126,9 @@ case class DotcInvocationArgs(
                                extraDotcArgs: List[String] = List.empty,
                                silent: Boolean = false,
                                checkAll: Boolean = true,
-                               useScalaJsLib: Boolean = false
+                               usePlugin: Boolean = true,
+                               useScalaJsLib: Boolean = false,
+                               outDir: Option[String] = None,
                              )
 
 
@@ -186,7 +168,8 @@ object DotcInvocations {
 
   def compileFilesInDir(dir: String, invocationArgs: DotcInvocationArgs = DotcInvocationArgs()): Reporter = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
-    dotcInvocations.compileFilesInDir(dir, dir, invocationArgs.extraDotcArgs, invocationArgs.checkAll)
+    dotcInvocations.compileFilesInDir(dir, invocationArgs.outDir.getOrElse(dir),
+      invocationArgs.extraDotcArgs, invocationArgs.checkAll, invocationArgs.usePlugin)
     dotcInvocations.reporter
   }
 
@@ -204,7 +187,8 @@ object DotcInvocations {
                                            ): Unit = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(dir,dir,mainClass,invocationArgs.extraDotcArgs)
+    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(dir,invocationArgs.outDir.getOrElse(dir),
+      mainClass,invocationArgs.extraDotcArgs,invocationArgs.checkAll,invocationArgs.usePlugin)
 
     val reporter = dotcInvocations.reporter
     println("summary: " + reporter.summary)
@@ -281,6 +265,25 @@ object DotcInvocations {
     }
   }
 
+  def runJVMInClasspath(mainClass: String, classpath: String, timeout: FiniteDuration = 1.minute): (Int, String) = {
+    val cmd = s"java -cp $classpath $mainClass"
+    println(s"Running $cmd")
+    val process = Runtime.getRuntime.exec(cmd)
+    blocking {
+      val exitCode = process.waitFor(timeout.toSeconds, java.util.concurrent.TimeUnit.SECONDS)
+      if (exitCode) {
+        val output = scala.io.Source.fromInputStream(process.getInputStream).mkString
+        val errorOutput = scala.io.Source.fromInputStream(process.getErrorStream).mkString
+        println(s"output=${output}")
+        println(s"error=${errorOutput}")
+        (process.exitValue(), output)
+      } else {
+        process.destroy()
+        throw new RuntimeException(s"Process $cmd timed out")
+      }
+    }
+  }
+
 
   def reportErrors(reporter: Reporter): Unit = {
     if (!reporter.allErrors.isEmpty) {
@@ -298,7 +301,7 @@ object DotcInvocations {
   private def currentJsClasspath: String = {
     // substitue the jvm cps classes to js cps classes
     val classpath = System.getProperty("java.class.path")
-    val jsClasspath = classpath.replaceAll("dotty-cps-async/jvm/target/scala-3.3.1/classes", "dotty-cps-async/js/target/scala-3.3.1/classes")
+    val jsClasspath = classpath.replaceAll("dotty-cps-async/jvm/target/scala-3.3.3/classes", "dotty-cps-async/js/target/scala-3.3.3/classes")
     jsClasspath
   }
 

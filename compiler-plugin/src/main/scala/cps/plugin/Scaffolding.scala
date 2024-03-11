@@ -32,6 +32,50 @@ object Scaffolding {
   }
 
   def adoptCpsedCall(tree: Tree, origType: Type, fType: Type)(using Context): Tree = {
+
+    /**
+     * Extract function from call application which can be carried.
+     * @param call
+     * @return
+     */
+    def extractCarriedFun(tree:Tree): Symbol = {
+      val retval =tree match
+        case Apply(TypeApply(Select(obj,applyCn),targs),args)
+          if applyCn.toString == "apply" &&
+             (defn.isFunctionNType(obj.tpe.widen) || defn.isContextFunctionType(obj.tpe.widen)) =>
+            extractCarriedFun(obj)
+        case TypeApply(Select(obj,applyCn),targs)
+          if applyCn.toString == "apply" &&
+            (defn.isFunctionNType(obj.tpe.widen) || defn.isContextFunctionType(obj.tpe.widen)) =>
+            extractCarriedFun(obj)
+        case Apply(Select(obj,applyCn),args)
+          if applyCn.toString == "apply" &&
+            (defn.isFunctionNType(obj.tpe.widen) || defn.isContextFunctionType(obj.tpe.widen)) =>
+          extractCarriedFun(obj)
+        case Select(obj,applyCn)
+          if applyCn.toString == "apply" &&
+            (defn.isFunctionNType(obj.tpe.widen) || defn.isContextFunctionType(obj.tpe.widen)) =>
+          extractCarriedFun(obj)
+        case Apply(TypeApply(internal, _), _) =>
+          extractCarriedFun(internal)
+        case Apply(fun, _) =>
+          extractCarriedFun(fun)
+        case TypeApply(fun, _) =>
+          extractCarriedFun(fun)
+        case Inlined(call, bindings, expansion) =>
+          extractCarriedFun(expansion)
+        case _ =>
+          tree.symbol
+      retval
+    }
+
+    val funSym = extractCarriedFun(tree)
+    if (funSym != Symbols.NoSymbol) then
+      if (!funSym.flags.is(Flags.Inline)  &&
+          !funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsTransformed"))
+      ) then
+        report.error(s"looks like ${funSym.show} is compiled without dotty-cps-async plugin, tree: ${tree}", tree.srcPos)
+
     val adoptSymbol = Symbols.requiredMethod("cps.plugin.scaffolding.adoptCpsedCall")
     val adoptIdent = ref(adoptSymbol)
     Apply(TypeApply(adoptIdent, List(TypeTree(fType), TypeTree(origType))), tree :: Nil)
