@@ -13,9 +13,7 @@ ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 val sharedSettings = Seq(
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
-    name := "dotty-cps-async",
-    crossScalaVersions := Seq("3.3.2")
-
+    name := "dotty-cps-async"
 )
 
 
