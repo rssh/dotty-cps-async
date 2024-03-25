@@ -237,8 +237,7 @@ case class PlainApplyArg(
     import AsyncKind.*
     expr.asyncKind match
       case Sync => expr.unpure match
-        case Some(tree) =>
-          tree
+        case Some(tree) => tree
         case None => throw CpsTransformException("Impossibke: syn expression without unpure",expr.origin.srcPos)
       case Async(_) => ref(optIdentValDef.get.symbol).withSpan(expr.origin.span)
       case AsyncLambda(internal) =>
@@ -399,8 +398,9 @@ case class RepeatApplyArg(
         val elemTpe = CpsTransformHelper.cpsTransformedType(elementTpt.tpe, summon[CpsTopLevelContext].monadType)
         val elemTpt = TypeTree(elemTpe)
         (elemTpt, AppliedTypeTree(TypeTree(defn.RepeatedParamType), List(elemTpt)))
-      case _ => (elementTpt, TypeTree(tpe))
-    // todo - return orign if nothing was changed
+      case _ =>
+        (elementTpt, TypeTree(tpe.widen))
+        // todo - return orign if nothing was changed
     Typed(SeqLiteral(trees.toList,nElemTpt).withSpan(origin.span) ,nRtp).withSpan(origin.span)
 
   override def show(using Context): String = {

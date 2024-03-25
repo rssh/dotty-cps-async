@@ -9,7 +9,7 @@ class Test7Import {
   def testCompileAndRunImpoer(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDir(
+    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
       "testdata/Set7Import",
       "testdata/Set7Import",
       "cpstest.Test7"

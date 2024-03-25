@@ -1,5 +1,6 @@
 package cps.plugin
 
+
 import cps.plugin.AsyncKind.AsyncLambda
 import dotty.tools.dotc.util.SrcPos
 
@@ -9,9 +10,8 @@ enum AsyncKind  {
   case Sync extends AsyncKind
   case Async(internalKind:AsyncKind) extends AsyncKind
   case AsyncLambda(bodyKind: AsyncKind) extends AsyncKind
-
-
-  def unify(other: AsyncKind): Either[(AsyncKind,AsyncKind),AsyncKind] =
+  
+  infix def unify(other: AsyncKind): Either[(AsyncKind,AsyncKind),AsyncKind] =
     (this,other) match
       case (Sync, Sync) => Right(Sync)
       case (Async(a), Async(b)) => a.unify(b).map(Async(_))

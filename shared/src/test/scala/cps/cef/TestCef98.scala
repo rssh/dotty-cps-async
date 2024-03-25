@@ -8,7 +8,6 @@ import scala.util.*
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
-import cps.automaticColoring.given
 
 class TestCef98 {
 
@@ -18,12 +17,6 @@ class TestCef98 {
       def flatMap[A,B](fa:Option[A])(f: A=>Option[B]):Option[B] = fa.flatMap(f)
     }
 
-    given CpsMonadMemoization.Default[Option] with {}
-
-    given CpsMonadMemoization.Inplace[ComputationBound] with {
-      def apply[T](ft:ComputationBound[T]): ComputationBound[T] =
-        ComputationBound.spawn(ft)
-    }
 
     @Test
     def testNestedAwaits() = {

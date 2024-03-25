@@ -1,5 +1,8 @@
 package cps.pe
 
+import scala.annotation.experimental
+
+import cps.*
 import cps.testconfig.given
 
 class ToyLogger{
@@ -12,25 +15,26 @@ class ToyLogger{
 
 }
 
-
+@experimental
 class PEToyLogger{
 
    private val logger = new ToyLogger()
 
-   def log(msg:String): PureEffect[Unit] =
-      PureEffect.delay(logger.log(msg)) 
+   def log(msg:String)(using CpsDirect[PureEffect]): Unit =
+      logger.log(msg)
 
-   def all(): PureEffect[Vector[String]] =
-      PureEffect.delay(logger.lines) 
+   def all()(using CpsDirect[PureEffect]): Vector[String] =
+      logger.lines
 
    def __all(): Vector[String] =
       logger.lines
+
 }
 
 object PEToyLogger {
 
-   def make(): PureEffect[PEToyLogger] =
-     PureEffect.delay(new PEToyLogger)
+   def make()(using CpsDirect[PureEffect]): PEToyLogger =
+     new PEToyLogger
 
 }
 

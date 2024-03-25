@@ -12,13 +12,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 17
-      uses: actions/setup-java@v2
+    - uses: actions/checkout@v4
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
       with:
-        java-version: '17'
-        distribution: 'adopt'
+        java-version: '21'
+        distribution: 'oracle'
     - name: Install libuv
       run: sudo apt-get update && sudo apt-get install -y libuv1-dev
-    - name: Run tests
-      run: sbt test
+      # sbt test cause gc probem, so run ones separatelly
+    - name: Run cpsJVM tests
+      run: sbt cpsJVM/test
+    - name: Run cpsJS tests
+      run: sbt cpsJS/test
+    - name: Run cpsNative tests
+      run: sbt cpsNative/test
+    - name: Run compiler-plugin tests
+      run: sbt compilerPlugin/test
+    - name: Run logicJVM tests
+      run: sbt logicJVM/test
+    - name: Rerun tests interpret by compiler plugin on JVM
+      run: sbt compilerPluginTestsJVM/test

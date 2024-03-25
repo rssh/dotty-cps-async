@@ -12,11 +12,14 @@ object Test12m4 {
   @cps.plugin.annotation.makeCPS
   def fetchList[T](c: List[T], f: List[T] => String): String = f(c)
 
+  def asyncAppendTransformed[T](l:List[T]): Future[String] =
+    Future.successful(l.mkString("{", ",", "}")+"transformed" )
+
   def main(args: Array[String]): Unit = {
     val fr = async[Future] {
       fetchList[String](
         List("myurl1", "myurl2", "myurl3"),
-        l => l.mkString("{", ",", "}")
+        l => await(asyncAppendTransformed(l))
       )
     }
     val r  = Await.result(fr, 1000.millis)

@@ -118,12 +118,5 @@ given PureEffectCpsMonad: CpsConcurrentEffectMonad[PureEffect] with CpsTryMonadI
 
 
 
-given CpsMonadMemoization.Pure[PureEffect] with
 
-   def apply[T](ft:PureEffect[T]): PureEffect[PureEffect[T]] =
-      ft.memoize()
-
-
-inline transparent given ValueDiscard[PureEffect[Unit]] = AwaitValueDiscard[PureEffect,Unit]
-  
 

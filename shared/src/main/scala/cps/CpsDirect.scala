@@ -1,6 +1,6 @@
 package cps
 
-import scala.annotation.experimental
+import scala.annotation.{compileTimeOnly, experimental}
 import scala.util.NotGiven
 import cps.plugin.scaffolding.requiringCpsCompilerPlugin
 
@@ -15,25 +15,25 @@ import cps.plugin.scaffolding.requiringCpsCompilerPlugin
  *  ```
  **/
 @experimental
-class CpsDirect[F[_]](val context: CpsTryMonadContext[F]) extends  AnyVal {
-
-  def monad: CpsMonad[F] = context.monad
-
-  def throwMonad: CpsThrowMonad[F] = context.monad
-
-  def tryMonad: CpsTryMonad[F] = context.monad
-
-}
+type CpsDirect[F[_]] = CpsDirect.Direct[F]
 
 
 @experimental
-object CpsDirect {
+object CpsDirect  {
 
-  // TODO: wrong position when inline
-  given direct[F[_]](using context: CpsTryMonadContext[F]): CpsDirect[F] =
-    new CpsDirect[F](context)
-    //TODO: requiringCpsCompilerPlugin(new CpsDirect[F](context))
+  opaque type Direct[F[_]] = CpsTryMonadContext[F]
+  
+  private[cps] def apply[F[_]](ctx: CpsTryMonadContext[F]): CpsDirect[F] = ctx
 
+  extension [F[_]](x: CpsDirect[F])
+    def context: CpsTryMonadContext[F] = x
+    def monad: CpsTryMonad[F] = x.context.monad
+    def throwMonad: CpsTryMonad[F] = x.context.monad
+    def tryMonad: CpsTryMonad[F] = x.context.monad
+
+  @compileTimeOnly("CpsDirect consrtuction should be removed by cps compiler plugin, make sure that cos plugin is enabled")
+  given byInclusion[F[_], G[_]](using CpsTryMonadContext[F], CpsMonadContextInclusion[F,G]): CpsDirect[G] =
+    ???
 
 }
 

@@ -78,6 +78,8 @@ object TransformUtil {
                OrType.make(tp1w,tp2w,tpeOr.isSoft)
          case _ => tpe.widen
 
+  
+  
    def collectDefOwners(tree:Tree)(using Context): List[(Symbol,Symbol)] = {
       val gather = new TreeAccumulator[List[(Symbol,Symbol)]] {
          def apply(x: List[(Symbol,Symbol)], tree: Tree)(using Context): List[(Symbol,Symbol)] =
@@ -255,6 +257,7 @@ object TransformUtil {
       }
       finder(Nil,tree)
    }
+
 
    final val COMMA = ","
 

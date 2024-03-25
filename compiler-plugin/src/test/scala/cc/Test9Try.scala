@@ -8,7 +8,7 @@ class Test9Try {
 
   @Test
   def testCompileAndRun(): Unit = {
-    DotcInvocations.checkRuns(selection = (".*".r))(
+    DotcInvocations.checkRuns(selection = (".*".r),dotcArgs = DotcInvocationArgs(extraDotcArgs = List()))(
       TestRun("testdata/set9Try/m1", "cpstest.Test9m1", "Right(10)\n"),
       TestRun("testdata/set9Try/m2", "cpstest.Test9m2"),
       TestRun("testdata/set9Try/m3", "cpstest.Test9m3"),

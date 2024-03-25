@@ -20,22 +20,27 @@ import cps.plugin.*
 object AsynchronizedTransform {
 
 
-  def fromApply(term: Apply, owner: Symbol, nesting: Int, directType: Tree, valueType: Tree, internalTerm:Tree, directRef:Tree)(using Context, CpsTopLevelContext): CpsTree = {
+  def fromApply(term: Apply, owner: Symbol, nesting: Int, monadType: Tree, valueType: Tree, internalTerm:Tree, directRef:Tree)(using Context, CpsTopLevelContext): CpsTree = {
+    val monadTypeTree = monadType match
+      case tt: TypeTree => tt
+      case _ => TypeTree(monadType.tpe)
     internalTerm match
       case Block((ddef: DefDef)::Nil, closure: Closure) =>
-        parseLambda(term, owner, nesting, directType, valueType, ddef, closure, directRef)
+        parseLambda(term, owner, nesting, monadTypeTree, valueType, ddef, closure, directRef)
       case Block(Nil,Block((ddef: DefDef)::Nil, closure: Closure)) =>
-        parseLambda(term, owner, nesting, directType, valueType, ddef, closure, directRef)
+        parseLambda(term, owner, nesting, monadTypeTree, valueType, ddef, closure, directRef)
       case _ =>
         throw CpsTransformException("lambda expected", internalTerm.srcPos)
   }
 
-  def parseLambda(term: Apply, owner: Symbol, nesting: Int, monadTypeTree: Tree, valueTypeTree: Tree, ddef: DefDef, closure: Closure, directRef: Tree)(using Context, CpsTopLevelContext): CpsTree = {
+  def parseLambda(term: Apply, owner: Symbol, nesting: Int, monadTypeTree: TypeTree, valueTypeTree: Tree, ddef: DefDef, closure: Closure, directRef: Tree)(using Context, CpsTopLevelContext): CpsTree = {
     val tctx = summon[CpsTopLevelContext]
     val cpsRhs = RootTransform(ddef.rhs, owner, nesting+1)
-    val context = Select(directRef,"context".toTermName)
+    //val context = Select(directRef,"context".toTermName)
+    val contextExtension = Symbols.requiredMethod("cps.CpsDirect.context")
+    val context = Apply(TypeApply(ref(contextExtension),List(monadTypeTree)),List(directRef))
     val monad = Select(context,"monad".toTermName)
-    val internalContextType = Select(monad,"Context".toTypeName).tpe
+    val internalContextType = Select(monad,"Context".toTypeName).tpe.widen
     val paramValDefs = ddef.paramss.head.head match
       case v: ValDef => List(v)
       case _ =>
@@ -48,7 +53,11 @@ object AsynchronizedTransform {
     val nLambda = Closure(meth, tss => {
       val directType = directRef.tpe.widen
       val directSym = Symbols.newSymbol(meth, "direct".toTermName, Flags.EmptyFlags, directType)
-      val nDirect = ValDef(directSym,New(directType,tss.head)).withSpan(term.span)
+      val internalContextParam = tss.head.head
+      val nDirect = ValDef(directSym,
+                           CpsDirectHelper.genCpsDirectDefaultConstructor(
+                                         monadTypeTree,internalContextParam, term.span)
+                    ).withSpan(term.span)
       Block(
         List(nDirect),
         TransformUtil.substParams(cpsRhs.transformed, paramValDefs, List(ref(directSym))).changeOwner(ddef.symbol, meth)

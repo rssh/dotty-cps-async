@@ -22,9 +22,8 @@ def adoptForUncpsedDenotation[F[_],T](f: F[T]): T = {
   ???
 }
 
-//
-//@compileTimeOnly
-def adoptFunForUncpsedDenotation[F[_],A,B](f: A=>B): A=>F[B] = {
+def adoptForUncpsedDenotationCompileTimeOnly[F[_], T](f: F[T]): T = {
+  // will be changed by plugin to adoptForUncpsedDenotation
   ???
 }
 
@@ -33,5 +32,12 @@ def adoptFunForUncpsedDenotation[F[_],A,B](f: A=>B): A=>F[B] = {
 def adoptCpsedCall[F[_],T](f: T): F[T] = {
   println("adoptCpsedCall should be removed by dotty-cps-async compiler plugin after symbol dentations will changed")
   println("looks like you cathed bug in plugin, please report it")
+  ???
+}
+
+
+@compileTimeOnly("lools like you using direct context function API without dotty-cps-async-compiler-plugin")
+def adoptCpsedCallCompileTimeOnly[F[_],T](f: T): F[T] = {
+  // will be changed by plugin to adoptCpsedCall
   ???
 }

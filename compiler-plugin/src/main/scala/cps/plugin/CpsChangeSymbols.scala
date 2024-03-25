@@ -15,7 +15,7 @@ import dotty.tools.dotc.core.TypeErasure.ErasedValueType
 import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.{CompilationUnit, report}
 import dotty.tools.dotc.transform.{Erasure, PureStats, VCElideAllocations}
-import dotty.tools.dotc.transform.TypeUtils.*
+//import dotty.tools.dotc.transform.TypeUtils.*
 import dotty.tools.dotc.plugins.PluginPhase
 
 
@@ -42,12 +42,20 @@ trait CpsChangeSymbols {
         sym.copySymDenotation(info = ntp)
       case None =>
             sym.info match
-              case mt: MethodOrPoly if (!sym.isAnonymousFunction) =>
-                findCpsDirectContextInParamss(sym.symbol, sym.rawParamss) match
-                  case Some(monadType) =>
-                    val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType)
-                    sym.copySymDenotation(info = ntp)
-                  case None =>
+              case mt0: MethodOrPoly if (!sym.isAnonymousFunction) =>
+                val timeTravelContext = summon[Context].fresh.setPhase(firstTransformPhase)
+                val cpsDirectSym = CpsTransformHelper.cpsDirectAliasSymbol(using timeTravelContext)
+                val oldSym = sym.current(using timeTravelContext)
+                oldSym.info match
+                  case mtf: MethodOrPoly =>
+                    findCpsDirectContextInParamss(oldSym.symbol, mtf, timeTravelContext) match
+                      case Some(contextParamType) =>
+                        val monadType = CpsTransformHelper.extractMonadType(contextParamType, cpsDirectSym, oldSym.symbol.srcPos)(using timeTravelContext)
+                        val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType)
+                        sym.copySymDenotation(info = ntp)
+                      case None =>
+                        sym
+                  case _ =>
                     sym
               case _ =>
                 sym
@@ -56,33 +64,28 @@ trait CpsChangeSymbols {
 
 
 
-  def findCpsDirectContextInParamss(sym: Symbol, paramss:List[List[Symbol]])(using ctx:Context): Option[Type] = {
-    paramss.flatten.find(
-      paramSym => {
-        if (paramSym.isTypeParam)
-          false
-        else
-          val retval = paramSym.info.widen.dealias match
-            case vt: ErasedValueType =>
-                if (vt.tycon <:< Symbols.requiredClassRef("cps.CpsDirect")) then
-                  paramSym.flags.isOneOf(Flags.GivenOrImplicit)
-                else
-                  false
-            case _ =>
-              false
-          retval
-      }
-    ).map { paramSym =>
-      val oldParamInfo = paramSym.current(using summon[Context].fresh.setPhase(firstTransformPhase)).info
-      oldParamInfo match
-        case AppliedType(tycon, args) =>
-          val monadType = args.head
-          monadType
-        case _ =>
-          report.warning("Unsupported type for CpsDirect param: ${oldParamInfo.show}, approximating to Wildcard")
-          Types.WildcardType
-    }
-  }
+  def findCpsDirectContextInParamss(sym: Symbol, mtf: MethodOrPoly, timeTravelContext: Context)(using ctx:Context): Option[Type] = {
+    mtf match
+      case pt: PolyType =>
+        pt.resType match
+          case mtf1: MethodOrPoly =>
+            findCpsDirectContextInParamss(sym, mtf1, timeTravelContext)
+          case _ =>
+            None
+      case mt: MethodType =>
+        val firstFound:Option[Type] =
+          if (!mt.isContextualMethod && !mt.isImplicitMethod) then
+            None
+          else
+            mt.paramInfos.find(t => CpsTransformHelper.isCpsDirectType(t, debug = true)(using timeTravelContext))
+        val paramFound = firstFound.orElse {
+          mtf.resType match
+            case mt: MethodOrPoly =>
+              findCpsDirectContextInParamss(sym, mt, timeTravelContext)
+            case _ => None
+        }
+        paramFound
+   }
 
 
 }

@@ -10,17 +10,17 @@ import scala.concurrent.*
 import scala.concurrent.duration.*
 
 import cps.*
-import cps.automaticColoring.given
 import cps.plugin.annotation.CpsDebugLevel
-import scala.language.implicitConversions
 
 
 import cps.testconfig.given
 
+import scala.annotation.experimental
 import scala.concurrent.ExecutionContext.Implicits.global
 
 // This test will be deleted after disabling of automatic coloring.
 @CpsDebugLevel(20)
+@experimental
 class TestFizzBuzz:
 
 
@@ -32,18 +32,18 @@ class TestFizzBuzz:
   @Test def testFizBuzz = 
      val c = async[PureEffect] {
        val logger = PEToyLogger.make()
-       val counter = PEIntRef.make(-1)
+       val counter = await(PEIntRef.make(-1))
        //println(s"crrate counter, value=${counter.value}")
        while {
-         val v = counter.increment()
-         logger.log(await(v).toString)
+         val v = await(counter.increment())
+         logger.log(v.toString)
          if (v % 3 == 0) then
             logger.log("Fizz")
          if (v % 5 == 0) then
             logger.log("Buzz")
          v < 10
        } do ()
-       await(logger.all())
+       logger.all()
      }
      println(s"PE:fizbuzz, c=${c} ")
      val future = c.unsafeRunFuture().map{ log =>

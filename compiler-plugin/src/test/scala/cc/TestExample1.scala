@@ -10,7 +10,9 @@ class TestExample1 {
 
     val reporter = dotcInvocations.compileFilesInDir(
       "testdata/set1/src/cpstest",
-      "testdata/set1/target")
+      "testdata/set1/target",
+      List.empty  //List("-Vprint:rssh.cps")
+    )
 
     println("summary: " + reporter.summary)
 
@@ -18,11 +20,12 @@ class TestExample1 {
 
   }
 
+
   @Test
   def testCompileAndRunExample1(): Unit = {
     val dotcInvocations = new DotcInvocations()
 
-    val (code,output0) = dotcInvocations.compileAndRunFilesInDirs(
+    val (code,output0) = dotcInvocations.compileAndRunFilesInDirsJVM(
       List("testdata/set1/src/cpstest"),
       "testdata/set1/target",
       "cpstest.TestExample1"
@@ -36,6 +39,8 @@ class TestExample1 {
     assert(output.trim == "Ok", s"Output should be 'Ok', we have '${output}'")
 
   }
+
+
 
 
 }

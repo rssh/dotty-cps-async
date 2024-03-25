@@ -64,7 +64,7 @@ class TestAsyncListMerge:
      last2 = 300
     }
 
-    val stream = stream1 merge stream2
+    val stream = stream1 `merge` stream2
 
     val f = stream.takeListAll().map{ l =>
       val set = l.toSet

@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeoutException
 
 import cps.testconfig.given
-import cps.runtime.Loom
 
 trait ComputationBound[+T] {
  
@@ -306,13 +305,13 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
           //  run eact thunk in VirtualThread
           // TODO:  create yet one mode, where assume that we do
           //  full cps transformations and user code not run awaits
-          //  (i.e. without loom)  but loom is used fro HO function problem  
+          //  (i.e. without loom)  but loom is used fro HO function problem
           val ref = new AtomicReference[Option[Try[ComputationBound[T]]]](None)
           val waiter = Wait[ComputationBound[T],T](ref, {
             case Success(cb) => cb
             case Failure(ex) => Error(ex)
           })
-          Loom.startVirtualThread{ () =>
+          Thread.ofVirtual().start { () =>
               try {
                 val r = thunk()
                 ref.set(Some(Success(r)))
@@ -322,7 +321,7 @@ case class Thunk[T](thunk: ()=>ComputationBound[T]) extends ComputationBound[T] 
               } finally {
                 ComputationBound.externalAsyncNotifier.synchronized{
                   ComputationBound.externalAsyncNotifier.notify()
-                } 
+                }
               }
           }
           ComputationBound.deferredQueue.add(

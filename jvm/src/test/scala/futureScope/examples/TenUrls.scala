@@ -8,6 +8,10 @@ import cps.testconfig.given
 
 import futureScope.*
 
+/*
+ * The task is read first N urls from given list of urls.
+ * The urls are read in parallel, but we need to stop reading after N urls are read.
+ */
 object TenUrls {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,6 +27,7 @@ object TenUrls {
 
   trait NetworkApi {
 
+    
     def fetch(url: String)(using ctx: FutureScopeContext): Future[String] 
 
  }

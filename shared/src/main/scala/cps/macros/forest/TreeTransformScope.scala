@@ -94,6 +94,7 @@ trait TreeTransformScope[F[_]:Type,CT:Type, CC<:CpsMonadContext[F]:Type]
    def isInMonad(tpe: qctx.reflect.TypeRepr): Boolean =
       given Type[F] = fType
       tpe.widen.asType match
+        case '[Nothing] => false
         case '[F[r]] => 
           // bug in dotty-3.2.1
           // see #63

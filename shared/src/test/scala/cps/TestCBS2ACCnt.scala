@@ -5,9 +5,6 @@ import org.junit.Assert.*
 
 import scala.util.*
 
-import cps.automaticColoring.given
-import scala.language.implicitConversions
-
 import java.util.concurrent.atomic.*
 
 import cps.testconfig.given
@@ -43,17 +40,6 @@ class TestCBS2ACCnt:
     def all: Vector[String] = lines
 
 
-  def cntAutomaticColoring(counter: AtomicInteger): ComputationBound[Log] = async[ComputationBound]{
-    val log = new Log
-    val value = increment(counter) 
-    if value % LOG_MOD == 0 then
-       log.log(s"counter value = ${await(value)}")
-    if (value - 1 == LOG_TRESHOLD) then  
-       // Conversion will not be appliyed for == . For this example we want automatic conversion, so -1
-       log.log("counter TRESHOLD")
-    log
-  }
-
   def cntNoAutomaticColoring(counter: AtomicInteger): ComputationBound[Log] = async[ComputationBound]{
     val log = new Log
     val value = await(increment(counter))
@@ -65,9 +51,9 @@ class TestCBS2ACCnt:
   }
 
 
-  @Test def cnt_automatic_coloring(): Unit = 
+  @Test def cnt_no_automatic_coloring(): Unit =
      val counter = createCounter(9)
-     val c = cntAutomaticColoring(counter)
+     val c = cntNoAutomaticColoring(counter)
      val r: Try[Log] = c.run()
      //println(s"cn_automatic_coloring, r=$r, r.get.all=${r.get.all} counter.get()=${counter.get()} ")
      assert(r.isSuccess, "r should be success")

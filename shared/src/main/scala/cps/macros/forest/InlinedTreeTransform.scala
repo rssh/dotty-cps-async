@@ -30,6 +30,10 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                                      oldValDef: ValDef,
                                      ) extends InlinedBindingRecord
 
+  case class InlineCpsDirectBindingRecord(newSym: Symbol,
+                                          oldValDef: ValDef,
+                                          ) extends InlinedBindingRecord
+
   case class InlinedBindingsRecord(changes: HashMap[Symbol, InlinedBindingRecord], 
                                    newBindings: List[Definition], 
                                    awaitVals: List[ValDef])
@@ -82,60 +86,66 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                             s.copy(newBindings = vx::s.newBindings)
                       case _ => // impossible
                          s.copy(newBindings = vx::s.newBindings)
-                 case None => 
-                    val cpsRhs = try {
+                 case None =>
+                    rhs match
+                      case Apply(TypeApply(fn, List(tf, tg)), List(fctx, fgincl))
+                        if (fn.symbol == Symbol.requiredMethod("cps.CpsDirect.byInclusion")) =>
+                          // TODO:  test-case.  looks like inline extensions are not inlined
+                          ???
+                      case _ =>
+                        val cpsRhs = try {
                             runRoot(rhs)(owner)
-                      } catch {
-                         case ex: MacroError =>
-                           report.warning(s"error during transformation of valdef in inline, tpt=${tpt.show}\n, rhs=${rhs.show}\n, ex=${ex}", posExprs(rhs))
-                           throw ex
-                      }
-                    cpsRhs.syncOrigin match
-                      case None =>
-                         val newName = if (debug) name+"DEBUG" else name
-                         //bug in dotty
-                         //val newSym = Symbol.newVal(Symbol.spliceOwner, newName, cpsRhs.rtpe,  vx.symbol.flags, Symbol.noSymbol)
-                         val newSym = Symbol.newVal(Symbol.spliceOwner, newName, cpsRhs.rtpe,  Flags.EmptyFlags, Symbol.noSymbol)
-                         val newValDef = ValDef(newSym, Some(cpsRhs.transformed.changeOwner(newSym)))
+                        } catch {
+                            case ex: MacroError =>
+                              report.warning(s"error during transformation of valdef in inline, tpt=${tpt.show}\n, rhs=${rhs.show}\n, ex=${ex}", posExprs(rhs))
+                              throw ex
+                        }
+                        cpsRhs.syncOrigin match
+                          case None =>
+                            val newName = if (debug) name+"DEBUG" else name
+                            //bug in dotty
+                            //val newSym = Symbol.newVal(Symbol.spliceOwner, newName, cpsRhs.rtpe,  vx.symbol.flags, Symbol.noSymbol)
+                            val newSym = Symbol.newVal(Symbol.spliceOwner, newName, cpsRhs.rtpe,  Flags.EmptyFlags, Symbol.noSymbol)
+                            val newValDef = ValDef(newSym, Some(cpsRhs.transformed.changeOwner(newSym)))
 
-                         if (cpsRhs.isLambda) {
-                            val resType = TypeRepr.of[F].appliedTo(cpsRhs.otpe.widen)
-                            val bindingRecord =  InlinedFunBindingRecord(newSym, cpsRhs, vx, resType)
-                            s.copy(newBindings = newValDef::s.newBindings,
-                                   changes = s.changes.updated(vx.symbol, bindingRecord)
-                                  )
-                         } else  {
-                            // here awaits usage are internal  (we just use)
-                            val monadContext = cpsCtx.monadContext.asTerm
-                            //bug in dotty.
-                            //  TODO: find what flaga symbol have now and reproduce with minimal example
-                            //val awaitValSym = Symbol.newVal(Symbol.spliceOwner, name+"$await", tpt.tpe,
-                            //                                vx.symbol.flags, Symbol.noSymbol)
-                            val awaitValSym = Symbol.newVal(Symbol.spliceOwner, name+"$await", tpt.tpe,
+                            if (cpsRhs.isLambda) {
+                                val resType = TypeRepr.of[F].appliedTo(cpsRhs.otpe.widen)
+                                val bindingRecord =  InlinedFunBindingRecord(newSym, cpsRhs, vx, resType)
+                                s.copy(newBindings = newValDef::s.newBindings,
+                                       changes = s.changes.updated(vx.symbol, bindingRecord)
+                                )
+                            } else  {
+                                // here awaits usage are internal  (we just use)
+                                val monadContext = cpsCtx.monadContext.asTerm
+                                //bug in dotty.
+                                //  TODO: find what flaga symbol have now and reproduce with minimal example
+                                //val awaitValSym = Symbol.newVal(Symbol.spliceOwner, name+"$await", tpt.tpe,
+                                //                                vx.symbol.flags, Symbol.noSymbol)
+                                val awaitValSym = Symbol.newVal(Symbol.spliceOwner, name+"$await", tpt.tpe,
                                                             Flags.EmptyFlags, Symbol.noSymbol)
-                            val awaitVal = ValDef(awaitValSym, Some(
+                                val awaitVal = ValDef(awaitValSym, Some(
                                    generateAwaitFor(Ref(newSym), cpsRhs.otpe).changeOwner(awaitValSym)
-                            ))
-                            val bindingRecord =  InlinedValBindingRecord(awaitValSym, cpsRhs, vx) 
-                            s.copy(newBindings = newValDef::s.newBindings,
+                                ))
+                                val bindingRecord =  InlinedValBindingRecord(awaitValSym, cpsRhs, vx)
+                                s.copy(newBindings = newValDef::s.newBindings,
                                    changes = s.changes.updated(vx.symbol, bindingRecord),
                                    awaitVals = awaitVal :: s.awaitVals
-                            )
-                         }
-                      case Some(term) =>
-                         if (cpsRhs.isChanged) {
-                            //  buf in dotty ?
-                            //    TODO: uncomment and debug to submit
-                            //val newSym = Symbol.newVal(Symbol.spliceOwner, name, vx.tpt.tpe,  vx.symbol.flags, Symbol.noSymbol)
-                            val newSym = Symbol.newVal(Symbol.spliceOwner, name, vx.tpt.tpe,  Flags.EmptyFlags, Symbol.noSymbol)
-                            val newValDef = ValDef(newSym, Some(term.changeOwner(newSym)))
-                            val bindingRecord =  InlinedValBindingRecord(newSym, cpsRhs, vx) 
-                            s.copy(newBindings = newValDef::s.newBindings,
+                                )
+                            }
+                          case Some(term) =>
+                            if (cpsRhs.isChanged) {
+                                //  buf in dotty ?
+                                //    TODO: uncomment and debug to submit
+                                //val newSym = Symbol.newVal(Symbol.spliceOwner, name, vx.tpt.tpe,  vx.symbol.flags, Symbol.noSymbol)
+                                val newSym = Symbol.newVal(Symbol.spliceOwner, name, vx.tpt.tpe,  Flags.EmptyFlags, Symbol.noSymbol)
+                                val newValDef = ValDef(newSym, Some(term.changeOwner(newSym)))
+                                val bindingRecord =  InlinedValBindingRecord(newSym, cpsRhs, vx)
+                                s.copy(newBindings = newValDef::s.newBindings,
                                    changes = s.changes.updated(vx.symbol, bindingRecord)
-                            )
-                         } else {
-                            s.copy(newBindings = vx::s.newBindings)
-                         }
+                                )
+                            } else {
+                                s.copy(newBindings = vx::s.newBindings)
+                            }
           case nonValDef => 
                s.copy(newBindings = x::s.newBindings)
     }  
@@ -235,12 +245,14 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
     
     
     if (cpsCtx.flags.debugLevel >= 15) then
-        cpsCtx.log(s"runInline, body=${body}")
+        cpsCtx.log(s"runInline, body=${body.show}")
         cpsCtx.log(s"runInline, newBindings=${funValDefs.newBindings.map(TransformUtil.safeShow(_)).mkString("\n")}")
         funValDefs.changes.foreach{ b =>
            cpsCtx.log(s"fubValDef changes binding: ${b}")
-        } 
+        }
     val cpsBody = runRoot(body)(owner)
+    if (cpsCtx.flags.debugLevel >= 15) then
+        cpsCtx.log(s"runInline, cpsBody=${cpsBody}")
     if (origin.bindings.isEmpty) then
        cpsBody
     else

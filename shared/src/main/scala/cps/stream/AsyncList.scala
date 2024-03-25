@@ -74,8 +74,18 @@ sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
   def takeAll[CC[_]](n:Int)(using Factory[T,CC[T]@uncheckedVariance]):F[CC[T]@uncheckedVariance] =
      take[CC](-1)
 
+  //@infix
   def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S]
 
+  /**
+   * alias for merge
+   * @param other
+   * @tparam S
+   * @return
+   */
+  //@infix
+  def ><[S >: T](other: AsyncList[F,S]): AsyncList[F,S] = merge(other)
+  
   def skip(n:Int): AsyncList[F,T]
 
   def iterator(using ExecutionContext): AsyncIterator[F,T@uncheckedVariance] =
@@ -314,8 +324,6 @@ object AsyncList {
   def empty[F[_]: CpsConcurrentMonad] : AsyncList[F,Nothing] =
      Empty[F]()
 
-
-
   def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]]): AsyncList[F,T] =
       Wait(
         summon[CpsConcurrentMonad[F]].map(f(s0)){ r =>
@@ -338,8 +346,9 @@ object AsyncList {
 
   given absorber[F[_],C<:CpsMonadContext[F],T](using ExecutionContext, CpsConcurrentMonad.Aux[F,C]): CpsAsyncEmitAbsorber4[AsyncList[F,T],F,C,T] =
           AsyncListEmitAbsorber[F,C,T]()
+  
 
-
+  
   given [F[_]:CpsConcurrentMonad]: CpsMonad[[T] =>> AsyncList[F,T]] with CpsPureMonadInstanceContext[[T]=>>AsyncList[F,T]] with
      def pure[A](a:A): AsyncList[F,A] =
           AsyncList.Cons(a,() => AsyncList.empty)

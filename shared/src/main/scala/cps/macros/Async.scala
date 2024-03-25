@@ -15,7 +15,6 @@ import cps.macros.common.*
 import cps.macros.flags.UseCompilerPlugin
 import cps.macros.forest.*
 import cps.macros.misc.*
-import cps.macros.observatory.*
 
 
 object Async {
@@ -124,26 +123,15 @@ object Async {
               println(s"before transformed: show failed for $f, use printTree to show plain tree")
       if (flags.printTree)
         println(s"value: ${f.asTerm}")
-      if (flags.debugLevel > 5) 
-        println(s"customValueDiscard=${flags.customValueDiscard}, warnValueDiscard=${flags.warnValueDiscard}, automaticColoring=${flags.automaticColoring}")
-      val observatory = Observatory(f.asTerm, flags)
-      val memoization: Option[TransformationContext.Memoization[F]] = 
-        if flags.automaticColoring then
-          val resolvedMemoization = resolveMemoization[F,T](f,dm)
-          if (resolvedMemoization.kind !=  CpsMonadMemoization.Kind.BY_DEFAULT) then
-             observatory.effectColoring.enabled = true
-          Some(resolveMemoization[F,T](f,dm))
-        else None
-      observatory.analyzeTree[F]
       val r = WithOptExprProxy("cpsMonad", dm){
-           dm => 
+           dm =>
               val optRuntimeAwait = Expr.summon[CpsRuntimeAwait[F]]
               if ( flags.useLoomAwait && optRuntimeAwait.isDefined && 
-                                         optRuntimeAwait.forall(_.asTerm.tpe <:< TypeRepr.of[CpsFastRuntimeAwait[F]])  ) {
+                                         optRuntimeAwait.forall(_.asTerm.tpe <:< TypeRepr.of[CpsRuntimeAsyncAwait[F]])  ) {
                val cpsRuntimeAwait = optRuntimeAwait.get
                if (dm.asTerm.tpe <:< TypeRepr.of[CpsAsyncMonad[F]]) then
                   val dma = dm.asExprOf[CpsAsyncMonad[F]]
-                  val transformed = loomTransform[F,T,C & CpsTryMonadContext[F]](f,dma,mc.asExprOf[C & CpsTryMonadContext[F]],cpsRuntimeAwait, memoization, observatory, flags)
+                  val transformed = loomTransform[F,T,C & CpsTryMonadContext[F]](f,dma,mc.asExprOf[C & CpsTryMonadContext[F]],cpsRuntimeAwait, flags)
                   if (dm.asTerm.tpe <:< TypeRepr.of[CpsAsyncEffectMonad[F]]) then
                      '{ ${dm.asExprOf[CpsEffectMonad[F]]}.delay(${transformed}) }
                   else if (dm.asTerm.tpe <:< TypeRepr.of[CpsSchedulingMonad[F]]) then
@@ -153,7 +141,8 @@ object Async {
                else
                   report.errorAndAbort(s"loom enbled but monad  ${dm.show} of type ${dm.asTerm.tpe.widen.show} is not Async, runtimeAwait = ${cpsRuntimeAwait.show}")
               } else {
-               val cpsExpr = rootTransform[F,T,C](f,dm,mc,memoization, optRuntimeAwait, flags,observatory, 0, None)
+               val optRuntimeAwaitProvider = Expr.summon[CpsRuntimeAwaitProvider[F]]
+               val cpsExpr = rootTransform[F,T,C](f,dm,mc, optRuntimeAwait, optRuntimeAwaitProvider, flags, 0, None)
                if (DEBUG) {
                  TransformUtil.dummyMapper(cpsExpr.transformed.asTerm, Symbol.spliceOwner)
                }
@@ -219,56 +208,29 @@ object Async {
                       case other  =>
                           throw MacroError(s"DebugLevel ${other.show} is not a compile-time value", other)
                  case None => 0
-      val automaticColoringTag = Expr.summon[cps.automaticColoring.AutomaticColoringTag[F]]
-      val automaticColoring = automaticColoringTag.isDefined
-      if (debugLevel > 0)
-               println(s"automaticColoringTag: ${automaticColoringTag.map(_.show)}")
-      val customValueDiscard = Expr.summon[cps.ValueDiscard.CustomTag].isDefined || automaticColoring
-      val warnValueDiscard = Expr.summon[cps.ValueDiscard.WarnTag].isDefined || 
-                                     (automaticColoring && 
-                                      Expr.summon[cps.automaticColoring.WarnValueDiscard[F]].isDefined )
-      val useLoomAwait = Expr.summon[UseLoomAwait.type].isDefined // || CompilationInfo.XmacroSettings.contains("cps:loom") - experimental
+      val useLoomAwait = Expr.summon[cps.CpsRuntimeAwaitProvider[F]].isDefined ||
+                         Expr.summon[cps.CpsRuntimeAwait[F]].isDefined
+       // Expr.summon[UseLoomAwait.type].isDefined // || CompilationInfo.XmacroSettings.contains("cps:loom") - experimental
       //val pos = Position.ofMacroExpansion
       //println(s"!!!adoptFlags, useLoomAwait = ${useLoomAwait} for ${pos.sourceFile.path}:${pos.startLine}")
-      AsyncMacroFlags(printCode,printTree,debugLevel, true, customValueDiscard, warnValueDiscard, automaticColoring,
-                     useLoomAwait = useLoomAwait)
+      AsyncMacroFlags(printCode,printTree,debugLevel, true, useLoomAwait = useLoomAwait)
 
 
-  def resolveMemoization[F[_]:Type, T:Type](f: Expr[T], dm: Expr[CpsMonad[F]])(using Quotes): 
-                                                                  TransformationContext.Memoization[F] =
-     import cps.monads._
-     import quotes.reflect._
-     Expr.summon[CpsMonadMemoization[F]] match
-       case Some(mm) =>
-             val mmtp = mm.asTerm.tpe
-             if (mmtp <:< TypeRepr.of[CpsMonadMemoization.Default[F]]) then
-                TransformationContext.Memoization[F](CpsMonadMemoization.Kind.BY_DEFAULT, mm )
-             else if (mmtp <:< TypeRepr.of[CpsMonadMemoization.Inplace[F]]) then
-                TransformationContext.Memoization[F](CpsMonadMemoization.Kind.INPLACE, mm )
-             else if (mmtp <:< TypeRepr.of[CpsMonadMemoization.Pure[F]]) then
-                TransformationContext.Memoization[F](CpsMonadMemoization.Kind.PURE, mm )
-             else if (mmtp <:< TypeRepr.of[CpsMonadMemoization.Dynamic[F]]) then
-                TransformationContext.Memoization[F](CpsMonadMemoization.Kind.DYNAMIC, mm )
-             else
-                throw MacroError(s"Can't extract memoization kind from ${mm.show} for ${TypeRepr.of[F].show}", mm)
-       case None =>
-             throw MacroError(s"Can't resolve CpsMonadMemoization for ${TypeRepr.of[F].show}", f)
-             
-                
 
 
   def rootTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](f: Expr[T], dm:Expr[CpsMonad[F]], mc:Expr[C], 
-                                      optMemoization: Option[TransformationContext.Memoization[F]],
                                       optRuntimeAwait: Option[Expr[CpsRuntimeAwait[F]]],
+                                      optRuntimeAwaitProvider: Option[Expr[CpsRuntimeAwaitProvider[F]]],
                                       flags: AsyncMacroFlags,
-                                      observatory: Observatory.Scope#Observatory,
                                       nesting: Int,
                                       parent: Option[TransformationContext[_,_,_]])(
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._    
-     val cpsCtx = TransformationContext[F,T,C](f,tType,/*dm,*/mc,optMemoization,optRuntimeAwait,
-                                               flags,observatory, nesting,parent)
+     val cpsCtx = TransformationContext[F,T,C](f,tType, dm, mc,
+                                               optRuntimeAwait,
+                                               optRuntimeAwaitProvider,
+                                               flags, nesting, parent)
      val retval = f match 
          case '{ if ($cond)  $ifTrue  else $ifFalse } =>
                             IfTransform.run(cpsCtx, cond, ifTrue, ifFalse)
@@ -327,9 +289,10 @@ object Async {
   def nestTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type,S:Type](f:Expr[S],
                               cpsCtx: TransformationContext[F,T,C]
                               )(using Quotes):CpsExpr[F,S]=
-        rootTransform(f,cpsCtx.monad, cpsCtx.monadContext, cpsCtx.memoization,
+        rootTransform(f,cpsCtx.monad, cpsCtx.monadContext,
                       cpsCtx.runtimeAwait,
-                      cpsCtx.flags,cpsCtx.observatory, 
+                      cpsCtx.runtimeAwaitProvider,
+                      cpsCtx.flags,
                       cpsCtx.nesting+1, Some(cpsCtx))
 
 
@@ -379,12 +342,10 @@ object Async {
                                                         dm: Expr[CpsAsyncMonad[F]], 
                                                         ctx: Expr[C], 
                                                         runtimeApi: Expr[CpsRuntimeAwait[F]],
-                                                        optMemoization: Option[TransformationContext.Memoization[F]],
-                                                        observatory: Observatory.Scope#Observatory,
                                                         flags: AsyncMacroFlags,
                                                         )(using Quotes):Expr[T] = {
       //println(s"loomTransform for ${f.show}")                                                   
-      loom.LoomTransform.run(f,dm,ctx,runtimeApi,flags,optMemoization,observatory)
+      loom.LoomTransform.run(f,dm,ctx,runtimeApi,flags)
    } 
 
 

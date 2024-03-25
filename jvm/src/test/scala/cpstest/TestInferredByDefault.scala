@@ -26,7 +26,8 @@ class TestInferredByDefault {
        println(s)
        s
      }
-     v match {
+
+     (v: @unchecked) match {
        case cf: CompletableFuture[?] =>
           println("CompletableFuture")
        case f: scala.concurrent.Future[?] =>

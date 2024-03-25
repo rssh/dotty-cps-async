@@ -216,10 +216,85 @@ object InlinedTransform {
         if (inlinedTerm.bindings.isEmpty) then
             RootTransform(inlinedTerm.expansion, owner, nesting+1)  // TODO: add inlined to reporting ? .withSpan(inlinedTerm.span)
         else
-            applyNonemptyBindings(inlinedTerm, owner,  nesting)
+          withDirectContextBinding(inlinedTerm, owner, nesting) { (optDC, ctx, tctx) =>
+            applyNonemptyBindings(inlinedTerm, owner,  nesting, optDC)(using ctx, tctx)
+          }
   }
 
-  def applyNonemptyBindings(inlinedTerm: Inlined, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
+  def withDirectContextBinding(inlinedTerm: Inlined, owner: Symbol, nesting: Int)(cont: (Option[Tree], Context, CpsTopLevelContext) => CpsTree)(using Context, CpsTopLevelContext):CpsTree = {
+    // we check obly byInclusingCall,  because if this is existing
+    val dcBinding = inlinedTerm.bindings.find {
+      case v: ValDef =>
+        v.rhs match
+          case CpsDirectHelper.ByInclusionCall(_, _, _, _) => true
+          case other => CpsTransformHelper.isCpsDirectType(other.tpe.widen)
+      case _ => false
+    }
+    dcBinding match
+      case Some(v: ValDef) =>
+        v.rhs match
+          case CpsDirectHelper.ByInclusionCall(tf,tg,fctx,fgconv) =>
+            if (tf.tpe =:= tg.tpe) then
+              val nCpsDirectConstructor = CpsDirectHelper.genCpsDirectDefaultConstructor(TypeTree(tf.tpe.widen), fctx, v.rhs.span)
+              cont(Some(nCpsDirectConstructor), summon[Context], summon[CpsTopLevelContext])
+            else
+              val inclusionLammbdaMt = MethodType(List("gctx".toTermName))(
+                 _  => List(Symbols.requiredClassRef("cps.CpsTryMonadContext").appliedTo(List(tg.tpe.widen))),
+                 _  => tg.tpe.widen.appliedTo(inlinedTerm.tpe.widen)
+              )
+              val inclusionLambdaSym = Symbols.newAnonFun(owner,inclusionLammbdaMt)
+              val lambda = Closure(inclusionLambdaSym, tss => {
+                val gctx = tss.head.head
+                // here we will be in G monad, so prepare top-level context for it.
+                val gMonadType = tg.tpe.widen
+                val newTopLevelContext = CpsTopLevelContext(
+                  monadType = gMonadType,
+                  //cpsMonadValDef = EmptyTree, // TODO: remove cpsMonadValDef from top-level context
+                  cpsMonadRef = Select(gctx, "monad".toTermName),
+                  cpsDirectOrSimpleContextRef = gctx,
+                  optRuntimeAwait = CpsTransformHelper.findRuntimeAwait(gMonadType, inlinedTerm.span),
+                  optRuntimeAwaitProvider = CpsTransformHelper.findRuntimeAwaitProvider(gMonadType, inlinedTerm.span),
+                  optThrowSupport = CpsTransformHelper.findCpsThrowSupport(gMonadType, inlinedTerm.span),
+                  optTrySupport = CpsTransformHelper.findCpsTrySupport(gMonadType, inlinedTerm.span),
+                  debugSettings = summon[CpsTopLevelContext].debugSettings,
+                  pluginSettings = summon[CpsTopLevelContext].pluginSettings,
+                  isBeforeInliner = summon[CpsTopLevelContext].isBeforeInliner
+                )
+                val List(ctx) = tss.head
+                val newContext = summon[Context].withOwner(inclusionLambdaSym)
+                val nCpsDirectArg = CpsDirectHelper.genCpsDirectDefaultConstructor(TypeTree(tg.tpe), ctx, v.rhs.span)
+                val internalCpsTreeOldOwner = cont(Some(nCpsDirectArg), newContext, newTopLevelContext)
+                {
+                  given Context = newContext
+                  given CpsTopLevelContext = newTopLevelContext
+                  val internalCpsTree = internalCpsTreeOldOwner.changeOwner(inclusionLambdaSym)
+                  val nRhs =internalCpsTree.asyncKind match
+                    case AsyncKind.Sync => internalCpsTree.transformed
+                    case AsyncKind.Async(internalKind) =>
+                      if (internalKind != AsyncKind.Sync) then
+                        throw CpsTransformException("Unsupported internal kind for inline direct context function", inlinedTerm.srcPos)
+                      else
+                        internalCpsTree.transformed
+                    case AsyncKind.AsyncLambda(internalKind) =>
+                      internalCpsTree.unpure match
+                        case Some(tree) => CpsTree.pure(inlinedTerm,inclusionLambdaSym,tree).transformed
+                        case None =>
+                          // note, that if uboure exists, we already exploer one, so here is only lambda-s without unpure
+                          throw CpsTransformException("Lambda result of inline direct context function is not supported yet", inlinedTerm.srcPos)
+                  nRhs
+                }
+              })
+              val converted = CpsDirectHelper.genConventionCall(fctx,fgconv,inlinedTerm.tpe.widen,lambda,inlinedTerm.span)
+              CpsTree.impure(inlinedTerm,owner,converted,AsyncKind.Sync)
+          case other =>
+              cont(None, summon[Context], summon[CpsTopLevelContext])
+      case Some(other) =>
+        throw CpsTransformException(s"Only valdefs expected as direct context argument of inline direct context function, we have ${other}", other.srcPos)
+      case _ =>
+        cont(None, summon[Context], summon[CpsTopLevelContext])
+  }
+
+  def applyNonemptyBindings(inlinedTerm: Inlined, owner: Symbol, nesting:Int, optDCConstructor: Option[Tree] )(using Context, CpsTopLevelContext): CpsTree = {
       Log.trace(s"InlineTransform: inlinedTerm=${inlinedTerm.show} owner=${owner.id}, bindings.size=${inlinedTerm.bindings.length}",nesting)
 
       // transform async binder variables in the form
@@ -229,30 +304,42 @@ object InlinedTransform {
       // when v is asyncLambda:
       //   block(v'=cpsTransformed(v),Inlined(...[change v.apply to v'.apply if this is possible]..  ) )
       // where statements in block are bindings.
+      //
+      // The special case is a call of inline direct context functions.
+      // If case, when the type of direct context is the same as
       //TODO: implement
       //   Now we just check that there are no async bindings in inlined term.
       val records = inlinedTerm.bindings.map{ b =>
         b match {
           case v: ValDef =>
-            //  doesm not change symbol of v.
-            //   TODO:  add flag to generate new symbol when we need to gnerate a new function.
-            val cpsed = RootTransform(v.rhs,v.symbol, nesting+1)
-            cpsed.asyncKind match {
-              case AsyncKind.Sync =>
-                if (cpsed.isOriginEqSync) then
-                  UnchangedBindingRecord(v)
-                else
-                  SyncChangedBindingRecord(v, cpy.ValDef(v)(rhs = cpsed.unpure.get))
-              case AsyncKind.Async(internal) =>
-                // TODO: check that v can be inline and generate new record for inl
-                if (v.symbol.flags.is(Flags.Inline)) then
-                  throw new CpsTransformException(s"inline valdefs are not supported in inlined bindings yet [in TODO]", v.srcPos)
-                val adoptedValDefChange = adoptTailToInternalKind(v, owner, cpsed,internal)
-                AsyncChangedBindingRecord(v, cpsed, adoptedValDefChange)
-              case k@AsyncKind.AsyncLambda(bodyKind) =>
-                val adoptedValDefChange = adoptTailToInternalKind(v, owner, cpsed,k)
-                AsyncChangedBindingRecord(v, cpsed, adoptedValDefChange)
-            }
+            v.rhs match
+              case CpsDirectHelper.ByInclusionCall(tf,tg,fctx,fgconv) =>
+                optDCConstructor match
+                  case Some(dc) =>
+                         val newValDef = cpy.ValDef(v)(rhs = dc.changeOwner(owner,v.symbol))
+                         SyncChangedBindingRecord(v, newValDef)
+                  case None =>
+                         throw CpsTransformException(s"Internal error: no direct context constructor", v.srcPos)
+              // direct context which is not by inclusion will go into AsyncKind.Sync branch
+              case _ =>
+                //  doesm not change symbol of v.
+                //   TODO:  add flag to generate new symbol when we need to gnerate a new function.
+                val cpsed = RootTransform(v.rhs,v.symbol, nesting+1)
+                cpsed.asyncKind match
+                  case AsyncKind.Sync =>
+                    if (cpsed.isOriginEqSync) then
+                      UnchangedBindingRecord(v)
+                    else
+                      SyncChangedBindingRecord(v, cpy.ValDef(v)(rhs = cpsed.unpure.get))
+                  case AsyncKind.Async(internal) =>
+                      // TODO: check that v can be inline and generate new record for inl
+                    if (v.symbol.flags.is(Flags.Inline)) then
+                      throw CpsTransformException(s"inline valdefs are not supported in inlined bindings yet [in TODO]", v.srcPos)
+                    val adoptedValDefChange = adoptTailToInternalKind(v, owner, cpsed,internal)
+                    AsyncChangedBindingRecord(v, cpsed, adoptedValDefChange)
+                  case k@AsyncKind.AsyncLambda(bodyKind) =>
+                    val adoptedValDefChange = adoptTailToInternalKind(v, owner, cpsed,k)
+                    AsyncChangedBindingRecord(v, cpsed, adoptedValDefChange)
           case _ =>
             throw new CpsTransformException(s"only valdefs are supported in inlined bindings, we have ${b}", b.srcPos)
         }

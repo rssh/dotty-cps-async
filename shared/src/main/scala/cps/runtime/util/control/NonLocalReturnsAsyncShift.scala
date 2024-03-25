@@ -35,7 +35,6 @@ object NonLocalReturnsAsyncShift extends AsyncShift[NonLocalReturns.type] {
           else
             m.error(ControlThrowableAsyncWrapper(ct))
         case ex: Throwable =>
-          System.err.println(s"NonLocalReturnsAsyncShift.returning: uncatched ex=$ex, rethrowing")
           throw ex;
    }
 

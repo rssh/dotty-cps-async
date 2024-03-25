@@ -24,7 +24,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
     hasAsync: Boolean,
     hasShiftedLambda: Boolean,
     shouldBeChangedSync: Boolean,
-    hasCpsDirect: Boolean
+    cpsDirectArg: Option[Term],
   ):
 
     def merge(other: ApplyArgRecord): ApplyArgsSummaryPropertiesStep1 =
@@ -33,7 +33,10 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
         hasAsync || other.isAsync,
         hasShiftedLambda || other.hasShiftedLambda,
         shouldBeChangedSync || other.shouldBeChangedSync,
-        hasCpsDirect || other.isCpsDirect
+        if (cpsDirectArg.isEmpty) then
+          if (other.isCpsDirect) then Some(other.term)  else None
+        else
+          cpsDirectArg
       )
 
     def mergeSeq(seq: Seq[ApplyArgRecord]): ApplyArgsSummaryPropertiesStep1 =
@@ -46,7 +49,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
   object ApplyArgsSummaryPropertiesStep1:
 
      def mergeSeqSeq(args: Seq[Seq[ApplyArgRecord]]): ApplyArgsSummaryPropertiesStep1 =
-        val zero = ApplyArgsSummaryPropertiesStep1(0,false,false,false,false)
+        val zero = ApplyArgsSummaryPropertiesStep1(0,false,false,false,None)
         zero.mergeSeqSeq(args)
 
   case class ApplyArgsSummaryProperties(
@@ -57,7 +60,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
      def hasAsync: Boolean = step1.hasAsync
      def hasShiftedLambda: Boolean = step1.hasShiftedLambda
      def shouldBeChangedSync: Boolean = step1.shouldBeChangedSync
-     def hasCpsDirect: Boolean = step1.hasCpsDirect
+     def cpsDirectArg: Option[Term] = step1.cpsDirectArg
 
      def mergeStep2SeqSeq(seqSeq: Seq[Seq[ApplyArgRecord]]): ApplyArgsSummaryProperties =
        seqSeq.foldLeft(this)((s,e)=> s.mergeStep2Seq(e))
@@ -100,15 +103,14 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
     // means, that the value of argument can depend from the order of evaluation of aguments in a function.
     def isOrderDepended = !noOrderDepended
 
+    def shift(): ApplyArgRecord
 
-
-    def shift(shiftType: ApplicationShiftType): ApplyArgRecord
+    def withRuntimeAwait(runtimeAwait: Term): ApplyArgRecord
 
     def append(tree: CpsTree): CpsTree
 
 
-    def  applyRuntimeAwait(arg:Term, resultType: TypeRepr ): Term = 
-      val runtimeAwait = cpsCtx.runtimeAwait.getOrElse(throw new MacroError("Can't resolve runtime-await", posExpr(arg))).asTerm
+  def  applyRuntimeAwait(runtimeAwait: Term, arg:Term, resultType: TypeRepr): Term =
       val m = cpsCtx.monad.asTerm
       val mc = cpsCtx.monadContext.asTerm
       //TODO:  think how to setup pos.
@@ -123,25 +125,33 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
 
 
   case class ApplyArgRepeatRecord(
-       term: Repeated,
+       term: Term, // Typed(Repeated(...), TypeTree) or Repeated(...)
+       repeatedTerm: Repeated,
        index: Int,
        elements: List[ApplyArgRecord],
        seqTypeTree: TypeTree
   ) extends ApplyArgRecord {
     override def usePrepend(existsAsync:Boolean): Boolean = elements.exists(_.usePrepend(existsAsync))
-    override def identArg(existsAsync:Boolean): Term =
-      if (usePrepend(existsAsync))
-          Typed(Repeated(elements.map(_.identArg(existsAsync)),term.elemtpt), seqTypeTree)
+
+    override def identArg(existsAsync:Boolean): Term = {
+      val retval = if (usePrepend(existsAsync))
+          Typed(Repeated(elements.map(_.identArg(existsAsync)),repeatedTerm.elemtpt), seqTypeTree)
       else if (hasShiftedLambda)
           Typed(Repeated(elements.map(_.identArg(existsAsync)),shiftedElemTpt), shiftSeqTypeTree)
       else
           term
+      retval
+    }
+
     override def isAsync = elements.exists(_.isAsync)
     override def hasShiftedLambda = elements.exists(_.hasShiftedLambda)
     override def isCpsDirect: Boolean = false
     override def noOrderDepended = elements.forall(_.noOrderDepended)
     override def shouldBeChangedSync:Boolean = elements.exists(_.shouldBeChangedSync)
-    override def shift(shiftType: ApplicationShiftType) = copy(elements = elements.map(_.shift(shiftType)))
+    override def shift() = copy(elements = elements.map(_.shift()))
+
+    override def withRuntimeAwait(runtimeAwait: Term): ApplyArgRecord =
+       copy(elements = elements.map(_.withRuntimeAwait(runtimeAwait)))
 
     override def append(tree: CpsTree): CpsTree =
        if (elements.isEmpty)
@@ -159,11 +169,11 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
          }
 
     private def shiftedElemTpt: TypeTree = 
-         if (term.elemtpt.tpe =:= TypeRepr.of[Any]) then
+         if (repeatedTerm.elemtpt.tpe =:= TypeRepr.of[Any]) then
            // this can be dynamic, leave as is
-           term.elemtpt
+           repeatedTerm.elemtpt
          else
-           shiftedLambdaTypeTree(term.elemtpt)
+           shiftedLambdaTypeTree(repeatedTerm.elemtpt)
 
     private def shiftSeqTypeTree: TypeTree = 
 
@@ -199,9 +209,10 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
      def isAsync = false
      def hasShiftedLambda: Boolean = false
      def noOrderDepended = termIsNoOrderDepended(term)
-     def shouldBeChangedSync:Boolean = isChanged
-     def identArg(existsAsync: Boolean): Term = term
-     def shift(shiftType: ApplicationShiftType): ApplyArgRecord = this
+     override def shouldBeChangedSync:Boolean = isChanged
+     override def identArg(existsAsync: Boolean): Term = term
+     override def shift(): ApplyArgRecord = this
+     override def withRuntimeAwait(runtimeAwait: qctx.reflect.Term): ApplyArgRecord = this
      override def append(tree: CpsTree): CpsTree = tree
   }
 
@@ -227,7 +238,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
             else 
               term
 
-     def shift(shiftType: ApplicationShiftType): ApplyArgRecord = this
+     override def shift(): ApplyArgRecord = this
+     override def withRuntimeAwait(runtimeAwait: qctx.reflect.Term): ApplyArgRecord = this
      override def append(tree: CpsTree): CpsTree =
         ValCpsTree(termCpsTree.owner, valDef, termCpsTree, tree)
   }
@@ -238,6 +250,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
        index: Int,
        cpsBody: CpsTree,
        optShiftType: Option[ApplicationShiftType],
+       optRuntimeAwait: Option[Term],
        existsLambdaUnshift: Boolean,
        owner: Symbol
   ) extends ApplyArgRecord {
@@ -280,12 +293,16 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
               case None =>
                  if (existsLambdaUnshift) then
                     body.tpe.widen.asType match
+                      case '[Nothing] =>
+                        throw MacroError(s"Can't unshift lambda with Nothing type: ${body.tpe.widen.show}", posExpr(term))
                       case '[F[r]] if body.tpe.widen <:< TypeRepr.of[F[r]] =>
-                        val nBody = '{ ${cpsCtx.monad}.flatMap(
-                                             ${cpsBody.transformed.asExprOf[F[F[r]]]})((x:F[r])=>x) }.asTerm
-                        val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
-                        Lambda(owner, mt, 
-                              (owner,args) => changeArgs(params,args,nBody,owner).changeOwner(owner))
+                          val nBody = '{ ${ cpsCtx.monad }.flatMap(
+                            ${
+                              cpsBody.transformed.asExprOf[F[F[r]]]
+                             })((x: F[r]) => x) }.asTerm
+                          val mt = MethodType(paramNames)(_ => paramTypes, _ => body.tpe.widen)
+                          Lambda(owner, mt,
+                            (owner, args) => changeArgs(params, args, nBody, owner).changeOwner(owner))
                       case _ =>
                         throw MacroError(s"F[?] expected, we have ${body.tpe.widen.show}",term.asExpr)
                  else
@@ -343,7 +360,9 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
                   )
                   throw MacroError(s"methodType expected for ${term.asExpr.show}, we have $other",term.asExpr)
 
-       def shift(shiftType: ApplicationShiftType): ApplyArgRecord = copy(optShiftType = Some(shiftType))
+       override  def shift(): ApplyArgRecord = copy(optShiftType = Some(ApplicationShiftType.CPS_ONLY))
+       override  def withRuntimeAwait(runtimeAwait: Term): ApplyArgRecord =
+          copy(optShiftType = Some(ApplicationShiftType.CPS_AWAIT), optRuntimeAwait = Some(runtimeAwait))
 
        def append(a: CpsTree): CpsTree = 
         report.warning("lambda in statement position",term.pos)
@@ -411,7 +430,11 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
                                    case  ApplicationShiftType.CPS_ONLY =>
                                            termCast[ttt](nTerm)
                                    case  ApplicationShiftType.CPS_AWAIT =>
-                                           applyRuntimeAwait(nTerm, TypeRepr.of[ttt]).asExprOf[ttt]
+                                           optRuntimeAwait match
+                                             case Some(runtimeAwait) =>
+                                               applyRuntimeAwait(runtimeAwait, nTerm, TypeRepr.of[ttt]).asExprOf[ttt]
+                                             case None =>
+                                               throw MacroError("Internal error: optRuntimeAwait should be defined", posExprs(term))
                                case _ =>
                                  throw MacroError(
                                    s"assumed that transformed match is Match, we have $nBody",
@@ -431,8 +454,12 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
          val transformedBody = cpsBody.transformed
          val nBody = shiftType match
             case ApplicationShiftType.CPS_ONLY => transformedBody
-            case ApplicationShiftType.CPS_AWAIT => 
-              applyRuntimeAwait(transformedBody,cpsBody.otpe)
+            case ApplicationShiftType.CPS_AWAIT =>
+              optRuntimeAwait match
+                case Some(runtimeAwait) =>
+                  applyRuntimeAwait(runtimeAwait, transformedBody, mt.resType)
+                case None =>
+                  throw MacroError("Internal error: optRuntimeAwait should be defined", posExprs(term))
          Lambda(owner, mt, (owner,args) => changeArgs(params,args,nBody,owner).changeOwner(owner))
 
        private def rebindCaseDef(caseDef:CaseDef,
@@ -490,8 +517,10 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
        def shouldBeChangedSync = nested.shouldBeChangedSync
        def isCpsDirect: Boolean = nested.isCpsDirect
        def identArg(existsAsync: Boolean): Term = NamedArg(name, nested.identArg(existsAsync))
-       def shift(shiftType: ApplicationShiftType): ApplyArgRecord = copy(nested=nested.shift(shiftType))
-       def append(a: CpsTree): CpsTree = nested.append(a)
+       def shift(): ApplyArgRecord = copy(nested=nested.shift())
+       def withRuntimeAwait(runtimeAwait: Term): ApplyArgRecord = copy(nested=nested.withRuntimeAwait(runtimeAwait))
+       def append(a: CpsTree): CpsTree =
+         nested.append(a)
 
   }
 
@@ -500,7 +529,10 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
   case class ApplyArgByNameRecord(term: Term,
                                   index: Int,
                                   cpsTree: CpsTree,
-                                  optShiftType: Option[ApplicationShiftType]) extends ApplyArgRecord {
+                                  optShiftType: Option[ApplicationShiftType],
+                                  optRuntimeAwait: Option[Term],
+                                 ) extends ApplyArgRecord {
+
     def identArg(existsAsync: Boolean): Term =
       optShiftType match
         case None => term
@@ -513,17 +545,28 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
             val transformedBody = cpsTree.transformed
             val nBody = shiftType match
               case ApplicationShiftType.CPS_ONLY => transformedBody
-              case ApplicationShiftType.CPS_AWAIT => applyRuntimeAwait(transformedBody, rType)
+              case ApplicationShiftType.CPS_AWAIT =>
+                optRuntimeAwait match
+                  case Some(runtimeAwait) =>
+                    applyRuntimeAwait(runtimeAwait, transformedBody, rType)
+                  case None =>
+                    throw MacroError("Internal error: optRuntimeAwait should be defined", posExprs(term))
             nBody.changeOwner(owner)
           )
 
-    def isAsync: Boolean = cpsTree.isAsync
+    def isAsync: Boolean = false // have shifted-lambda but not async themself cpsTree.isAsync
     def hasShiftedLambda: Boolean = cpsTree.isAsync || optShiftType.isDefined
     def noOrderDepended: Boolean = true
     def isCpsDirect: Boolean = false
     def shouldBeChangedSync: Boolean = cpsTree.isChanged
-    def shift(shiftType: ApplicationShiftType) = copy(optShiftType = Some(shiftType))
-    def append(tree: CpsTree): CpsTree = tree
+    override def shift() = copy(optShiftType = Some(ApplicationShiftType.CPS_ONLY))
+
+    override def withRuntimeAwait(runtimeAwait: qctx.reflect.Term): ApplyArgRecord =
+      copy(optShiftType = Some(ApplicationShiftType.CPS_AWAIT),  optRuntimeAwait = Some(runtimeAwait))
+
+    override def append(tree: CpsTree): CpsTree =
+      throw MacroError("Impossible: preprend in by-name",term.asExpr)
+      //tree
 
   }
 
@@ -539,7 +582,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
        def isCpsDirect: Boolean = nested.isCpsDirect
        def shouldBeChangedSync: Boolean = nested.shouldBeChangedSync
        def identArg(existsAsync:Boolean): Term = nested.identArg(existsAsync)
-       def shift(shiftType: ApplicationShiftType): ApplyArgRecord = copy(nested=nested.shift(shiftType))
+       def shift(): ApplyArgRecord = copy(nested=nested.shift())
+       def withRuntimeAwait(runtimeAwait: Term): ApplyArgRecord = copy(nested=nested.withRuntimeAwait(runtimeAwait))
        def append(a: CpsTree): CpsTree =
              val na = nested.append(a)
              if (na eq a)

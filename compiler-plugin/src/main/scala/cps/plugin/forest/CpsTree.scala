@@ -430,7 +430,7 @@ sealed trait AsyncCpsTree extends CpsTree {
       ),
       List(
         tctx.cpsMonadRef,
-        tctx.cpsMonadContextRef
+        tctx.cpsDirectOrSimpleContextRef
       )
     ).withSpan(origin.span)
     CpsTree.pure(origin,owner,tree)
@@ -514,7 +514,10 @@ case class MapCpsTree(
     mapFun.body.originType
 
   override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree = {
-    copy(mapFun = mapFun.copy(body = mapFun.body.castOriginType(ntpe)))
+    if (ntpe =:= originType) then
+      this
+    else
+      copy(mapFun = mapFun.copy(body = mapFun.body.castOriginType(ntpe)))
   }
 
   override def internalAsyncKind(using Context, CpsTopLevelContext) =
@@ -736,7 +739,9 @@ case class LambdaCpsTree(
   }
 
   override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree =
-    if (defn.isFunctionType(ntpe) || defn.isContextFunctionType(ntpe)) then
+    if (ntpe =:= originType) then
+      this
+    else if (defn.isFunctionType(ntpe) || defn.isContextFunctionType(ntpe)) then
       ntpe match
         case AppliedType(ntpfun, ntpargs) =>
           // TODO: check that params are the same.
@@ -837,21 +842,32 @@ case class LambdaCpsTree(
         this
       case AsyncKind.Async(internal) =>
         val awaitMethod = Select(runtimeAwait,"await".toTermName)
-        val nBody = Apply(
-          Apply(
-            TypeApply(awaitMethod, List(TypeTree(cpsBody.originType.widen))),
-            List(cpsBody.transformed)
-          ),
-          List(
-            tctx.cpsMonadRef,
-            tctx.cpsMonadContextRef
-          )
+        // TODO: write a test, when originType is a SAM type
+        val mt = MethodType(originDefDef.termParamss.head.map(_.name))(
+          _ => originDefDef.termParamss.head.map(_.tpe.widen),
+          _ => cpsBody.originType.widen
         )
-        val nDefDef =  ???
-        val nLambda: Tree = ???
-        CpsTree.pure(origin,owner,nLambda)
+        val meth = Symbols.newAnonFun(owner,mt)
+        val closure = Closure(meth,tss => {
+          val nBody = Apply(
+            Apply(
+              TypeApply(awaitMethod, List(TypeTree(cpsBody.originType.widen))),
+              List(cpsBody.transformed)
+            ),
+            List(
+              tctx.cpsNonDirectContext
+            )
+          )
+          TransformUtil.substParams(nBody, originParams, tss.head).changeOwner(cpsBody.owner, meth)
+        })
+        CpsTree.pure(origin,owner,closure)
       case AsyncKind.AsyncLambda(internalAsync) =>
-        ???
+        cpsBody.unpure match
+          case None =>
+             val nCpsBody = cpsBody.applyRuntimeAwait(runtimeAwait)
+             LambdaCpsTree(origin,owner,originDefDef,originClosureType,nCpsBody)
+          case Some(_) =>
+            this
 
 
   override def show(using Context): String = {
@@ -907,7 +923,10 @@ case class OpaqueAsyncLambdaTermCpsTree(
   override def normalizeAsyncKind(using Context, CpsTopLevelContext) = this
 
   override def castOriginType(ntpe: Type)(using Context, CpsTopLevelContext): CpsTree = {
-    typed(Typed(origin,TypeTree(ntpe)))
+    if (origin.tpe =:= ntpe) then
+      this
+    else
+      typed(Typed(origin,TypeTree(ntpe)))
   }
 
   override def unpure(using Context, CpsTopLevelContext): Option[Tree] = None
@@ -962,7 +981,7 @@ case class OpaqueAsyncLambdaTermCpsTree(
           ),
           List(
             tctx.cpsMonadRef,
-            tctx.cpsMonadContextRef
+            tctx.cpsDirectOrSimpleContextRef
           )
         )
         nBody

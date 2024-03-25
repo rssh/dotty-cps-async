@@ -8,9 +8,6 @@ case class AsyncMacroFlags(
    printTree: Boolean = false,
    debugLevel: Int = 0,
    allowShiftedLambda: Boolean = true,
-   customValueDiscard: Boolean = false,
-   warnValueDiscard: Boolean = true,
-   automaticColoring: Boolean = false,
    muted: Boolean = false,
    useLoomAwait: Boolean = false
 )
@@ -24,9 +21,6 @@ object AsyncMacroFlags:
             case '{ AsyncMacroFlags(${Expr(printCode)},${Expr(printTree)},
                                ${Expr(debugLevel)},
                                ${Expr(allowShiftedLambda)}, 
-                               ${Expr(customValueDiscard)},
-                               ${Expr(warnValueDiscard)}, 
-                               ${Expr(automaticColoring)},
                                ${Expr(eMuted)},
                                ${Expr(useLoomAwait)}
                               ) 
@@ -34,9 +28,6 @@ object AsyncMacroFlags:
                Some(AsyncMacroFlags(printCode, printTree,
                        debugLevel,
                        allowShiftedLambda,
-                       customValueDiscard,
-                       warnValueDiscard,
-                       automaticColoring,
                        eMuted,
                        useLoomAwait
                    ))

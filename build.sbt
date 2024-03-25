@@ -1,10 +1,11 @@
 //val dottyVersion = "3.4.0-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.3.2-RC1-bin-SNAPSHOT"
 //val dottyVersion = "3.3.1-RC4"
-val dottyVersion = "3.3.0"
+//val dottyVersion = "3.3.3"
+val dottyVersion = "3.4.2-RC1-bin-SNAPSHOT"
 
 
-ThisBuild/version := "0.9.19-SNAPSHOT"
+ThisBuild/version := "0.9.21-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 
@@ -13,17 +14,20 @@ ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 val sharedSettings = Seq(
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
-    name := "dotty-cps-async",
+    name := "dotty-cps-async"
 )
-  
+
+
 
 lazy val root = project
   .in(file("."))
-  .aggregate(cps.js, cps.jvm, cps.native, compilerPlugin)
+  .aggregate(cps.js, cps.jvm, cps.native, compilerPlugin, cpsLoomAddOn, logic.jvm, logic.js, logic.native)
   .settings(
     Sphinx / sourceDirectory := baseDirectory.value / "docs",
     SiteScaladocPlugin.scaladocSettings(CpsJVM, cps.jvm / Compile / packageDoc / mappings, "api/jvm"),
     SiteScaladocPlugin.scaladocSettings(CpsJS,  cps.js / Compile / packageDoc / mappings, "api/js"),
+    SiteScaladocPlugin.scaladocSettings(CpsNative,  cps.native / Compile / packageDoc / mappings, "api/native"),
+    SiteScaladocPlugin.scaladocSettings(Root,  logic.jvm / Compile / packageDoc / mappings, "api/logic/jvm"),
     siteDirectory :=  baseDirectory.value / "target" / "site",    
     git.remoteRepo := "git@github.com:rssh/dotty-cps-async.git",
     publishArtifact := false,
@@ -43,7 +47,6 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
                             "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types",
                             "-Ydebug", "-uniqid", "-Xcheck-macros", "-Ycheck:macro", "-Yprint-syms",
                             "-Ysafe-init",
-                            "-explain",
                              ),
                              // -explain
                              // -Ydebug-error
@@ -67,14 +70,26 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
     )
 
+
+
 lazy val CpsJVM = config("cps.jvm")
 lazy val CpsJS = config("cps.js")
-//lazy val CpsNative = config("cps.native")
+lazy val CpsNative = config("cps.native")
 lazy val Root = config("root")
 
+lazy val cpsLoomAddOn = project.in(file("jvm-loom-addon"))
+  .dependsOn(cps.jvm)
+  .disablePlugins(SitePreviewPlugin)
+  .settings(sharedSettings)
+  .settings(
+    name := "dotty-cps-async-loom",
+    scalacOptions ++= Seq("-Xtarget:21",  "-explain" /*, "-color:never"*/ ),
+    libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
+  )
 
-lazy val cpsLoomJVM = project.in(file("jvm-loom"))
-                      .dependsOn(cps.jvm)
+
+lazy val cpsLoomTest = project.in(file("jvm-loom-tests"))
+                      .dependsOn(cps.jvm, cpsLoomAddOn)
                       .disablePlugins(SitePreviewPlugin)
                       .settings(sharedSettings)
                       .settings(name := "dotty-cps-async-loom-test")
@@ -92,19 +107,22 @@ lazy val cpsLoomJVM = project.in(file("jvm-loom"))
                         libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
                         Test/fork := true,
                         //for macos
-                        Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
+                        //Test/javaHome := Some(file("/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home/")),
                         //for linux:
                         //Test/javaHome := Some(file("/usr/lib/jvm/jdk-19")),
 
-                        Test/javaOptions ++= Seq(
-                           "--enable-preview", 
-                           "--add-modules", "jdk.incubator.concurrent"
-                        )
+                        //now we have jdk
+                        //Test/javaOptions ++= Seq(
+                        //   "--enable-preview", 
+                        //   "--add-modules", "jdk.incubator.concurrent"
+                        //)
                       )
 
 
+
+
 lazy val compilerPlugin = project.in(file("compiler-plugin"))
-                           .dependsOn(cps.jvm)
+                           .dependsOn(cps.jvm, cps.js)
                            .settings(sharedSettings)
                            .disablePlugins(SitePreviewPlugin)
                            .settings(
@@ -112,6 +130,10 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
                               libraryDependencies ++= Seq(
                                   "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
                                   "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
+                                  ("org.scala-js" %% "scalajs-linker" % "1.14.0").cross(CrossVersion.for3Use2_13) % "test",
+                                  ("org.scala-js" %% "scalajs-ir" % "1.14.0").cross(CrossVersion.for3Use2_13) % "test",
+                                  ("org.scala-js" %% "scalajs-library" % "1.14.0").cross(CrossVersion.for3Use2_13) % "test",
+                                  ("org.scala-js" %% "scalajs-env-nodejs" % "1.4.0").cross(CrossVersion.for3Use2_13) % "test",
                               ),
                               // TODO: split test into subdirectories.
                               //Test/scalacOptions ++= {
@@ -173,5 +195,21 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                               Test / unmanagedSources / excludeFilter := "TestSF1W1.scala" || "TestSL3.scala"
                            )
 
+lazy val logic = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .in(file("logic"))
+  .dependsOn(cps)
+  .settings(sharedSettings)
+  .disablePlugins(SitePreviewPlugin)
+  .settings(
+    name := "dotty-cps-async-logic",
+    libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
+  ).jsSettings(
+    scalaJSUseMainModuleInitializer := true,
+    libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
+  ).nativeSettings(
+    libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
+    libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
+    addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
+  )
 
 

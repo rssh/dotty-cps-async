@@ -19,7 +19,7 @@ class PhaseCpsAsyncReplace(selectedNodes: SelectedNodes, shiftedSymbols: Shifted
 
   // strange -
   override def allowsImplicitSearch = true
-  override val runsAfter            = Set(PhaseCpsAsyncShift.name)
+  override val runsAfter            = Set(PhaseSelectAndGenerateShiftedMethods.phaseName)
   override val runsBefore = Set(PhaseChangeSymbolsAndRemoveScaffolding.name, Erasure.name)
 
   /**

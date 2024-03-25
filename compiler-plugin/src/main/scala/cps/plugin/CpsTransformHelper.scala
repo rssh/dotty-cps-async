@@ -21,8 +21,17 @@ object CpsTransformHelper {
   def cpsMonadContextClassSymbol(using Context) =
       Symbols.requiredClass("cps.CpsMonadContext")
 
-  def cpsDirectClassSymbol(using Context) =
-    Symbols.requiredClass("cps.CpsDirect")
+  //def cpsDirectClassSymbol(using Context) =
+  //  Symbols.requiredClass("cps.CpsDirect")
+  def cpsDirectAliasSymbol(using Context) =
+      Symbols.requiredModule("cps.CpsDirect").requiredType("Direct")
+
+
+
+  def isCpsDirectSymbol(sym: Symbol)(using Context): Boolean = {
+    sym == cpsDirectAliasSymbol
+  }
+
 
 
   /**
@@ -30,12 +39,21 @@ object CpsTransformHelper {
    * Note, that this function should be called before erasure.
    * After erasure the encoding is different
    */
-  def isCpsDirectType(tpe:Type, debug:Boolean=false)(using Context): Boolean = {
-     val retval = tpe.dealias match
-       case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == cpsDirectClassSymbol) =>
+  def isCpsDirectType(tpe:Type, debug:Boolean=true)(using Context): Boolean = {
+
+     // variant:
+     //isCpsDirectSymbol(tpe.dealiasKeepOpaques.typeSymbol)
+
+     val retval = tpe.widen.dealiasKeepOpaques match
+       case AppliedType(tycon, List(targ)) if isCpsDirectSymbol(tycon.typeSymbol)=>
          true
+       case tr: TypeRef if isCpsDirectSymbol(tr.symbol) =>
+         true
+       case x if (x =:= defn.NothingType || x =:= defn.NullType) =>
+         false
        case other =>
-         other.baseType(cpsDirectClassSymbol) != NoType
+         false
+         //other.baseType(cpsDirectClassSymbol) != NoType
      if (debug)
         report.debuglog(s"isCpsDirectType(${tpe.show} [tree:${tpe}]) = ${retval}")
      retval
@@ -49,18 +67,20 @@ object CpsTransformHelper {
    *@return F
    **/
   def extractMonadType(contextFunctionArgType: Type, wrapperSymbol: Symbol, pos: SrcPos)(using Context): Type =
-    contextFunctionArgType.dealias match
-      case AppliedType(tycon, List(targ)) if (tycon.typeSymbol == wrapperSymbol) =>
-             targ
-      // TODO: check type parameter (write test)
+    contextFunctionArgType.widen.dealiasKeepOpaques match
+      case AppliedType(tycon, List(targ)) if (tycon.typeSymbol.id == wrapperSymbol.id) =>
+           targ
       case other =>
-             val cntBase = other.baseType(wrapperSymbol)
-             if (cntBase != NoType) 
+           if (false && wrapperSymbol.isOpaqueAlias) then
+              throw CpsTransformException(s"Not a valid context function argument type: ${contextFunctionArgType}", pos)
+           else
+              val cntBase = other.baseType(wrapperSymbol)
+              if (cntBase != NoType)
                 cntBase match
                   case AppliedType(tycon, List(targ)) => targ
                   case _ =>
                     throw CpsTransformException(s"Can't extract monad from context-type: ${cntBase.show}", pos)
-             else
+              else
                 throw CpsTransformException(s"assumed that contect function type is ${wrapperSymbol}, but ${other.show} is not", pos)
 
 
@@ -197,13 +217,6 @@ object CpsTransformHelper {
 
   }*/
 
-  def isDirectContext(tpe:Type)(using Context): Boolean = {
-    if (tpe =:= defn.NothingType || tpe =:= defn.NullType) then
-      false
-    else
-      val directContextType = Symbols.requiredClassRef("cps.CpsDirect").appliedTo(Types.WildcardType)
-      tpe <:< directContextType
-  }
 
 
   def findImplicitInstance(tpe: Type, span: Span)(using ctx:Context): Option[Tree] = {
@@ -224,7 +237,12 @@ object CpsTransformHelper {
   def findRuntimeAwait(monadType: Type, span: Span)(using ctx:Context): Option[Tree] = {
       findWrapperForMonad("cps.CpsRuntimeAwait", monadType, span)
   }
-  
+
+  def findRuntimeAwaitProvider(monadType: Type, span: Span)(using ctx: Context): Option[Tree] = {
+    findWrapperForMonad("cps.CpsRuntimeAwaitProvider", monadType, span)
+  }
+
+
   def findCpsThrowSupport(monadType:Type, span: Span)(using ctx:Context): Option[Tree] = {
       findWrapperForMonad("cps.CpsThrowSupport", monadType, span)
   }
@@ -233,17 +251,6 @@ object CpsTransformHelper {
       findWrapperForMonad("cps.CpsTrySupport", monadType, span)
   }
 
-  def findAutomaticColoringTag(monadType: Type, span: Span)(using ctx: Context): Option[Tree] = {
-    findWrapperForMonad("cps.automaticColoring.AutomaticColoringTag", monadType, span)
-  }
-
-  def findCpsMonadMemoization(monadType: Type, span: Span)(using ctx: Context): Option[Tree] = {
-    findWrapperForMonad("cps.CpsMonadMemoization", monadType, span)
-  }
-
-  def findCustomValueDiscardTag(span: Span)(using ctx: Context): Option[Tree] = {
-    findImplicitInstance(Symbols.requiredClassRef("cps.ValueDiscard.CustomTag"), span)
-  }
 
 
 }

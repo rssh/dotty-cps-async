@@ -23,6 +23,14 @@ Add dependency |cps-async-connect-cats-effect|_ to your ``build.sbt`` to integra
   libraryDependencies += "org.typelevel" %% "cats-effect" % catsEffectVersion
   libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % cpsAsyncConnectVersion
 
+For loom-based invocation of HO arguments on JDK-21+ also add `cps-async-connect-cats-effect-loom` artifact.
+
+ .. code-block:: scala
+
+  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect-loom" % cpsAsyncConnectVersion
+
+
+
 |Cats Effect|_ GitHub : |typelevel/cats-effect|_, Maven : |org.typelevel»cats-effect|_.
 
 **Note**: Typelevel's project |cats-effect-cps|_ also provides async/await syntax support for |Cats Effect|_.

@@ -5,8 +5,6 @@ import org.junit.Assert.*
 
 import scala.util.*
 
-import cps.automaticColoring
-import scala.language.implicitConversions
 import scala.language.dynamics
 
 import cps.testconfig.given

@@ -39,40 +39,7 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
            // TODO: rootTransform
            t.asExpr match
                case '{ $p: tp } =>
-                       if (checkValueDiscarded(using qctx)(t))
-                           // bug in dotty: show cause match error in test
-                           // see https://github.com/lampepfl/dotty/issues/9684
-                           def safeShow(): String =
-                             try
-                               quoted.Type.show[tp]
-                             catch
-                               case ex: Throwable => //ex.printStackTrace()
-                               TypeTree.of[tp].toString + " [exception during print]"
-
-                           if (cpsCtx.flags.customValueDiscard)
-                             ValueDiscardHelper.searchCustomDiscardFor(t) match
-                               case sc: ImplicitSearchSuccess =>
-                                  val pd = {
-                                    if sc.tree.tpe <:< TypeRepr.of[cps.AwaitValueDiscard[?,?]] then
-                                      buildAwaitValueDiscardExpr(using qctx)(sc.tree, p)
-                                    else
-                                      Apply(Select.unique(sc.tree,"apply"),List(t)).asExprOf[Unit]
-                                  }
-                                  Async.nestTransform(pd, cpsCtx)
-                               case fl: ImplicitSearchFailure =>
-                                  val tps = safeShow()
-                                  val msg = s"discarding non-unit value without custom discard $tps (${fl.explanation})"
-                                  if (cpsCtx.flags.warnValueDiscard)
-                                      report.warning(msg, t.pos)
-                                  else
-                                      report.error(msg, t.pos)
-                                  Async.nestTransform[F,T,C,tp](p, cpsCtx)
-                           else
-                             report.warning(s"discarding non-unit value ${safeShow()}", t.pos)
-                             Async.nestTransform[F,T,C,tp](p, cpsCtx)
-                       else
-                         // bug in dotty-3.1.2
-                         Async.nestTransform[F,T,C,tp](p, cpsCtx)
+                       Async.nestTransform[F,T,C,tp](p, cpsCtx)
                case other =>
                        printf(other.show)
                        throw MacroError(s"can't handle term in block: $other",t.asExpr)
@@ -104,57 +71,8 @@ class BlockTransform[F[_]:Type, T:Type, C<:CpsMonadContext[F]:Type](cpsCtx: Tran
      retval
 
 
-  def checkValueDiscarded(using Quotes)(t: quotes.reflect.Term): Boolean =
-     import quotes.reflect._
-     ( (cpsCtx.flags.customValueDiscard || cpsCtx.flags.warnValueDiscard)
-      &&
-       ( !(t.tpe =:= TypeRepr.of[Unit]) && !(t.tpe =:= TypeRepr.of[Nothing]) )
-     )
 
-  def buildAwaitValueDiscardExpr(using Quotes)(discardTerm: quotes.reflect.Term, p: Expr[?]):Expr[Any] =
-      import quotes.reflect._
 
-      def parseDiscardTermType(tpe: TypeRepr): (TypeRepr, TypeRepr) =
-        tpe match
-           case AppliedType(base, targs) =>
-                  base match
-                    case TypeRef(sup, "AwaitValueDiscard") =>
-                       targs match
-                         case List(tf, tt) => (tf, tt)
-                         case _ =>
-                             val msg = s"Expected that AwaitValueDiscard have 2 type paraleters, but we have $targs"
-                             throw MacroError(msg, discardTerm.asExpr)
-                    case _ =>
-                       val msg = s"Reference to AwaitValueDiscard expected"
-                       throw MacroError(msg, discardTerm.asExpr)
-           case _ =>
-                  val msg = s"Can't parse AwaitValueDiscard type, tpe=${tpe}"
-                  throw MacroError(msg, discardTerm.asExpr)
-
-      discardTerm.tpe.asType match
-        case '[AwaitValueDiscard[F,tt]] =>
-           val refP = p.asExprOf[F[tt]]
-           '{  await[F,tt,F]($refP)(using ${cpsCtx.monadContext}, CpsMonadConversion.identityConversion[F])  }
-        //bug in dotty. TODO: submit
-        //case '[AwaitValueDiscard[[xt]=>>ft,tt]] =>
-        //   ???
-        case _ => 
-           val (ftr, ttr) = parseDiscardTermType(discardTerm.tpe)
-           val ftmt = TypeRepr.of[CpsMonadConversion].appliedTo(List(ftr,TypeRepr.of[F]))
-           Implicits.search(ftmt) match
-              case monadSuccess: ImplicitSearchSuccess =>
-                val ftm = monadSuccess.tree
-                Apply(    
-                     Apply(
-                       TypeApply(Ref(Symbol.requiredMethod("cps.await")), 
-                          List(Inferred(ftr),Inferred(ttr),Inferred(ftr))),
-                       List(p.asTerm)
-                     ),
-                     List(cpsCtx.monadContext.asTerm,ftm)
-                ).asExpr
-              case monadFailure: ImplicitSearchFailure =>
-                throw MacroError(s"Can't find appropriative monad for ${discardTerm.show}, ${monadFailure.explanation}  : ", p)
-           
 
 
 

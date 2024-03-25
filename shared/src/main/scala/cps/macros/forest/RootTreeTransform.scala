@@ -71,30 +71,48 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                   //             ).inCake(thisTransform) 
                   //           )
                   //           tree
+                  case tpApply@TypeApply(qual,tps) =>
+                             val tree = B2.inNestedContext(tpApply, owner, muted, scope =>
+                               scope.runTypeApply(tpApply.asInstanceOf[scope.qctx.reflect.TypeApply],
+                                                 qual.asInstanceOf[scope.qctx.reflect.Term],
+                                                 tps.asInstanceOf[List[scope.qctx.reflect.TypeTree]])
+                                                 (owner.asInstanceOf[scope.qctx.reflect.Symbol]).inCake(thisTransform)
+                             )
+                             tree
                   case _ =>  // TODO: elimi
                     val expr = term.asExpr
                     val monad = cpsCtx.monad
                     TransformUtil.veryWiden(term.tpe).asType match
                       case '[ et ] =>
+                        val termExpr = try
+                          term.asExprOf[et]
+                        catch
+                          case NonFatal(ex) =>
+                            println(s"Can't cast term ${TransformUtil.safeShow(term)} to ${Type.show[et]}")
+                            println(s"raw term=${term}")
+                            println(s"term.tpe=${term.tpe.show}, term.tpe.widen=${term.tpe.widen.show}, term.tpe.veryWiden=${TransformUtil.veryWiden(term.tpe).show}")
+                            println(s"term.pos=${term.pos.sourceFile.jpath}:${term.pos.startLine} (col ${term.pos.startColumn})")
+
+                            throw ex;
                         val rCpsExpr = try {
                              if cpsCtx.flags.debugLevel >= 15 then
                                 cpsCtx.log(s"nextedTransfornm: orin = $term")
                              val nFlags = cpsCtx.flags.copy(muted = muted || cpsCtx.flags.muted)
-                             Async.nestTransform(term.asExprOf[et], cpsCtx.copy(flags = nFlags))
+                             Async.nestTransform(termExpr, cpsCtx.copy(flags = nFlags))
                         } catch {
                              case e: MacroError  =>
                                 if (!e.printed) then
-                                  val termShowed = try {
-                                     term.show
-                                  } catch {
-                                     case NonFatal(ex) => term.toString
-                                  }
+                                  val termShowed = TransformUtil.safeShow(term)
                                   println(s"can't translate tree: ${termShowed}" )
+                                  println(s"et=${Type.show[et]}")
                                   if (cpsCtx.flags.debugLevel > 0) then
                                      e.printStackTrace()
                                   throw e.copy(printed=true);
                                 else
                                   throw e
+                             case NonFatal(e) =>
+                                println(s"Exception duting transforming tree ${TransformUtil.safeShow(term)}, ")
+                                throw e
                         }
                         val r: CpsTree = exprToTree(rCpsExpr, term)(owner)
                         if cpsCtx.flags.debugLevel >= 10 then
@@ -164,7 +182,7 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                       owner: Symbol,
                       muted: Boolean,
                       op: TreeTransformScope[F,?, ?] => CpsTree): CpsTree =
-        val nScope = if (false && term.isExpr) {
+        val nScope = if ( term.isExpr) {
            term.asExpr match
              case '{ $e: et} =>
                 nestScope(e, owner, muted)

@@ -24,17 +24,8 @@ class CpsPlugin extends StandardPlugin {
      val shiftedSymbols = new ShiftedSymbols()
      val selectedNodes = new SelectedNodes()
      List(
-       new PhaseSelect(selectedNodes),
+       new PhaseSelectAndGenerateShiftedMethods(selectedNodes),
        new PhaseCps(settings,selectedNodes,shiftedSymbols, PhaseChangeSymbolsAndRemoveScaffolding.name),
-     ) ++ {
-       if (settings.withShiftReplace || true) then
-         List(
-           new PhaseCpsAsyncShift(selectedNodes, shiftedSymbols),
-           new PhaseCpsAsyncReplace(selectedNodes, shiftedSymbols),
-         )
-       else
-         List.empty
-     } ++ List(
        new PhaseChangeSymbolsAndRemoveScaffolding(selectedNodes, shiftedSymbols)
      )
   }
@@ -48,7 +39,7 @@ class CpsPlugin extends StandardPlugin {
       } else if (option == "useLoom") {
         settings.useLoom = true
       } else if (option == "withShiftReplace") {
-        settings.withShiftReplace = true
+        settings.withShiftReplaceStages = true
       } else {
         throw new IllegalArgumentException(s"Unknown option for cps plugin: $option")
       }
