@@ -46,7 +46,7 @@ class Test12 {
         "testdata/set12/m4",
         "cpstest.Test12m4",
         "{myurl1,myurl2,myurl3}transformed\n",
-        extraDotcArgs = List("-P:rssh.cps:withShiftReplace")
+        extraDotcArgs = List("-Vprint:rssh.cps")
       )
     )
 

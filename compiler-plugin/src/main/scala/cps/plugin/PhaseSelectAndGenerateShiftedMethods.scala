@@ -9,16 +9,21 @@ import core.Symbols.*
 import core.Types.*
 import plugins.*
 import cps.plugin.DefDefSelectKind.USING_CONTEXT_PARAM
+import dotty.tools.dotc.core.DenotTransformers.{DenotTransformer, IdentityDenotTransformer, InfoTransformer}
 import dotty.tools.dotc.transform.{Pickler, SetRootTree}
 
 
 
-class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends PluginPhase {
+class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends PluginPhase with IdentityDenotTransformer  {
 
   val phaseName = PhaseSelectAndGenerateShiftedMethods.phaseName
 
   override val runsAfter = Set(SetRootTree.name)
   override val runsBefore = Set(Pickler.name, PhaseCps.name)
+
+  override def changesMembers: Boolean = true
+  override def changesParents: Boolean = true
+
 
  
 
@@ -105,7 +110,17 @@ class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends
             report.error("Only DefDef can be annotated by @makeCPS", other.srcPos)
             None
       }
-    cpy.Template(tree)(body = tree.body ++ shiftedMethods)
+    if (shiftedMethods.isEmpty) then
+      tree
+    else
+      //despite this is not change signature,
+      //tree.symbol.enteredAfter(this)
+      //tree.symbol.asClass.enteredAfter(this)
+      //tree
+      for(m <- shiftedMethods) {
+        m.symbol.enteredAfter(this)
+      }
+      cpy.Template(tree)(body = tree.body ++ shiftedMethods)
   }
   
   

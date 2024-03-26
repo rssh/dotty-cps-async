@@ -22,76 +22,6 @@ import plugins.*
 object ShiftedMethodGenerator {
 
 
-  /**
-   * looks for annotated functions, changes them and add to shiftedSymbols
-   * @param tree
-   * @param Context
-   * @return
-   */
-  def   disabledTransformTemplateInternal(tree: Template, shiftedSymbols:List[Tree])(using Context): Tree = {
-    println(s"cpsAsyncShift::transformTemplate: ${tree.symbol.name}, ${tree.tpe.show}")
-    val annotationClass = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
-    var newMethods      = List.empty[DefDef]
-    for (
-      bodyTree <- tree.body
-      if bodyTree.symbol.is(Flags.Method) /*&& generateCps */
-    )
-      bodyTree match
-        case fun: DefDef
-            if (!fun.symbol.isAnonymousFunction &&
-              !fun.symbol.denot.getAnnotation(annotationClass).isEmpty) =>
-          val srcPos = fun.srcPos
-          checkApplicableForMakeCPS(fun) match
-            case Left(err) =>
-              throw CpsTransformException(err, srcPos)
-            case Right(_) => ()
-          // create PolyType for a new Symbol info
-          println(s"passedChecks::${fun.symbol.name}")
-          val newSymbolInfo = generateNewFuncType(fun)
-          val newFunName    = (fun.symbol.name.debugString + "_cps").toTermName
-          val newFunSymbol  =
-            Symbols.newSymbol(
-              fun.symbol.owner,
-              newFunName,
-              fun.symbol.flags | Flags.Synthetic,
-              newSymbolInfo
-            )
-          println(s"passedSymbolCreation::${fun.symbol.name}")
-          // create new rhs
-          val funcParams    = getHighOrderArgs(fun)
-          println(s"passedBodyTransformation::${fun.symbol.name}")
-          val newMethod     =
-            DefDef(
-              newFunSymbol,
-              newParamss => {
-                println(s"newParamsDefDef=$newParamss")
-                val newTypeParams   = newParamss.head
-                val newNormalParams = newParamss.tail.head
-                // create new func body
-                val transformedRhs  =
-                  transformFunсBody(fun.rhs, funcParams, newParamss)
-                // create new paramss
-                TransformUtil
-                  .substParams(
-                    transformedRhs,
-                    filterParamsValDef(fun.paramss),
-                    newParamss.flatten
-                  )
-                  .changeOwner(fun.symbol, newFunSymbol)
-              }
-            )
-          //shiftedSymbols.addAsyncShift(fun.symbol, newMethod)
-          newMethods = newMethod :: newMethods
-        case _ => ()
-
-    //val retval = if (newMethods.isEmpty) {
-    //  super.transformTemplate(tree)
-    //} else {
-    //  cpy.Template(tree)(body = tree.body ++ newMethods)
-    //}
-    //retval
-    tree
-  }
 
 
   def findShiftedParam(f: DefDef)(using Context): Option[Type] = {
@@ -133,14 +63,15 @@ object ShiftedMethodGenerator {
           println(s"newParamsDefDef=$newParamss")
           val paramssMap = buildParamssMap(md.tpe.widen, md.paramss, newParamss)
           // create new func body
-          val transformedRhs = transformFunсBody(md.rhs, shiftedParams, newParamss)
+          val transformedRhs = transformFunсBody(md.rhs, shiftedParams, newParamss)(using summon[Context].withOwner(newFunSymbol))
           // create new paramss
           TransformUtil.substParamsMap(transformedRhs, paramssMap).changeOwner(md.symbol, newFunSymbol)
         }
       )
     println(s"created newMethod ${newMethod.show}")
-    None
+    Some(newMethod)
   }
+
 
 
   def shiftedFunctionPolyType(f: DefDef)(using Context): Type = {
@@ -151,65 +82,69 @@ object ShiftedMethodGenerator {
 
         val typeParamsNames = pt.paramNames.map(_.toTypeName)
           val fBound = TypeBounds(defn.NothingType, HKTypeLambda.any(1))
-          val cBound = TypeBounds(defn.NothingType, AppliedType(
-            Symbols.requiredClassRef("cps.CpsMonadContext"),
-            List(pt.newParamRef(0))
-          ))
-          //  TODO: handle dependend types
-          PolyType(List("F_SHIFT".toTypeName, "C_SHIFT".toTypeName )++typeParamsNames)(
-            npt => List(fBound, cBound)++pt.paramInfos,
-            npt =>
-              pt.resType match
-                case  mt: MethodType =>
-                  shiftedFunctionMethodType(mt, npt.newParamRef(0), npt.newParamRef(1))
-                case _ =>
-                  throw CpsTransformException(s"Expected MethodTyoe in PolyType, we have ${f.tpe.widen.show} with ${pt.resType.show} instead method-tyoe", f.srcPos)
+          //val cBound = TypeBounds(defn.NothingType, AppliedType(
+          //  Symbols.requiredClassRef("cps.CpsMonadContext"),
+          //  List(pt.newParamRef(0))
+          //))
+
+
+          PolyType(paramNames = List("F_SHIFT".toTypeName)++typeParamsNames)(
+            npt => fBound :: {
+              val newRefs = pt.paramInfos.zipWithIndex.map((p,i) => npt.newParamRef(i+1))
+              pt.paramInfos.map(_.substParams(pt,newRefs).asInstanceOf[TypeBounds])
+            },
+            npt => pt.resType match
+                    case  mt: MethodType =>
+                       val newRefs = pt.paramInfos.zipWithIndex.map((p,i) => npt.newParamRef(i+1))        
+                       shiftedFunctionMethodType(mt, npt.newParamRef(0) ).substParams(pt,newRefs)
+                    case _ =>
+                        throw CpsTransformException(s"Expected MethodTyoe in PolyType, we have ${f.tpe.widen.show} with ${pt.resType.show} instead method-tyoe", f.srcPos)
           )
       case mc: MethodType =>
           val fBound = TypeBounds(defn.NothingType, HKTypeLambda.any(1))
-          val cBound = TypeBounds(defn.NothingType, AppliedType(
-            Symbols.requiredClassRef("cps.CpsMonadContext"),
-            List(mc.newParamRef(0))
-          ))
-          PolyType(List("F_SHIFT".toTypeName, "C_SHIFT".toTypeName ))(
-            pt => List(fBound, cBound),
-            pt => shiftedFunctionMethodType(mc, pt.newParamRef(0), pt.newParamRef(1) )
+          //val cBound = TypeBounds(defn.NothingType, AppliedType(
+          //  Symbols.requiredClassRef("cps.CpsMonadContext"),
+          //  List(mc.newParamRef(0))
+          //))
+          PolyType(List("F_SHIFT".toTypeName /*, "C_SHIFT".toTypeName */ ))(
+            pt => List(fBound /*, cBound*/),
+            pt => shiftedFunctionMethodType(mc, pt.newParamRef(0) /*, pt.newParamRef(1) */ )
           )
       case _ =>
         throw CpsTransformException(s"Unsupported type of function: expected MethodTyoe or PolyType, we have ${f.tpe}", f.srcPos)
   }
 
-  def shiftedFunctionMethodType(mt:MethodType, ftp: Type, ctp: Type)(using Context): Type = {
-    val (shiftedParams, nHoParams) = shiftParamTypes(mt.paramInfos, 0, ftp, ctp)
+  def shiftedFunctionMethodType(mt:MethodType, ftp: Type /*, ctp: Type*/)(using Context): Type = {
+    val (shiftedParams, nHoParams) = shiftParamTypes(mt.paramInfos, 0, ftp /*, ctp*/)
     // create extra parameter with monad
     //  note, that this can be a CpsTryMonad if we want support try-catch
     MethodType(List("m".toTermName))(
       nt => List( Symbols.requiredClassRef("cps.CpsTryMonad").appliedTo(ftp)  ),
-      nt => MethodType(mt.paramNames)(
-        nmt => shiftedParams,
-        nmt => shiftedFunctionReturnType(mt.resType, 0, ftp, ctp, nHoParams>0)
+      nt => mt.derivedLambdaType(mt.paramNames,
+                shiftedParams,
+                shiftedFunctionReturnType(mt.resType, 0, ftp,/* ctp, */ nHoParams>0)
     ))
   }
 
 
-  def shiftedFunctionReturnType(tp: Type, nesting: Int, ftp: Type, ctp: Type, shiftedParamWasFound: Boolean )(using Context): Type = {
+  def shiftedFunctionReturnType(tp: Type, nesting: Int, ftp: Type, /*ctp: Type,*/ shiftedParamWasFound: Boolean )(using Context): Type = {
     tp.widen.dealias match
       case pt: PolyType =>
         // TODO:  adopt to dependend types.
-        val nReturnType = shiftedFunctionReturnType(pt.resultType, nesting, ftp, ctp, shiftedParamWasFound)
+        val nReturnType = shiftedFunctionReturnType(pt.resultType, nesting, ftp, /*ctp,*/ shiftedParamWasFound)
         pt.derivedLambdaType(resType = nReturnType)
       case mtp: MethodType =>
-        val (shiftedParams, nHoParams) = shiftParamTypes(mtp.paramInfos, nesting, ftp, ctp)
+        val (shiftedParams, nHoParams) = shiftParamTypes(mtp.paramInfos, nesting, ftp /*, ctp*/)
         val nShiftedParamsWasFound = shiftedParamWasFound || nHoParams>0
-        val nResType = shiftedFunctionReturnType(mtp.resType, nesting+1, ftp, ctp, nShiftedParamsWasFound)
+        val nResType = shiftedFunctionReturnType(mtp.resType, nesting+1, ftp,/* ctp,*/ nShiftedParamsWasFound)
         mtp.derivedLambdaType(paramNames = mtp.paramNames, paramInfos = shiftedParams, resType = nResType)
       case tp@AppliedType(base,targs) =>
         if (defn.isFunctionType(tp) || defn.isContextFunctionType(tp)) {
           val params = targs.dropRight(1)
           val resType = targs.last
-          val (shiftedParams, nHoParams) = shiftParamTypes(params, nesting, ftp, ctp)
+          val (shiftedParams, nHoParams) = shiftParamTypes(params, nesting, ftp)
           val nShiftedParamsWasFound = shiftedParamWasFound || nHoParams>0
-          val nReturnType = shiftedFunctionReturnType(resType, nesting+1, ftp, ctp, nShiftedParamsWasFound)
+          val nReturnType = shiftedFunctionReturnType(resType, nesting+1, ftp, /*ctp,*/ nShiftedParamsWasFound)
           defn.FunctionType(0).appliedTo(List(nReturnType))
         } else {
           CpsTransformHelper.cpsTransformedType(tp, ftp)
@@ -220,7 +155,7 @@ object ShiftedMethodGenerator {
   }
 
 
-  def shiftParamTypes(paramTypes: List[Type], nesting: Int, ftp: Type, ctp: Type)(using Context): (List[Type], Int) = {
+  def shiftParamTypes(paramTypes: List[Type], nesting: Int, ftp: Type)(using Context): (List[Type], Int) = {
 
     def shiftParam(tp:Type): Option[Type] = {
       if (defn.isFunctionType(tp)||defn.isContextFunctionType(tp)) {
@@ -256,51 +191,16 @@ object ShiftedMethodGenerator {
 
   }
 
-  def generateNewFuncType(f: DefDef)(using Context): Type =
-    val args = f.paramss
-    val typeArgs:         List[TypeDef]  = filterParamsTypeDef(args)
-    val normalArgs:       List[ValDef]   = filterParamsValDef(args)
-    val typeParamNames:   List[TypeName] = typeArgs.map(_.name)
-    val normalParamNames: List[TermName] = normalArgs.map(_.name)
-    // create new return type with type params
-    PolyType(List("F".toTypeName, "C".toTypeName) ++ typeParamNames)(
-      // bounds for the type parameters
-      pt => {
-        // F[_]
-        val hkTypeLambda = HKTypeLambda.any(1)
-        // C <: CpsMonadContext[F]
-        val appliedType  = AppliedType(
-          Symbols
-            .requiredClassRef("cps.CpsMonadContext"),
-          List(pt.newParamRef(0))
-        )
-        List(
-          TypeBounds(defn.NothingType, hkTypeLambda),
-          TypeBounds(defn.NothingType, appliedType)
-        ) ++ typeArgs.map(_.rhs.tpe.asInstanceOf[TypeBounds])
-      },
-      pt => {
-        val mtParamTypes = List(
-          AppliedType(
-            TypeRef(Symbols.requiredClassRef("cps.CpsMonad"), "Aux".toTermName),
-            List(pt.newParamRef(0), pt.newParamRef(1))
-          )
-        ) ++ normalArgs.map(_.tpt.tpe.widen)
-        val mtReturnType = pt.newParamRef(0).appliedTo(f.symbol.info.widen)
-        MethodType("am".toTermName :: normalParamNames)(
-          _ => mtParamTypes,
-          _ => mtReturnType
-        )
-      }
-    )
 
   def buildParamssMap(tp: Type, oldParamss: List[ParamClause], newParamss: List[List[Tree]])(using Context): Map[Symbol, Tree] = {
 
     val (startFrom, startTo) =
       tp.widen.dealias match
         case pt: PolyType =>
-          // we have added F[_] to type parameters, so
-          (oldParamss.tail, newParamss.tail.tail)
+          // we have added F[_] to type parameters, and parameter with monad.
+          //(oldParamss.tail, newParamss.tail.tail)
+          val newCorrespondent = newParamss.head.tail :: newParamss.tail.tail
+          (oldParamss, newCorrespondent)
         case mt: MethodType =>
           (oldParamss, newParamss.tail.tail)
 
@@ -374,27 +274,32 @@ object ShiftedMethodGenerator {
 
   /**
    * transform rhs of the annotated function
-   * @param tree
+   * @param tree - rhs of the function
+   * @param functionParams - function params of the functions (we want to insert await-s for them)
+   * @param newParamss - new parameters of the function
    * @param Context
    * @return
    */
   def transformFunсBody(
-    tree:          Tree,
-    funcParams:    List[ValDef],
-    newParamss:    List[List[Tree]],
+                         tree:          Tree,
+                         functionParams:    List[ValDef],
+                         newParamss:    List[List[Tree]]
   )(using Context): Tree =
     // val finalResType = tree.tpe.finalResultType
     // if isFunc(finalResType) then transformInnerFunction(tree)
     // else
     val newTypeParams = newParamss.head
     val typeParamF = newTypeParams.head
-    val typeParamC = newTypeParams.tail.head
+    //val typeParamC = newTypeParams.tail.head
     val newParams = newParamss.tail.head
     val paramAm    = newParams.head
     val methodName = "apply".toTermName
+    //val monadTree = newParamss.head.head
+    //val contextType = TermRef(monadTree.tpe,"Context".toTermName)
+    val contextType = Select(paramAm, "Context".toTypeName).tpe
     val mtt        =
       ContextualMethodType(List("C".toTermName))(
-        mt => List(typeParamC.tpe),
+        mt => List(contextType),
         mt => tree.tpe.widen
       )
     // f: C ?=> T
@@ -406,12 +311,12 @@ object ShiftedMethodGenerator {
           override def transform(tree: Tree)(using Context): Tree =
             tree match
               case Apply(TypeApply(Select(f @ Ident(fname), methodName), targs), args)
-                  if (funcParams.exists(_.symbol == f.symbol)) =>
-                insertAwait(tree, newParams, contextParams.head)
+                  if (functionParams.exists(_.symbol == f.symbol)) =>
+                insertAwait(tree, typeParamF, contextParams.head)
               case Apply(Select(f, methodName), args)
-                  if (funcParams.exists(_.symbol == f.symbol)) =>
-                insertAwait(tree, newParams, contextParams.head)
-              case f: Ident if (funcParams.exists(_.symbol == f.symbol)) =>
+                  if (functionParams.exists(_.symbol == f.symbol)) =>
+                insertAwait(tree, typeParamF, contextParams.head)
+              case f: Ident if (functionParams.exists(_.symbol == f.symbol)) =>
                 throw new CpsTransformException("Function is not invoked", tree.srcPos)
               case _ => super.transform(tree)
         }
@@ -423,15 +328,14 @@ object ShiftedMethodGenerator {
     Apply(
       TypeApply(
         ref(Symbols.requiredMethod("cps.plugin.cpsAsyncApply")),
-        List(TypeTree(typeParamF.tpe), TypeTree(tree.tpe.widen), TypeTree(typeParamC.tpe))
+        List(TypeTree(typeParamF.tpe), TypeTree(tree.tpe.widen), TypeTree(contextType))
       ),
       List(paramAm, lambda)
     )
 
-  def insertAwait(tree: Tree, typeParams: List[Tree], monadCtx: Tree)(using
+  def insertAwait(tree: Tree, tF:Tree, monadCtx: Tree)(using
     Context
   ): Tree =
-    val tF = typeParams.head
     Apply(
       Apply(
         TypeApply(
@@ -449,7 +353,7 @@ object ShiftedMethodGenerator {
           List(tF)
         )
       )
-    )
+    ).withSpan(tree.span)
 
   /**
    * transform a function which is returned from the high-order annotated
@@ -487,10 +391,6 @@ object ShiftedMethodGenerator {
     // check ValDef input params
     val funcParams = getHighOrderArgs(tree)
     funcParams.nonEmpty
-
-  def filterParamsTypeDef(params: List[ParamClause]): List[TypeDef] =
-    val ps = params.flatten[ValDef | TypeDef]
-    ps.collect { case v: TypeDef => v }
 
   def filterParamsValDef(params: List[ParamClause]): List[ValDef] =
     val ps = params.flatten[ValDef | TypeDef]

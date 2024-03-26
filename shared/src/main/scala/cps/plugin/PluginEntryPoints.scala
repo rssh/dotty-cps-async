@@ -16,3 +16,6 @@ def cpsAsyncApply[F[_],T,C <: CpsMonadContext[F]](am: CpsMonad.Aux[F,C], f: C ?=
 @compileTimeOnly("this call shpuldbe eliminated by cpsPlugin")
 def cpsAsyncStreamApply[R, F[_], T, C <: CpsMonadContext[F]](absorber: CpsAsyncEmitAbsorber.Aux[R,F,C,T], f: C ?=> CpsAsyncEmitter[F,T] => Unit): R =
   ???
+
+//def cpsAsyncApplyNC[F[_],T](am: CpsMonad[F], f: => T): F[T] =
+//  ??? 

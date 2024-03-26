@@ -591,7 +591,7 @@ object ApplyTransform {
           case Some(args) => Apply(pre1, args)
         val retval = pre2.withSpan(fun.originTree.span)
         if (retval.tpe.isError) {
-          throw CpsTransformException(s"assembleNonOverloaded is error, fun=${fun.show}, generated fun = ${retval.show}", fun.originTree.srcPos)
+           throw CpsTransformException(s"assembleNonOverloaded is error, fun=${fun.show}, generated fun = ${retval.show}", fun.originTree.srcPos)
         }
         retval
       }
@@ -952,12 +952,14 @@ object ApplyTransform {
     def matchInplaceArgTypes(originSym:Symbol, candidateSym: Symbol): Either[String,ShiftedArgumentsShape] = {
 
       def checkTypeArgs(originTypeParamss: List[List[Symbol]], candidateTypeParamSymms: List[List[Symbol]]): Either[String,ShiftedArgumentsTypeParamsShape] =
+        println(s"CheckTypeArgs: originTypeParamss = ${originTypeParamss}, candidateTypeParamSymms = ${candidateTypeParamSymms}")
         if (candidateTypeParamSymms.isEmpty) then
           if (originTypeParamss.isEmpty) then
             Right(ShiftedArgumentsTypeParamsShape.SAME_TYPEPARAMS)
           else
             Left(s"${candidateSym.name} have no type arguments")
         else if (originTypeParamss.length == candidateTypeParamSymms.length) then
+          println(s"CheckTypeArgs: originTypeParamss.length==candidateTypeParamSymms.length=${originTypeParamss.length}")
           val originTpArgs = originTypeParamss.head
           val candidateTpArgs = candidateTypeParamSymms.head
           if (candidateTpArgs.length == originTpArgs.length+1) then
@@ -1178,6 +1180,7 @@ object ApplyTransform {
               Left(msg)
         case Right(methodsWithShape) =>
           // Not,
+          println(s"methodsWithShape = ${methodsWithShape}")
           val candidates = methodsWithShape.foldLeft(List.empty[ShiftedFun]) { (candidates, msh) =>
             val (candidateMethod, shape) = msh
             //val nSelect = obj.select(candidateMethod)
@@ -1197,7 +1200,8 @@ object ApplyTransform {
               case ShiftedArgumentsPlainParamsShape.SAME_PARAMS =>
                 None
               case ShiftedArgumentsPlainParamsShape.EXTRA_PARAM_LIST =>
-                Some(List(obj, tctx.cpsMonadRef))
+                // one param with monad, because this is in-place substitution
+                Some(List(tctx.cpsMonadRef))
               case ShiftedArgumentsPlainParamsShape.EXTRA_FIRST_PARAM =>
                 None
             val remainingShapeChange = shape.p match
@@ -1218,12 +1222,35 @@ object ApplyTransform {
         retrieveShiftedMethod(fun.symbol, obj,methodName,targs)
       case Select(obj,methodName) =>
         retrieveShiftedMethod(fun.symbol, obj,methodName,Nil)
+      case TypeApply(fun@Ident(name),targs) =>
+        // this can be method of the enclosing class or method of one of imported projects
+        println(s"fun.symbol=${fun.symbol}, fun.tpe=${fun.tpe}")
+        if (fun.symbol.owner.isClass) then
+          if (fun.symbol.owner == owner) then
+            // method of the enclosing class
+            println("this is method of the enclosing class")
+            retrieveShiftedMethod(fun.symbol, This(owner.asClass),name,targs)
+          else
+            summon[Context].outersIterator.find(_.owner == fun.symbol.owner) match
+              case Some(enclosing) =>
+                println("this is method of the indierct enclosing class")
+                println(s"find symbol for this:  ${This(enclosing.owner.asClass).symbol}")
+                println(s"all methods = ${enclosing.owner.asClass.info.decls.toList.map(_.show)}")
+                println(s"")
+                retrieveShiftedMethod(fun.symbol, This(enclosing.owner.asClass),name,targs)
+              case None =>
+                // TODO: check for imported methods
+                Left(s"Can't find enclosing class for ${fun.show}")
+        else
+          Left(s"Can't find async-shifted method for ${fun.show}, unsupported fun tree ${fun}")
       case _ =>
         Left(s"Can't find async-shifted method for ${fun.show}, unsupported fun tree ${fun}")
 
     shiftedFun
 
   }
+
+
 
   /*
   def extractFinalResultType(funType:Type, fun:Tree, argss: List[ApplyArgList])(using Context): Type = {

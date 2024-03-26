@@ -218,6 +218,7 @@ object TransformUtil {
       finder(None,tree)
    }
 
+
    def findSubtermsWithIncorrectOwner(tree:Tree, topOwner: Symbol)(using Context): List[Tree] = {
       val finder = new TreeAccumulator[List[Tree]] {
 
@@ -258,6 +259,8 @@ object TransformUtil {
       finder(Nil,tree)
    }
 
+
+   
 
    final val COMMA = ","
 
