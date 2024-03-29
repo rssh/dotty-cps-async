@@ -345,7 +345,7 @@ end AsyncIterator
 
 object AsyncIterator:
 
-   def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]])(using ExecutionContext): AsyncIterator[F,T] = AsyncListIterator(AsyncList.unfold(s0)(f))
+   def unfold[S,F[_]:CpsConcurrentMonad,T](s0:S)(f:S => F[Option[(T,S)]])(using ExecutionContext): AsyncIterator[F,T] =   AsyncListIterator(AsyncList.unfold(s0)(f))
 
    given absorber[F[_],C<:CpsMonadContext[F],T](using ExecutionContext, CpsConcurrentMonad.Aux[F,C]): CpsAsyncEmitAbsorber4[AsyncIterator[F,T],F,C,T] =
      AsyncIteratorEmitAbsorber[F,C,T]()

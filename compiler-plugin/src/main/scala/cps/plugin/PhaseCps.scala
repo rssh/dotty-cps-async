@@ -24,12 +24,9 @@ import transform.{ElimPackagePrefixes, Erasure, Inlining, Pickler}
  *  search for async-shift object, it can be inlined.
  * @param settings
  * @param selectedNodes
- * @param shiftedSymbols
  */
 class PhaseCps(settings: CpsPluginSettings,
-               selectedNodes: SelectedNodes,
-               shiftedSymbols:ShiftedSymbols,
-               nextCpsPhaseName: String) extends PluginPhase {
+               selectedNodes: SelectedNodes) extends PluginPhase {
 
   val phaseName = PhaseCps.name
 
@@ -39,8 +36,8 @@ class PhaseCps(settings: CpsPluginSettings,
   override def changesMembers: Boolean = true
 
 
-  override val runsAfter = Set(PhaseSelect.phaseName, Inlining.name, Pickler.name)
-  override val runsBefore = Set(nextCpsPhaseName, ElimPackagePrefixes.name, Erasure.name)
+  override val runsAfter = Set(PhaseSelectAndGenerateShiftedMethods.phaseName, Inlining.name, Pickler.name)
+  override val runsBefore = Set(PhaseChangeSymbolsAndRemoveScaffolding.name, ElimPackagePrefixes.name, Erasure.name)
 
 
   val debug = true
@@ -201,6 +198,14 @@ class PhaseCps(settings: CpsPluginSettings,
                   super.transformApply(tree)
             case _ =>
               super.transformApply(tree)
+      case Apply(Apply(TypeApply(deferredAsyncCn, List(tp,mtp,mctp)), List(applyTerm)), List(ctx))
+        if (deferredAsyncCn.symbol == Symbols.requiredMethod("cps.plugin.scaffolding.deferredAsync")) =>
+            val (tc, monadValDef) = makeCpsTopLevelContext(ctx,summon[Context].owner, tree.srcPos, DebugSettings.make(tree), CpsTransformHelper.cpsMonadContextClassSymbol)
+            val nApplyTerm = {
+              given CpsTopLevelContext = tc
+              RootTransform(applyTerm, summon[Context].owner, 0).transformed
+            }
+            Block(monadValDef::Nil, nApplyTerm).withSpan(applyTerm.span)
       case _ => super.transformApply(tree)
 
  
@@ -392,7 +397,7 @@ class PhaseCps(settings: CpsPluginSettings,
     val isBeforeInliner = if (runsBefore.contains(Inlining.name)) { true }
                           else if (runsAfter.contains(Inlining.name)) { false }
                           else
-                             throw new CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
+                             throw CpsTransformException("plugins runsBefore/After Inlining not found", srcPos)
     val tc = CpsTopLevelContext(monadType, monadRef, cpsDirectOrSimpleContext,
                                 optRuntimeAwait, optRuntimeAwaitProvider,
                                 optThrowSupport, optTrySupport,

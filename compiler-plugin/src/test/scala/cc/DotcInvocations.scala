@@ -56,7 +56,7 @@ class DotcInvocations(silent: Boolean = false, scalaJs: Boolean = false) {
     if (reporter.hasErrors) {
       println(s"Compilation failed in dirs ${dirs}")
       DotcInvocations.reportErrors(reporter)
-      throw new RuntimeException("Compilation failed")
+      (reporter.errorCount, reporter.allErrors.map(_.msg).mkString("\n"))
     } else {
       runJVM(outDir, mainClass)
     }

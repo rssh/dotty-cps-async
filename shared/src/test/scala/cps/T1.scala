@@ -9,7 +9,7 @@ object T1 {
 
   def f2(): Unit = { }
 
-  def cb(): ComputationBound[Unit] = Done(())
+  def cb():ComputationBound[Unit] = Done(())
 
   def cbi(n:Int): ComputationBound[Int] = Done(n)
 

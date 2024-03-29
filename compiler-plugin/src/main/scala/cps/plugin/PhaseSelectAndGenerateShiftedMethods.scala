@@ -9,20 +9,25 @@ import core.Symbols.*
 import core.Types.*
 import plugins.*
 import cps.plugin.DefDefSelectKind.USING_CONTEXT_PARAM
+import dotty.tools.dotc.core.DenotTransformers.{DenotTransformer, IdentityDenotTransformer, InfoTransformer}
 import dotty.tools.dotc.transform.{Pickler, SetRootTree}
 
 
-class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
 
-  val phaseName = PhaseSelect.phaseName
+class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends PluginPhase with IdentityDenotTransformer  {
+
+  val phaseName = PhaseSelectAndGenerateShiftedMethods.phaseName
 
   override val runsAfter = Set(SetRootTree.name)
   override val runsBefore = Set(Pickler.name, PhaseCps.name)
 
+  override def changesMembers: Boolean = true
+  override def changesParents: Boolean = true
 
+
+ 
 
   override def transformDefDef(tree: tpd.DefDef)(using Context): tpd.Tree = {
-
 
       lazy val cpsTransformedAnnot = Symbols.requiredClass("cps.plugin.annotation.CpsTransformed")
 
@@ -93,10 +98,35 @@ class PhaseSelect(selectedNodes: SelectedNodes) extends PluginPhase {
       super.transformAssign(tree)
   }
 
-
+  // generate shifted version for hight-order functions annotated by makeCPS
+  override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = {
+    println(s"transformTemplate: ${tree.symbol}")
+    val makeCpsAnnot = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
+    val shiftedMethods = tree.body.filter(_.symbol.annotations.exists(_.symbol == makeCpsAnnot))
+      .flatMap { m =>
+        m match
+          case dd: DefDef => ShiftedMethodGenerator.generateShiftedMethod(dd)
+          case other => 
+            report.error("Only DefDef can be annotated by @makeCPS", other.srcPos)
+            None
+      }
+    if (shiftedMethods.isEmpty) then
+      tree
+    else
+      //despite this is not change signature,
+      //tree.symbol.enteredAfter(this)
+      //tree.symbol.asClass.enteredAfter(this)
+      //tree
+      for(m <- shiftedMethods) {
+        m.symbol.enteredAfter(this)
+      }
+      cpy.Template(tree)(body = tree.body ++ shiftedMethods)
+  }
+  
+  
 }
 
-object PhaseSelect {
+object PhaseSelectAndGenerateShiftedMethods {
 
   val phaseName = "rssh.cpsSelect"
 
