@@ -168,7 +168,9 @@ object PoorManEffect {
         while (!finished && !blocked) {
           while(runQueue.isEmpty && !blocked && nThunksInProcess.get() > 0) {
             submitWaiter.synchronized {
-              submitWaiter.wait()
+              if (runQueue.isEmpty && !blocked && nThunksInProcess.get() > 0) {
+                submitWaiter.wait()
+              }
             }
           }
           while (!runQueue.isEmpty && !blocked) {
