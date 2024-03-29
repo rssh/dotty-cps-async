@@ -4,8 +4,8 @@ import dotty.tools.dotc.core.DenotTransformers.SymTransformer
 import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools.dotc.transform.{Erasure,VCElideAllocations}
 
-class PhaseChangeSymbolsAndRemoveScaffolding(val selectedNodes: SelectedNodes,
-                                             val shiftedSymbols:ShiftedSymbols
+class PhaseChangeSymbolsAndRemoveScaffolding(val selectedNodes: SelectedNodes
+                                             //val shiftedSymbols:ShiftedSymbols
                                             ) extends PluginPhase, SymTransformer,
                                                  CpsChangeSymbols,
                                                  RemoveScaffolding

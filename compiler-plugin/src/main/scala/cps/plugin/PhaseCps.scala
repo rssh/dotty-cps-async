@@ -24,12 +24,9 @@ import transform.{ElimPackagePrefixes, Erasure, Inlining, Pickler}
  *  search for async-shift object, it can be inlined.
  * @param settings
  * @param selectedNodes
- * @param shiftedSymbols
  */
 class PhaseCps(settings: CpsPluginSettings,
-               selectedNodes: SelectedNodes,
-               shiftedSymbols:ShiftedSymbols,
-               nextCpsPhaseName: String) extends PluginPhase {
+               selectedNodes: SelectedNodes) extends PluginPhase {
 
   val phaseName = PhaseCps.name
 
@@ -40,7 +37,7 @@ class PhaseCps(settings: CpsPluginSettings,
 
 
   override val runsAfter = Set(PhaseSelectAndGenerateShiftedMethods.phaseName, Inlining.name, Pickler.name)
-  override val runsBefore = Set(nextCpsPhaseName, ElimPackagePrefixes.name, Erasure.name)
+  override val runsBefore = Set(PhaseChangeSymbolsAndRemoveScaffolding.name, ElimPackagePrefixes.name, Erasure.name)
 
 
   val debug = true

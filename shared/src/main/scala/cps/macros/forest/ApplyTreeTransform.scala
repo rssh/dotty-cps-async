@@ -955,6 +955,8 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                   shiftIdentTypeApply(id, targs)
        case s@Select(qual,name) =>
                     shiftSelectTypeApplyApply(s, Nil)
+       case id@Ident(name) =>
+                    shiftIdentTypeApply(id, Nil)             
        //case TypeApply(x, targs) =>  // now scala hvw no multiple type params
        //           Apply(TypeApply(shiftCaller(x),targs),args)
        case Lambda(params, body) =>

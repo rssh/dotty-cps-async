@@ -21,12 +21,11 @@ class CpsPlugin extends StandardPlugin {
 
   def init(options: List[String]): List[PluginPhase] = {
      val settings = parseOptions(options)
-     val shiftedSymbols = new ShiftedSymbols()
      val selectedNodes = new SelectedNodes()
      List(
        new PhaseSelectAndGenerateShiftedMethods(selectedNodes),
-       new PhaseCps(settings,selectedNodes,shiftedSymbols, PhaseChangeSymbolsAndRemoveScaffolding.name),
-       new PhaseChangeSymbolsAndRemoveScaffolding(selectedNodes, shiftedSymbols)
+       new PhaseCps(settings,selectedNodes),
+       new PhaseChangeSymbolsAndRemoveScaffolding(selectedNodes)
      )
   }
 
@@ -38,8 +37,6 @@ class CpsPlugin extends StandardPlugin {
         settings.debugLevel = level
       } else if (option == "useLoom") {
         settings.useLoom = true
-      } else if (option == "withShiftReplace") {
-        settings.withShiftReplaceStages = true
       } else {
         throw new IllegalArgumentException(s"Unknown option for cps plugin: $option")
       }

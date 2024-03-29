@@ -14,6 +14,7 @@ object Test12m2 {
 
   def main(args: Array[String]): Unit = {
     val fr = async[Future] {
+      // will be called without change.
       fetchConst("myurl", name => "prefix" + name)
     }
     val r  = Await.result(fr, 1000.millis)

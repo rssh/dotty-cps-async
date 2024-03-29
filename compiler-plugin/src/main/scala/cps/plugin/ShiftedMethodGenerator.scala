@@ -22,45 +22,20 @@ import plugins.*
 object ShiftedMethodGenerator {
 
 
-
-
-  def findShiftedParam(f: DefDef)(using Context): Option[Type] = {
-
-
-    def findShiftedParamInType(tp: Type): Option[Type] =
-      tp.widen.dealias match
-        case pt: PolyType =>
-          findShiftedParamInType(pt.resultType)
-        case mt: MethodType =>
-          mt.paramInfos.find(p => isFunction(p)).orElse(findShiftedParamInType(mt.resultType))
-        case tp@AppliedType(base, targs) =>
-          if (defn.isFunctionType(tp) || defn.isContextFunctionType(tp)) {
-            val params = targs.dropRight(1)
-            params.find(p => isFunction(p)).orElse(findShiftedParamInType(targs.last))
-          } else {
-            None
-          }
-        case _ =>
-          None
-
-    findShiftedParamInType(f.tpe.widen)
-
-  }
-
+  
   def generateShiftedMethod(md: DefDef)(using Context): Option[DefDef] = {
-    println(s"generateShiftedMethod: ${md.symbol}")
     val shiftedType = ShiftedMethodGenerator.shiftedFunctionPolyType(md)
-    println(s"shiftedTypeAsTree: ${shiftedType}")
-    println(s"shiftedType: ${shiftedType.show}")
 
     val shiftedFunName    = (md.symbol.name.debugString + "_async").toTermName
     val newFunSymbol  = Symbols.newSymbol(md.symbol.owner, shiftedFunName, md.symbol.flags | Flags.Synthetic, shiftedType)
     val shiftedParams = selectHighOrderParamss(md.paramss)
+    if (shiftedParams.isEmpty) {
+      report.error(s"No high order parameters found in ${md.symbol} which is annotated by makeCps", md.srcPos)
+    }
     val newMethod =
       DefDef(
         newFunSymbol,
         newParamss => {
-          println(s"newParamsDefDef=$newParamss")
           val paramssMap = buildParamssMap(md.tpe.widen, md.paramss, newParamss)
           // create new func body
           val transformedRhs = transformFunсBody(md.rhs, shiftedParams, newParamss)(using summon[Context].withOwner(newFunSymbol))
@@ -68,7 +43,6 @@ object ShiftedMethodGenerator {
           TransformUtil.substParamsMap(transformedRhs, paramssMap).changeOwner(md.symbol, newFunSymbol)
         }
       )
-    println(s"created newMethod ${newMethod.show}")
     Some(newMethod)
   }
 
@@ -77,8 +51,6 @@ object ShiftedMethodGenerator {
   def shiftedFunctionPolyType(f: DefDef)(using Context): Type = {
     f.tpe.widen match
       case pt: PolyType =>
-        println(s"polyType detected, pt=${pt.show}")
-        println(s"polyType detected, pt.resType=${pt.resType.show}")
 
         val typeParamsNames = pt.paramNames.map(_.toTypeName)
           val fBound = TypeBounds(defn.NothingType, HKTypeLambda.any(1))
@@ -95,7 +67,7 @@ object ShiftedMethodGenerator {
             },
             npt => pt.resType match
                     case  mt: MethodType =>
-                       val newRefs = pt.paramInfos.zipWithIndex.map((p,i) => npt.newParamRef(i+1))        
+                       val newRefs = pt.paramInfos.zipWithIndex.map((p,i) => npt.newParamRef(i+1))
                        shiftedFunctionMethodType(mt, npt.newParamRef(0) ).substParams(pt,newRefs)
                     case _ =>
                         throw CpsTransformException(s"Expected MethodTyoe in PolyType, we have ${f.tpe.widen.show} with ${pt.resType.show} instead method-tyoe", f.srcPos)
