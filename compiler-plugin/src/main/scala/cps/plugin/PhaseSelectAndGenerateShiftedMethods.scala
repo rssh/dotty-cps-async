@@ -99,8 +99,7 @@ class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends
   }
 
   // generate shifted version for hight-order functions annotated by makeCPS
-  override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = {
-    println(s"transformTemplate: ${tree.symbol}")
+  override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = { 
     val makeCpsAnnot = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
     val shiftedMethods = tree.body.filter(_.symbol.annotations.exists(_.symbol == makeCpsAnnot))
       .flatMap { m =>

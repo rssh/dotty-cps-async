@@ -134,12 +134,14 @@ object PoorManEffect {
             case Success(t) => cf.complete(t)
             case Failure(e) => cf.completeExceptionally(e)
         case None =>
+            throw new IllegalArgumentException(s"invalid submitId=${id}")
     }
 
 
     def process(): Unit = {
-      var blocked: Boolean = false
-      var finished: Boolean = false
+      //println(s"starting process thread ${Thread.currentThread().getId()}")
+      @volatile var blocked: Boolean = false
+      @volatile var finished: Boolean = false
       processEntryCounter.incrementAndGet()
       BlockContext.withBlockContext(
         new BlockContext {
@@ -168,9 +170,7 @@ object PoorManEffect {
         while (!finished && !blocked) {
           while(runQueue.isEmpty && !blocked && nThunksInProcess.get() > 0) {
             submitWaiter.synchronized {
-              if (runQueue.isEmpty && !blocked && nThunksInProcess.get() > 0) {
                 submitWaiter.wait()
-              }
             }
           }
           while (!runQueue.isEmpty && !blocked) {
@@ -207,6 +207,7 @@ object PoorManEffect {
           }
         }
         processEntryCounter.decrementAndGet()
+        //println(s"exiting process thread ${Thread.currentThread().getId()} blocked=${blocked}")
       }
 
     }
