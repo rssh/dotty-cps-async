@@ -4,34 +4,48 @@ Dependency
 Sbt Example
 -----------
 
-The current prerelease is |0.9.19| for using with Scala |3.3.1|_.
+The current prerelease is |0.9.21| for using with Scala |3.3.3|_.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.19"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.21"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.19"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.21"
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
 
-For using direct context encoding you also need to add compiler-plugin:
+Compiler Plugin
+---------------
+
+For using direct context encoding (now marked as `@experimental`) you also need to add compiler-plugin:
+
+for sbt:
 
  .. code-block:: scala
 
   autoCompilerPlugins := true
-  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.19")
+  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.21")
 
-If you use JDK-21 you can find helpful loom-based support for transforming arguments of high-order functions.
+for mill:
+
+    .. code-block:: scala
+
+  def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.21")
+
+Loom support on JVM
+-------------------
+
+If you use JDK-21 or later you can find helpful loom-based support for transforming arguments of high-order functions.
 To enable one, add `dotty-cps-async-loom` module to the dependencies:
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.19"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.21"
 
 
 
@@ -256,7 +270,7 @@ We can freely use `await` inside this direct context functions. Sometimes, we ne
           }.toMap
 
 
-Note, that in current version (0.18) direct context encoding is marked to be experimental.
+Note, that in current version (0.21) direct context encoding is marked to be experimental.
 
 
 Alternative names
