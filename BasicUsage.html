@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Dependency &#8212; dotty-cps-async 0.9.20 documentation</title>
+    <title>Dependency &#8212; dotty-cps-async 0.9.21 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="index.html" title="User Manual"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.20 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.21 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>  
@@ -47,30 +47,46 @@
 <h1>Dependency<a class="headerlink" href="#dependency" title="Permalink to this heading">¶</a></h1>
 <section id="sbt-example">
 <h2>Sbt Example<a class="headerlink" href="#sbt-example" title="Permalink to this heading">¶</a></h2>
-<p>The current prerelease is <code class="docutils literal notranslate"><span class="pre">0.9.19</span></code> for using with Scala <a class="reference external" href="https://github.com/lampepfl/dotty/releases/tag/3.3.1"><code class="docutils literal notranslate"><span class="pre">3.3.0</span></code></a>.</p>
+<p>The current prerelease is <a href="#id7"><span class="problematic" id="id8">|0.9.21|</span></a> for using with Scala <a href="#id11"><span class="problematic" id="id12">|3.3.3|_</span></a>.</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.19&quot;</span><span class="w"></span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.21&quot;</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>JavaScript and Native targets are also supported.</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.19&quot;</span><span class="w"></span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.21&quot;</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
 <p><strong>Note</strong>: <span class="red">%%%</span> automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see <a class="reference external" href="https://www.scala-js.org/doc/project/cross-build.html"><strong>Scala.js Cross-Building</strong></a>).</p>
-<p>For using direct context encoding you also need to add compiler-plugin:</p>
+</section>
+<section id="compiler-plugin">
+<h2>Compiler Plugin<a class="headerlink" href="#compiler-plugin" title="Permalink to this heading">¶</a></h2>
+<p>For using direct context encoding (now marked as <cite>&#64;experimental</cite>) you also need to add compiler-plugin:</p>
+<p>for sbt:</p>
 <blockquote>
 <div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">autoCompilerPlugins</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kc">true</span><span class="w"></span>
-<span class="n">addCompilerPlugin</span><span class="p">(</span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async-compiler-plugin&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.19&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="n">addCompilerPlugin</span><span class="p">(</span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async-compiler-plugin&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.21&quot;</span><span class="p">)</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
-<p>If you use JDK-21 you can find helpful loom-based support for transforming arguments of high-order functions.
+<p>for mill:</p>
+<blockquote>
+<div><blockquote>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>def scalacPluginIvyDeps = Agg(ivy”com.github.rssh::dotty-cps-async-compiler-plugin:0.9.21”)</p>
+</div></blockquote>
+</section>
+<section id="loom-support-on-jvm">
+<h2>Loom support on JVM<a class="headerlink" href="#loom-support-on-jvm" title="Permalink to this heading">¶</a></h2>
+<p>If you use JDK-21 or later you can find helpful loom-based support for transforming arguments of high-order functions.
 To enable one, add <cite>dotty-cps-async-loom</cite> module to the dependencies:</p>
 <blockquote>
-<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async-loom&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.19&quot;</span><span class="w"></span>
+<div><div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;com.github.rssh&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;dotty-cps-async-loom&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.9.21&quot;</span><span class="w"></span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -259,7 +275,7 @@ Note, that signature also can be written in carried form: <cite>def fetchGreetin
 </pre></div>
 </div>
 </div></blockquote>
-<p>Note, that in current version (0.18) direct context encoding is marked to be experimental.</p>
+<p>Note, that in current version (0.21) direct context encoding is marked to be experimental.</p>
 </section>
 <section id="alternative-names">
 <h2>Alternative names<a class="headerlink" href="#alternative-names" title="Permalink to this heading">¶</a></h2>
@@ -323,6 +339,8 @@ We define alternative names for macros: <cite>reify(reifed)/reflect</cite>, whic
     <ul>
 <li><a class="reference internal" href="#">Dependency</a><ul>
 <li><a class="reference internal" href="#sbt-example">Sbt Example</a></li>
+<li><a class="reference internal" href="#compiler-plugin">Compiler Plugin</a></li>
+<li><a class="reference internal" href="#loom-support-on-jvm">Loom support on JVM</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#basic-usage">Basic Usage</a><ul>
@@ -377,7 +395,7 @@ We define alternative names for macros: <cite>reify(reifed)/reflect</cite>, whic
         <li class="right" >
           <a href="index.html" title="User Manual"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.20 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.21 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dependency</a></li> 
       </ul>
     </div>

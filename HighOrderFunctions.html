@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>High-order functions. &#8212; dotty-cps-async 0.9.20 documentation</title>
+    <title>High-order functions. &#8212; dotty-cps-async 0.9.21 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/s4defs-roles.css" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.20 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.21 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>  
@@ -213,7 +213,42 @@ We also  have the method <a class="reference external" href="https://github.com/
 </section>
 <section id="async-high-order-functional-interfaces">
 <h3>Async high-order functional interfaces<a class="headerlink" href="#async-high-order-functional-interfaces" title="Permalink to this heading">¶</a></h3>
-<p>For a case with an asynchronous high-order function interface (i.e. methods which accept functions like <code class="docutils literal notranslate"><span class="pre">f:(A</span> <span class="pre">=&gt;</span> <span class="pre">F[B])</span></code>), the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> macro can automatically transform the asynchronous result to have the same signature, so you can use <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> calls inside async lambdas without implementing additional methods or type classes.</p>
+<dl class="simple">
+<dt>For a case with an asynchronous high-order function interface (i.e. methods which accept functions like <code class="docutils literal notranslate"><span class="pre">f:(A</span> <span class="pre">=&gt;</span> <span class="pre">F[B])</span></code>), the <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L30"><code class="docutils literal notranslate"><span class="pre">async</span></code></a> macro can automatically transform the asynchronous result to have the same signature,</dt><dd><p>so you can use <a class="reference external" href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/Async.scala#L19"><code class="docutils literal notranslate"><span class="pre">await</span></code></a> calls inside async lambdas without implementing additional methods or type classes.</p>
+</dd>
+</dl>
+</section>
+<section id="automatic-generation-of-shifted-functions">
+<h3>Automatic generation of shifted functions<a class="headerlink" href="#automatic-generation-of-shifted-functions" title="Permalink to this heading">¶</a></h3>
+<dl class="simple">
+<dt>When <cite>dotty-cps-async-compiler-plugin</cite> is enabled, it is possible to generate shifted functions automatically in simple cases: where the higt-order function</dt><dd><p>calls argument (but not store it in a variable or in an object field).  In such cases, you can annotate your high-order method with
+<cite>cps.plugin.makeCps</cite> annotation and the plugin will generate a shifted function with the same name as the original function but with the</p>
+</dd>
+</dl>
+<p>shifted arguments and suffix <code class="docutils literal notranslate"><span class="pre">_async</span></code>.</p>
+<p>Example:
+.. code-block:: scala</p>
+<blockquote>
+<div><p>import cps.plugin.annotation.makeCps</p>
+<p>case class Summary(min:Double, max:Double, sum:Double, n:Int)</p>
+<p>object MeasurementsOps {</p>
+<blockquote>
+<div><p>&#64;makeCps
+def gatherStatistics[A](data: Seq[A])(f: A=&gt;Double): Summary = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>data.foldLeft(Summary(Double.MAX,Doube.MIN,0,0)) { (s,e) =&gt;</dt><dd><p>val c = f(e)
+s.copy(min=Math.min(s.min,c),max=Math.max(s.max,c), sum=c.sum+c, n=s.n+1)</p>
+</dd>
+</dl>
+<p>}</p>
+</div></blockquote>
+<p>}</p>
+</div></blockquote>
+<p>}</p>
+</div></blockquote>
+<p>With this definition we can use gatherStatistics with async context even on platforms,  which do not support continuations.
+This stared as a work of Olena Kravchenko in Google Summer of Code 2023 project.</p>
 </section>
 </section>
 </section>
@@ -237,6 +272,7 @@ We also  have the method <a class="reference external" href="https://github.com/
 <li><a class="reference internal" href="#special-semantics-for-substitutions-in-call-chains">Special semantics for substitutions in call chains</a></li>
 <li><a class="reference internal" href="#builder-methods">Builder methods.</a></li>
 <li><a class="reference internal" href="#async-high-order-functional-interfaces">Async high-order functional interfaces</a></li>
+<li><a class="reference internal" href="#automatic-generation-of-shifted-functions">Automatic generation of shifted functions</a></li>
 </ul>
 </li>
 </ul>
@@ -287,7 +323,7 @@ We also  have the method <a class="reference external" href="https://github.com/
         <li class="right" >
           <a href="BasicUsage.html" title="Dependency"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.20 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">dotty-cps-async 0.9.21 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">High-order functions.</a></li> 
       </ul>
     </div>

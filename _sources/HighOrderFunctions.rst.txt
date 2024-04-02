@@ -234,7 +234,38 @@ We propose to use the following convention when naming such methods:
 Async high-order functional interfaces  
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For a case with an asynchronous high-order function interface (i.e. methods which accept functions like ``f:(A => F[B])``), the |async|_ macro can automatically transform the asynchronous result to have the same signature, so you can use |await|_ calls inside async lambdas without implementing additional methods or type classes.
+For a case with an asynchronous high-order function interface (i.e. methods which accept functions like ``f:(A => F[B])``), the |async|_ macro can automatically transform the asynchronous result to have the same signature,
+  so you can use |await|_ calls inside async lambdas without implementing additional methods or type classes.
+
+
+Automatic generation of shifted functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When `dotty-cps-async-compiler-plugin` is enabled, it is possible to generate shifted functions automatically in simple cases: where the higt-order function
+  calls argument (but not store it in a variable or in an object field).  In such cases, you can annotate your high-order method with
+  `cps.plugin.makeCps` annotation and the plugin will generate a shifted function with the same name as the original function but with the
+shifted arguments and suffix ``_async``.
+
+Example:
+.. code-block:: scala
+ import cps.plugin.annotation.makeCps
+
+ case class Summary(min:Double, max:Double, sum:Double, n:Int)
+
+ object MeasurementsOps {
+
+     @makeCps
+     def gatherStatistics[A](data: Seq[A])(f: A=>Double): Summary = {
+          data.foldLeft(Summary(Double.MAX,Doube.MIN,0,0)) { (s,e) =>
+               val c = f(e)
+               s.copy(min=Math.min(s.min,c),max=Math.max(s.max,c), sum=c.sum+c, n=s.n+1)
+          }
+     }
+
+ }
+
+With this definition we can use gatherStatistics with async context even on platforms,  which do not support continuations.
+This stared as a work of Olena Kravchenko in Google Summer of Code 2023 project.
 
 
 .. ###########################################################################
