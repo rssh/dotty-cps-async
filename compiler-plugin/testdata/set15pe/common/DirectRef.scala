@@ -38,6 +38,14 @@ object directRef {
       await(ref.compareAndSet(except,v))
 
   }
+  
+
+  extension (self: DirectRef.type)  {
+
+      def make[T<:AnyRef](t:T)(using CpsDirect[PureEffect]): DirectRef[T] =
+          DirectRef[T](await(PERef.make(t)))
+
+  }
 
   object DirectIntRef {
 

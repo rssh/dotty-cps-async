@@ -154,6 +154,20 @@ trait RootTreeTransform[F[_], CT, CC <: CpsMonadContext[F] ]:
                                 x.asInstanceOf[nestScope.qctx.reflect.Term],
                                 args.asInstanceOf[List[nestScope.qctx.reflect.Term]],
                                 Nil)(owner.asInstanceOf[nestScope.qctx.reflect.Symbol]).inCake(thisTransform)
+       case typeApply@TypeApply(tfun,targs) =>
+             val thisScope = this
+             val nestContext = cpsCtx.nestSame(muted)
+             val nestScope = new TreeTransformScope[F,CT,CC] {
+               override val cpsCtx = nestContext
+               override implicit val qctx = owner.asQuotes
+               override val fType = thisScope.fType
+               override val ctType = thisScope.ctType
+               override val ccType = thisScope.ccType
+             }
+             nestScope.runTypeApply(typeApply.asInstanceOf[nestScope.qctx.reflect.TypeApply], 
+                                    tfun.asInstanceOf[nestScope.qctx.reflect.Term], 
+                                    targs.asInstanceOf[List[nestScope.qctx.reflect.TypeTree]]
+                                   )(owner.asInstanceOf[nestScope.qctx.reflect.Symbol]).inCake(thisTransform)
        case _ =>
              throw MacroError(s"cps tree transform is not supported yet to ${term}",cpsCtx.patternCode)
      }

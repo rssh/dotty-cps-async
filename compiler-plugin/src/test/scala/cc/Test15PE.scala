@@ -1,7 +1,7 @@
 package cc
 
 import cc.DotcInvocations.IsAlreadyCompiledFlag
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.Assert.*
 
 import scala.concurrent.*
@@ -112,6 +112,16 @@ class Test15PE {
     )
   }
 
+  @Test
+  def testExtDirectRefM9() = {
+    compileAndRunTestAfterCommon("testdata/set15pe/m9", "cps.pe.TestExtDirectRefM9",
+      DotcInvocationArgs(checkAll = true,
+        extraDotcArgs = List(
+          // "-Vprint:rssh.cps", "-Vprint:erasure"
+        )
+      )
+    )
+  }
 
 
 }
