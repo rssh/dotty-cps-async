@@ -8,7 +8,7 @@ import cps.*
 import cps.macros.*
 import cps.macros.common.*
 import cps.macros.forest.*
-import cps.macros.forest.application.ApplicationShiftType.CPS_AWAIT
+import cps.macros.forest.application.ApplicationShiftType.{CPS_AWAIT, CPS_DEFERR_TO_PLUGIN}
 import cps.macros.misc.*
 
 
@@ -335,6 +335,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
                         case ApplicationShiftType.CPS_ONLY => cpsShiftedMethodType(paramNames, paramTypes, resType)
                         case ApplicationShiftType.CPS_AWAIT => 
                            MethodType(paramNames)(_ => paramTypes, _ => resType)
+                        case ApplicationShiftType.CPS_DEFERR_TO_PLUGIN =>
+                           throw MacroError("Internal error: with CPS_DEFERR_TO_PLUGIN we should not call shiftedArgExpr ",term.asExpr)
                       createAsyncLambda(mt, params, shiftType, Symbol.spliceOwner)
                   } else if (tp <:< partialFunctionType ) {
                       val (tIn, tOut) = tparams match
@@ -437,6 +439,9 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
                                                applyRuntimeAwait(runtimeAwait, nTerm, TypeRepr.of[ttt]).asExprOf[ttt]
                                              case None =>
                                                throw MacroError("Internal error: optRuntimeAwait should be defined", posExprs(term))
+                                   case  CPS_DEFERR_TO_PLUGIN =>
+                                           // it should be the same.
+                                           termCast[ttt](nTerm)
                                case _ =>
                                  throw MacroError(
                                    s"assumed that transformed match is Match, we have $nBody",
