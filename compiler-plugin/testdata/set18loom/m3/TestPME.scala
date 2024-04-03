@@ -77,7 +77,8 @@ object PoorManEffect {
     case class EvalRecord(pe: PoorManEffect[Any], id: Long)
 
     // only one thread at a time.
-    val runQueue: Queue[EvalRecord] = Queue()
+    //val runQueue: Queue[EvalRecord] = Queue()
+    val runQueue: java.util.concurrent.ConcurrentLinkedDeque[EvalRecord] = new java.util.concurrent.ConcurrentLinkedDeque()
 
     val currentWaitId = new AtomicLong(0L)
     val waiters: TrieMap[Long,CompletableFuture[Any]] = TrieMap()
@@ -86,18 +87,20 @@ object PoorManEffect {
     val submitWaiter = new AnyRef()
 
     override def submitAndForget[T](pe: PoorManEffect[T]): Unit = {
-      runQueue.enqueue(EvalRecord(pe,nextId))
+      //runQueue.enqueue(EvalRecord(pe,nextId)
+      runQueue.add(EvalRecord(pe,nextId))
       submitWaiter.synchronized {
-        submitWaiter.notify()
+        submitWaiter.notifyAll()
       }
     }
 
     override def submit[T](pe: PoorManEffect[T]): Long =  {
       val id = nextId
-      runQueue.enqueue(EvalRecord(pe,id))
+      //runQueue.enqueue(EvalRecord(pe,id))
+      runQueue.add(EvalRecord(pe,id))
       waiters(id) = new CompletableFuture[Any]()
       submitWaiter.synchronized {
-        submitWaiter.notify()
+        submitWaiter.notifyAll()
       }
       id
     }
@@ -170,35 +173,39 @@ object PoorManEffect {
         while (!finished && !blocked) {
           while(runQueue.isEmpty && !blocked && nThunksInProcess.get() > 0) {
             submitWaiter.synchronized {
-                submitWaiter.wait()
+                if (runQueue.isEmpty && !blocked && nThunksInProcess.get() > 0) {
+                   submitWaiter.wait()
+                }
             }
           }
           while (!runQueue.isEmpty && !blocked) {
-            val v = runQueue.dequeue()
-            v.pe match
-              case Pure(t) => setWaiterResult(v.id, Success(t))
-              case Error(e) =>
-                setWaiterResult(v.id, Failure(e))
-              case Thunk(th) =>
-                // here we can have call of block-context.
-                nThunksInProcess.incrementAndGet()
-                try {
-                  val r = try {
-                    th(this)
-                  } catch {
-                    case NonFatal(ex) =>
-                      Error(ex)
+            //val v = runQueue.dequeue()
+            val v = runQueue.poll()
+            if (v != null) {
+              //
+              v.pe match
+                case Pure(t) => setWaiterResult(v.id, Success(t))
+                case Error(e) =>
+                  setWaiterResult(v.id, Failure(e))
+                case Thunk(th) =>
+                  // here we can have call of block-context.
+                  nThunksInProcess.incrementAndGet()
+                  try {
+                    val r = try {
+                      th(this)
+                    } catch {
+                      case NonFatal(ex) =>
+                        Error(ex)
+                    }
+                    // execution can be moved to be processed in the other virtual thread.
+                    runQueue.add(EvalRecord(r, v.id))
+                    submitWaiter.synchronized {
+                      submitWaiter.notifyAll()
+                    }
+                  } finally {
+                    nThunksInProcess.decrementAndGet()
                   }
-                  // execution was moved to be processed in the other virtual thread.
-                  //   since carries thread same - we can just enqueue it.
-                  //   with thread pool we will need other external submit,
-                  runQueue.enqueue(EvalRecord(r, v.id))
-                  submitWaiter.synchronized {
-                    submitWaiter.notifyAll()
-                  }
-                } finally {
-                  nThunksInProcess.decrementAndGet()
-                }
+            }
           }
           if (!blocked) {
             if (runQueue.isEmpty && nThunksInProcess.get() == 0) {
@@ -223,35 +230,41 @@ object PoorManEffect {
       val runner = new Runner()
       val id0 = runner.submit[A](pe)
       val resultFuture = runner.listenSubmitted[A](id0)
-      try
+      if (resultFuture.isDone) then
+        try
+          resultFuture.get()
+        catch
+          case ex: ExecutionException =>
+            throw ex.getCause()
+      else
+        try
          runner.process()
-      catch
-        case NonFatal(ex) =>
-          println(s"Impossible, excwption from process: ${ex.getMessage}")
-          throw ex
-      runner.checkSubmitted[A](id0) match
-        case Some(Success(t)) => t.asInstanceOf[A]
-        case Some(Failure(e)) => throw e
-        case None =>
-           //in real life we also will think about timeouts.
-           if (runner.processEntryCounter.get() == 0) {
-             // recheck for second thread deliverd result.
-             runner.checkSubmitted[A](id0) match
+        catch
+          case NonFatal(ex) =>
+            println(s"Impossible, excwption from process: ${ex.getMessage}")
+            throw ex
+        runner.checkSubmitted[A](id0) match
+          case Some(Success(t)) => t.asInstanceOf[A]
+          case Some(Failure(e)) => throw e
+          case None =>
+             //in real life we also will think about timeouts.
+            if (runner.processEntryCounter.get() == 0)
+               // recheck for second thread deliverd result.
+              runner.checkSubmitted[A](id0) match
                 case Some(Success(t)) => t.asInstanceOf[A]
                 case Some(Failure(e)) => throw e
                 case None =>
                      println(s"runner.nProcessEntries == ${runner.processEntryCounter.get()}")
                      println(s"runner.runQueue.isEmpty == ${runner.runQueue.isEmpty}")
                      throw new RuntimeException(s"process finished, but no result for id ${id0}")
-           } else {
-             blocking {
-               try
-                  resultFuture.get()
-               catch
-                 case ex: ExecutionException =>
-                   throw ex.getCause()
-             }
-           }
+            else
+               blocking {
+                 try
+                    resultFuture.get()
+                 catch
+                    case ex: ExecutionException =>
+                      throw ex.getCause()
+               }
 
   }
 
