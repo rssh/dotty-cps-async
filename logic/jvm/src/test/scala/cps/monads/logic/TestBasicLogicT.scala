@@ -59,7 +59,7 @@ class TestBasicLogicT {
         val zList = z.toAsyncList
         val fFirstN = zList.take(N)
         val firstN = Await.result(fFirstN, 1.second)
-        //println(s"firstN = ${firstN.toSeq}")
+        println(s"firstN = ${firstN.toSeq}")
         assert(firstN.size == N)
         assert(firstN.find(_ == 8).isDefined)
         assert(firstN.find(_ == 7).isDefined)
