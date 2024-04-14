@@ -191,7 +191,7 @@ object DotcInvocations {
       mainClass,invocationArgs.extraDotcArgs,invocationArgs.checkAll,invocationArgs.usePlugin)
 
     val reporter = dotcInvocations.reporter
-    println("summary: " + reporter.summary)
+    println(s"summary in ${dir}: " + reporter.summary)
     checkReporter(reporter)
 
     //println(s"output=${output}")

@@ -7,7 +7,7 @@ class Test21Abstract {
     @Test
     def testAbstractJVM(): Unit = {
       DotcInvocations.compileAndRunFilesInDirAndCheckResult(
-        "testdata/set21Abstract/m1",
+        "testdata/set21abstract/m1",
         "m1.Main",
         //DotcInvocationArgs(extraDotcArgs = List("-Vprint:rssh.cps"))
       )
