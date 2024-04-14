@@ -22,8 +22,8 @@ class TestExtDirectRefM9:
 
 
   def runExtDirectRef(): PureEffect[String] = {
-    implicit val printCode = cps.macros.flags.PrintCode
-    implicit val debugLevel = cps.macros.flags.DebugLevel(20)
+    //implicit val printCode = cps.macros.flags.PrintCode
+    //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
     async[PureEffect] {
       //val logger = PEToyLogger.make()
       val vs = PureEffect.directRef("AAAa")
