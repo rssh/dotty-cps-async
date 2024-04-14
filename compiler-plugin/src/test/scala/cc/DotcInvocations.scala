@@ -11,7 +11,7 @@ import reporting.*
 import scala.util.matching.Regex
 
 
-class DotcInvocations(silent: Boolean = false, scalaJs: Boolean = false) {
+class DotcInvocations(silent: Boolean = true, scalaJs: Boolean = false) {
 
   def compileFiles(files: List[String], outDir: String, extraArgs: List[String]=List.empty, checkAll: Boolean = true, usePlugin: Boolean=true): Reporter = {
     val args = List("-d", outDir) ++
