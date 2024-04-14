@@ -124,7 +124,7 @@ case class TestRun(inputDir: String, mainClass: String, expectedOutput: String =
 
 case class DotcInvocationArgs(
                                extraDotcArgs: List[String] = List.empty,
-                               silent: Boolean = false,
+                               silent: Boolean = true,
                                checkAll: Boolean = true,
                                usePlugin: Boolean = true,
                                useScalaJsLib: Boolean = false,
