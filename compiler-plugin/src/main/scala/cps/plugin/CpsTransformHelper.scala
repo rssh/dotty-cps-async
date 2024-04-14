@@ -145,7 +145,7 @@ object CpsTransformHelper {
     retval
   }
 
-  def cpsTransformedErasedType(t:Type, fType:Type)(using Context): Type = {
+  def cpsTransformedErasedType(t:Type, fType:Type, pos: SrcPos)(using Context): Type = {
     if (defn.isFunctionType(t) || defn.isContextFunctionType(t)) then
       // here we assume that  t is cps-transformed function, not F[(function-type)] which
       //  shoild be translated to F.
@@ -154,12 +154,12 @@ object CpsTransformHelper {
       t match
         case mt: MethodType =>
           if (mt.isContextualMethod)
-            mt.derivedLambdaType(mt.paramNames, mt.paramInfos, cpsTransformedErasedType(mt.resType, fType))
+            mt.derivedLambdaType(mt.paramNames, mt.paramInfos, cpsTransformedErasedType(mt.resType, fType, pos))
             //ContextualMethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedErasedType(mt.resType, fType))
           else if (mt.isImplicitMethod)
-            ImplicitMethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedErasedType(mt.resType, fType))
+            ImplicitMethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedErasedType(mt.resType, fType, pos))
           else
-            MethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedErasedType(mt.resType, fType))
+            MethodType(mt.paramNames)(_ => mt.paramInfos, _ => cpsTransformedErasedType(mt.resType, fType, pos))
         case _ =>
             fType match
               case wt:WildcardType =>
@@ -167,6 +167,9 @@ object CpsTransformHelper {
               case _ =>
                 // TODO: optimize
                 val retval = TypeErasure.erasure(decorateTypeApplications(fType).appliedTo(t))
+                if (retval == NoType) {
+                  throw CpsTransformException(s"can't erase ${t.show} to ${fType.show}", pos)
+                }
                 retval
   }
 
@@ -203,20 +206,6 @@ object CpsTransformHelper {
           case _ =>
              AsyncKind.Sync
   }
-
-  /*
-  def unwrappTypeFromMonad(ftExpr: Tree, ft: Type,  srcPos: SrcPos)(using Context): Type = {
-    //TIDO: check
-    //val (tl, tv) = ProtoTypes.constrained(ft,t)
-    //tv.head
-    t.widen.dealias match
-      case AppliedType(tycon,args) if tycon =:= ft =>
-        args.head
-      case other =>
-        throw CpsTransformException(s"can't extract type from ${other.show} as monad ${ft.show}", srcPos)
-
-  }*/
-
 
 
   def findImplicitInstance(tpe: Type, span: Span)(using ctx:Context): Option[Tree] = {

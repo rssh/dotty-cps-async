@@ -49,7 +49,7 @@ trait RemoveScaffolding {
             val changedDdefType = if (selectRecord.changedType != Types.NoType) {
               selectRecord.changedType
             } else {
-              CpsTransformHelper.cpsTransformedErasedType(tree.symbol.info, selectRecord.monadType)
+              CpsTransformHelper.cpsTransformedErasedType(tree.symbol.info, selectRecord.monadType, tree.srcPos)
             }
             val nTpt = retrieveReturnType(changedDdefType)
             val typedNRhs = if (nRhs.tpe.widen <:< nTpt) {
@@ -61,6 +61,8 @@ trait RemoveScaffolding {
             }
             // TODO: insert asInstanceOf ?
             cpy.DefDef(tree)(rhs = typedNRhs, tpt = TypeTree(nTpt))
+          case EmptyTree =>
+            tree
           case _ =>
             reportErrorWithTree(s"not found uncpsed scaffolding: for ${tree.symbol} (${tree.symbol.id})", tree.rhs)
             tree
