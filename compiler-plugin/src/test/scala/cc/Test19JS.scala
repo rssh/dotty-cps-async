@@ -26,8 +26,8 @@ class Test19JS {
     val libraryClasspath = currentClasspath
 
     val inDir = "testdata/set19js/1"
-    val outDir = "testdata/set19js/1/out"
-    val jsLinkOut = "testdata/set19js/1/linkout"
+    val outDir = "testdata/set19js/1-out"
+    val jsLinkOut = "testdata/set19js/1-linkout"
 
     val reporter = dotcInvocations.compileFilesInDirsWithFullArgs(List(inDir),  outDir,
       List("-scalajs","-usejavacp","-d", outDir)
@@ -38,7 +38,7 @@ class Test19JS {
     assert(reporter.allErrors.isEmpty, "There should be no errors")
     val mainClass = "jsexample.JSExample1"
 
-    val output = ScalaJSSupport.run(s"${libraryClasspath}:testdata/set19js/1/out", mainClass, jsLinkOut)
+    val output = ScalaJSSupport.run(s"${libraryClasspath}:${outDir}", mainClass, jsLinkOut)
 
     println(s"JSExample1: output=${output}")
 

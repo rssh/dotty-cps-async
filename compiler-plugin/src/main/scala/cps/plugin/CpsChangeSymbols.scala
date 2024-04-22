@@ -44,7 +44,8 @@ trait CpsChangeSymbols {
         try
           val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType, sym.symbol.srcPos)
           selectRecord.changedType = ntp
-          sym.copySymDenotation(info = ntp)
+          val retval = sym.copySymDenotation(info = ntp)
+          retval
         catch
           case ex:CpsTransformException =>
             ex.printStackTrace()

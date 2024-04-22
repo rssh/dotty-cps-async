@@ -1,6 +1,6 @@
 package cc
 
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import cc.DotcInvocations.IsAlreadyCompiledFlag
 
 class Test18Loom {

@@ -12,7 +12,7 @@ class Test12 {
   def testCompileAndRunM1(): Unit = {
     val dotcInvocations = new DotcInvocations()
     val (codeOrErrors, output) =
-        dotcInvocations.compileAndRunFilesInDirJVM("testdata/set12/m1",  "testdata/set12/m1",  "cpstest.Test12m1")
+        dotcInvocations.compileAndRunFilesInDirJVM("testdata/set12/m1",  "testdata/set12/m1-classes",  "cpstest.Test12m1")
     val reporter       = dotcInvocations.reporter
     if (reporter.errorCount == 0) then
       println(s"output=${output}")
@@ -50,7 +50,7 @@ class Test12 {
   def testCompileAndRunM3(): Unit =
     val dotcInvocations = new DotcInvocations()
     val (code, output) =
-        dotcInvocations.compileAndRunFilesInDirJVM("testdata/set12/m3", "testdata/set12/m3", "cpstest.Test12m3")
+        dotcInvocations.compileAndRunFilesInDirJVM("testdata/set12/m3", "testdata/set12/m3-classes", "cpstest.Test12m3")
     val reporter       = dotcInvocations.reporter
     //println("summary: " + reporter.summary)
     //println(s"output=${output}")

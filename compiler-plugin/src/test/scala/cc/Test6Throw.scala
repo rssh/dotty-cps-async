@@ -10,7 +10,7 @@ class Test6Throw {
 
     val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
       "testdata/set6Throw/m1",
-      "testdata/set6Throw/m1/target",
+      "testdata/set6Throw/m1-classes",
       "cpstest.Test6m1"
     )
 
@@ -30,7 +30,7 @@ class Test6Throw {
 
     val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
       "testdata/set6Throw/m2",
-      "testdata/set6Throw/m2/target",
+      "testdata/set6Throw/m2-classes",
       "cpstest.Test6m2"
     )
 

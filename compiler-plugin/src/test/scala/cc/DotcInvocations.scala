@@ -168,7 +168,7 @@ object DotcInvocations {
 
   def compileFilesInDir(dir: String, invocationArgs: DotcInvocationArgs = DotcInvocationArgs()): Reporter = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
-    dotcInvocations.compileFilesInDir(dir, invocationArgs.outDir.getOrElse(dir),
+    dotcInvocations.compileFilesInDir(dir, invocationArgs.outDir.getOrElse(s"${dir}-classes"),
       invocationArgs.extraDotcArgs, invocationArgs.checkAll, invocationArgs.usePlugin)
     dotcInvocations.reporter
   }
@@ -187,7 +187,7 @@ object DotcInvocations {
                                            ): Unit = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(dir,invocationArgs.outDir.getOrElse(dir),
+    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(dir,invocationArgs.outDir.getOrElse(s"${dir}-classes"),
       mainClass,invocationArgs.extraDotcArgs,invocationArgs.checkAll,invocationArgs.usePlugin)
 
     val reporter = dotcInvocations.reporter
@@ -220,7 +220,7 @@ object DotcInvocations {
                          sourceDir: String,
                          compiledFlag: IsAlreadyCompiledFlag
                        ) {
-    def outDir = sourceDir
+    def outDir = s"${sourceDir}-classes"
   }
 
 
@@ -236,9 +236,13 @@ object DotcInvocations {
     }
     val baseClassPath = if (invocationArgs.useScalaJsLib) currentJsClasspath else System.getProperty("java.class.path")
     val classpath1 = s"${dependency.outDir}:${baseClassPath}"
-    val secondInvokationArgs = invocationArgs.copy(extraDotcArgs = List("-classpath", classpath1) ++ invocationArgs.extraDotcArgs)
+    val secondOutDir = s"${dirname}-classes"
+    val secondInvokationArgs = invocationArgs.copy(
+      extraDotcArgs = List("-classpath", classpath1) ++ invocationArgs.extraDotcArgs,
+      outDir = Some(secondOutDir)
+    )
     DotcInvocations.succesfullyCompileFilesInDir(dirname, secondInvokationArgs)
-    val classpath2 = s"${dirname}:${classpath1}"
+    val classpath2 = s"${secondOutDir}:${classpath1}"
     val mainClass = "testUtil.JunitMain"
     val cmd = s"java -cp $classpath2 $mainClass $testClassName"
     println(s"Running $cmd")

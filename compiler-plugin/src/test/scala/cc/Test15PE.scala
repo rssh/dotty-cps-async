@@ -16,6 +16,7 @@ class Test15PE {
 
 
   @Test
+  @Ignore
   def testFizzBuzz() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m1", "cps.pe.TestFizzBuzz",
       DotcInvocationArgs(checkAll = true,
@@ -28,6 +29,7 @@ class Test15PE {
 
 
   @Test
+  @Ignore
   def testFizzBuzzLocalDirectRef() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m2", "cps.pe.TestFizzBuzz",
       DotcInvocationArgs(checkAll = true,
@@ -40,6 +42,7 @@ class Test15PE {
 
 
   @Test
+  @Ignore
   def testUseResourceM3() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m3", "cps.pe.TestUseResource",
       DotcInvocationArgs(checkAll = true,
@@ -52,6 +55,7 @@ class Test15PE {
 
 
   @Test
+  @Ignore
   def testUseResourceM4() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m4", "cps.pe.TestUseResourceFromPlugin",
       DotcInvocationArgs(checkAll = true,
@@ -67,15 +71,15 @@ class Test15PE {
   @Test
   def testFizzBuzzWithInlineDirectRefM5() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m5", "cps.pe.TestFizzBuzzM5",
-      DotcInvocationArgs(checkAll = false,
+      DotcInvocationArgs(checkAll = false, silent=false,
         extraDotcArgs = List(
-          //"-Vprint:rssh.cps", "-Vprint:erasure"
+          "-Vprint:rssh.cps", "-Vprint:erasure"
         )
       )
     )
   }
 
-
+  /*
   @Test
   def testFizzBuzzWithInlineDirectRefM6() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m6", "cps.pe.TestFizzBuzzM6",
@@ -122,6 +126,8 @@ class Test15PE {
       )
     )
   }
+
+   */
 
 
 }

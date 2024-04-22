@@ -10,8 +10,8 @@ class Test7Import {
     val dotcInvocations = new DotcInvocations()
 
     val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
-      "testdata/Set7Import",
-      "testdata/Set7Import",
+      "testdata/Set7Import/src",
+      "testdata/Set7Import/classes",
       "cpstest.Test7"
     )
 

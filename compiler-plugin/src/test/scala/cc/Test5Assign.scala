@@ -10,7 +10,7 @@ class Test5Assign {
     val dotcInvocations = new DotcInvocations()
 
     val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
-      "testdata/set5Assign/m1",
+      "testdata/set5Assign/m1/src",
       "testdata/set5Assign/m1/target",
       "cpstest.Test5m1"
     )
@@ -31,7 +31,7 @@ class Test5Assign {
     val dotcInvocations = new DotcInvocations()
 
     val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
-      "testdata/set5Assign/m2",
+      "testdata/set5Assign/m2/src",
       "testdata/set5Assign/m2/target",
       "cpstest.Test5m2"
     )

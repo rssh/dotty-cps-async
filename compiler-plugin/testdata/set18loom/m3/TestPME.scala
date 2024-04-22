@@ -3,6 +3,8 @@ package cpsloomtest
 import cps.*
 
 import java.util.concurrent.{CompletableFuture, ConcurrentHashMap, ConcurrentLinkedQueue}
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import scala.annotation.experimental
 import scala.util.*
 import scala.collection.mutable.{Map, Queue}
@@ -131,6 +133,7 @@ object PoorManEffect {
     }
 
     private def setWaiterResult(id: Long, value: Try[Any]): Unit = {
+      println(s"setWaiterResult: id=${id}, value=${value},cf=${waiters.get(id)}")
       waiters.get(id) match
         case Some(cf) =>
           value match
@@ -184,7 +187,8 @@ object PoorManEffect {
             if (v != null) {
               //
               v.pe match
-                case Pure(t) => setWaiterResult(v.id, Success(t))
+                case Pure(t) =>
+                  setWaiterResult(v.id, Success(t))
                 case Error(e) =>
                   setWaiterResult(v.id, Failure(e))
                 case Thunk(th) =>
@@ -227,6 +231,7 @@ object PoorManEffect {
 
 
   def run[A](pe: PoorManEffect[A]): A = {
+      println("poorManEffect.run")
       val runner = new Runner()
       val id0 = runner.submit[A](pe)
       val resultFuture = runner.listenSubmitted[A](id0)
@@ -258,13 +263,32 @@ object PoorManEffect {
                      println(s"runner.runQueue.isEmpty == ${runner.runQueue.isEmpty}")
                      throw new RuntimeException(s"process finished, but no result for id ${id0}")
             else
-               blocking {
-                 try
-                    resultFuture.get()
-                 catch
-                    case ex: ExecutionException =>
-                      throw ex.getCause()
+               var retval: A | Null = null
+               while(!resultFuture.isDone) {
+                 blocking {
+                   try
+                     retval = resultFuture.get(500, TimeUnit.MILLISECONDS)
+                   catch
+                     case ex: ExecutionException =>
+                       throw ex.getCause()
+                     case te: TimeoutException =>
+                       if (runner.processEntryCounter.get() == 0)
+                         throw new RuntimeException(s"process finished, but no result for id ${id0}")
+                       else
+                         println(s"timeout waiting for id ${id0}")
+                         throw new RuntimeException(s"timeout for id ${id0}")
+                 }
                }
+               if (resultFuture.isCompletedExceptionally){
+                 throw new RuntimeException(s"impossible, resultFuture.isCompletedExceptionally for id ${id0}")
+               }
+               if (resultFuture.isDone) {
+                 // race condition in Loom !!!
+                 retval = resultFuture.get()
+               }
+               if (retval == null) then
+                 throw new RuntimeException(s"impossible, result is null for id ${id0}, resultFuture.isDone=${resultFuture.isDone}, rf=${resultFuture}, rf.get()=${resultFuture.get()}")
+               retval.asInstanceOf[A]
 
   }
 
@@ -290,9 +314,11 @@ class PoorManEffectRuntimeAwait(rt:PoorManEffect.RunAPI) extends CpsRuntimeAwait
                       cf.get()
                    catch
                      case  ex: ExecutionException =>
+                       println("PoorManEffectRuntimeAwait.await: ExecutionException: "+ex.getCause())
                        throw ex.getCause()
-                   finally
-                      rt.forgetSubmitted(id)
+                     finally
+                       println(s"PoorManEffectRuntimeAwait.await: forgetSubmitted ${id} because await is finished")
+                       rt.forgetSubmitted(id)
       retval
     }
   }
@@ -374,15 +400,19 @@ class TestPME {
   def runPMECatchExceptionFromAwait(using CpsDirect[PoorManEffect]): Int = {
     val list0 = MyList.create(1, 2, 3, 4, 5)
     try {
+      println("runPMECatchExceptionFromAwait: before map")
       val list1 = list0.map[Int](x => await(PoorManEffect.Error(new RuntimeException("test"))))
+      println("runPMECatchExceptionFromAwait: after map")
       org.junit.Assert.assertTrue(false)
       1
     } catch {
       case ex: RuntimeException =>
+        println(s"runPMECatchExceptionFromAwait: catched exception: ${ex.getMessage}")
         //dotty error durint -Ycheck:all
         //  TODO: create test-case with issue
         //assert(ex.getMessage() == "test")
         org.junit.Assert.assertTrue(ex.getMessage() == "test")
+        println(s"runPMECatchExceptionFromAwait: after junit assert")
         2
     }
   }
@@ -393,6 +423,9 @@ class TestPME {
       runPMECatchExceptionFromAwait
     }
     val r = PoorManEffect.run(c)
+    if (r!=2) {
+      println(s"r=$r")
+    }
     assert(r==2)
   }
 
