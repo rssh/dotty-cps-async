@@ -28,58 +28,6 @@ class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends
 
 
 
- 
-
-  def transformDefDefDisabled(tree: tpd.DefDef)(using Context): tpd.Tree = {
-
-      lazy val cpsTransformedAnnot = Symbols.requiredClass("cps.plugin.annotation.CpsTransformed")
-
-      if (tree.symbol.denot.is(Flags.Inline)) then
-        tree
-      else
-        val topTree = tree
-        val optKind = SelectedNodes.detectDefDefSelectKind(tree)
-        optKind.foreach{kind =>
-          tree.symbol.addAnnotation(cpsTransformedAnnot)
-          selectedNodes.addDefDef(tree.symbol,kind)
-        }
-        // TODO:  try run this onlu on selected nodes
-        val childTraversor = new TreeTraverser {
-          override def traverse(tree: Tree)(using Context): Unit = {
-            tree match
-              case fun: DefDef if (fun.symbol != topTree.symbol) =>
-                selectedNodes.getDefDefRecord(tree.symbol) match
-                  case Some(r) =>
-                    if (!r.internal) {
-                      selectedNodes.markAsInternal(tree.symbol)
-                      traverseChildren(tree)
-                    }
-                  case None =>
-                    traverseChildren(tree)
-              case Block(List(ddef:DefDef), closure:Closure) if ddef.symbol == closure.meth.symbol =>
-                traverseChildren(tree)
-              case Block(List(ddef:DefDef), Typed(closure:Closure, tp)) if ddef.symbol == closure.meth.symbol =>
-                traverseChildren(tree)
-              case Block(stats, expr) =>
-                // don't mark local function definitions and templates as internal
-                for(s <- stats) {
-                  s match
-                    case defDef: DefDef  =>
-                        //traverse(defDef)
-                    case tdef: TypeDef =>
-                        // do nothing
-                    case other =>
-                        traverse(other)
-                }
-                traverse(expr)
-              case _ =>
-                traverseChildren(tree)
-          }
-        }
-        childTraversor.traverse(tree)
-        tree
-  }
-
   override def transformValDef(tree: tpd.ValDef)(using Context): tpd.Tree = {
     tree.rhs match
       case EmptyTree =>
