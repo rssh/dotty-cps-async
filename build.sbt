@@ -62,7 +62,6 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         mimaFailOnNoPrevious := false
     ).nativeSettings(
         libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
-        //libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
         addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
     )
 
@@ -183,7 +182,6 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                               Test / unmanagedSources / excludeFilter := "TestSF1W1.scala" || "TestSL3.scala" || "TestSF4.scala"
                            ).nativeSettings(
                               libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
-                              libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
                               addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full),
                               Test / unmanagedSourceDirectories ++= Seq(
                                   baseDirectory.value / ".." / ".." / "native" / "src" / "test" / "scala"
@@ -204,7 +202,6 @@ lazy val logic = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
   ).nativeSettings(
     libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
-    libraryDependencies += "com.github.lolgab" %%% "native-loop-core" % "0.2.1" % Test,
     addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
   )
 
