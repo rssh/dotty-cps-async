@@ -23,7 +23,9 @@ class TestAsyncListIterator {
 
     val stream: AsyncList[Future, Int] = asyncStream[AsyncList[Future, Int]] { out =>
       out.emit(0)
-      for i <- 1 to N do out.emit(i)
+      for i <- 1 to N do {
+        out.emit(i)
+      }
     }
 
     val ite = stream.iterator
@@ -40,7 +42,7 @@ class TestAsyncListIterator {
       assert(count == N+1)
       res
     }
-
+    
     FutureCompleter(compute)
   }
 
