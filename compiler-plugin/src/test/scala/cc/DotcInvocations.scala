@@ -79,6 +79,9 @@ class DotcInvocations(silent: Boolean = true, scalaJs: Boolean = false) {
    * @return list of scala files
    */
   def scalaFilesIn(path: Path): List[String] = {
+    if (!path.exists) {
+      throw new RuntimeException(s"Path ${path} does not exist")
+    }
     if (path.isDirectory) {
       val dir = path.toDirectory
       dir.list.toList.flatMap(scalaFilesIn)

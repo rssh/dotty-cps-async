@@ -1,6 +1,6 @@
 package cc
 
-import org.junit.{Ignore, Test}
+import org.junit.{Test}
 
 class Test21Abstract {
 
