@@ -21,7 +21,9 @@ class Test21Abstract {
       DotcInvocations.compileAndRunFilesInDirAndCheckResult(
         "testdata/set21abstract/m2",
         "m2.Main",
-        invocationArgs = DotcInvocationArgs(silent=false, extraDotcArgs = List("-Vprint:erasure,rssh.cps"))
+        invocationArgs = DotcInvocationArgs(silent=false,
+          //extraDotcArgs = List("-Vprint:erasure,rssh.cps")
+        )
       )
     }
 
