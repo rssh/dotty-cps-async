@@ -216,6 +216,7 @@ Usage:
                catch
                    case NonFatal(ex) =>
                       logger.log(s"Can't fetch $url, skipping", ex)
+                      None
           }.toMap
 
 

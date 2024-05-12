@@ -324,7 +324,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"root","t":"root","d":"","k":"s
 {"l":"cps/plugin/annotation.html#","e":false,"i":"","n":"cps.plugin.annotation","t":"cps.plugin.annotation","d":"","k":"package","x":""},
 {"l":"cps/plugin/annotation/CpsDebugLevel.html#","e":false,"i":"","n":"CpsDebugLevel","t":"CpsDebugLevel(level: Int) extends StaticAnnotation","d":"cps.plugin.annotation","k":"class","x":""},
 {"l":"cps/plugin/annotation/CpsNotChange.html#","e":false,"i":"","n":"CpsNotChange","t":"CpsNotChange() extends StaticAnnotation","d":"cps.plugin.annotation","k":"class","x":""},
-{"l":"cps/plugin/annotation/CpsTransformed.html#","e":false,"i":"","n":"CpsTransformed","t":"CpsTransformed() extends StaticAnnotation","d":"cps.plugin.annotation","k":"class","x":""},
+{"l":"cps/plugin/annotation/CpsTransformed.html#","e":false,"i":"","n":"CpsTransformed","t":"CpsTransformed[F[_]]() extends StaticAnnotation","d":"cps.plugin.annotation","k":"class","x":""},
 {"l":"cps/plugin/annotation/makeCPS.html#","e":false,"i":"","n":"makeCPS","t":"makeCPS() extends StaticAnnotation","d":"cps.plugin.annotation","k":"class","x":""},
 {"l":"cps/plugin/scaffolding.html#","e":false,"i":"","n":"cps.plugin.scaffolding","t":"cps.plugin.scaffolding","d":"","k":"package","x":""},
 {"l":"cps/plugin/scaffolding.html#adoptCpsedCall-fffff558","e":false,"i":"","n":"adoptCpsedCall","t":"adoptCpsedCall[F[_], T](f: T): F[T]","d":"cps.plugin.scaffolding","k":"def","x":""},
