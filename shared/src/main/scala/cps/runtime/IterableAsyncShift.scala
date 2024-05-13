@@ -63,7 +63,14 @@ class IterableAsyncShift[A, CA <: Iterable[A] ] extends AsyncShift[CA] {
        c.collectFirst(pf) match
           case Some(fb) => monad.map(fb)(Some(_))
           case None => monad.pure(None)
-     
+
+  //TEACHING:
+  // Let's look how foreach will be changed in async block:
+  //Next expression
+  // collection.foreach[U](f:A=>U): Unit  // (collection: C[A])
+  // should be transformed to
+  //  summon[AsyncShift[C[A]].foreach[F,U](c,monad)(cpsTransform(f))
+  //
   def foreach[F[_],U](c: CA, monad: CpsMonad[F])(f: A => F[U]): F[Unit] = 
      shiftedFold(c,monad)((),f,(s,a,b)=>s,identity)
 

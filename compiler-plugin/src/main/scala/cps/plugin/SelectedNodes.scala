@@ -25,6 +25,7 @@ enum DefDefSelectKind {
     case USING_CONTEXT_PARAM(cmc) => cmc
     case RETURN_CONTEXT_FUN(internal) => internal.getCpsDirectContext
 
+
 }
 
 /**
@@ -98,7 +99,7 @@ object SelectedNodes {
   /**
    *
    * @param tree: tree to process
-   * @param f: (defDef(selected function),  Tree: (CpsMonadContext parameter)) => Option[A] is called
+   * @param f: (defDef(selected function),  Tree: (CpsMonadContext parameter), index:Int) => Option[A] is called
    *    when we find parameter with type CpsMonadContext.
    * @param acc
    * @param Context

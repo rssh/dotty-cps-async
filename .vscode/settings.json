@@ -1,5 +1,8 @@
 {
     "restructuredtext.confPath": "${workspaceFolder}/docs",
     "esbonio.server.enabled": true,
-    "esbonio.sphinx.confDir": "${workspaceFolder}/docs"
+    "esbonio.sphinx.confDir": "${workspaceFolder}/docs",
+    "files.watcherExclude": {
+        "**/target": true
+    }
 }

@@ -11,7 +11,7 @@ import reporting.*
 import scala.util.matching.Regex
 
 
-class DotcInvocations(silent: Boolean = false, scalaJs: Boolean = false) {
+class DotcInvocations(silent: Boolean = true, scalaJs: Boolean = false) {
 
   def compileFiles(files: List[String], outDir: String, extraArgs: List[String]=List.empty, checkAll: Boolean = true, usePlugin: Boolean=true): Reporter = {
     val args = List("-d", outDir) ++
@@ -79,6 +79,9 @@ class DotcInvocations(silent: Boolean = false, scalaJs: Boolean = false) {
    * @return list of scala files
    */
   def scalaFilesIn(path: Path): List[String] = {
+    if (!path.exists) {
+      throw new RuntimeException(s"Path ${path} does not exist")
+    }
     if (path.isDirectory) {
       val dir = path.toDirectory
       dir.list.toList.flatMap(scalaFilesIn)
@@ -124,7 +127,7 @@ case class TestRun(inputDir: String, mainClass: String, expectedOutput: String =
 
 case class DotcInvocationArgs(
                                extraDotcArgs: List[String] = List.empty,
-                               silent: Boolean = false,
+                               silent: Boolean = true,
                                checkAll: Boolean = true,
                                usePlugin: Boolean = true,
                                useScalaJsLib: Boolean = false,
@@ -168,7 +171,7 @@ object DotcInvocations {
 
   def compileFilesInDir(dir: String, invocationArgs: DotcInvocationArgs = DotcInvocationArgs()): Reporter = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
-    dotcInvocations.compileFilesInDir(dir, invocationArgs.outDir.getOrElse(dir),
+    dotcInvocations.compileFilesInDir(dir, invocationArgs.outDir.getOrElse(s"${dir}-classes"),
       invocationArgs.extraDotcArgs, invocationArgs.checkAll, invocationArgs.usePlugin)
     dotcInvocations.reporter
   }
@@ -187,11 +190,11 @@ object DotcInvocations {
                                            ): Unit = {
     val dotcInvocations = new DotcInvocations(invocationArgs.silent)
 
-    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(dir,invocationArgs.outDir.getOrElse(dir),
+    val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(dir,invocationArgs.outDir.getOrElse(s"${dir}-classes"),
       mainClass,invocationArgs.extraDotcArgs,invocationArgs.checkAll,invocationArgs.usePlugin)
 
     val reporter = dotcInvocations.reporter
-    println("summary: " + reporter.summary)
+    println(s"summary in ${dir}: " + reporter.summary)
     checkReporter(reporter)
 
     //println(s"output=${output}")
@@ -220,7 +223,7 @@ object DotcInvocations {
                          sourceDir: String,
                          compiledFlag: IsAlreadyCompiledFlag
                        ) {
-    def outDir = sourceDir
+    def outDir = s"${sourceDir}-classes"
   }
 
 
@@ -236,9 +239,13 @@ object DotcInvocations {
     }
     val baseClassPath = if (invocationArgs.useScalaJsLib) currentJsClasspath else System.getProperty("java.class.path")
     val classpath1 = s"${dependency.outDir}:${baseClassPath}"
-    val secondInvokationArgs = invocationArgs.copy(extraDotcArgs = List("-classpath", classpath1) ++ invocationArgs.extraDotcArgs)
+    val secondOutDir = s"${dirname}-classes"
+    val secondInvokationArgs = invocationArgs.copy(
+      extraDotcArgs = List("-classpath", classpath1) ++ invocationArgs.extraDotcArgs,
+      outDir = Some(secondOutDir)
+    )
     DotcInvocations.succesfullyCompileFilesInDir(dirname, secondInvokationArgs)
-    val classpath2 = s"${dirname}:${classpath1}"
+    val classpath2 = s"${secondOutDir}:${classpath1}"
     val mainClass = "testUtil.JunitMain"
     val cmd = s"java -cp $classpath2 $mainClass $testClassName"
     println(s"Running $cmd")

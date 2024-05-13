@@ -3,6 +3,8 @@ package cpsloomtest
 import cps.*
 
 import java.util.concurrent.{CompletableFuture, ConcurrentHashMap, ConcurrentLinkedQueue}
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import scala.annotation.experimental
 import scala.util.*
 import scala.collection.mutable.{Map, Queue}
@@ -77,7 +79,8 @@ object PoorManEffect {
     case class EvalRecord(pe: PoorManEffect[Any], id: Long)
 
     // only one thread at a time.
-    val runQueue: Queue[EvalRecord] = Queue()
+    //val runQueue: Queue[EvalRecord] = Queue()
+    val runQueue: java.util.concurrent.ConcurrentLinkedDeque[EvalRecord] = new java.util.concurrent.ConcurrentLinkedDeque()
 
     val currentWaitId = new AtomicLong(0L)
     val waiters: TrieMap[Long,CompletableFuture[Any]] = TrieMap()
@@ -86,18 +89,20 @@ object PoorManEffect {
     val submitWaiter = new AnyRef()
 
     override def submitAndForget[T](pe: PoorManEffect[T]): Unit = {
-      runQueue.enqueue(EvalRecord(pe,nextId))
+      //runQueue.enqueue(EvalRecord(pe,nextId)
+      runQueue.add(EvalRecord(pe,nextId))
       submitWaiter.synchronized {
-        submitWaiter.notify()
+        submitWaiter.notifyAll()
       }
     }
 
     override def submit[T](pe: PoorManEffect[T]): Long =  {
       val id = nextId
-      runQueue.enqueue(EvalRecord(pe,id))
+      //runQueue.enqueue(EvalRecord(pe,id))
+      runQueue.add(EvalRecord(pe,id))
       waiters(id) = new CompletableFuture[Any]()
       submitWaiter.synchronized {
-        submitWaiter.notify()
+        submitWaiter.notifyAll()
       }
       id
     }
@@ -128,18 +133,21 @@ object PoorManEffect {
     }
 
     private def setWaiterResult(id: Long, value: Try[Any]): Unit = {
+      println(s"setWaiterResult: id=${id}, value=${value},cf=${waiters.get(id)}")
       waiters.get(id) match
         case Some(cf) =>
           value match
             case Success(t) => cf.complete(t)
             case Failure(e) => cf.completeExceptionally(e)
         case None =>
+            throw new IllegalArgumentException(s"invalid submitId=${id}")
     }
 
 
     def process(): Unit = {
-      var blocked: Boolean = false
-      var finished: Boolean = false
+      //println(s"starting process thread ${Thread.currentThread().getId()}")
+      @volatile var blocked: Boolean = false
+      @volatile var finished: Boolean = false
       processEntryCounter.incrementAndGet()
       BlockContext.withBlockContext(
         new BlockContext {
@@ -168,35 +176,40 @@ object PoorManEffect {
         while (!finished && !blocked) {
           while(runQueue.isEmpty && !blocked && nThunksInProcess.get() > 0) {
             submitWaiter.synchronized {
-              submitWaiter.wait()
+                if (runQueue.isEmpty && !blocked && nThunksInProcess.get() > 0) {
+                   submitWaiter.wait()
+                }
             }
           }
           while (!runQueue.isEmpty && !blocked) {
-            val v = runQueue.dequeue()
-            v.pe match
-              case Pure(t) => setWaiterResult(v.id, Success(t))
-              case Error(e) =>
-                setWaiterResult(v.id, Failure(e))
-              case Thunk(th) =>
-                // here we can have call of block-context.
-                nThunksInProcess.incrementAndGet()
-                try {
-                  val r = try {
-                    th(this)
-                  } catch {
-                    case NonFatal(ex) =>
-                      Error(ex)
+            //val v = runQueue.dequeue()
+            val v = runQueue.poll()
+            if (v != null) {
+              //
+              v.pe match
+                case Pure(t) =>
+                  setWaiterResult(v.id, Success(t))
+                case Error(e) =>
+                  setWaiterResult(v.id, Failure(e))
+                case Thunk(th) =>
+                  // here we can have call of block-context.
+                  nThunksInProcess.incrementAndGet()
+                  try {
+                    val r = try {
+                      th(this)
+                    } catch {
+                      case NonFatal(ex) =>
+                        Error(ex)
+                    }
+                    // execution can be moved to be processed in the other virtual thread.
+                    runQueue.add(EvalRecord(r, v.id))
+                    submitWaiter.synchronized {
+                      submitWaiter.notifyAll()
+                    }
+                  } finally {
+                    nThunksInProcess.decrementAndGet()
                   }
-                  // execution was moved to be processed in the other virtual thread.
-                  //   since carries thread same - we can just enqueue it.
-                  //   with thread pool we will need other external submit,
-                  runQueue.enqueue(EvalRecord(r, v.id))
-                  submitWaiter.synchronized {
-                    submitWaiter.notifyAll()
-                  }
-                } finally {
-                  nThunksInProcess.decrementAndGet()
-                }
+            }
           }
           if (!blocked) {
             if (runQueue.isEmpty && nThunksInProcess.get() == 0) {
@@ -205,6 +218,7 @@ object PoorManEffect {
           }
         }
         processEntryCounter.decrementAndGet()
+        //println(s"exiting process thread ${Thread.currentThread().getId()} blocked=${blocked}")
       }
 
     }
@@ -217,38 +231,64 @@ object PoorManEffect {
 
 
   def run[A](pe: PoorManEffect[A]): A = {
+      println("poorManEffect.run")
       val runner = new Runner()
       val id0 = runner.submit[A](pe)
       val resultFuture = runner.listenSubmitted[A](id0)
-      try
+      if (resultFuture.isDone) then
+        try
+          resultFuture.get()
+        catch
+          case ex: ExecutionException =>
+            throw ex.getCause()
+      else
+        try
          runner.process()
-      catch
-        case NonFatal(ex) =>
-          println(s"Impossible, excwption from process: ${ex.getMessage}")
-          throw ex
-      runner.checkSubmitted[A](id0) match
-        case Some(Success(t)) => t.asInstanceOf[A]
-        case Some(Failure(e)) => throw e
-        case None =>
-           //in real life we also will think about timeouts.
-           if (runner.processEntryCounter.get() == 0) {
-             // recheck for second thread deliverd result.
-             runner.checkSubmitted[A](id0) match
+        catch
+          case NonFatal(ex) =>
+            println(s"Impossible, excwption from process: ${ex.getMessage}")
+            throw ex
+        runner.checkSubmitted[A](id0) match
+          case Some(Success(t)) => t.asInstanceOf[A]
+          case Some(Failure(e)) => throw e
+          case None =>
+             //in real life we also will think about timeouts.
+            if (runner.processEntryCounter.get() == 0)
+               // recheck for second thread deliverd result.
+              runner.checkSubmitted[A](id0) match
                 case Some(Success(t)) => t.asInstanceOf[A]
                 case Some(Failure(e)) => throw e
                 case None =>
                      println(s"runner.nProcessEntries == ${runner.processEntryCounter.get()}")
                      println(s"runner.runQueue.isEmpty == ${runner.runQueue.isEmpty}")
                      throw new RuntimeException(s"process finished, but no result for id ${id0}")
-           } else {
-             blocking {
-               try
-                  resultFuture.get()
-               catch
-                 case ex: ExecutionException =>
-                   throw ex.getCause()
-             }
-           }
+            else
+               var retval: A | Null = null
+               while(!resultFuture.isDone) {
+                 blocking {
+                   try
+                     retval = resultFuture.get(500, TimeUnit.MILLISECONDS)
+                   catch
+                     case ex: ExecutionException =>
+                       throw ex.getCause()
+                     case te: TimeoutException =>
+                       if (runner.processEntryCounter.get() == 0)
+                         throw new RuntimeException(s"process finished, but no result for id ${id0}")
+                       else
+                         println(s"timeout waiting for id ${id0}")
+                         throw new RuntimeException(s"timeout for id ${id0}")
+                 }
+               }
+               if (resultFuture.isCompletedExceptionally){
+                 throw new RuntimeException(s"impossible, resultFuture.isCompletedExceptionally for id ${id0}")
+               }
+               if (resultFuture.isDone) {
+                 // race condition in Loom !!!
+                 retval = resultFuture.get()
+               }
+               if (retval == null) then
+                 throw new RuntimeException(s"impossible, result is null for id ${id0}, resultFuture.isDone=${resultFuture.isDone}, rf=${resultFuture}, rf.get()=${resultFuture.get()}")
+               retval.asInstanceOf[A]
 
   }
 
@@ -274,9 +314,11 @@ class PoorManEffectRuntimeAwait(rt:PoorManEffect.RunAPI) extends CpsRuntimeAwait
                       cf.get()
                    catch
                      case  ex: ExecutionException =>
+                       println("PoorManEffectRuntimeAwait.await: ExecutionException: "+ex.getCause())
                        throw ex.getCause()
-                   finally
-                      rt.forgetSubmitted(id)
+                     finally
+                       println(s"PoorManEffectRuntimeAwait.await: forgetSubmitted ${id} because await is finished")
+                       rt.forgetSubmitted(id)
       retval
     }
   }
@@ -358,15 +400,19 @@ class TestPME {
   def runPMECatchExceptionFromAwait(using CpsDirect[PoorManEffect]): Int = {
     val list0 = MyList.create(1, 2, 3, 4, 5)
     try {
+      println("runPMECatchExceptionFromAwait: before map")
       val list1 = list0.map[Int](x => await(PoorManEffect.Error(new RuntimeException("test"))))
+      println("runPMECatchExceptionFromAwait: after map")
       org.junit.Assert.assertTrue(false)
       1
     } catch {
       case ex: RuntimeException =>
+        println(s"runPMECatchExceptionFromAwait: catched exception: ${ex.getMessage}")
         //dotty error durint -Ycheck:all
         //  TODO: create test-case with issue
         //assert(ex.getMessage() == "test")
         org.junit.Assert.assertTrue(ex.getMessage() == "test")
+        println(s"runPMECatchExceptionFromAwait: after junit assert")
         2
     }
   }
@@ -377,6 +423,9 @@ class TestPME {
       runPMECatchExceptionFromAwait
     }
     val r = PoorManEffect.run(c)
+    if (r!=2) {
+      println(s"r=$r")
+    }
     assert(r==2)
   }
 

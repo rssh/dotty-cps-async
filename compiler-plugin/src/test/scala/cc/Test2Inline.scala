@@ -12,7 +12,7 @@ class Test2Inline {
       List("testdata/set2_inlinefun"),
       "testdata/set2/target",
       "cpstest.Example2Inline",
-      extraArgs = List("-Vprint:rssh.cps")
+      //extraArgs = List("-Vprint:rssh.cps")
     )
 
 

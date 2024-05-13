@@ -1,6 +1,7 @@
 package cps.macros.forest
 
 import scala.quoted.*
+import scala.util.control.NonFatal
 import cps.*
 import cps.macros.*
 import cps.macros.common.*
@@ -185,8 +186,9 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         case Ident(name) =>
           handleArgs1(applyTerm, fun, CpsTree.pure(owner, fun), args, tails)(owner)
         case _ =>
-          val cpsObj = runRoot(obj)(owner)
-          handleArgs1(applyTerm, fun, cpsObj, args, tails)(owner)
+          //
+          val cpsFun = runRoot(fun)(owner)
+          handleArgs1(applyTerm, fun, cpsFun, args, tails)(owner)
      }
 
 
@@ -314,6 +316,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
    *
    *@param applyTerm = Apply(fun, args)  - origin apply
    *@param fun - function to apply (with type-paerameters)
+   *@param cpsFun - cps-sed of representation of functions
    *@param args - first argument list
    *@param tails - next argument lists if any
    *@param unpure - if true, that this is call from shifted substitution, which is already return F[_] by design.
@@ -350,14 +353,12 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                                                          && !fun.symbol.name.contains("$")
         if (callCpsDirect && !fun.symbol.flags.is(Flags.Inline)) then
               val funSym = TransformUtil.extractCarriedFunSym(fun)
-              println(s"funSym=${funSym}")
               if(!funSym.isDefinedInCurrentRun &&
                  !funSym.flags.is(Flags.Inline) &&
                  !funSym.hasAnnotation(cpsTransformedSymbol)  ) then
                  // situation, when external function is not transformed by cps-async.
                  //  note, that we can't determinate for function in the current compilation run, because
                  //  we can ba called from transparent inline function which run0s before compiler-plusing phase.
-                   println(s"!11:fun=${fun}, fun.symbol.fullName=${fun.symbol.fullName}, hashCode=${fun.symbol.hashCode} isDefinedInCurrentRun=${fun.symbol.isDefinedInCurrentRun}, flags=${fun.symbol.flags}")
                    throw MacroError(s"Function ${fun.symbol} is cps-=direct function compiled without dotty-cps-async-compiler plugin", applyTerm.asExpr)
         if cpsCtx.flags.debugLevel >= 15 then
             cpsCtx.log(s" existsShiftedLambda=${existsShiftedLambda}")
@@ -666,7 +667,6 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
               ),
               List(cpsCtx.monadContext.asTerm)
           )
-          println(s"shiftedApplyCps CPS_DEFERRED: retval=${retval.show}")
           CpsTree.impure(owner, retval, applyTerm.tpe.widen)
 
       }
@@ -760,7 +760,6 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
       PartialShiftedApply(ApplicationShiftType.CPS_AWAIT, delayedShift)
 
     def applyCpsDeferredShift(): PartialShiftedApply =
-      println(s"applyCpsDeferredShift: funTerm=${funTerm.show}")
       PartialShiftedApply(ApplicationShiftType.CPS_DEFERR_TO_PLUGIN,
         (unused) => Apply(funTerm, argRecords.map(_.term).toList)  // TODO: we can eliminate this if we have origin term
       )
@@ -1014,7 +1013,13 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
              case _ =>
                     cpsFun.syncOrigin match
                        case Some(fun) =>
-                            val applied = fun.appliedToArgss(argss)
+                            val applied = try {
+                              fun.appliedToArgss(argss)
+                            } catch {
+                              case ex: Throwable =>
+                                cpsCtx.log(s"buildApply: fun=${safeShow(fun)}")
+                                throw ex
+                            }
                             if (inShiftedCallChain)
                                shiftedResultCpsTree(applyTerm, applied, argsProperties.cpsDirectArg)(owner)
                             else
@@ -1138,8 +1143,6 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
             TypeRepr.of[F].appliedTo(tpe.widen)
       case _ =>
         TypeRepr.of[F].appliedTo(tpe.widen)
-
-    println(s"shiftedType(${tpe.show}) = ${retval.show}")
 
     retval
   }

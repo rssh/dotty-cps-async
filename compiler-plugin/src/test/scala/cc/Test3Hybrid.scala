@@ -9,7 +9,7 @@ class Test3Hybrid {
   def compileAndRunSet3(): Unit = {
     val dotcInvocations = new DotcInvocations()
     val res =dotcInvocations.compileAndRunFilesInDirsJVM(
-      List("testdata/set3"),
+      List("testdata/set3/src"),
       "testdata/set3/target",
       "cpstest.Example3"
     )

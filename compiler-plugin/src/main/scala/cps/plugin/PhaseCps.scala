@@ -53,7 +53,7 @@ class PhaseCps(settings: CpsPluginSettings,
     selectedNodes.getDefDefRecord(tree.symbol) match
       case Some(selectRecord) if (!selectRecord.internal)  =>
           try
-            transformDefDefInternal(tree, selectRecord, None)
+              transformDefDefInternal(tree, selectRecord, None)
           catch
             case ex: CpsTransformException =>
               report.error(ex.message, ex.pos)
@@ -72,30 +72,36 @@ class PhaseCps(settings: CpsPluginSettings,
     val retval = selectRecord.kind match
       case USING_CONTEXT_PARAM(cpsMonadContextArg) =>
         val cpsMonadContext = ref(cpsMonadContextArg.symbol)
-        val (tc, monadValDef) = makeCpsTopLevelContext(cpsMonadContext,tree.symbol,tree.srcPos,debugSettings, CpsTransformHelper.cpsDirectAliasSymbol)
-        val nTpt = CpsTransformHelper.cpsTransformedType(tree.tpt.tpe, tc.monadType)
-        selectRecord.monadType = tc.monadType
-        //selectRecord.changedReturnType = nTpt
-        given CpsTopLevelContext = tc
-        val ctx1: Context = summon[Context].withOwner(tree.symbol)
-        val transformedRhs = RootTransform(tree.rhs,tree.symbol, 0)(using ctx1, tc).transformed
-        val nRhs = Block(monadValDef::Nil,transformedRhs)(using ctx1)
-        val adoptedRhs = Scaffolding.adoptUncpsedRhs(nRhs, tree.tpt.tpe, tc.monadType)
-        val retval = cpy.DefDef(tree)(tree.name, tree.paramss, tree.tpt, adoptedRhs)
-        retval
+        if (tree.rhs.isEmpty) then
+          selectRecord.monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen,CpsTransformHelper.cpsDirectAliasSymbol,tree.srcPos)
+          tree
+        else
+          val (tc, monadValDef) = makeCpsTopLevelContext(cpsMonadContext,tree.symbol,tree.srcPos,debugSettings, CpsTransformHelper.cpsDirectAliasSymbol)
+          val nTpt = CpsTransformHelper.cpsTransformedType(tree.tpt.tpe, tc.monadType)
+          selectRecord.monadType = tc.monadType
+          //selectRecord.changedReturnType = nTpt
+          given CpsTopLevelContext = tc
+          val ctx1: Context = summon[Context].withOwner(tree.symbol)
+          val transformedRhs = RootTransform(tree.rhs,tree.symbol, 0)(using ctx1, tc).transformed
+          val nRhs = Block(monadValDef::Nil,transformedRhs)(using ctx1)
+          val adoptedRhs = Scaffolding.adoptUncpsedRhs(nRhs, tree.tpt.tpe, tc.monadType)
+          val retval = cpy.DefDef(tree)(tree.name, tree.paramss, tree.tpt, adoptedRhs)
+          retval
       case RETURN_CONTEXT_FUN(internalKind) =>
+        val cpsDirectContext = ref(selectRecord.kind.getCpsDirectContext.symbol)
+        val fType = CpsTransformHelper.extractMonadType(cpsDirectContext.tpe, CpsTransformHelper.cpsDirectAliasSymbol, tree.srcPos)
+        selectRecord.monadType = fType
         tree.rhs match
           case oldLambda@Block((ddef: DefDef)::Nil, closure: Closure) =>
             val nDefDef = transformDefDefInternal(ddef, DefDefSelectRecord(kind=internalKind,internal=true))
-            val cpsDirectContext = ref(selectRecord.kind.getCpsDirectContext.symbol)
-            val fType = CpsTransformHelper.extractMonadType(cpsDirectContext.tpe, CpsTransformHelper.cpsDirectAliasSymbol, tree.srcPos)
-            selectRecord.monadType = fType
             val nClosureType = CpsTransformHelper.cpsTransformedType(closure.tpe, fType)
             //selectRecord.changedReturnType = nClosureType
             val nClosure = Closure(closure.env, ref(nDefDef.symbol), EmptyTree).withSpan(closure.span)
             val nLambda = Block(nDefDef::Nil,nClosure).withSpan(oldLambda.span)
             val retval = cpy.DefDef(tree)(tree.name, tree.paramss, tree.tpt, nLambda)
             retval
+          case EmptyTree =>
+            tree
           case _ =>
             throw CpsTransformException("Lambda function was expected, we have $tree",tree.srcPos)
     if (debugSettings.printCode) then

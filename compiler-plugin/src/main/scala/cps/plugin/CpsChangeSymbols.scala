@@ -37,9 +37,21 @@ trait CpsChangeSymbols {
         // we have erased type in sym.info
         //  normal full type saced
         val monadType = selectRecord.monadType
-        val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType)
-        selectRecord.changedType = ntp
-        sym.copySymDenotation(info = ntp)
+        if (selectRecord.monadType == NoType) {
+          report.error(s"monadType is NoType for ${sym.symbol.show}", sym.symbol.srcPos)
+          throw CpsTransformException(s"monadType is NoType for ${sym.symbol.show}", sym.symbol.srcPos)
+        }
+        try
+          val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType, sym.symbol.srcPos)
+          selectRecord.changedType = ntp
+          val retval = sym.copySymDenotation(info = ntp)
+          retval
+        catch
+          case ex:CpsTransformException =>
+            ex.printStackTrace()
+            report.error(ex.message, ex.pos)
+            throw ex
+            //sym
       case None =>
             sym.info match
               case mt0: MethodOrPoly if (!sym.isAnonymousFunction) =>
@@ -51,7 +63,7 @@ trait CpsChangeSymbols {
                     findCpsDirectContextInParamss(oldSym.symbol, mtf, timeTravelContext) match
                       case Some(contextParamType) =>
                         val monadType = CpsTransformHelper.extractMonadType(contextParamType, cpsDirectSym, oldSym.symbol.srcPos)(using timeTravelContext)
-                        val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType)
+                        val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType, sym.symbol.srcPos)
                         sym.copySymDenotation(info = ntp)
                       case None =>
                         sym

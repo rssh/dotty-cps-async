@@ -1,7 +1,7 @@
 package cc
 
 import cc.DotcInvocations.IsAlreadyCompiledFlag
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.Assert.*
 
 import scala.concurrent.*
@@ -67,9 +67,9 @@ class Test15PE {
   @Test
   def testFizzBuzzWithInlineDirectRefM5() = {
     compileAndRunTestAfterCommon("testdata/set15pe/m5", "cps.pe.TestFizzBuzzM5",
-      DotcInvocationArgs(checkAll = false,
+      DotcInvocationArgs(checkAll = false, silent=false,
         extraDotcArgs = List(
-          //"-Vprint:rssh.cps", "-Vprint:erasure"
+         // "-Vprint:rssh.cps", "-Vprint:erasure"
         )
       )
     )
@@ -111,6 +111,18 @@ class Test15PE {
       )
     )
   }
+
+  @Test
+  def testExtDirectRefM9() = {
+    compileAndRunTestAfterCommon("testdata/set15pe/m9", "cps.pe.TestExtDirectRefM9",
+      DotcInvocationArgs(checkAll = true,
+        extraDotcArgs = List(
+          // "-Vprint:rssh.cps", "-Vprint:erasure"
+        )
+      )
+    )
+  }
+
 
 
 

@@ -1,6 +1,6 @@
 package cc
 
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import cc.DotcInvocations.IsAlreadyCompiledFlag
 
 class Test18Loom {
@@ -40,7 +40,7 @@ class Test18Loom {
     compileAndRunTestAfterCommon("testdata/set18loom/m3", "cpsloomtest.TestPME",
       DotcInvocationArgs(checkAll = true,
         extraDotcArgs = List(
-          "-Vprint:rssh.cps"
+          // "-Vprint:rssh.cps"
         )
       )
     )

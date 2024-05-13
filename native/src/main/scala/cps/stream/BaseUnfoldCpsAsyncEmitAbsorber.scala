@@ -1,11 +1,12 @@
 package cps.stream
 
-import cps.{*,given}
+import cps.{*, given}
 
 import scala.concurrent.*
 import scala.util.*
 import scala.collection.mutable.Queue
 import java.util.concurrent.atomic.*
+import scala.collection.mutable
 
 
 
@@ -29,27 +30,82 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C <: CpsMonadContext[F], T](using ec
   type ConsumerCallback = Try[SupplyEventRecord]=>Unit
   type OneThreadTaskCallback = Unit => Unit
 
+
   class State:
     val finishRef = new AtomicReference[Try[Unit]|Null]()
     val emitStart = new AtomicBoolean()
-    val supplyEvents = Queue[SupplyEventRecord]()
-    val consumerEvents = Queue[ConsumerCallback]()
+    private val supplyEvents = mutable.Queue[SupplyEventRecord]()
+    private val consumerEvents = mutable.Queue[ConsumerCallback]()
  
-    def queueEmit(v:T): F[Unit] =
+    private def queueEmit(v:T): F[Unit] =
       val p = Promise[Unit]()
       val emitted = Emitted(v, x => p.tryComplete(x) )
       supplyEvents.enqueue(emitted)
-      asyncMonad.adoptCallbackStyle{ emitCallback => 
+      asyncMonad.adoptCallbackStyle{ emitCallback =>
          p.future.onComplete(emitCallback)
       }
       
-    def queueConsumer(): F[SupplyEventRecord] =
+    private def queueConsumer(): F[SupplyEventRecord] =
       val p = Promise[SupplyEventRecord]()
       consumerEvents.enqueue( x => p.complete(x))
       asyncMonad.adoptCallbackStyle[SupplyEventRecord]{ evalCallback =>
          p.future.onComplete(evalCallback)
       }
       
+    private def tryDequeConsumer(): Option[ConsumerCallback] =
+        if (consumerEvents.isEmpty) None
+        else Some(consumerEvents.dequeue())
+
+    private def tryDequeSupply(): Option[SupplyEventRecord] =
+        if (supplyEvents.isEmpty) None
+        else Some(supplyEvents.dequeue())
+
+    def emit(v:T): F[Unit] = {
+      this.synchronized{
+        tryDequeConsumer() match
+          case Some(consumer) =>
+            asyncMonad.adoptCallbackStyle{ emitCallback =>
+              val emitted = Emitted(v, emitCallback)
+              consumer(Success(emitted))
+            }
+          case None =>
+            queueEmit(v)
+      }
+    }
+
+    def consume(): F[SupplyEventRecord] =
+      this.synchronized{
+        if (emitStart.compareAndSet(false, true)) then
+          asyncMonad.pure(SpawnEmitter)
+        else
+          tryDequeSupply() match
+            case Some(r) => asyncMonad.pure(r)
+            case None =>
+              queueConsumer()
+      }
+
+    def finish(r:Try[Unit]): Unit = {
+      this.synchronized{
+        finishRef.set(r)
+        while {
+          tryDequeConsumer() match
+            case Some(consumer) =>
+              consumer(Success(Finished(r)))
+              true
+            case None =>
+              false
+        } do ()
+        while {
+          tryDequeSupply() match
+            case Some(Emitted(_,cb)) =>
+              cb(Failure(new CancellationException("Stream is closed")))
+              true
+            case _ =>
+              false
+        } do ()
+      }
+    }
+
     
   val unitSuccess = Success(())
 
@@ -58,30 +114,13 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C <: CpsMonadContext[F], T](using ec
                      ) extends CpsAsyncEmitter[F,T]:
 
 
-    def emitAsync(v:T): F[Unit] =  
-      if (!state.consumerEvents.isEmpty) then
-        val consumer = state.consumerEvents.dequeue()
-        asyncMonad.adoptCallbackStyle{ emitCallback =>
-          val emitted = Emitted(v, emitCallback)
-          consumer(Success(emitted))
-        }
-      else  
-        state.queueEmit(v)
+    def emitAsync(v:T): F[Unit] =
+      state.emit(v)
+
          
     def finish(r: Try[Unit]): Unit =
-       state.finishRef.set(r)
-       while(! state.consumerEvents.isEmpty ) {
-          val consumer = state.consumerEvents.dequeue()
-          consumer(Success(Finished(r)))
-       }
-       while(! state.supplyEvents.isEmpty) {
-          val ev = state.supplyEvents.dequeue()
-          ev match
-              case Emitted(v,cb) =>
-                  cb(Failure(new CancellationException("Stream is closed")))
-              case _ =>
-       }  
-       
+       state.finish(r)
+
   end StepsObserver
 
   def evalAsync(f: C => CpsAsyncEmitter[F,T] => F[Unit]):F[R] =
@@ -115,16 +154,9 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C <: CpsMonadContext[F], T](using ec
                      case Success(_) => summon[CpsAsyncMonad[F]].pure(None)
                      case Failure(e) => summon[CpsAsyncMonad[F]].error(e)               
 
-      def nextEvent(): F[SupplyEventRecord] =    
-         if (state.emitStart.compareAndSet(false,true)) then
-            asyncMonad.pure(SpawnEmitter)
-         else 
-            if !state.supplyEvents.isEmpty then
-              val e = state.supplyEvents.dequeue()
-              asyncMonad.pure(e)
-            else
-              state.queueConsumer() 
-            
+      def nextEvent(): F[SupplyEventRecord] =
+         state.consume()
+
       val r = state.finishRef.get()         
       if r eq null then
         asyncMonad.flatMap(nextEvent())(e => handleEvent(e))     

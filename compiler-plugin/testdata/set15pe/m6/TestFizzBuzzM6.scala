@@ -22,8 +22,8 @@ class TestFizzBuzzM6:
 
 
   def runFizBuzz(using CpsDirect[PureEffect]): Vector[String] =
-    implicit val printCode = cps.macros.flags.PrintCode
-    implicit val debugLevel = cps.macros.flags.DebugLevel(20)
+    //implicit val printCode = cps.macros.flags.PrintCode
+    //implicit val debugLevel = cps.macros.flags.DebugLevel(20)
     val logger = PEToyLogger.make()
     val counter = PureEffect.inlineDirectIntRef(-1)
     while {

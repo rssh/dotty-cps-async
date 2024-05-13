@@ -1,10 +1,11 @@
-package cps
+package cps.stream
 
 import org.junit.{Test,Ignore}
 import org.junit.Assert._
 
 import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.*
 
 
 import cps.*
@@ -14,9 +15,10 @@ import cps.monads.{*, given}
 import cps.testconfig.given
 import cps.util.FutureCompleter
 
-class TestFbBasicUsage:
+class TestFtBasicUsage:
 
   val N = 10000
+
 
   @Test def simpleLoopAsyncListFt() =
 
@@ -52,8 +54,11 @@ class TestFbBasicUsage:
         }
      }
      val listSum = stream.fold(0)(_ + _)
-     val res = listSum.failed.map(ex => assert(ex.getMessage()=="bye"))
+     val res = listSum.failed.map(ex =>
+       assert(ex.getMessage()=="bye")
+     )
      FutureCompleter(res)
+
 
   @Test def fewSmallLoopsInAsyncList() = 
 
