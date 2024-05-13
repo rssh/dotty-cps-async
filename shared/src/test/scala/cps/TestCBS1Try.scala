@@ -56,7 +56,7 @@ class TestСBS1Try:
      }
      assert(c.run() == Success(2))
 
-  @Test def try_10n_f(): Unit = 
+  @Test def try_10n_f(): Unit =
      val c = async{
         var x = 1
         try {
