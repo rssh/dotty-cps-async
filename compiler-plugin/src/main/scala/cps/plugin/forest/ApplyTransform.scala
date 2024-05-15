@@ -116,7 +116,7 @@ object ApplyTransform {
             }else {
               applyMArgs(term, owner, nesting, Nil)
             }
-    Log.trace(s" Apply result: ${cpsTree.show}", nesting)
+    Log.trace(s" Apply result: ${cpsTree.show}, owner=${cpsTree.owner}(${cpsTree.owner.hashCode()})", nesting)
     cpsTree
   }
 
@@ -563,9 +563,10 @@ object ApplyTransform {
                           mappedArgs
                       }
           val fun1 = fun match
-            case Block(head::tail,fun) =>
+            case Block(head::tail,funInternal) =>
                // TODO: Select(fun,"apply") instead of Inlined (see discussion in ticket)
-               Inlined(fun,List.empty,fun)
+               //Inlined(fun,List.empty,fun)
+               Select(fun,"apply".toTermName).withSpan(fun.span)
             case _ =>
                 fun
           Apply(fun1, nArgs).withSpan(origin.span)

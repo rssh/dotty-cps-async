@@ -15,7 +15,9 @@ class Test22cc {
 
     val dotcInvocations = new DotcInvocations(silent=false, scalaJs = true)
 
-    val reporter = dotcInvocations.compileFilesInDirs(List(inDir), outDir, checkAll = true)
+    val reporter = dotcInvocations.compileFilesInDirs(List(inDir), outDir, checkAll = true,
+      extraArgs = List("-Vprint:erasure,rssh.cps", "-Yprint-syms"),
+    )
 
     if (reporter.hasErrors) {
      println(reporter.summary)

@@ -225,10 +225,10 @@ class PhaseCps(settings: CpsPluginSettings,
     val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, CpsTransformHelper.cpsMonadContextClassSymbol, asyncCallTree.srcPos)
 
     if (true) {
-      TransformUtil.findSubtermsWithIncorrectOwner(ddef.rhs, ddef.symbol) match
-        case subterm::tail =>
-          report.debugwarn(s"found subterm with incorrect owner: ${subterm.symbol}(${subterm.symbol.hashCode()}  owner=${subterm.symbol.owner}(${subterm.symbol.owner.hashCode()})", ddef.srcPos)
-        case Nil =>
+      TransformUtil.findFirstSubtermWithIncorrectOwner(ddef.rhs, ddef.symbol) match
+        case Some(TransformUtil.IncorrectOwnerRecord(contextOnwer, expectedOwner, realOwner, tree)) =>
+          report.debugwarn(s"found subterm with incorrect owner: ${tree.symbol}(${tree.symbol.hashCode()}  owner=${realOwner}(${realOwner.hashCode()})", ddef.srcPos)
+        case None =>
     }
 
     val contextParam = cpsMonadContext match

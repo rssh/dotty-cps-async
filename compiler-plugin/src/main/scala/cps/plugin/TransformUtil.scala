@@ -218,9 +218,17 @@ object TransformUtil {
       finder(None,tree)
    }
 
+   case class IncorrectOwnerRecord(
+           contextOwner: Symbol,
+           expectedOwner: Symbol,
+           realOwner: Symbol,
+           tree: Tree
+    )
 
-   def findSubtermsWithIncorrectOwner(tree:Tree, topOwner: Symbol)(using Context): List[Tree] = {
-      val finder = new TreeAccumulator[List[Tree]] {
+   def findFirstSubtermWithIncorrectOwner(tree:Tree, topOwner: Symbol)(using Context): Option[IncorrectOwnerRecord] = {
+
+
+      val finder = new TreeAccumulator[(Symbol,Option[IncorrectOwnerRecord])] {
 
          def checkOwner(x:Symbol, owner:Symbol)(using Context): Boolean = {
             if (x.owner == owner) {
@@ -234,29 +242,34 @@ object TransformUtil {
             }
          }
 
-         def apply(x: List[Tree], tree: Tree)(using Context): List[Tree] =
-            if (x.nonEmpty) then
+         def apply(x: (Symbol, Option[IncorrectOwnerRecord]), tree: Tree)(using Context): (Symbol, Option[IncorrectOwnerRecord]) =
+            if (x._2.nonEmpty) then
                x
             else
                tree match
                  case xdef: MemberDef =>
                    if (!checkOwner(xdef.symbol,summon[Context].owner)) then
-                      tree :: x
+                      ((x._1, Some(IncorrectOwnerRecord(summon[Context].owner, x._1, tree.symbol.owner, tree))))
+                   else if (summon[Context].owner != x._1) then
+                     ((x._1, Some(IncorrectOwnerRecord(summon[Context].owner, x._1, tree.symbol.owner, tree))))
                    else
                       xdef match
                         case xDefDef: DefDef =>
-                            foldOver(x, xDefDef.rhs)(using summon[Context].withOwner(xDefDef.symbol))
+                            foldOver((xDefDef.symbol,None), xDefDef.rhs)(using summon[Context].withOwner(xDefDef.symbol))
                         case xValDef: ValDef =>
-                            foldOver(x, xValDef.rhs)(using summon[Context].withOwner(xValDef.symbol))
+                            foldOver((xValDef.symbol,None), xValDef.rhs)(using summon[Context].withOwner(xValDef.symbol))
                         case xTypeDef: TypeDef =>
-                            foldOver(x, xTypeDef.rhs)(using summon[Context].withOwner(xTypeDef.symbol))
+                            foldOver((xTypeDef.symbol,None), xTypeDef.rhs)(using summon[Context].withOwner(xTypeDef.symbol))
                         case other =>
                           throw CpsTransformException("MemberDef but not DefDef, ValDef or TypeDef", other.sourcePos)
-
                  case _ =>
+                   if (x._1 != summon[Context].owner) then
+                      val realOwner = if (tree.symbol.exists) then tree.symbol.owner else NoSymbol
+                      (x._1, Some(IncorrectOwnerRecord(summon[Context].owner, x._1, realOwner, tree)))
+                   else
                       foldOver(x, tree)
       }
-      finder(Nil,tree)
+      finder((topOwner,None),tree)._2
    }
 
 

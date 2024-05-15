@@ -31,7 +31,7 @@ object AwaitTransform {
                 gMonadContext: Tree,
                 gMonadConversion: Tree
                )(using Context, CpsTopLevelContext): CpsTree = {
-    Log.trace(i"AwaitTransform.fromApply, internalTerm: ${internalTerm.show}", nesting)
+    Log.trace(i"AwaitTransform.fromApply, internalTerm: ${internalTerm.show}, owner=${owner}(${owner.fullName})", nesting)
 
     val internalCpsTree = RootTransform(internalTerm, owner, nesting+1)
 
@@ -59,7 +59,7 @@ object AwaitTransform {
       case AsyncKind.AsyncLambda(_) =>
         throw CpsTransformException("cpsAwait is not supported for async lambdas", term.srcPos)
 
-    Log.trace(s"AwaitTransform.fromApply, retval: ${retval.show}", nesting)
+    Log.trace(s"AwaitTransform.fromApply, retval: ${retval.show}, owner=${retval.owner}(${retval.owner.hashCode()})", nesting)
     retval
 
   }

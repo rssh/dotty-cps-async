@@ -367,7 +367,7 @@ object InlinedTransform {
             CpsTree.opaqueAsyncLambda(inlinedTerm, owner, newTerm, internalKind)
             //InlinedCpsTree(inlinedTerm,owner,newBindings,cpsedExpansion)
 
-      Log.trace(s"InlineTransform, newInlined: ${newInlined.show}",nesting)
+      Log.trace(s"InlineTransform, newInlined: ${newInlined.show}, owner=${newInlined.owner}",nesting)
 
 
       val prefixedInlined = records.foldRight(newInlined) { (r, acc) =>
