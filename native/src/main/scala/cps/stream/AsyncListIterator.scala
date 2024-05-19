@@ -14,9 +14,6 @@ class AsyncListIterator[F[_]:CpsConcurrentMonad, T](l: AsyncList[F,T])(using Exe
   case class StateInit(l:AsyncList[F,T]) extends State
   case class StateNext(cachedNext: Promise[Option[(T,AsyncList[F,T])]]) extends State
 
-  // scala-native is one-threaded for now
-  //  but we use thread-safe version to simplicy future changing of
-  //  scala-native mode.
   val  refState: AtomicReference[State] = new AtomicReference(StateInit(l))
 
 
