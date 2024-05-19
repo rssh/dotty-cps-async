@@ -117,6 +117,7 @@ object ApplyTransform {
               applyMArgs(term, owner, nesting, Nil)
             }
     Log.trace(s" Apply result: ${cpsTree.show}, owner=${cpsTree.owner}(${cpsTree.owner.hashCode()})", nesting)
+
     cpsTree
   }
 

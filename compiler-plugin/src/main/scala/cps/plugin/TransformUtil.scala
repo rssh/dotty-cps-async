@@ -79,7 +79,9 @@ object TransformUtil {
          case _ => tpe.widen
 
   
-  
+   /**
+    *  find all definitions in the tree, and return list of pairs (definition, owner)
+    **/
    def collectDefOwners(tree:Tree)(using Context): List[(Symbol,Symbol)] = {
       val gather = new TreeAccumulator[List[(Symbol,Symbol)]] {
          def apply(x: List[(Symbol,Symbol)], tree: Tree)(using Context): List[(Symbol,Symbol)] =
@@ -217,6 +219,8 @@ object TransformUtil {
       }
       finder(None,tree)
    }
+
+
 
    case class IncorrectOwnerRecord(
            contextOwner: Symbol,

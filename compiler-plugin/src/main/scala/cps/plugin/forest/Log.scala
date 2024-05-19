@@ -37,7 +37,7 @@ object Log {
     apply(10, message, nesting, srcPos)
   }
 
-
+  
 
 
 }

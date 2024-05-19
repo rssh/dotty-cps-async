@@ -78,5 +78,7 @@ object DebugSettings {
       report.warning(s"Call of findAnnotation(${annotationSymbol.fullName}) with NoSymbol, should not happen",current.srcPos)
       None
   }
+  
+  val PARANOID = true
 
 }

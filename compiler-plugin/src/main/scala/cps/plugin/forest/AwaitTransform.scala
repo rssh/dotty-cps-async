@@ -61,7 +61,6 @@ object AwaitTransform {
 
     Log.trace(s"AwaitTransform.fromApply, retval: ${retval.show}, owner=${retval.owner}(${retval.owner.hashCode()})", nesting)
     retval
-
   }
 
 }
