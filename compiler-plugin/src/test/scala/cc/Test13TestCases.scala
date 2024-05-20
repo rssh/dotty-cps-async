@@ -118,17 +118,26 @@ class Test13TestCases {
 
 
   //Failure only if many compilation units are compiled at once.
-  //TODO: research why
-  // @Test
+  //TODO: submit bug to dotty.
+  //@Test
+  // Test cc.Test13TestCases.testMiniGopherW1 failed: java.lang.AssertionError: assertion failed: non-empty constraint at end of typer:  uninstantiated variables: T, T, T
+  //[error]  constrained types:
+  //[error]   [T](expr: (cps.monads.FutureContext) ?=> T): scala.concurrent.Future[T],
+  //[error]   [T](expr: (cps.monads.FutureContext) ?=> T): scala.concurrent.Future[T],
+  //[error]   [T](expr: (cps.monads.FutureContext) ?=> T): scala.concurrent.Future[T]
+  //
   //def testMiniGopherW1(): Unit = {
-  //  //compileAfterCommon("testdata/set13TestCases/m13_m1")
-  //  val dirname = "testdata/set13TestCases/m13_m1"
-  //  compileCommon()
-  //  val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
-  //  val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath), checkAll = false)
-  //  DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
+   // compileAfterCommon("testdata/set13TestCases/m13_m1")
+   // val dirname = "testdata/set13TestCases/m13_m1"
+   // compileCommon()
+   // val classpath = s"testdata/set13TestCases/common:${System.getProperty("java.class.path")}"
+   //  val secondInvokationArgs = DotcInvocations.InvocationArgs(extraDotcArgs = List("-classpath", classpath), checkAll = false)
+   //  DotcInvocations.compileFilesInDir(dirname, secondInvokationArgs)
   //}
 
+  //def testGopher2SLF4(): Unit = {
+  //  compileAfterCommon("testdata/set13TestCases/m14")
+  //}
 
 
 
