@@ -17,7 +17,7 @@ import cps.testconfig.given
 
 class TestFbFoldScan:
 
-  @CpsDebugLevel(20)
+  //@CpsDebugLevel(20)
   @Test def testFoldAsync() =
     val check = async[Future] {
 

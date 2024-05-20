@@ -35,6 +35,9 @@ class Test14Run {
           println(s"output=${output}")
           println(s"error=${errorOutput}")
           throw new RuntimeException(s"Process $cmd failed")
+        } else {
+          //println(s"output=${output}")
+          //println(s"error=${errorOutput}")
         }
       } else {
         val output = scala.io.Source.fromInputStream(process.getInputStream).mkString
@@ -159,6 +162,14 @@ class Test14Run {
     compileAndRunTestAfterCommon(dirname, testClassName)
   }
 
+
+
+  @Test
+  def testFtFoldScan2(): Unit = {
+    val dirname = "testdata/set14runtests/m13"
+    val testClassName = "cps.TestFbFoldScan"
+    compileAndRunTestAfterCommon(dirname, testClassName)
+  }
 
 }
 

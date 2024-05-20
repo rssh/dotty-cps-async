@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentLinkedDeque
 
 trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C<:CpsMonadContext[F],T](using val ec:ExecutionContext, val asyncMonad: CpsConcurrentMonad[F]{ type Context = C}) extends CpsAsyncEmitAbsorber4[R,F,C,T]:
 
+   require(asyncMonad != null)
  
    def unfold[S](s0:S)(f:S => F[Option[(T,S)]]): R
 
