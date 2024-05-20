@@ -51,7 +51,7 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C <: CpsMonadContext[F], T](using ec
       
     private def queueConsumer(): F[SupplyEventRecord] =
       if (finishRef.get() != null) then
-        asyncMonad.pure(Finished(Failure(new CancellationException("Stream is closed"))))
+        asyncMonad.pure(Finished(finishRef.get()))
       else
         val p = Promise[SupplyEventRecord]()
         consumerEvents.enqueue( x => p.complete(x))
