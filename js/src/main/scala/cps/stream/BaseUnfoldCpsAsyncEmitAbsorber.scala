@@ -123,8 +123,12 @@ trait BaseUnfoldCpsAsyncEmitAbsorber[R,F[_],C<:CpsMonadContext[F], T](using ec: 
               val e = state.supplyEvents.dequeue()
               asyncMonad.pure(e)
             else
-              state.queueConsumer() 
-            
+              state.finishRef.get() match
+                case null =>
+                  state.queueConsumer()
+                case finished =>
+                  asyncMonad.pure(Finished(finished))
+
       val r = state.finishRef.get()         
       if r eq null then
         asyncMonad.flatMap(nextEvent())(e => handleEvent(e))     
