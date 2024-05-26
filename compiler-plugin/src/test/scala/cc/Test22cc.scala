@@ -6,7 +6,7 @@ import org.junit.{Ignore, Test}
 class Test22cc {
 
   @Test
-  @Ignore  // yet not working
+  //@Ignore  // yet not working
   def testCompileContextExtractor() = {
 
     val inDir = "testdata/set22cc/m1"
