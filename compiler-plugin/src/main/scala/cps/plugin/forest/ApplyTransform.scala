@@ -367,13 +367,14 @@ object ApplyTransform {
      }
      val fullOrigin = if (argss.isEmpty) origin else argss.last.origin
      Log.trace(s"parseSyncFunPureApplication: plainTree=${plainTree.show}", nesting)
-     val retval = adoptCallMode(fullOrigin, plainTree, owner, argss, callMode)
+     val retval = adoptCallMode(fullOrigin, plainTree, fun.symbol, owner, argss, callMode, nesting)
      Log.trace(s"parseSyncFunPureApplication: retval=${retval.show}", nesting)
      retval
   }
 
-  def adoptCallMode(origin: Tree, plainTree: Tree, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
-    if (argss.exists(_.containsDirectContext) ) {
+  def adoptCallMode(origin: Tree, plainTree: Tree, funSym: Symbol, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
+    Log.trace(s"adoptCallMode: plainTree=${plainTree.show}, callMode=${callMode}  funSym=${funSym}", nesting)
+    if (argss.exists(_.containsDirectContext) && !funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) {
       val directContextArg = argss.find(_.containsDirectContext).flatMap(_.findDirectContext).get
       val adoptedTree = directContextArg match
             case dc@CpsDirectHelper.ByInclusionCall(tf,tg,fctx,fgincl) =>
@@ -726,7 +727,11 @@ object ApplyTransform {
         }
       case _ => pureReply
     val fullOrigin = if (argss.isEmpty) origin else argss.last.origin
-    val lastCpsTree = adoptCallMode(fullOrigin, pureReply, owner, argss, callMode)
+    val funSymbol = fun match
+      case NonShiftedFun(tree) => tree.symbol
+      case ShiftedFun(origin, obj, method, targs, additionalArgs, canBeOverloaded, callShouldBeInlined, shape) =>
+        obj.tpe.member(method).symbol
+    val lastCpsTree = adoptCallMode(fullOrigin, pureReply, funSymbol,  owner, argss, callMode, nesting)
     val nApplyCpsTree = genPrefixes(argss, lastCpsTree)
     val retval = nApplyCpsTree
     Log.trace(s"genApplication result: ${retval.show}", nesting)

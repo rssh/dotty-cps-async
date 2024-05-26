@@ -46,7 +46,7 @@ trait JSAsyncContext extends CpsTryMonadContext[JSAsync] {
 }
 
 @experimental
-//@CpsNotChange
+@CpsNotChange
 given jsAsyncFromDirect(using direct: CpsDirect[JSAsync]): JSAsyncContext =
   direct.context.asInstanceOf[JSAsyncContext]
 
