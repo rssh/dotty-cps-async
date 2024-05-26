@@ -3,9 +3,9 @@ package cps.runtime
 import cps._
 import scala.collection._
 
-class MapOpsAsyncShift[K,V, CC[KX,VX] <: MapOps[KX,VX,CC,CC[KX,VX]] with CI[(KX,VX)], 
+class MapOpsAsyncShift[K,V, CC[KX,VX] <: MapOps[KX,VX,CC,CC[KX,VX]] & CI[(KX,VX)],
                             CI[X] <: Iterable[X] & IterableOps[X,CI,CI[X]],
-                                                                 CKV <: CC[K,V] with PartialFunction[K,V] ] extends
+                                                                 CKV <: CC[K,V] & PartialFunction[K,V] ] extends
                                                                        IterableOpsAsyncShift[(K,V),CI,CKV]
                                                                       with PartialFunctionAsyncShiftBase[K,V, CKV]
                                                                       with AsyncShift[CKV]:
