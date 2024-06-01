@@ -1,13 +1,20 @@
-package injection
+package cps.injection
 
 import scala.annotation.compileTimeOnly
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.quoted.*
 
+object CompileTimeConstants {
+
+  val inject = "cps.injection.inject"
+
+}
+
 transparent inline def injectfull[A](inline body: A): Any = ${
   inferInjects[A]('body)
 }
+
 
 def inferInjects[A: Type](bodyExpr: Expr[A])(using quotes: Quotes): Expr[Any] = {
   import quotes.reflect.{*, given}
@@ -17,7 +24,7 @@ def inferInjects[A: Type](bodyExpr: Expr[A])(using quotes: Quotes): Expr[Any] = 
   val injectInContext = new TreeMap() {
     override def transformTerm(term: Term)(owner: Symbol): Term =
       term match
-        case TypeApply(fun, List(injectType)) if fun.symbol == Symbol.requiredMethod("injection.inject") =>
+        case TypeApply(fun, List(injectType)) if fun.symbol == Symbol.requiredMethod(CompileTimeConstants.inject) =>
           Implicits.search(injectType.tpe) match
             case iss: ImplicitSearchSuccess =>
               iss.tree
@@ -38,7 +45,7 @@ def inferInjects[A: Type](bodyExpr: Expr[A])(using quotes: Quotes): Expr[Any] = 
             var paramsCounter = 0
             override def transformTerm(term: Term)(owner: Symbol): Term =
               term match
-                case TypeApply(fun, List(injectType)) if fun.symbol == Symbol.requiredMethod("injection.inject") =>
+                case TypeApply(fun, List(injectType)) if fun.symbol == Symbol.requiredMethod(CompileTimeConstants.inject) =>
                   val termRef = Ref(params(paramsCounter).symbol)
                   paramsCounter += 1
                   termRef
