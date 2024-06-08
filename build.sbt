@@ -209,6 +209,7 @@ lazy val staticInjection = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("static-injection"))
   .settings(sharedSettings)
   .disablePlugins(SitePreviewPlugin)
+  .dependsOn(cps)
   .settings(
     name := "static-injection",
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test"
