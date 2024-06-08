@@ -9,7 +9,6 @@ import cps.*
 
 
 
-
 trait InjectionCarrier[F[_]:CpsTryMonad,SET] {
 
     def get[T](using Contains[T,SET]): F[T]
@@ -34,17 +33,72 @@ type ALL = ALL.ALL
 
 type SET = Tuple | ALL
 
+trait StringREPR[T] {
+  
+  transparent inline def apply: String
+
+  type R
+
+}
+
+
+object StringREPR {
+
+  given [T]: StringREPR[T] with {
+
+    override type R = repr.type 
+    
+    inline val repr = apply
+    
+    transparent inline def apply = ${
+      StringREPRMacro.applyImpl[T]
+    }
+
+  }
+
+ 
+
+}
+
+
+
 //type SET = Tuple
 type ADD[SET,T] = SET match {
-  case Tuple => T *: SET
+  case Tuple =>
+     T *: SET
   case ALL => ALL
 }
 
 type PICK[SET, T] = Contains[T,SET]
 
+trait SET_ADDITION[T,S] {
+  type R
+  def add(t:T, s:S): R
+}
+
+object SET_ADDITION {
+
+  type Aux[T,S,RR] = SET_ADDITION[T,S] { type R = RR }
+
+  given [T,HEAD,TAIL <: Tuple](using (HEAD =:= T) ): SET_ADDITION[T,HEAD *: TAIL] with {
+    type R = HEAD *: TAIL
+    def add(t:T, s: HEAD *: TAIL): R = s
+  }
+
+  given [T]: SET_ADDITION[T,ALL] with {
+    type R = ALL
+    def add(t:T, s:ALL): ALL = s
+  }
+
+}
+
+//given IsAAD[T,SET](using [T,SET]): IsADD[T,SET,ADD] = ???
+
+
 given [T,ALL] : Contains[T,ALL] with  {
   inline def get(s: ALL): T = ??? // <work obly from macros>
 }
+
 
 
 
