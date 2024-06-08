@@ -1,24 +1,57 @@
 package cps.injection
 
+import scala.compiletime.*
 import cps.*
 
-trait Provider[SET] {
 
-    def get[T](using Getter[SET,T]): T
-
-}
-
-trait Getter[SET,T] {
-    def get(set: SET): T
-}
 
 //trait InjectionEffect[F[_],SET]
 
-trait InjectionCarrier[F[_],SET] {
 
-    def provider: Provider[SET]
+
+
+trait InjectionCarrier[F[_]:CpsTryMonad,SET] {
+
+    def get[T](using Contains[T,SET]): F[T]
 
 }
+
+
+trait Contains[T,SET] {
+
+  def get(s:SET): T
+
+}
+
+given contains[T,S<:Tuple]: Contains[T,T *: S] with {
+   inline def get(s: T *: S): T = s.head
+}
+
+object ALL {
+  opaque type ALL = ALL.type
+}
+type ALL = ALL.ALL
+
+type SET = Tuple | ALL
+
+//type SET = Tuple
+type ADD[SET,T] = SET match {
+  case Tuple => T *: SET
+  case ALL => ALL
+}
+
+type PICK[SET, T] = Contains[T,SET]
+
+given [T,ALL] : Contains[T,ALL] with  {
+  inline def get(s: ALL): T = ??? // <work obly from macros>
+}
+
+
+
+//type ADD[SET,T] = ???
+//type PICK[SET, T] = Contains[T, SET]
+
+// example : sorted list
 
 object InjectionCarrier {
 
@@ -69,8 +102,24 @@ def testFun1[F[_]]: InjectionCarrier[F,Int] => F[String]  = (x: InjectionCarrier
 }
 
 /*
-def testFun2[F[_]:CpsTryMonad]  =  reify[[X] =>> InjectionCarrier[F, Int *: Boolean] => F[X]]{
-    val q = reflect(testFun1)
-}
-*/
 
+def testFun2[F[_]:CpsTryMonad]  =  injectM[F] {
+    //val q = reflect(testFun1)
+    ??
+}
+
+def testFun2[F[_]:CpsTryMonad]  = reify[X =>> InjectionCarrier[F,Int] => [X]] {
+    //val q = reflect(testFun1)
+    ??
+   ...
+}
+
+
+def testFun2_1[F[_]:CpsTryMonad:Inject[Int]]  = reify[F] {
+    //val q = reflect(testFun1)
+    ??
+   ...
+}
+
+
+*/

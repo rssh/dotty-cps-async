@@ -39,7 +39,7 @@ def inferInjects[A: Type](bodyExpr: Expr[A])(using quotes: Quotes): Expr[Any] = 
     case types if types.sizeIs > 0 =>
       Lambda(
         Symbol.spliceOwner,
-        MethodType(types.indices.map(num => s"t$num").toList)(_ => types.toList, _ => TypeRepr.of[A]),
+        MethodType(MethodTypeKind.Implicit)(types.indices.map(num => s"t$num").toList)(_ => types.toList, _ => TypeRepr.of[A]),
         (owner, params) =>
           new TreeMap() {
             var paramsCounter = 0
