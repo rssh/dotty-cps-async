@@ -211,6 +211,7 @@ lazy val staticInjection = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .disablePlugins(SitePreviewPlugin)
   .dependsOn(cps)
   .settings(
+    scalaVersion := "3.5.1-RC1-bin-SNAPSHOT",
     name := "static-injection",
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test"
   ).jsSettings(
