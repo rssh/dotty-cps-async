@@ -425,15 +425,20 @@ object ApplyTransform {
       CpsTree.impure(origin, owner, adoptedTree, internalKind)
       */
       //CpsTree.impure(origin, owner, adoptedTree, AsyncKind.Sync)
-      adoptResultKind(origin, adoptedTree, owner, callMode, true)
+      adoptResultKind(origin, plainTree, adoptedTree, owner, callMode, true)
     } else {
-      adoptResultKind(origin, plainTree, owner, callMode, false)
+      adoptResultKind(origin, plainTree, plainTree, owner, callMode, false)
     }
   }
 
 
 
-  def adoptResultKind(origin:Tree, newApply: Tree, owner: Symbol, callMode: FunCallMode, usingDirectContext: Boolean)(using Context, CpsTopLevelContext): CpsTree = {
+  def adoptResultKind(origin:Tree,
+                      newApply: Tree,  // changed apply, but not wrapped in adoptCpsedCall
+                      wrappedNewApply: Tree,  // if usignDirectContext then adoptCpsedCall(newApply) otherwis - same as newApply
+                      owner: Symbol,
+                      callMode: FunCallMode,
+                      usingDirectContext: Boolean)(using Context, CpsTopLevelContext): CpsTree = {
 
     if (callMode.argCallMode == ApplyArgCallMode.ASYNC_SHIFT || callMode.fromCallChain) {
         if (newApply.tpe.baseType(Symbols.requiredClass("cps.runtime.CallChainAsyncShiftSubst"))!=NoType) {
@@ -447,22 +452,25 @@ object ApplyTransform {
           val newType = newApply.tpe.widen
           if (originType =:= newType) {
             if (usingDirectContext) then
-              CpsTree.impure(origin,owner,newApply,AsyncKind.Sync)
+              CpsTree.impure(origin,owner,wrappedNewApply,AsyncKind.Sync)
             else
               CpsTree.pure(origin,owner,newApply)
           } else if (newType <:< summon[CpsTopLevelContext].monadType.appliedTo(WildcardType)) {
             val adoptedApply =  
               if (usingDirectContext) {
-                report.warning("async-shifted function with direct context return wrapped type", origin.srcPos)
+                report.warning(s"async-shifted function with direct context return wrapped type", origin.srcPos)
+                report.warning(s"origin tree: ${origin.show}", origin.srcPos)
+                report.warning(s"transformed tree: ${newApply.show}", origin.srcPos)
+                report.warning(s"debugLevel: ${summon[CpsTopLevelContext].pluginSettings.debugLevel}", origin.srcPos)
                 Apply(
                   TypeApply(
                     Select(summon[CpsTopLevelContext].cpsMonadRef, "flatten".toTermName),
                     List(TypeTree(originType.widen))
                   ),
-                  List(newApply)
+                  List(wrappedNewApply)
                 )
               } else {
-                newApply
+                wrappedNewApply
               }
             CpsTree.impure(origin, owner, adoptedApply, AsyncKind.Sync)
           } else if (callMode.asyncLambdaApplication.isDefined) {
@@ -473,9 +481,9 @@ object ApplyTransform {
           } else {
             // TODO: warn about possible unsafe result type
             if (usingDirectContext) {
-              CpsTree.impure(origin,owner,newApply,AsyncKind.Sync)
+              CpsTree.impure(origin,owner,wrappedNewApply,AsyncKind.Sync)
             } else {
-              CpsTree.pure(origin, owner, newApply)
+              CpsTree.pure(origin, owner, wrappedNewApply)
             }
           }
         }
@@ -487,9 +495,9 @@ object ApplyTransform {
        callMode.asyncLambdaApplication.get match
          case AsyncKind.Sync =>
            if (usingDirectContext && transformDirectContextLambdaCall) {
-             CpsTree.impure(origin,owner,newApply,AsyncKind.Sync)
+             CpsTree.impure(origin,owner,wrappedNewApply,AsyncKind.Sync)
            } else {
-             CpsTree.pure(origin,owner,newApply)
+             CpsTree.pure(origin,owner,wrappedNewApply)
            }
          case  AsyncKind.Async(internalKind) =>
            if (usingDirectContext && transformDirectContextLambdaCall) {
@@ -498,22 +506,22 @@ object ApplyTransform {
                  Select(summon[CpsTopLevelContext].cpsMonadRef, "flatten".toTermName),
                  List(TypeTree(newApply.tpe.widen))
                ),
-               List(newApply)
+               List(wrappedNewApply)
              )
              CpsTree.impure(origin,owner,flattenedNewApply,internalKind)
            } else {
-             CpsTree.impure(origin, owner, newApply, internalKind)
+             CpsTree.impure(origin, owner, wrappedNewApply, internalKind)
            }
          case AsyncKind.AsyncLambda(bodyKind) =>
            if (usingDirectContext && transformDirectContextLambdaCall) {
              // it's why better to keep transformDirectContextLambdaCall = false
              throw CpsTransformException("Unsuppored use of lamba application as output of direct context lambda", origin.srcPos)
            }
-           CpsTree.opaqueAsyncLambda(origin,owner,newApply,bodyKind)
+           CpsTree.opaqueAsyncLambda(origin,owner,wrappedNewApply,bodyKind)
     } else if (usingDirectContext) {
-       CpsTree.impure(origin,owner,newApply, AsyncKind.Sync)
+       CpsTree.impure(origin,owner,wrappedNewApply, AsyncKind.Sync)
     } else {
-       CpsTree.pure(origin,owner,newApply)
+       CpsTree.pure(origin,owner,wrappedNewApply)
     }
 
 

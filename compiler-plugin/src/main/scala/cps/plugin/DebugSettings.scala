@@ -56,8 +56,12 @@ object DebugSettings {
         case None =>
           0
     }
+
     val printCodeTpe = Symbols.requiredClass("cps.plugin.settings.PrintCode").typeRef
-    val printCode  = CpsTransformHelper.findImplicitInstance(printCodeTpe, summon[Context].tree.span).isDefined
+    val printCode  = {
+      println(s"context = ${summon[Context].tree.show}, phase = ${summon[Context].phase}")
+      CpsTransformHelper.findImplicitInstance(printCodeTpe, summon[Context].tree.span).isDefined
+    }
     val printTreeTpe = Symbols.requiredClass("cps.plugin.settings.PrintTree").typeRef
     val printTree  = CpsTransformHelper.findImplicitInstance(printTreeTpe, summon[Context].tree.span).isDefined
     DebugSettings(debugLevel = debugLevel, printTree = printTree, printCode = printCode)

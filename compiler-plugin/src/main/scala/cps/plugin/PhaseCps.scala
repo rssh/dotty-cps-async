@@ -110,6 +110,14 @@ class PhaseCps(settings: CpsPluginSettings,
     retval
   }
 
+  override def prepareForApply(tree: tpd.Apply)(using Context): Context = {
+    if (summon[Context].phase != this) {
+      println(s"PhaseCps::prepareForApply, invalid phase = ${summon[Context].phase}")
+      summon[Context].withPhase(this)
+    } else {
+      summon[Context]
+    }
+  }
 
   override def transformApply(tree: tpd.Apply)(using Context): tpd.Tree = {
     try
@@ -234,7 +242,7 @@ class PhaseCps(settings: CpsPluginSettings,
     val contextParam = cpsMonadContext match
       case vd: ValDef => ref(vd.symbol)
       case _ => throw CpsTransformException(s"excepted that cpsMonadContext is ValDef, but we have ${cpsMonadContext.show}", asyncCallTree.srcPos)
-    val (tctx, monadValDef) = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
+    val (tctx, monadValDef) = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(ddef), CpsTransformHelper.cpsMonadContextClassSymbol)
     val ddefCtx = ctx.withOwner(ddef.symbol)
     val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefCtx, tctx)
     val nRhsTerm = wrapTopLevelCpsTree(nRhsCps)(using ddefCtx, tctx)

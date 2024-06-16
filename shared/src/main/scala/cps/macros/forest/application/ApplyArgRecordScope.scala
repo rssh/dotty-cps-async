@@ -284,6 +284,7 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
               case Some(syncBody) =>
                  if (cpsBody.isChanged) then 
                     if (term.tpe.isContextFunctionType && !allowUncontext) then
+                      println(s"context cpsBody = ${cpsBody}, ")
                       throw MacroError("Can't transform context function: TastyAPI don;t support this yet",posExpr(term))
                     val mt = MethodType(paramNames)(_ => paramTypes, _ => syncBody.tpe.widen)
                     Lambda(owner, mt,
