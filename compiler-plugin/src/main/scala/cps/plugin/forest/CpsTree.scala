@@ -439,9 +439,14 @@ sealed trait AsyncCpsTree extends CpsTree {
 }
 
 
+
 case class AsyncTermCpsTree(
                              override val origin: Tree,
                              override val owner: Symbol,
+
+                             /**
+                              * Already transformed tree with changed owner.
+                              */
                              val transformedTree: Tree,
                              val vInternalAsyncKind: AsyncKind
 ) extends AsyncCpsTree {
@@ -464,7 +469,7 @@ case class AsyncTermCpsTree(
       case AsyncKind.Sync => this
       case AsyncKind.Async(internalKind2) =>
         val valueToFlat = TypedSplice(transformedTree)
-        val flatten = ctx.typer.typed(
+        val flatten = ctx.withOwner(owner).typer.typed(
             untpd.Apply(
                 untpd.Select(
                   untpd.TypedSplice(summon[CpsTopLevelContext].cpsMonadRef),

@@ -116,7 +116,8 @@ object ApplyTransform {
             }else {
               applyMArgs(term, owner, nesting, Nil)
             }
-    Log.trace(s" Apply result: ${cpsTree.show}", nesting)
+    Log.trace(s" Apply result: ${cpsTree.show}, owner=${cpsTree.owner}(${cpsTree.owner.hashCode()})", nesting)
+
     cpsTree
   }
 
@@ -366,13 +367,14 @@ object ApplyTransform {
      }
      val fullOrigin = if (argss.isEmpty) origin else argss.last.origin
      Log.trace(s"parseSyncFunPureApplication: plainTree=${plainTree.show}", nesting)
-     val retval = adoptCallMode(fullOrigin, plainTree, owner, argss, callMode)
+     val retval = adoptCallMode(fullOrigin, plainTree, fun.symbol, owner, argss, callMode, nesting)
      Log.trace(s"parseSyncFunPureApplication: retval=${retval.show}", nesting)
      retval
   }
 
-  def adoptCallMode(origin: Tree, plainTree: Tree, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode)(using Context, CpsTopLevelContext): CpsTree = {
-    if (argss.exists(_.containsDirectContext) ) {
+  def adoptCallMode(origin: Tree, plainTree: Tree, funSym: Symbol, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
+    Log.trace(s"adoptCallMode: plainTree=${plainTree.show}, callMode=${callMode}  funSym=${funSym}", nesting)
+    if (argss.exists(_.containsDirectContext) && !funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) {
       val directContextArg = argss.find(_.containsDirectContext).flatMap(_.findDirectContext).get
       val adoptedTree = directContextArg match
             case dc@CpsDirectHelper.ByInclusionCall(tf,tg,fctx,fgincl) =>
@@ -423,15 +425,20 @@ object ApplyTransform {
       CpsTree.impure(origin, owner, adoptedTree, internalKind)
       */
       //CpsTree.impure(origin, owner, adoptedTree, AsyncKind.Sync)
-      adoptResultKind(origin, adoptedTree, owner, callMode, true)
+      adoptResultKind(origin, plainTree, adoptedTree, owner, callMode, true)
     } else {
-      adoptResultKind(origin, plainTree, owner, callMode, false)
+      adoptResultKind(origin, plainTree, plainTree, owner, callMode, false)
     }
   }
 
 
 
-  def adoptResultKind(origin:Tree, newApply: Tree, owner: Symbol, callMode: FunCallMode, usingDirectContext: Boolean)(using Context, CpsTopLevelContext): CpsTree = {
+  def adoptResultKind(origin:Tree,
+                      newApply: Tree,  // changed apply, but not wrapped in adoptCpsedCall
+                      wrappedNewApply: Tree,  // if usignDirectContext then adoptCpsedCall(newApply) otherwis - same as newApply
+                      owner: Symbol,
+                      callMode: FunCallMode,
+                      usingDirectContext: Boolean)(using Context, CpsTopLevelContext): CpsTree = {
 
     if (callMode.argCallMode == ApplyArgCallMode.ASYNC_SHIFT || callMode.fromCallChain) {
         if (newApply.tpe.baseType(Symbols.requiredClass("cps.runtime.CallChainAsyncShiftSubst"))!=NoType) {
@@ -445,22 +452,25 @@ object ApplyTransform {
           val newType = newApply.tpe.widen
           if (originType =:= newType) {
             if (usingDirectContext) then
-              CpsTree.impure(origin,owner,newApply,AsyncKind.Sync)
+              CpsTree.impure(origin,owner,wrappedNewApply,AsyncKind.Sync)
             else
               CpsTree.pure(origin,owner,newApply)
           } else if (newType <:< summon[CpsTopLevelContext].monadType.appliedTo(WildcardType)) {
             val adoptedApply =  
               if (usingDirectContext) {
-                report.warning("async-shifted function with direct context return wrapped type", origin.srcPos)
+                report.warning(s"async-shifted function with direct context return wrapped type", origin.srcPos)
+                report.warning(s"origin tree: ${origin.show}", origin.srcPos)
+                report.warning(s"transformed tree: ${newApply.show}", origin.srcPos)
+                report.warning(s"debugLevel: ${summon[CpsTopLevelContext].pluginSettings.debugLevel}", origin.srcPos)
                 Apply(
                   TypeApply(
                     Select(summon[CpsTopLevelContext].cpsMonadRef, "flatten".toTermName),
                     List(TypeTree(originType.widen))
                   ),
-                  List(newApply)
+                  List(wrappedNewApply)
                 )
               } else {
-                newApply
+                wrappedNewApply
               }
             CpsTree.impure(origin, owner, adoptedApply, AsyncKind.Sync)
           } else if (callMode.asyncLambdaApplication.isDefined) {
@@ -471,9 +481,9 @@ object ApplyTransform {
           } else {
             // TODO: warn about possible unsafe result type
             if (usingDirectContext) {
-              CpsTree.impure(origin,owner,newApply,AsyncKind.Sync)
+              CpsTree.impure(origin,owner,wrappedNewApply,AsyncKind.Sync)
             } else {
-              CpsTree.pure(origin, owner, newApply)
+              CpsTree.pure(origin, owner, wrappedNewApply)
             }
           }
         }
@@ -485,9 +495,9 @@ object ApplyTransform {
        callMode.asyncLambdaApplication.get match
          case AsyncKind.Sync =>
            if (usingDirectContext && transformDirectContextLambdaCall) {
-             CpsTree.impure(origin,owner,newApply,AsyncKind.Sync)
+             CpsTree.impure(origin,owner,wrappedNewApply,AsyncKind.Sync)
            } else {
-             CpsTree.pure(origin,owner,newApply)
+             CpsTree.pure(origin,owner,wrappedNewApply)
            }
          case  AsyncKind.Async(internalKind) =>
            if (usingDirectContext && transformDirectContextLambdaCall) {
@@ -496,22 +506,22 @@ object ApplyTransform {
                  Select(summon[CpsTopLevelContext].cpsMonadRef, "flatten".toTermName),
                  List(TypeTree(newApply.tpe.widen))
                ),
-               List(newApply)
+               List(wrappedNewApply)
              )
              CpsTree.impure(origin,owner,flattenedNewApply,internalKind)
            } else {
-             CpsTree.impure(origin, owner, newApply, internalKind)
+             CpsTree.impure(origin, owner, wrappedNewApply, internalKind)
            }
          case AsyncKind.AsyncLambda(bodyKind) =>
            if (usingDirectContext && transformDirectContextLambdaCall) {
              // it's why better to keep transformDirectContextLambdaCall = false
              throw CpsTransformException("Unsuppored use of lamba application as output of direct context lambda", origin.srcPos)
            }
-           CpsTree.opaqueAsyncLambda(origin,owner,newApply,bodyKind)
+           CpsTree.opaqueAsyncLambda(origin,owner,wrappedNewApply,bodyKind)
     } else if (usingDirectContext) {
-       CpsTree.impure(origin,owner,newApply, AsyncKind.Sync)
+       CpsTree.impure(origin,owner,wrappedNewApply, AsyncKind.Sync)
     } else {
-       CpsTree.pure(origin,owner,newApply)
+       CpsTree.pure(origin,owner,wrappedNewApply)
     }
 
 
@@ -563,9 +573,10 @@ object ApplyTransform {
                           mappedArgs
                       }
           val fun1 = fun match
-            case Block(head::tail,fun) =>
+            case Block(head::tail,funInternal) =>
                // TODO: Select(fun,"apply") instead of Inlined (see discussion in ticket)
-               Inlined(fun,List.empty,fun)
+               //Inlined(fun,List.empty,fun)
+               Select(fun,"apply".toTermName).withSpan(fun.span)
             case _ =>
                 fun
           Apply(fun1, nArgs).withSpan(origin.span)
@@ -724,7 +735,11 @@ object ApplyTransform {
         }
       case _ => pureReply
     val fullOrigin = if (argss.isEmpty) origin else argss.last.origin
-    val lastCpsTree = adoptCallMode(fullOrigin, pureReply, owner, argss, callMode)
+    val funSymbol = fun match
+      case NonShiftedFun(tree) => tree.symbol
+      case ShiftedFun(origin, obj, method, targs, additionalArgs, canBeOverloaded, callShouldBeInlined, shape) =>
+        obj.tpe.member(method).symbol
+    val lastCpsTree = adoptCallMode(fullOrigin, pureReply, funSymbol,  owner, argss, callMode, nesting)
     val nApplyCpsTree = genPrefixes(argss, lastCpsTree)
     val retval = nApplyCpsTree
     Log.trace(s"genApplication result: ${retval.show}", nesting)

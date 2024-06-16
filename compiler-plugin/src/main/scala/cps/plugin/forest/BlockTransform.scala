@@ -71,6 +71,24 @@ object BlockTransform {
         val blockCps = statsCps.appendInBlock(lastCps).withOrigin(term)
         BlockBoundsCpsTree(blockCps)
     Log.trace(s"BlockTransform, retval=${retval.show}",nesting)
+
+    // DEBUG BEGIN
+    if (false) {
+      val rt = retval.transformed
+      val incorrentOwners = TransformUtil.findFirstSubtermWithIncorrectOwner(rt, owner)(using ctx.withOwner(owner))
+      if (incorrentOwners.isEmpty) {
+        Log.trace("BlockTransform: Incorreect owners nof found", nesting)
+      } else {
+        Log.trace(s"BlockTransform: Incorreect owners found: ${incorrentOwners.mkString("\n")}", nesting)
+      }
+      val defOwners = TransformUtil.collectDefOwners(retval.transformed)
+      if (defOwners.isEmpty) {
+        Log.trace("BlockTransform: Def owners nof found", nesting)
+      } else {
+        Log.trace(s"BlockTransform: Def owners found: ${defOwners.mkString("\n")}", nesting)
+      }
+    }
+    // DEBUG END
     retval
   }
 

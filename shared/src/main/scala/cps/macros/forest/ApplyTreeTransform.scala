@@ -1,5 +1,6 @@
 package cps.macros.forest
 
+import scala.annotation.nowarn
 import scala.quoted.*
 import scala.util.control.NonFatal
 import cps.*
@@ -681,7 +682,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         val partialHead = shiftedApplyTerm(origin, argRecords, argsSummaryProperties)
         applyPartialShift(partialHead)
       case None =>
-        funCpsTree match
+        (funCpsTree: @nowarn("Unreachable case.*")) match
            case _ : PureCpsTree  |  EmptyCpsTree =>
               // impossible
               val originTerm = funCpsTree.syncOrigin.get

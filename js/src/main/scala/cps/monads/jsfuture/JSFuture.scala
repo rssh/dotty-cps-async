@@ -1,6 +1,6 @@
 package cps.monads.jsfuture
 
-import cps._
+import cps.*
 
 import scala.language.implicitConversions
 
@@ -51,7 +51,7 @@ object JSFutureExecutor:
  * and inside async use usual async/await monadic API.
  **/
 class JSFuture[T](
-     val executorOrUndef: js.UndefOr[js.Function2[js.Function1[T | js.Thenable[T], _], js.Function1[scala.Any, _], _]],
+     val executorOrUndef: js.UndefOr[js.Function2[js.Function1[T | js.Thenable[T], ?], js.Function1[scala.Any, ?], ?]],
      val futureOrUndef: js.UndefOr[Future[T]]) extends js.Promise[T](
                        if (js.isUndefined(executorOrUndef)) then
                           if (js.isUndefined(futureOrUndef)) then 

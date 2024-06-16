@@ -210,36 +210,36 @@ object TransformUtil:
       }
       search.foldTree(None, tree)(Symbol.spliceOwner)
 
-  class DefinitionWithIncorrectOwner(using quotes: Quotes)(tree: quotes.reflect.Definition, owner: quotes.reflect.Symbol, expectedOwner: quotes.reflect.Symbol) {
-    def show: String = s"Incorrect owner for ${tree.symbol}(${tree.symbol.hashCode}): real owner $owner(${owner.hashCode()}), expected owner: ${expectedOwner}(${expectedOwner.hashCode})"
+  class DefinitionWithIncorrectOwner(using quotes: Quotes)(tree: quotes.reflect.Definition, owner: quotes.reflect.Symbol, expectedOwner: quotes.reflect.Symbol, contextOwner: quotes.reflect.Symbol) {
+    def show: String = s"Incorrect owner for ${tree.symbol}(${tree.symbol.hashCode}): real owner $owner(${owner.hashCode()}), expected owner: ${expectedOwner}(${expectedOwner.hashCode}, contextOwner: ${contextOwner}(${contextOwner.hashCode})"
   }
 
-  def findSubtermWithIncorrectOwner(using Quotes)(tree: quotes.reflect.Tree): Option[DefinitionWithIncorrectOwner] =
+  def findSubtermWithIncorrectOwner(using Quotes)(currentOwner: quotes.reflect.Symbol, tree: quotes.reflect.Tree): Option[DefinitionWithIncorrectOwner] =
       import quotes.reflect._
       import util._
-      val search = new TreeAccumulator[Option[DefinitionWithIncorrectOwner]] {
+      val search = new TreeAccumulator[(Symbol, Option[DefinitionWithIncorrectOwner])] {
 
-        def foldTree(x: Option[DefinitionWithIncorrectOwner], tree: Tree)(owner: Symbol): Option[DefinitionWithIncorrectOwner] =
-          if (x.isDefined) x
+        def foldTree(x: (Symbol,Option[DefinitionWithIncorrectOwner]), tree: Tree)(owner: Symbol): (Symbol,Option[DefinitionWithIncorrectOwner]) =
+          if (x._2.isDefined) x
           else foldOverTree(x, tree)(owner)
 
         def checkOwner(sym: Symbol, owner: Symbol): Boolean =
           (sym.maybeOwner == owner)
 
-        override def foldOverTree(x: Option[DefinitionWithIncorrectOwner], tree: Tree)(owner: Symbol): Option[DefinitionWithIncorrectOwner] = {
+        override def foldOverTree(x: (Symbol,Option[DefinitionWithIncorrectOwner]), tree: Tree)(owner: Symbol): (Symbol, Option[DefinitionWithIncorrectOwner]) = {
           tree match
             case t: Definition =>
               if (checkOwner(t.symbol, owner)) {
                 // searh deep
-                super.foldOverTree(x, t)(owner)
+                super.foldOverTree((t.symbol,None), t)(owner)
               } else {
-                Some(new DefinitionWithIncorrectOwner(t, t.symbol.maybeOwner, owner))
+                (x._1, Some(new DefinitionWithIncorrectOwner(t, t.symbol.maybeOwner, x._1, owner)))
               }
             case _ =>
               super.foldOverTree(x, tree)(owner)
         }
       }
-      search.foldTree(None, tree)(Symbol.spliceOwner)
+      search.foldTree((currentOwner,None), tree)(Symbol.spliceOwner)._2
 
   // used for debugging instrumentation
   def dummyMapper(using Quotes)(t: quotes.reflect.Term, owner: quotes.reflect.Symbol): Boolean =

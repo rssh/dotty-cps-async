@@ -69,7 +69,7 @@ object Async {
       val owners = TransformUtil.findAllOwnersIn(retval.asTerm)
       if (owners.size > 1) then
         println(s"!! inferAsyncArgApplyImpl: more than one owner: ${owners.mkString("\n")}")
-      val incorrectDef = TransformUtil.findSubtermWithIncorrectOwner(retval.asTerm)
+      val incorrectDef = TransformUtil.findSubtermWithIncorrectOwner(Symbol.spliceOwner, retval.asTerm)
       if (incorrectDef.isDefined) then
         println(s"!! inferAsyncArgApplyImpl: incorrect owner: ${incorrectDef.get.show}")
       retval
@@ -223,7 +223,7 @@ object Async {
                                       optRuntimeAwaitProvider: Option[Expr[CpsRuntimeAwaitProvider[F]]],
                                       flags: AsyncMacroFlags,
                                       nesting: Int,
-                                      parent: Option[TransformationContext[_,_,_]])(
+                                      parent: Option[TransformationContext[?,?,?]])(
                                            using Quotes): CpsExpr[F,T] =
      val tType = summon[Type[T]]
      import quotes.reflect._    

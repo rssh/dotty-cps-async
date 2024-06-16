@@ -37,7 +37,6 @@ trait RemoveScaffolding {
       //  (it created in erasure after uncarrying (preserve carrying form of method))
       tree.rhs match
         case treeBlock@Block(List(ddef:DefDef), Closure(env,meth,tpe)) if meth.symbol == ddef.symbol =>
-          println(s"closure found, ddef.rhs=${ddef.rhs}")
           ddef.rhs match
             case Apply(fn, args) =>
               fn.symbol.getAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsTransformed")) match
@@ -116,8 +115,6 @@ trait RemoveScaffolding {
 
   override def transformIdent(tree: Ident)(using Context): Tree = {
     if (tree.symbol.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsTransformed"))) then
-      println(s"RemoveScaffolding::Ident, ${tree.show} has CpsTransformed annotation: ${tree.symbol.showFullName}")
-      println(s"tree.tpe.widen=${tree.tpe.widen.show}, tree.symbol.info.widen=${tree.symbol.info.widen}")
       ref(tree.symbol).withSpan(tree.span)
     else
       tree

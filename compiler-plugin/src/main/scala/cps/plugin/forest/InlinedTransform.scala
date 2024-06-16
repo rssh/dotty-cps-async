@@ -22,7 +22,7 @@ object InlinedTransform {
 
     def newBinding: Option[MemberDef]
 
-    def generateFlatMap(tail: CpsTree)(using Context, CpsTopLevelContext): Option[CpsTree]
+    def generateFlatMap(tail: CpsTree, owner: Symbol)(using Context, CpsTopLevelContext): Option[CpsTree]
 
     def substitute(tree: Tree, treeMap: BinginsTreeMap, ctx:Context)(using CpsTopLevelContext): Option[Tree]
 
@@ -34,7 +34,7 @@ object InlinedTransform {
     def newBinding: Option[MemberDef] = {
       Some(origin)
     }
-    def generateFlatMap(tail: CpsTree)(using Context, CpsTopLevelContext): Option[CpsTree] = None
+    def generateFlatMap(tail: CpsTree, owner: Symbol)(using Context, CpsTopLevelContext): Option[CpsTree] = None
     def substitute(tree: Tree,  treeMap: BinginsTreeMap, ctx: Context)(using CpsTopLevelContext): Option[Tree] = None
   }
 
@@ -42,7 +42,7 @@ object InlinedTransform {
     def newBinding: Option[MemberDef] = {
       Some(newValDef)
     }
-    def generateFlatMap(tail:CpsTree)(using Context, CpsTopLevelContext): Option[CpsTree] = None
+    def generateFlatMap(tail:CpsTree, owner: Symbol)(using Context, CpsTopLevelContext): Option[CpsTree] = None
     override def substitute(tree: Tree, treeMap: BinginsTreeMap, ctx: Context)(using CpsTopLevelContext): Option[Tree] = {
       given Context = ctx
       if (origin.symbol == newValDef.symbol)
@@ -89,16 +89,16 @@ object InlinedTransform {
         asyncLambdaValDef
     }
 
-    override def generateFlatMap(tail: CpsTree)(using Context, CpsTopLevelContext): Option[CpsTree] = {
+    override def generateFlatMap(tail: CpsTree, owner: Symbol)(using Context, CpsTopLevelContext): Option[CpsTree] = {
         val retval = tail.asyncKind match
           case AsyncKind.Sync =>
-            MapCpsTree(origin.rhs, adoptedRhs.owner, adoptedRhs,
+            MapCpsTree(origin.rhs, owner, adoptedRhs,
                                     MapCpsTreeArgument(None, tail))
           case AsyncKind.Async(v) =>
-            FlatMapCpsTree(origin.rhs, adoptedRhs.owner, adoptedRhs,
+            FlatMapCpsTree(origin.rhs, owner, adoptedRhs,
                                     FlatMapCpsTreeArgument(Some(origin), tail))
           case AsyncKind.AsyncLambda(bodyKind) =>
-            MapCpsTree(origin.rhs, adoptedRhs.owner, adoptedRhs,
+            MapCpsTree(origin.rhs, owner, adoptedRhs,
                                     MapCpsTreeArgument(None, tail))
          Some(retval)
     }
@@ -207,7 +207,7 @@ object InlinedTransform {
   def apply(inlinedTerm: Inlined, owner: Symbol,  nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
     Log.trace(s"InlinedTransform: inlinedTerm.call=${inlinedTerm.call.show}",nesting)
     Log.trace(s"InlinedTransform: inlinedTerm.call.tree=${inlinedTerm.call}", nesting)
-    inlinedTerm match
+    val retval = inlinedTerm match
        case InlinedAsyncCall(tree) =>
           // by definition of async, which return F[T]
           Log.trace(s"InlinedTransform: inlinedTerm.call handled, result=${inlinedTerm.show}",nesting)
@@ -219,6 +219,8 @@ object InlinedTransform {
           withDirectContextBinding(inlinedTerm, owner, nesting) { (optDC, ctx, tctx) =>
             applyNonemptyBindings(inlinedTerm, owner,  nesting, optDC)(using ctx, tctx)
           }
+    Log.trace(s"InlinedTransform: retval=${retval.show}",nesting)
+    retval
   }
 
   def withDirectContextBinding(inlinedTerm: Inlined, owner: Symbol, nesting: Int)(cont: (Option[Tree], Context, CpsTopLevelContext) => CpsTree)(using Context, CpsTopLevelContext):CpsTree = {
@@ -295,7 +297,8 @@ object InlinedTransform {
   }
 
   def applyNonemptyBindings(inlinedTerm: Inlined, owner: Symbol, nesting:Int, optDCConstructor: Option[Tree] )(using Context, CpsTopLevelContext): CpsTree = {
-      Log.trace(s"InlineTransform: inlinedTerm=${inlinedTerm.show} owner=${owner.id}, bindings.size=${inlinedTerm.bindings.length}",nesting)
+      Log.trace(s"InlineTransform.applyNonEmptyBindings: inlinedTerm=${inlinedTerm.show} owner=${owner}(${owner.id}), contextOwner=${summon[Context].owner}, bindings.size=${inlinedTerm.bindings.length}",nesting)
+
 
       // transform async binder variables in the form
       // when v is Async(_) [not lambda]
@@ -324,7 +327,7 @@ object InlinedTransform {
               case _ =>
                 //  doesm not change symbol of v.
                 //   TODO:  add flag to generate new symbol when we need to gnerate a new function.
-                val cpsed = RootTransform(v.rhs,v.symbol, nesting+1)
+                val cpsed = RootTransform(v.rhs,v.symbol, nesting+1)(using summon[Context].withOwner(v.symbol), summon[CpsTopLevelContext])
                 cpsed.asyncKind match
                   case AsyncKind.Sync =>
                     if (cpsed.isOriginEqSync) then
@@ -348,8 +351,10 @@ object InlinedTransform {
       val bindingsTreeMap = new BinginsTreeMap(records)
       val changedExpansion = bindingsTreeMap.transform(inlinedTerm.expansion)
 
-      val newBindings = records.flatMap(_.newBinding)
-
+      val newBindings = records.flatMap(_.newBinding).map{ b =>
+        b.changeOwner(b.symbol.owner, owner)
+      }
+  
 
       val cpsedExpansion = RootTransform(changedExpansion,owner,nesting+1)
 
@@ -362,17 +367,16 @@ object InlinedTransform {
         case AsyncKind.Async(v) =>
             CpsTree.impure(inlinedTerm, owner, Inlined(inlinedTerm.call, newBindings, cpsedExpansion.transformed), v)
         case AsyncKind.AsyncLambda(internalKind) =>
-            Log.trace(s"InlineTransform: newInlined InlinedCpsTree",nesting)
+            Log.trace(s"InlineTransform: newInlined ",nesting)
             val newTerm = Inlined(inlinedTerm.call, newBindings, cpsedExpansion.transformed)
             CpsTree.opaqueAsyncLambda(inlinedTerm, owner, newTerm, internalKind)
             //InlinedCpsTree(inlinedTerm,owner,newBindings,cpsedExpansion)
 
-      Log.trace(s"InlineTransform, newInlined: ${newInlined.show}",nesting)
-
-
       val prefixedInlined = records.foldRight(newInlined) { (r, acc) =>
-          r.generateFlatMap(acc).getOrElse(acc)
+          r.generateFlatMap(acc, owner).getOrElse(acc)
       }
+
+      Log.trace(s"InlineTransform, prefixedInlined: ${prefixedInlined.show}, owner=${prefixedInlined.owner}", nesting)
 
       prefixedInlined
   }

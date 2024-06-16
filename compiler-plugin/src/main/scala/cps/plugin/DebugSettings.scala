@@ -26,11 +26,16 @@ object DebugSettings {
 
   def make(from:Tree)(using Context):DebugSettings = {
     val debugLevelAnSym = Symbols.requiredClass("cps.plugin.annotation.CpsDebugLevel")
-    val debugLevel: Int = findAnnotation(summon[Context].owner, debugLevelAnSym) match
+    val scopeOwner =
+      if (from.symbol != NoSymbol) then
+        from.symbol
+      else
+        summon[Context].owner
+    val debugLevel: Int = findEnclosingAnnotation(scopeOwner, debugLevelAnSym) match
       case Some(an) =>
         an.argument(0) match
           case Some(Literal(Constant(v:Int))) => v
-          case other => 
+          case other =>
             throw CpsTransformException(s"CpsDebugLevelAnnotation should have literal constant as argument, we have $other",an.tree.srcPos)
       case None =>
         0
@@ -48,11 +53,15 @@ object DebugSettings {
                   throw CpsTransformException(s"Invalid DebugLevel settings, see: ${f.rhs.show}",debugLevelTree.srcPos)
             case _ =>
               throw CpsTransformException(s"Invalid DebugLevel settings, expected constant application, see: ${debugLevelTree.show}",debugLevelTree.srcPos)
-        case None => 
+        case None =>
           0
     }
+
     val printCodeTpe = Symbols.requiredClass("cps.plugin.settings.PrintCode").typeRef
-    val printCode  = CpsTransformHelper.findImplicitInstance(printCodeTpe, summon[Context].tree.span).isDefined
+    val printCode  = {
+      println(s"context = ${summon[Context].tree.show}, phase = ${summon[Context].phase}")
+      CpsTransformHelper.findImplicitInstance(printCodeTpe, summon[Context].tree.span).isDefined
+    }
     val printTreeTpe = Symbols.requiredClass("cps.plugin.settings.PrintTree").typeRef
     val printTree  = CpsTransformHelper.findImplicitInstance(printTreeTpe, summon[Context].tree.span).isDefined
     DebugSettings(debugLevel = debugLevel, printTree = printTree, printCode = printCode)
@@ -60,12 +69,20 @@ object DebugSettings {
 
 
   @tailrec
-  def findAnnotation(current:Symbol, annotationSymbol:Symbol)(using Context):Option[Annotation] = {
-    if (current != NoSymbol) {
-      current.denot.getAnnotation(annotationSymbol) match
+  def findEnclosingAnnotation(current:Symbol, annotationSymbol:Symbol)(using Context):Option[Annotation] = {
+    if (current != NoSymbol) then
+      current.getAnnotation(annotationSymbol) match
         case Some(annotation) => Some(annotation)
-        case None => findAnnotation(current.owner, annotationSymbol)
-    } else None
+        case None =>
+          if (current.owner != NoSymbol) then
+            findEnclosingAnnotation(current.owner, annotationSymbol)
+          else
+            None
+    else
+      report.warning(s"Call of findAnnotation(${annotationSymbol.fullName}) with NoSymbol, should not happen",current.srcPos)
+      None
   }
+  
+  val PARANOID = true
 
 }

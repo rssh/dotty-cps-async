@@ -54,7 +54,7 @@ trait CpsChangeSymbols {
             //sym
       case None =>
             sym.info match
-              case mt0: MethodOrPoly if (!sym.isAnonymousFunction) =>
+              case mt0: MethodOrPoly if (!sym.isAnonymousFunction && !sym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) =>
                 val timeTravelContext = summon[Context].fresh.setPhase(firstTransformPhase)
                 val cpsDirectSym = CpsTransformHelper.cpsDirectAliasSymbol(using timeTravelContext)
                 val oldSym = sym.current(using timeTravelContext)

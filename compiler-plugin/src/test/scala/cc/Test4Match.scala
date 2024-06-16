@@ -14,7 +14,7 @@ class Test4Match {
 
     val reporter = dotcInvocations.compileFilesInDir(
       "testdata/set4/m1",
-      "testdata/set4/m1/target")
+      "testdata/set4/m1-target")
 
     println("summary: " + reporter.summary)
 
@@ -30,7 +30,7 @@ class Test4Match {
 
     val reporter = dotcInvocations.compileFilesInDir(
       "testdata/set4/m2",
-      "testdata/set4/m2/target")
+      "testdata/set4/m2-target")
 
     println("summary: " + reporter.summary)
 
@@ -46,7 +46,7 @@ class Test4Match {
 
     val (code, output) = dotcInvocations.compileAndRunFilesInDirJVM(
       "testdata/set4/m3",
-      "testdata/set4/m3/target",
+      "testdata/set4/m3-target",
       "cpstest.s4.m3.Test4m3"
     )
 

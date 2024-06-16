@@ -19,7 +19,7 @@ class CpsPlugin extends StandardPlugin {
   //
   
 
-  def init(options: List[String]): List[PluginPhase] = {
+  override def init(options: List[String]): List[PluginPhase] = {
      val settings = parseOptions(options)
      val selectedNodes = new SelectedNodes()
      List(

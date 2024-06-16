@@ -81,7 +81,7 @@ trait AsyncShiftLowPriority2 extends AsyncShiftLowPriority1 {
   import cps.runtime.*
 
 
-  transparent inline given shiftedMapOps[K, V, CC[K, V] <: MapOps[K, V, CC, CC[K, V]] with Iterable[(K, V)]]: MapOpsAsyncShift[K, V, CC, Iterable, CC[K, V]] =
+  transparent inline given shiftedMapOps[K, V, CC[K, V] <: MapOps[K, V, CC, CC[K, V]] & Iterable[(K, V)]]: MapOpsAsyncShift[K, V, CC, Iterable, CC[K, V]] =
     MapOpsAsyncShift[K, V, CC, Iterable, CC[K, V]]()
 
 
@@ -111,7 +111,7 @@ object AsyncShift extends AsyncShiftLowPriority2 {
 
 
 
- transparent inline given shiftedImmutableMapOps[K,V,CC[K,V] <: MapOps[K,V,CC,CC[K,V]] with immutable.Iterable[(K,V)]]: MapOpsAsyncShift[K,V,CC,immutable.Iterable,CC[K,V]] =
+ transparent inline given shiftedImmutableMapOps[K,V,CC[K,V] <: MapOps[K,V,CC,CC[K,V]] & immutable.Iterable[(K,V)]]: MapOpsAsyncShift[K,V,CC,immutable.Iterable,CC[K,V]] =
       MapOpsAsyncShift[K,V,CC,immutable.Iterable,CC[K,V]]()
 
  //transparent inline given shiftedList[A]: AsyncShift[scala.collection.immutable.List[A]] =

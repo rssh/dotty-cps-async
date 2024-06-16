@@ -83,7 +83,7 @@ class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends
   def annotateTopMethodWithSelectKind(tree: tpd.Tree)(using Context): Boolean = {
     lazy val cpsTransformedAnnot = Symbols.requiredClass("cps.plugin.annotation.CpsTransformed")
     tree match
-      case dd: DefDef =>
+      case dd: DefDef if (!dd.symbol.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) =>
         val optKind = SelectedNodes.detectDefDefSelectKind(dd)
         optKind match
           case Some(kind) =>

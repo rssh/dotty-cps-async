@@ -110,6 +110,14 @@ class PhaseCps(settings: CpsPluginSettings,
     retval
   }
 
+  override def prepareForApply(tree: tpd.Apply)(using Context): Context = {
+    if (summon[Context].phase != this) {
+      println(s"PhaseCps::prepareForApply, invalid phase = ${summon[Context].phase}")
+      summon[Context].withPhase(this)
+    } else {
+      summon[Context]
+    }
+  }
 
   override def transformApply(tree: tpd.Apply)(using Context): tpd.Tree = {
     try
@@ -225,16 +233,16 @@ class PhaseCps(settings: CpsPluginSettings,
     val monadType = CpsTransformHelper.extractMonadType(cpsMonadContext.tpe.widen, CpsTransformHelper.cpsMonadContextClassSymbol, asyncCallTree.srcPos)
 
     if (true) {
-      TransformUtil.findSubtermsWithIncorrectOwner(ddef.rhs, ddef.symbol) match
-        case subterm::tail =>
-          report.debugwarn(s"found subterm with incorrect owner: ${subterm.symbol}(${subterm.symbol.hashCode()}  owner=${subterm.symbol.owner}(${subterm.symbol.owner.hashCode()})", ddef.srcPos)
-        case Nil =>
+      TransformUtil.findFirstSubtermWithIncorrectOwner(ddef.rhs, ddef.symbol) match
+        case Some(TransformUtil.IncorrectOwnerRecord(contextOnwer, expectedOwner, realOwner, tree)) =>
+          report.debugwarn(s"found subterm with incorrect owner: ${tree.symbol}(${tree.symbol.hashCode()}  owner=${realOwner}(${realOwner.hashCode()})", ddef.srcPos)
+        case None =>
     }
 
     val contextParam = cpsMonadContext match
       case vd: ValDef => ref(vd.symbol)
       case _ => throw CpsTransformException(s"excepted that cpsMonadContext is ValDef, but we have ${cpsMonadContext.show}", asyncCallTree.srcPos)
-    val (tctx, monadValDef) = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(asyncCallTree), CpsTransformHelper.cpsMonadContextClassSymbol)
+    val (tctx, monadValDef) = makeCpsTopLevelContext(contextParam, ddef.symbol, asyncCallTree.srcPos, DebugSettings.make(ddef), CpsTransformHelper.cpsMonadContextClassSymbol)
     val ddefCtx = ctx.withOwner(ddef.symbol)
     val nRhsCps = RootTransform(ddef.rhs, ddef.symbol, 0)(using ddefCtx, tctx)
     val nRhsTerm = wrapTopLevelCpsTree(nRhsCps)(using ddefCtx, tctx)
