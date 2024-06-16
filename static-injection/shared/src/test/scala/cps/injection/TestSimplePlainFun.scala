@@ -1,11 +1,11 @@
-package cps.injection
+package cps.injection.plain
 
 import junit.*
 import cps.injection.*
 import junit.framework.TestCase
 import org.junit.Test
 
-class TestSimpleFun extends TestCase {
+class TestSimplePlainFun extends TestCase {
 
   @Test
   def testGivenInt(): Unit = {

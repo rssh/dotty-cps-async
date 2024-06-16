@@ -1,4 +1,4 @@
-package cps.injection
+package cps.injection.plain
 
 import scala.annotation.compileTimeOnly
 import scala.collection.mutable
@@ -7,7 +7,7 @@ import scala.quoted.*
 
 object CompileTimeConstants {
 
-  val inject = "cps.injection.inject"
+  val inject = "cps.injection.plain.inject"
 
 }
 

@@ -5,110 +5,61 @@ import cps.*
 
 
 
-//trait InjectionEffect[F[_],SET]
-
-
-
-trait InjectionCarrier[F[_]:CpsTryMonad,SET] {
+trait AsyncInjectionCarrier[F[_],SET] {
 
     def get[T](using Contains[T,SET]): F[T]
 
 }
 
 
+trait InjectionCarrier[SET] {
+
+  def get[T](using Contains[T,SET]): T
+
+}
+
+
 trait Contains[T,SET] {
 
-  def get(s:SET): T
+  inline def get(s:SET): T
 
 }
 
-given contains[T,S<:Tuple]: Contains[T,T *: S] with {
-   inline def get(s: T *: S): T = s.head
+object Contains {
+
+  given contains[T, S<:Tuple]: Contains[T, T *: S] with {
+     inline def get(s: T *: S): T = s.head
+  }
+
+  given containsRest[T, HEAD, TAIL <: Tuple](using Contains[T,TAIL]) : Contains[T, HEAD *: TAIL] with {
+     inline def get(s: HEAD *: TAIL): T = summon[Contains[T,TAIL]].get(s.tail)
+  }
+
+  given containsThemself[T]: Contains[T,T] with {
+     inline def get(s: T): T = s
+  }
+
 }
+
+
+type ALL = ALL.ALL
 
 object ALL {
   opaque type ALL = ALL.type
+
+  given allContains[T] : Contains[T,ALL] with  {
+    inline def get(s: ALL): T = ??? // <work obly from macros>
+  }
+
 }
-type ALL = ALL.ALL
 
 type SET = Tuple | ALL
 
-trait StringREPR[T] {
-  
-  transparent inline def apply: String
-
-  type R
-
-}
 
 
-object StringREPR {
+object AsyncInjectionCarrier {
 
-  given [T]: StringREPR[T] with {
-
-    override type R = repr.type 
-    
-    inline val repr = apply
-    
-    transparent inline def apply = ${
-      StringREPRMacro.applyImpl[T]
-    }
-
-  }
-
- 
-
-}
-
-
-
-//type SET = Tuple
-type ADD[SET,T] = SET match {
-  case Tuple =>
-     T *: SET
-  case ALL => ALL
-}
-
-type PICK[SET, T] = Contains[T,SET]
-
-trait SET_ADDITION[T,S] {
-  type R
-  def add(t:T, s:S): R
-}
-
-object SET_ADDITION {
-
-  type Aux[T,S,RR] = SET_ADDITION[T,S] { type R = RR }
-
-  given [T,HEAD,TAIL <: Tuple](using (HEAD =:= T) ): SET_ADDITION[T,HEAD *: TAIL] with {
-    type R = HEAD *: TAIL
-    def add(t:T, s: HEAD *: TAIL): R = s
-  }
-
-  given [T]: SET_ADDITION[T,ALL] with {
-    type R = ALL
-    def add(t:T, s:ALL): ALL = s
-  }
-
-}
-
-//given IsAAD[T,SET](using [T,SET]): IsADD[T,SET,ADD] = ???
-
-
-given [T,ALL] : Contains[T,ALL] with  {
-  inline def get(s: ALL): T = ??? // <work obly from macros>
-}
-
-
-
-
-//type ADD[SET,T] = ???
-//type PICK[SET, T] = Contains[T, SET]
-
-// example : sorted list
-
-object InjectionCarrier {
-
+  /*
     def run[F[_],S,R](s:S)(f: InjectionCarrier[F,S] => F[R] )  = {
        ???
     }
@@ -124,56 +75,24 @@ object InjectionCarrier {
                                                        (InjectionCarrier[F,A *: B] => F[T]) =
                                 ???
                            }
-
-
-}
-
-type Inject[SET] = [F[_]] =>> InjectionCarrier[F,SET]
-
-/*
-class CpsMonadInjection[F[_],SET](val monad: CpsTryMonad[F]) extends CpsTryMonad[[X] =>> Provider[SET] => F[X]] {
-
-    def pure [A](a:A): Provider[SET] => F[A] = (provider: Provider[SET]) => monad.pure(a)
-
-    def map[A,B](fa: Provider[SET] => F[A])(f: A => B): Provider[SET] => F[B] =
-       (provider: Provider[SET]) => monad.map(fa(provider))(f)
-
-    def flatMap[A,B](fa: Provider[SET] => F[A])(f: A => Provider[SET] => F[B]): Provider[SET] => F[B] =
-        (provider: Provider[SET]) => monad.flatMap(fa(provider))(a => f(a)(provider))
+  */
 
 }
-*/
 
-//  get laster dotty, create
-//  (implitci)
-def testFun[F[_]]  =  (x:Int) =>  {
-   ???
-}
-
-// xxx
-def testFun1[F[_]]: InjectionCarrier[F,Int] => F[String]  = (x: InjectionCarrier[F,Int]) => {
-   ???
-}
-
-/*
-
-def testFun2[F[_]:CpsTryMonad]  =  injectM[F] {
-    //val q = reflect(testFun1)
-    ??
-}
-
-def testFun2[F[_]:CpsTryMonad]  = reify[X =>> InjectionCarrier[F,Int] => [X]] {
-    //val q = reflect(testFun1)
-    ??
-   ...
-}
+type AsyncInject[SET] = [F[_]] =>> AsyncInjectionCarrier[F,SET]
 
 
-def testFun2_1[F[_]:CpsTryMonad:Inject[Int]]  = reify[F] {
-    //val q = reflect(testFun1)
-    ??
-   ...
-}
+  /*
+  class CpsMonadInjection[F[_],SET](val monad: CpsTryMonad[F]) extends CpsTryMonad[[X] =>> Provider[SET] => F[X]] {
 
+      def pure [A](a:A): Provider[SET] => F[A] = (provider: Provider[SET]) => monad.pure(a)
 
-*/
+      def map[A,B](fa: Provider[SET] => F[A])(f: A => B): Provider[SET] => F[B] =
+         (provider: Provider[SET]) => monad.map(fa(provider))(f)
+
+      def flatMap[A,B](fa: Provider[SET] => F[A])(f: A => Provider[SET] => F[B]): Provider[SET] => F[B] =
+          (provider: Provider[SET]) => monad.flatMap(fa(provider))(a => f(a)(provider))
+
+  }
+  */
+
