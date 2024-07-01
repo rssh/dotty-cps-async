@@ -2,6 +2,8 @@ package cps.plugin
 
 class CpsPluginSettings(var useLoom: Boolean = true,
                         var debugLevel: Int = 0,
+                        var printTree: Boolean = false,
+                        var printCode: Boolean = false,
                         var withShiftReplaceStages: Boolean = false,
                         var transformDirectContextLambda: Boolean = false,
 

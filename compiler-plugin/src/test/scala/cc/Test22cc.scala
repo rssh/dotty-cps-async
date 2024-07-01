@@ -6,7 +6,7 @@ import org.junit.{Ignore, Test}
 class Test22cc {
 
   @Test
-  @Ignore  // yet not working
+  @Ignore
   def testCompileContextExtractor() = {
 
     val inDir = "testdata/set22cc/m1"
@@ -28,6 +28,7 @@ class Test22cc {
   }
 
   @Test
+  @Ignore  //  In process now
   def testCompileJSAsyncWithInternalCpsAsync() = {
     
     val inDir = "testdata/set22cc/m2"
@@ -37,8 +38,35 @@ class Test22cc {
     val dotcInvocations = new DotcInvocations(silent = false, scalaJs = true)
 
     val reporter = dotcInvocations.compileFilesInDirs(List(inDir), outDir, checkAll = true,
-      extraArgs = List("-Vprint:erasure,rssh.cps", "-Yprint-syms", "-experimental"),
+      extraArgs = List("-Vprint:erasure,rssh.cps",  "-experimental", "-P:rssh.cps:printCode"),
       usePlugin = true
+    )
+
+    if (reporter.hasErrors) {
+      println("errors:")
+      for(error <- reporter.allErrors)
+        val pos = error.pos
+        println(s"${pos.source}:${pos.startLine}:${pos.startColumn} ${error.msg}")
+      println(reporter.summary)
+    }
+
+    assert(!reporter.hasErrors, "compilation failed")
+
+  }
+
+  @Test
+  @Ignore  // solved, not in focus.
+  def testCompileJSResolveReject() = {
+
+    val inDir = "testdata/set22cc/m3"
+    val outDir = "testdata/set22cc/m3-out"
+    val jsLinkOut = "testdata/set22cc/m3-linkout"
+
+    val dotcInvocations = new DotcInvocations(silent = false, scalaJs = true)
+
+    val reporter = dotcInvocations.compileFilesInDirs(List(inDir), outDir, checkAll = true,
+      extraArgs = List("-Vprint:erasure,rssh.cps", "-Yprint-syms", "-experimental" ),
+      usePlugin = false
     )
 
     if (reporter.hasErrors) {
@@ -48,5 +76,4 @@ class Test22cc {
     assert(!reporter.hasErrors, "compilation failed")
 
   }
-  
 }

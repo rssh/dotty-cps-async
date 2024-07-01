@@ -90,14 +90,7 @@ object JSAsync {
                        evalOp(f(Failure(ex)))
                      case other =>
                        evalOp(f(Failure(JavaScriptException(other))))
-               }.asInstanceOf[
-                     js.UndefOr[
-                      js.Function1[Any,
-                        js.`|`[Either[B, gears.async.JSAsync[B]],
-                               js.Thenable[Either[B, gears.async.JSAsync[B]]]
-                              ]
-                      ]
-             ]]
+               }
            )
         )
       }

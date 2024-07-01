@@ -374,10 +374,19 @@ object ApplyTransform {
 
   def adoptCallMode(origin: Tree, plainTree: Tree, funSym: Symbol, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
     Log.trace(s"adoptCallMode: plainTree=${plainTree.show}, callMode=${callMode}  funSym=${funSym}", nesting)
-    if (argss.exists(_.containsDirectContext) && !funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) {
+    if (argss.exists(_.containsDirectContext))
+      //if (funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) {
+      //  throw CpsTransformException(s"DirectContext function can't be annotated with @CpsNotChange", origin.srcPos)
+      //}
+      val noChangeAnnotation = funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))
       val directContextArg = argss.find(_.containsDirectContext).flatMap(_.findDirectContext).get
       val adoptedTree = directContextArg match
             case dc@CpsDirectHelper.ByInclusionCall(tf,tg,fctx,fgincl) =>
+                 if (funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) {
+                    println("byInclusdionCall with CpsNotChange")
+                    println(s" tf.tpe=${tf.tpe.show}")
+                    throw CpsTransformException(s"DirectContext function can't be annotated with @CpsNotChange", origin.srcPos)
+                 }
                  val callArgs = CpsDirectHelper.ByInclusionCallArgs(tf,tg,fctx,fgincl)
                  if (tf.tpe =:= tg.tpe) then
                    val nCpsDirectArg = CpsDirectHelper.genCpsDirectDefaultConstructor(TypeTree(tf.tpe),fctx,dc.span)
@@ -411,7 +420,14 @@ object ApplyTransform {
                    })
                    CpsDirectHelper.genConventionCall(fctx,fgincl,origin.tpe.widen,lambda,origin.span)
             case other =>
-              Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
+              if (funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) {
+                // no adoption
+                plainTree
+                //println(s"directContextArg=${directContextArg.show}")
+                //throw CpsTransformException(s"DirectContext function can't be annotated with @CpsNotChange, fun=${funSym.fullName}", origin.srcPos)
+              } else {
+                Scaffolding.adoptCpsedCall(plainTree, plainTree.tpe.widen, summon[CpsTopLevelContext].monadType)
+              }
       //if (isImpure) {
       //  TODO: such situationis possible when we pass lamba with context parameters (can be inline)
       //  TODO:  separate this case.
@@ -425,10 +441,10 @@ object ApplyTransform {
       CpsTree.impure(origin, owner, adoptedTree, internalKind)
       */
       //CpsTree.impure(origin, owner, adoptedTree, AsyncKind.Sync)
-      adoptResultKind(origin, plainTree, adoptedTree, owner, callMode, true)
-    } else {
+      val useDirectContext = ! noChangeAnnotation
+      adoptResultKind(origin, plainTree, adoptedTree, owner, callMode, useDirectContext)
+    else
       adoptResultKind(origin, plainTree, plainTree, owner, callMode, false)
-    }
   }
 
 

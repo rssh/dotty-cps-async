@@ -16,6 +16,8 @@ object JSScheduler extends Scheduler:
   val resolvedUnitPromise = js.Promise.resolve(())
 
   def execute(body: Runnable)(using AsyncContext): Unit = {
+     ???
+    /*
      val p = js.Promise[Unit]((resolve, reject) => {
        resolvedUnitPromise.`then`( (_: Unit) => {
          try
@@ -30,10 +32,12 @@ object JSScheduler extends Scheduler:
        })
      })
      await(p)
+
+     */
   }
 
   def schedule(delay: FiniteDuration, body: Runnable): Cancellable = {
-    val handle = setTimeout(delay.toMillis.toDouble)(body.run())
+    //val handle = setTimeout(delay.toMillis.toDouble)(body.run())
     //() => clearTimeout(handle)
     ???
   }

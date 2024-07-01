@@ -24,21 +24,25 @@ case class DebugSettings(
 object DebugSettings {
 
 
-  def make(from:Tree)(using Context):DebugSettings = {
+  def make(from:Tree, pluginSettings: CpsPluginSettings)(using Context):DebugSettings = {
     val debugLevelAnSym = Symbols.requiredClass("cps.plugin.annotation.CpsDebugLevel")
     val scopeOwner =
       if (from.symbol != NoSymbol) then
         from.symbol
       else
         summon[Context].owner
-    val debugLevel: Int = findEnclosingAnnotation(scopeOwner, debugLevelAnSym) match
-      case Some(an) =>
-        an.argument(0) match
-          case Some(Literal(Constant(v:Int))) => v
-          case other =>
-            throw CpsTransformException(s"CpsDebugLevelAnnotation should have literal constant as argument, we have $other",an.tree.srcPos)
-      case None =>
-        0
+    val debugLevel: Int = 
+      if (pluginSettings.debugLevel != 0) 
+        pluginSettings.debugLevel
+      else 
+        findEnclosingAnnotation(scopeOwner, debugLevelAnSym) match
+          case Some(an) =>
+            an.argument(0) match
+                case Some(Literal(Constant(v:Int))) => v
+                case other =>
+                  throw CpsTransformException(s"CpsDebugLevelAnnotation should have literal constant as argument, we have $other",an.tree.srcPos)
+          case None =>
+            0
     if (false) {
       //don't  work after 'cc' stage  (always show name)
       //TODO: look after inlinging or ask user to enable retain-tree
@@ -56,14 +60,24 @@ object DebugSettings {
         case None =>
           0
     }
-
-    val printCodeTpe = Symbols.requiredClass("cps.plugin.settings.PrintCode").typeRef
     val printCode  = {
-      println(s"context = ${summon[Context].tree.show}, phase = ${summon[Context].phase}")
-      CpsTransformHelper.findImplicitInstance(printCodeTpe, summon[Context].tree.span).isDefined
+      pluginSettings.printCode || {
+        val oldPrintCodeTpe = Symbols.requiredClass("cps.macros.flags.PrintCode").typeRef
+        val printCodeTpe = Symbols.requiredClass("cps.plugin.settings.PrintCode").typeRef
+        println(s"context = ${summon[Context].tree.show}, phase = ${summon[Context].phase}")
+        CpsTransformHelper.findImplicitInstance(printCodeTpe, summon[Context].tree.span).isDefined ||
+        CpsTransformHelper.findImplicitInstance(oldPrintCodeTpe, summon[Context].tree.span).isDefined
+      }
     }
-    val printTreeTpe = Symbols.requiredClass("cps.plugin.settings.PrintTree").typeRef
-    val printTree  = CpsTransformHelper.findImplicitInstance(printTreeTpe, summon[Context].tree.span).isDefined
+    val printTree  = {
+      pluginSettings.printTree || {
+        val oldPrintTreeTpe = Symbols.requiredClass("cps.macros.flags.PrintTree").typeRef
+        val printTreeTpe = Symbols.requiredClass("cps.plugin.settings.PrintTree").typeRef
+        CpsTransformHelper.findImplicitInstance(printTreeTpe, summon[Context].tree.span).isDefined ||
+          CpsTransformHelper.findImplicitInstance(oldPrintTreeTpe, summon[Context].tree.span).isDefined
+
+      }
+    }    
     DebugSettings(debugLevel = debugLevel, printTree = printTree, printCode = printCode)
   }
 
