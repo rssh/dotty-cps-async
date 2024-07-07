@@ -19,6 +19,7 @@ class DotcInvocations(silent: Boolean = true, scalaJs: Boolean = false) {
              compilerClasspathOption ++
              extraArgs ++
              DotcInvocations.defaultCompileOpts ++
+             (if (scalaJs) List("-scalajs") else List.empty) ++
              (if (checkAll) List("-Ycheck:all") else List.empty)
     println(s"compile args: ${args}, usePlugin=${usePlugin}")
     compileFilesWithFullArgs(files, outDir, args)

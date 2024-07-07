@@ -19,7 +19,7 @@ class CpsPlugin extends StandardPlugin {
   //
   
 
-  def init(options: List[String]): List[PluginPhase] = {
+  override def init(options: List[String]): List[PluginPhase] = {
      val settings = parseOptions(options)
      val selectedNodes = new SelectedNodes()
      List(
@@ -35,6 +35,10 @@ class CpsPlugin extends StandardPlugin {
       if (option.startsWith("debugLevel=")) {
         val level = option.substring("debugLevel=".length).toInt
         settings.debugLevel = level
+      } else if (option == "printTree") {
+        settings.printTree = true
+      } else if (option == "printCode") {
+        settings.printCode = true  
       } else if (option == "useLoom") {
         settings.useLoom = true
       } else {
