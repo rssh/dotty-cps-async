@@ -76,12 +76,20 @@ object ApplyTermArgList {
         val (aExpr, named) = a match
           case NamedArg(name, expr) => (expr, Some(name.toTermName))
           case expr => (expr, None)
-        val depResult = DependencyCheck.run(aExpr,s.symbols)
+        val isDirectContext = mt.isDirectContext(s.index, a.srcPos)
+        val depResult = if (isDirectContext) {
+          //  direct context is always syntetic and substituted by real context in the code
+          //  (if we will generate temporary val for it, we broke this substitution)
+          //  (mb add contextual argument for byIdentityCall to set).
+          DependencyCheck.Result(false, Set.empty)
+        } else {
+          DependencyCheck.run(aExpr,s.symbols)
+        }
         val nApplyArg = ApplyArg( aExpr,
           mt.paramName(s.index, a.srcPos).toTermName,  
           mt.paramType(s.index, a.srcPos),
           mt.isByName(s.index, a.srcPos),
-          mt.isDirectContext(s.index, a.srcPos),
+          isDirectContext,
           owner,
           depResult.canBeDependent,
           named,

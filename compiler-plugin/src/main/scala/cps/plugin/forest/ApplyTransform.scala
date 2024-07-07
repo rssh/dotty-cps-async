@@ -373,15 +373,17 @@ object ApplyTransform {
   }
 
   def adoptCallMode(origin: Tree, plainTree: Tree, funSym: Symbol, owner: Symbol, argss: List[ApplyArgList], callMode: FunCallMode, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
-    Log.trace(s"adoptCallMode: plainTree=${plainTree.show}, callMode=${callMode}  funSym=${funSym}", nesting)
+    Log.trace(s"adoptCallMode: plainTree=${plainTree.show}, callMode=${callMode}  funSym=${funSym}, haveDirectContext=${argss.exists(_.containsDirectContext)}", nesting)
     if (argss.exists(_.containsDirectContext))
       //if (funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) {
       //  throw CpsTransformException(s"DirectContext function can't be annotated with @CpsNotChange", origin.srcPos)
       //}
       val noChangeAnnotation = funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))
       val directContextArg = argss.find(_.containsDirectContext).flatMap(_.findDirectContext).get
+      Log.trace(s"adoptCallMode: directContextArg=${directContextArg.show}", nesting)
       val adoptedTree = directContextArg match
             case dc@CpsDirectHelper.ByInclusionCall(tf,tg,fctx,fgincl) =>
+                 Log.trace("!!!adoptCallMode: ByInclusionCall", nesting)
                  if (funSym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) {
                     println("byInclusdionCall with CpsNotChange")
                     println(s" tf.tpe=${tf.tpe.show}")
@@ -389,6 +391,7 @@ object ApplyTransform {
                  }
                  val callArgs = CpsDirectHelper.ByInclusionCallArgs(tf,tg,fctx,fgincl)
                  if (tf.tpe =:= tg.tpe) then
+                   Log.trace(s"!!!adoptCallMode: ByInclusionCall, tf.tpe =:= tg.tpe = ${tf.tpe.show}", nesting)
                    val nCpsDirectArg = CpsDirectHelper.genCpsDirectDefaultConstructor(TypeTree(tf.tpe),fctx,dc.span)
                    val tree = CpsDirectHelper.substituteCpsDirectArgInCall(plainTree, callArgs, nCpsDirectArg).getOrElse(
                      throw CpsTransformException("Internal error: can't find direct context argument in call", origin.srcPos)
@@ -756,6 +759,7 @@ object ApplyTransform {
       case ShiftedFun(origin, obj, method, targs, additionalArgs, canBeOverloaded, callShouldBeInlined, shape) =>
         obj.tpe.member(method).symbol
     val lastCpsTree = adoptCallMode(fullOrigin, pureReply, funSymbol,  owner, argss, callMode, nesting)
+    // to preserve order of evaluation, evaluate all arguments before call.
     val nApplyCpsTree = genPrefixes(argss, lastCpsTree)
     val retval = nApplyCpsTree
     Log.trace(s"genApplication result: ${retval.show}", nesting)
