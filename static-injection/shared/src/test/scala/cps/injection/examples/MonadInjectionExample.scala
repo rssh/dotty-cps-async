@@ -1,4 +1,4 @@
-package examples
+package cps.injection.examples
 
 
 import cps.*

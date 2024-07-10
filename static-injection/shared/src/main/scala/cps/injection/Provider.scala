@@ -1,8 +1,6 @@
 package cps.injection
 
-import scala.compiletime.*
 import cps.*
-
 
 
 trait AsyncInjectionCarrier[F[_],SET] {

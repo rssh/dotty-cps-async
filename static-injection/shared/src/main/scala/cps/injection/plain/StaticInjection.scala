@@ -51,7 +51,8 @@ def inferInjects[A: Type](bodyExpr: Expr[A])(using quotes: Quotes): Expr[Any] = 
                   termRef
                 case t =>
                   super.transformTerm(term)(owner)
-          }.transformTerm(injectInContext)(owner)
+          }.transformTerm(injectInContext)(Symbol.spliceOwner)
+            .changeOwner(owner)
       )
     case _ => injectInContext
   }
