@@ -26,7 +26,8 @@ class RandomOrgIntProvider(start: Int, end: Int) extends IntRandomProvider[IO](s
   def provideOne: IO[Int] = {
     ???
   }
-
+  
+  // see details https://www.random.org/clients/http/api/
   def callEffect(client: Client[IO], n: Int): IO[List[Int]] =
     client.expect[List[Int]](uri"https://www.random.org/integers" +? ""  )
 }
