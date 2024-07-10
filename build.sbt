@@ -1,5 +1,5 @@
-//val dottyVersion = "3.4.2"
-val dottyVersion = "3.5.1-RC1-bin-SNAPSHOT"
+val dottyVersion = "3.4.2"
+//val dottyVersion = "3.5.1-RC1-bin-SNAPSHOT"
 
 
 ThisBuild/version := "0.9.22-SNAPSHOT"
@@ -205,7 +205,7 @@ lazy val logic = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
   )
 
-lazy val staticInjection = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+lazy val staticInjection = crossProject(JSPlatform, JVMPlatform)
   .in(file("static-injection"))
   .settings(sharedSettings)
   .disablePlugins(SitePreviewPlugin)
@@ -220,8 +220,6 @@ lazy val staticInjection = crossProject(JSPlatform, JVMPlatform, NativePlatform)
              "-source-links:shared=github://rssh/dotty-cps-async/master#static-injection/shared"
     ),
     libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
-  ).nativeSettings(
-    libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
   )
 
 
