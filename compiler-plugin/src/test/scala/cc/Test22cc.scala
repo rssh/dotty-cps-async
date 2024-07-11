@@ -28,7 +28,8 @@ class Test22cc {
   }
 
   @Test
-  //@Ignore  //  In process now
+  @Ignore  //  shpuld be disabled for scala-3.3.x
+    // (needs -experimental option which is available starting from 3.4.0)
   def testCompileJSAsyncWithInternalCpsAsync() = {
     
     val inDir = "testdata/set22cc/m2"
