@@ -1,7 +1,7 @@
 package cps.injection.plain
 
-import junit.*
 import cps.injection.*
+import junit.*
 import junit.framework.TestCase
 import org.junit.Test
 
