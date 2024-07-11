@@ -64,7 +64,6 @@ object DebugSettings {
       pluginSettings.printCode || {
         val oldPrintCodeTpe = Symbols.requiredClass("cps.macros.flags.PrintCode").typeRef
         val printCodeTpe = Symbols.requiredClass("cps.plugin.settings.PrintCode").typeRef
-        println(s"context = ${summon[Context].tree.show}, phase = ${summon[Context].phase}")
         CpsTransformHelper.findImplicitInstance(printCodeTpe, summon[Context].tree.span).isDefined ||
         CpsTransformHelper.findImplicitInstance(oldPrintCodeTpe, summon[Context].tree.span).isDefined
       }

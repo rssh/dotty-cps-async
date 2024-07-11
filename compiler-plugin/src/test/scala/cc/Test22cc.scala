@@ -28,7 +28,7 @@ class Test22cc {
   }
 
   @Test
-  @Ignore  //  In process now
+  //@Ignore  //  In process now
   def testCompileJSAsyncWithInternalCpsAsync() = {
     
     val inDir = "testdata/set22cc/m2"
@@ -37,8 +37,12 @@ class Test22cc {
 
     val dotcInvocations = new DotcInvocations(silent = false, scalaJs = true)
 
-    val reporter = dotcInvocations.compileFilesInDirs(List(inDir), outDir, checkAll = true,
-      extraArgs = List("-Vprint:erasure,rssh.cps",  "-experimental", "-P:rssh.cps:printCode"),
+    // checkAll disabled due to https://github.com/scala/scala3/issues/21119
+    val reporter = dotcInvocations.compileFilesInDirs(List(inDir), outDir, checkAll = false,
+      extraArgs = List( //"-Vprint:erasure,rssh.cps", 
+                        "-experimental", 
+                        // "-P:rssh.cps:printCode"
+                       ),
       usePlugin = true
     )
 
