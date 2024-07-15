@@ -7,7 +7,7 @@ import org.http4s.implicits.*
 
 type IntUniqueSequenceGenerator = UniqueSequenceGenerator[IO, Int]
 
-class DefaultIntUniqueSequenceGenerator extends IntUniqueSequenceGenerator{
+object DefaultIntUniqueSequenceGenerator extends IntUniqueSequenceGenerator{
   def provideMany(range: Range)(n: Int): IO[Seq[Int]] = IO {
     val rangeList = (range.start until range.end).toList
     util.Random.shuffle(rangeList).take(n)
@@ -16,7 +16,7 @@ class DefaultIntUniqueSequenceGenerator extends IntUniqueSequenceGenerator{
   def provideOne(range: Range): IO[Int] = IO.pure(util.Random.between(range.start, range.end))
 }
 
-class RandomOrgUniqueSequenceGenerator extends IntUniqueSequenceGenerator {
+object RandomOrgUniqueSequenceGenerator extends IntUniqueSequenceGenerator {
   def provideMany(range: Range)(n: Int): IO[Seq[Int]] = clientResource.use { client =>
     client.expect[List[Int]](
       uri"https://www.random.org/sequences" 
