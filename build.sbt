@@ -220,7 +220,11 @@ lazy val staticInjection = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies += "org.typelevel" %% "cats-effect" % "3.5.4" % Test,
     libraryDependencies ++= Seq(
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
-      "org.http4s" %% "http4s-blaze-client" % http4sBlaze % Test
+      "org.http4s" %% "http4s-blaze-client" % http4sBlaze % Test,
+      "org.http4s" %% "http4s-circe" % http4sVersion % Test,
+      "io.circe" %% "circe-core" % "0.14.7" % Test,
+      "io.circe" %% "circe-generic" % "0.14.9" % Test,
+      "org.typelevel" %% "cats-parse" % "1.0.0" % Test
     )
   ).jsSettings(
     scalaJSUseMainModuleInitializer := true,
