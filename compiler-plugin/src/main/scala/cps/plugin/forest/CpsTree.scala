@@ -10,6 +10,7 @@ import core.Symbols.*
 import core.Names.*
 import ast.tpd.*
 import cps.plugin.*
+import cps.plugin.AsyncKind.Async
 import dotty.tools.dotc.ast.{tpd, untpd}
 import dotty.tools.dotc.ast.untpd.TypedSplice
 
@@ -513,7 +514,13 @@ case class MapCpsTree(
                        override val owner: Symbol,
                        val mapSource: CpsTree,
                        val mapFun: MapCpsTreeArgument //  lambda function
-) extends AsyncCpsTree {
+)(using Context, CpsTopLevelContext) extends AsyncCpsTree {
+
+  mapSource.asyncKind match
+    case AsyncKind.AsyncLambda(bodyKind) =>
+      throw CpsTransformException("Invalid construnctior: AsyncLambda as mapSource", origin.srcPos)
+    case _ =>
+      //all ok, do nothing
 
   override def originType(using Context): Type =
     mapFun.body.originType
@@ -600,6 +607,24 @@ case class MapCpsTree(
 
 }
 
+/*
+object MapCpsTree {
+
+  def apply(origin: Tree,
+            owner: Symbol,
+            mapSource: CpsTree,
+            mapFun: MapCpsTreeArgument
+           )(using Context): MapCpsTree = {
+    mapSource.asyncKind match
+      case AsyncKind.AsyncLambda(bodyKind) =>
+          throw CpsTransformException("Invalid construnctior: AsyncLambda as mapSource", origin.srcPos)
+      case _ =>
+          new MapCpsTree(origin, owner, mapSource, mapFun)
+  }
+
+}
+
+ */
 
 case class MapCpsTreeArgument(
     optParam: Option[ValDef],

@@ -9,8 +9,8 @@ import core.Decorators.*
 import core.Definitions.*
 import core.StdNames
 import ast.tpd.*
-
 import cps.plugin.*
+import cps.plugin.AsyncKind.AsyncLambda
 
 
 object InlinedTransform {
@@ -90,17 +90,37 @@ object InlinedTransform {
     }
 
     override def generateFlatMap(tail: CpsTree, owner: Symbol)(using Context, CpsTopLevelContext): Option[CpsTree] = {
-        val retval = tail.asyncKind match
-          case AsyncKind.Sync =>
-            MapCpsTree(origin.rhs, owner, adoptedRhs,
+        val tailAsyncKind = try {
+          tail.asyncKind
+        } catch {
+          case ex: Throwable =>
+            report.error(s"Error in tail.asyncKind: ${ex.getMessage}", tail.origin.srcPos)
+            println(s"tail = ${tail.show}")
+            throw CpsTransformException(s"Error in tail.asyncKind", tail.origin.srcPos)
+        }
+        val retval = adoptedRhs.asyncKind match
+          case AsyncLambda(bodyKind) =>
+            adoptedValDefChange.asyncLambdaValDef match
+              case Some(lambdaValDef) =>
+                tail match
+                  case SeqCpsTree(tailOrigin, tailOwner, prevs, last) =>
+                    SeqCpsTree(origin.rhs, owner, prevs = prevs :+ MemberDefCpsTree(origin,owner,lambdaValDef), last = last)
+                  case _ =>
+                    SeqCpsTree(origin.rhs, owner, prevs = IndexedSeq(MemberDefCpsTree(origin,owner,lambdaValDef)), last = tail)
+              case None =>
+                throw CpsTransformException(s"Internal error: no lambdaValDef in AsyncChangedBindingRecord", origin.srcPos)
+          case _ =>
+            tail.asyncKind match
+              case AsyncKind.Sync =>
+                MapCpsTree(origin.rhs, owner, adoptedRhs,
                                     MapCpsTreeArgument(None, tail))
-          case AsyncKind.Async(v) =>
-            FlatMapCpsTree(origin.rhs, owner, adoptedRhs,
+              case AsyncKind.Async(v) =>
+                FlatMapCpsTree(origin.rhs, owner, adoptedRhs,
                                     FlatMapCpsTreeArgument(Some(origin), tail))
-          case AsyncKind.AsyncLambda(bodyKind) =>
-            MapCpsTree(origin.rhs, owner, adoptedRhs,
+              case AsyncKind.AsyncLambda(bodyKind) =>
+                MapCpsTree(origin.rhs, owner, adoptedRhs,
                                     MapCpsTreeArgument(None, tail))
-         Some(retval)
+        Some(retval)
     }
 
 
