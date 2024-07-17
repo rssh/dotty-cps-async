@@ -1,5 +1,4 @@
 val dottyVersion = "3.3.3"
-//val dottyVersion = "3.5.1-RC1-bin-SNAPSHOT"
 
 
 ThisBuild/version := "0.9.22-SNAPSHOT"
