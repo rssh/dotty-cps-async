@@ -45,18 +45,21 @@ trait ComputationBound[+T] {
         case Error(e) => Future.failed(e)
         case Thunk(x) =>
           x().runTicksDeadline(deadline)
-        case Wait(ref, op) =>
+        case w@Wait(ref, op) =>
           val timeRest = deadline - System.currentTimeMillis
           if (timeRest > 0) then
             ComputationBound.advanceDeferredQueueTicks(timeRest, ref.get().isDefined).flatMap{ r =>
               ref.get match
                 case Some(v) => op(v).runTicksDeadline(deadline)
-                case None => Future failed (new TimeoutException())
+                case None => 
+                  Future failed (new TimeoutException(s"ref $ref is empty"))
             }
           else
-            Future failed (new TimeoutException())
+            println(s"failed: wwaiting for $ref in $w")
+            Future failed (new TimeoutException("timedRest < 0 when processing $w"))
     else
-      Future failed (new TimeoutException())
+      println(s"failed because we behind deadline")
+      Future failed (new TimeoutException("rest <= 0"))
 
 
   def checkProgress(timeout: Duration = Duration.Inf): Either[Try[T],ComputationBound[T]] =
