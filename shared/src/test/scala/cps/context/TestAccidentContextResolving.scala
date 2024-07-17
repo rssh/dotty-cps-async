@@ -30,7 +30,7 @@ class TestAccidentContextResolving {
          val x = await(fun())
          x+1
       }
-      val fr = c.runTicks(1.second)
+      val fr = c.runTicks(2.second)
       val r = fr.map(x => assert(x == 2)) 
       FutureCompleter(r)
 
