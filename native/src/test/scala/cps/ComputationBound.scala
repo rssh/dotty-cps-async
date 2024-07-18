@@ -51,8 +51,15 @@ trait ComputationBound[+T] {
             ComputationBound.advanceDeferredQueueTicks(timeRest, ref.get().isDefined).flatMap{ r =>
               ref.get match
                 case Some(v) => op(v).runTicksDeadline(deadline)
-                case None => 
-                  Future failed (new TimeoutException(s"ref $ref is empty"))
+                case None =>
+                  if (deadline >= System.currentTimeMillis) then
+                    Future failed (new TimeoutException(s"ref is empty in $w up to timeout (not completed)"))
+                  else
+                    ComputationBound.advanceDeferredQueueTicks(timeRest, ref.get().isDefined).flatMap{ r =>
+                      ref.get match
+                        case Some(v) => op(v).runTicksDeadline(deadline)
+                        case None => Future failed (new TimeoutException(s"ref is empty in $w up to second timeout (not completed)"))
+                    }
             }
           else
             println(s"failed: wwaiting for $ref in $w")
