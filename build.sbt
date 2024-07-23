@@ -205,8 +205,6 @@ lazy val logic = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
   )
 
-val http4sVersion = "0.23.27"
-val http4sBlaze = "0.23.16"
 lazy val staticInjection = crossProject(JSPlatform, JVMPlatform)
   .in(file("static-injection"))
   .settings(sharedSettings)
@@ -215,21 +213,42 @@ lazy val staticInjection = crossProject(JSPlatform, JVMPlatform)
   .settings(
     scalaVersion := "3.5.1-RC1-bin-SNAPSHOT",
     name := "static-injection",
+    libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % Test
+  )
+  .jsSettings(
+    scalaJSUseMainModuleInitializer := true,
+    Compile / doc / scalacOptions := Seq("-groups",
+             "-source-links:shared=github://rssh/dotty-cps-async/master#static-injection/shared"
+    ),
+    libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
+  )
+
+val http4sVersion = "0.23.27"
+val http4sBlaze = "0.23.16"
+lazy val staticInjectionExamples = crossProject(JSPlatform, JVMPlatform)
+  .in(file("static-injection-examples"))
+  .settings(sharedSettings)
+  .disablePlugins(SitePreviewPlugin)
+  .dependsOn(staticInjection)
+  .settings(
+    scalaVersion := "3.5.1-RC1-bin-SNAPSHOT",
+    name := "static-injection",
+    Compile / run / fork := true,
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % Test,
-    libraryDependencies += "org.typelevel" %% "cats-core" % "2.12.0" % Test,
-    libraryDependencies += "org.typelevel" %% "cats-effect" % "3.5.4" % Test,
     libraryDependencies ++= Seq(
-      "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
-      "org.http4s" %% "http4s-blaze-client" % http4sBlaze % Test,
-      "org.http4s" %% "http4s-circe" % http4sVersion % Test,
-      "io.circe" %% "circe-core" % "0.14.7" % Test,
-      "io.circe" %% "circe-generic" % "0.14.9" % Test,
-      "org.typelevel" %% "cats-parse" % "1.0.0" % Test
+      "org.typelevel" %% "cats-core" % "2.12.0",
+      "org.typelevel" %% "cats-effect" % "3.5.4",
+      "org.http4s" %% "http4s-dsl" % http4sVersion,
+      "org.http4s" %% "http4s-blaze-client" % http4sBlaze,
+      "org.http4s" %% "http4s-circe" % http4sVersion,
+      "io.circe" %% "circe-core" % "0.14.7",
+      "io.circe" %% "circe-generic" % "0.14.9",
+      "org.typelevel" %% "cats-parse" % "1.0.0"
     )
   ).jsSettings(
     scalaJSUseMainModuleInitializer := true,
     Compile / doc / scalacOptions := Seq("-groups",
-             "-source-links:shared=github://rssh/dotty-cps-async/master#static-injection/shared"
+      "-source-links:shared=github://rssh/dotty-cps-async/master#static-injection/shared"
     ),
     libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
   )
