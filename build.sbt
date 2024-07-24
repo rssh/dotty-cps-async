@@ -236,14 +236,14 @@ lazy val staticInjectionExamples = crossProject(JSPlatform, JVMPlatform)
     Compile / run / fork := true,
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % Test,
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "2.12.0",
       "org.typelevel" %% "cats-effect" % "3.5.4",
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-blaze-client" % http4sBlaze,
       "org.http4s" %% "http4s-circe" % http4sVersion,
       "io.circe" %% "circe-core" % "0.14.7",
       "io.circe" %% "circe-generic" % "0.14.9",
-      "org.typelevel" %% "cats-parse" % "1.0.0"
+      "org.typelevel" %% "cats-parse" % "1.0.0",
+      "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.9.21"
     )
   ).jsSettings(
     scalaJSUseMainModuleInitializer := true,
