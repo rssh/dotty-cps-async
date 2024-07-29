@@ -1,19 +1,22 @@
 package injection.examples.randomgen
 
 import cats.effect.{ExitCode, IO, IOApp}
-import injection.examples.randomgen.generator.ScalaRandomIntUniqueSequenceGenerator
+import cps.monads.catsEffect.given
+import injection.examples.randomgen.generator.RandomOrgIntUniqueSequenceGenerator
 import injection.examples.randomgen.parser.PersonParser
 import injection.examples.randomgen.repository.InMemoryStringRepository
 import injection.examples.randomgen.service.PersonFindWinners
-import injection.examples.randomgen.writer.ConsoleWriter
+import cps.{*, given}
 
 object Main extends IOApp {
-  override def run(args: List[String]): IO[ExitCode] =
-    val num = 3
-    val repository = new InMemoryStringRepository(List("a", "b", "c", "d", "e"))
-    val indexGenerator = ScalaRandomIntUniqueSequenceGenerator
-    val parser = PersonParser
-    new PersonFindWinners(repository, indexGenerator, parser)(num)
-      .flatMap(ConsoleWriter.write)
-      .map(_ => ExitCode.Success)
+  override def run(args: List[String]): IO[ExitCode] = async[IO] {
+    val num = args.head.toInt
+    val finder = await(new PersonFindWinners(
+      new InMemoryStringRepository(List("a", "b", "c", "d", "e")),
+      RandomOrgIntUniqueSequenceGenerator,
+      PersonParser
+    )(num))
+    await(IO.println(finder))
+    ExitCode.Success
+  }
 }

@@ -1,22 +1,14 @@
 package injection.examples.randomgen.generator
 
-import cats.effect.{IO, Resource}
-import org.http4s.blaze.client.BlazeClientBuilder
-import org.http4s.circe.CirceEntityCodec.given
-import org.http4s.client.Client
-import org.http4s.implicits.*
+import cats.effect.IO
+import cps.monads.catsEffect.given
+import cps.{*, given}
+import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 
 object RandomOrgIntUniqueSequenceGenerator extends IntUniqueSequenceGenerator {
-  override def generate(startExclusive: Int, endInclusive: Int)(n: Int): IO[List[Int]] = client.use { client =>
-    client.expect[List[Int]](
-      uri"https://www.random.org/sequences/"
-        +? ("min" -> startExclusive)
-        +? ("max" -> endInclusive)
-        +? ("col" -> 1)
-        +? ("format" -> "plain")
-        +? ("rnd" -> "new")
-    ).map(_.take(n))
+  override def generate(startExclusive: Int, endInclusive: Int)(n: Int): IO[List[Int]] = async[IO] {
+    val url = s"https://www.random.org/sequences/?min=$startExclusive&max=${endInclusive-1}&col=1&format=plain&rnd=new"
+    val elements = JsoupBrowser().get(url).body.text
+    elements.split("\\s+").toList.map(_.toInt).take(n)
   }
-
-  private def client: Resource[IO, Client[IO]] = BlazeClientBuilder[IO].resource
 }

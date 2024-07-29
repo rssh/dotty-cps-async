@@ -223,8 +223,6 @@ lazy val staticInjection = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies += ("org.scala-js" %% "scalajs-junit-test-runtime" % "1.8.0" % Test).cross(CrossVersion.for3Use2_13),
   )
 
-val http4sVersion = "0.23.27"
-val http4sBlaze = "0.23.16"
 lazy val staticInjectionExamples = crossProject(JSPlatform, JVMPlatform)
   .in(file("static-injection-examples"))
   .settings(sharedSettings)
@@ -236,14 +234,9 @@ lazy val staticInjectionExamples = crossProject(JSPlatform, JVMPlatform)
     Compile / run / fork := true,
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % Test,
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.5.4",
-      "org.http4s" %% "http4s-dsl" % http4sVersion,
-      "org.http4s" %% "http4s-blaze-client" % http4sBlaze,
-      "org.http4s" %% "http4s-circe" % http4sVersion,
-      "io.circe" %% "circe-core" % "0.14.7",
-      "io.circe" %% "circe-generic" % "0.14.9",
-      "org.typelevel" %% "cats-parse" % "1.0.0",
-      "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.9.21"
+      "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.9.21",
+      "net.ruippeixotog" %% "scala-scraper" % "3.1.1",
+      "org.augustjune" %% "canoe" % "0.6.0"
     )
   ).jsSettings(
     scalaJSUseMainModuleInitializer := true,
