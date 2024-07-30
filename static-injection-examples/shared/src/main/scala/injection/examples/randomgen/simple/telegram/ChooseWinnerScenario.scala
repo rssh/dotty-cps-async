@@ -10,43 +10,44 @@ import injection.examples.randomgen.simple.generator.RandomOrgIntUniqueSequenceG
 import injection.examples.randomgen.simple.parser.PersonParser
 import injection.examples.randomgen.simple.repository.StringRepository
 import injection.examples.randomgen.simple.service.PersonFindWinners
+import cps.{*, given}
 import org.http4s.blaze.client.BlazeClientBuilder
 
+
 object ChooseWinnerScenario {
-  def flow[F[_] : TelegramClient : Async : Sync](using token: Token): Scenario[F, Unit] = {
-    for {
-      chat <- Scenario.expect(command("document").chat)
-      text <- specifyDocument(chat)
-      repository = new StringRepository[F](text)
-      count <- Scenario.eval(repository.count)
-      number <- specifyNumber(chat)(count)
-      finder = new PersonFindWinners(repository, new RandomOrgIntUniqueSequenceGenerator, PersonParser)
-      persons <- Scenario.eval(finder(number))
-      _ <- Scenario.eval(chat.send(
-        s"""Winners:
-           |${persons.map(_.underlying).mkString("\n")}""".stripMargin))
-    } yield ()
+  def flow[F[_] : TelegramClient : Async : CpsTryMonad](using token: Token): Scenario[F, Unit] = async[[X] =>> Scenario[F, X]] {
+    implicit val chat: Chat = await(Scenario.expect(command("document").chat))
+    val text = await(specifyDocument)
+    val repository = new StringRepository[F](text)
+    val count = await(Scenario.eval(repository.count))
+    val number = await(specifyNumber(count))
+    val finder = new PersonFindWinners(repository, new RandomOrgIntUniqueSequenceGenerator, PersonParser)
+    val persons = await(Scenario.eval(finder(number)))
+    await(Scenario.eval(chat.send(
+      s"""Winners:
+         |${persons.map(_.underlying).mkString("\n")}""".stripMargin)))
+    ()
   }.stopOn(command("cancel").isDefinedAt)
 
-  private def specifyDocument[F[_] : TelegramClient : Async](chat: Chat)(using token: Token): Scenario[F, String] = for {
-    _ <- Scenario.eval(chat.send("Specify the text file from which to read"))
-    documentMessage <- Scenario.expect(document)
-    fileInfo <- Scenario.eval(GetFile(documentMessage.fileId).call[F, File])
-    file <- fileInfo.filePath match
+  private def specifyDocument[F[_] : TelegramClient : Async](using token: Token, chat: Chat): Scenario[F, String] = async[[X] =>> Scenario[F, X]] {
+    await(Scenario.eval(chat.send("Specify the text file from which to read")))
+    val documentMessage = await(Scenario.expect(document))
+    val fileInfo = await(Scenario.eval(GetFile(documentMessage.fileId).call[F, File]))
+    fileInfo.filePath match
       case Some(filePath) =>
-        Scenario.eval(telegramFile(filePath))
+        await(Scenario.eval(telegramFile(filePath)))
       case None =>
-        specifyDocument(chat)
-  } yield file
+        await(specifyDocument)
+  }
 
 
-  private def specifyNumber[F[_] : TelegramClient : Sync](chat: Chat)(max: Long)(using token: Token): Scenario[F, Int] = for {
-    _ <- Scenario.eval(chat.send(s"Specify the number of winners, less than or equal to $max"))
-    text <- Scenario.expect(text)
-    number <- text.toIntOption.filter(_ <= max) match
-      case Some(value) => Scenario.eval(Sync[F].pure(value))
-      case None => specifyNumber(chat)(max)
-  } yield number
+  private def specifyNumber[F[_] : TelegramClient : Async](max: Long)(using token: Token, chat: Chat): Scenario[F, Int] = async[[X] =>> Scenario[F, X]] {
+    await(Scenario.eval(chat.send(s"Specify the number of winners, less than or equal to $max")))
+    val textValue = await(Scenario.expect(text))
+    textValue.toIntOption.filter(_ <= max) match
+      case Some(value) => await(Scenario.eval(Sync[F].pure(value)))
+      case None => await(specifyNumber(max))
+  }
 
 
   private def telegramFile[F[_] : TelegramClient : Async](filePath: String)(using token: Token): F[String] =
