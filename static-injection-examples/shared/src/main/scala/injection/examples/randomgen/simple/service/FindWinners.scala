@@ -1,4 +1,4 @@
-package injection.examples.randomgen.service
+package injection.examples.randomgen.simple.service
 
 import cats.effect.IO
 

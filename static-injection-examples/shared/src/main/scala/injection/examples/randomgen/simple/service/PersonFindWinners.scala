@@ -1,10 +1,10 @@
-package injection.examples.randomgen.service
+package injection.examples.randomgen.simple.service
 
 import cats.effect.Sync
-import injection.examples.randomgen.generator.IntUniqueSequenceGenerator
-import injection.examples.randomgen.model.Person
-import injection.examples.randomgen.parser.Parser
-import injection.examples.randomgen.repository.Repository
+import injection.examples.randomgen.simple.generator.IntUniqueSequenceGenerator
+import injection.examples.randomgen.simple.model.Person
+import injection.examples.randomgen.simple.parser.Parser
+import injection.examples.randomgen.simple.repository.Repository
 
 class PersonFindWinners[F[_] : Sync](stringRepository: Repository[F, String],
                                      indexGenerator: IntUniqueSequenceGenerator[F],

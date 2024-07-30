@@ -1,4 +1,4 @@
-package injection.examples.randomgen.telegram
+package injection.examples.randomgen.simple.telegram
 
 import canoe.api.*
 import canoe.methods.files.GetFile
@@ -6,10 +6,10 @@ import canoe.models.messages.TextMessage
 import canoe.models.{Chat, File}
 import canoe.syntax.*
 import cats.effect.{Async, Sync}
-import injection.examples.randomgen.generator.RandomOrgIntUniqueSequenceGenerator
-import injection.examples.randomgen.parser.PersonParser
-import injection.examples.randomgen.repository.StringRepository
-import injection.examples.randomgen.service.PersonFindWinners
+import injection.examples.randomgen.simple.generator.RandomOrgIntUniqueSequenceGenerator
+import injection.examples.randomgen.simple.parser.PersonParser
+import injection.examples.randomgen.simple.repository.StringRepository
+import injection.examples.randomgen.simple.service.PersonFindWinners
 import org.http4s.blaze.client.BlazeClientBuilder
 
 object RandomGeneratorScenario {

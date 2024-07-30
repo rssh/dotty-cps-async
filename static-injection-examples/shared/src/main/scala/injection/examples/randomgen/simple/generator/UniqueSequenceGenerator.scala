@@ -1,4 +1,4 @@
-package injection.examples.randomgen.generator
+package injection.examples.randomgen.simple.generator
 
 trait UniqueSequenceGenerator[F[_], T] {
   def generate(startExclusive: Int, endInclusive: Int)(n: Int): F[List[T]]

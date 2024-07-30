@@ -1,9 +1,9 @@
-package injection.examples.randomgen
+package injection.examples.randomgen.simple
 
 import canoe.api.*
 import cats.effect.{ExitCode, IO, IOApp}
 import fs2.Stream
-import injection.examples.randomgen.telegram.*
+import injection.examples.randomgen.simple.telegram.{RandomGeneratorScenario, Token}
 
 object Main extends IOApp {
   given token: Token = Token("<token>")

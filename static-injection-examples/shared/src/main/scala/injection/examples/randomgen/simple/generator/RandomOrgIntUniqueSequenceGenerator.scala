@@ -1,4 +1,4 @@
-package injection.examples.randomgen.generator
+package injection.examples.randomgen.simple.generator
 
 import cats.effect.Sync
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser

@@ -1,4 +1,4 @@
-package injection.examples.randomgen.repository
+package injection.examples.randomgen.simple.repository
 
 import cats.effect.Sync
 
