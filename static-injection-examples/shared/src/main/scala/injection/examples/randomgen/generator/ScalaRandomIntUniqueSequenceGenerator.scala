@@ -1,10 +1,10 @@
 package injection.examples.randomgen.generator
 
-import cats.effect.IO
+import cats.effect.Sync
 
-object ScalaRandomIntUniqueSequenceGenerator extends IntUniqueSequenceGenerator {
+class ScalaRandomIntUniqueSequenceGenerator[F[_] : Sync] extends IntUniqueSequenceGenerator[F] {
 
-  override def generate(startExclusive: Int, endInclusive: Int)(n: Int): IO[List[Int]] = IO {
+  override def generate(startExclusive: Int, endInclusive: Int)(n: Int): F[List[Int]] = Sync[F].delay {
     val rangeList = (startExclusive until endInclusive).toList
     util.Random.shuffle(rangeList).take(n)
   }

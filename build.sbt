@@ -236,7 +236,8 @@ lazy val staticInjectionExamples = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "com.github.rssh" %%% "cps-async-connect-cats-effect" % "0.9.21",
       "net.ruippeixotog" %% "scala-scraper" % "3.1.1",
-      "org.augustjune" %% "canoe" % "0.6.0"
+      "org.augustjune" %% "canoe" % "0.6.0",
+      "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.23.1"
     )
   ).jsSettings(
     scalaJSUseMainModuleInitializer := true,
