@@ -12,7 +12,7 @@ import injection.examples.randomgen.simple.repository.StringRepository
 import injection.examples.randomgen.simple.service.PersonFindWinners
 import org.http4s.blaze.client.BlazeClientBuilder
 
-object RandomGeneratorScenario {
+object ChooseWinnerScenario {
   def flow[F[_] : TelegramClient : Async : Sync](using token: Token): Scenario[F, Unit] = {
     for {
       chat <- Scenario.expect(command("document").chat)
