@@ -29,7 +29,7 @@ object RandomGeneratorScenario {
   }.stopOn(command("cancel").isDefinedAt)
 
   private def specifyDocument[F[_] : TelegramClient : Async](chat: Chat)(using token: Token): Scenario[F, String] = for {
-    _ <- Scenario.eval(chat.send("Specify the .txt file from which to read"))
+    _ <- Scenario.eval(chat.send("Specify the text file from which to read"))
     documentMessage <- Scenario.expect(document)
     fileInfo <- Scenario.eval(GetFile(documentMessage.fileId).call[F, File])
     file <- fileInfo.filePath match
