@@ -11,17 +11,18 @@ import injection.examples.randomgen.plain.generator.{*, given}
 import injection.examples.randomgen.plain.parser.{*, given}
 import injection.examples.randomgen.plain.repository.{*, given}
 import injection.examples.randomgen.plain.service.{*, given}
+import injection.examples.randomgen.plain.model.Person
 import cps.{*, given}
 import org.http4s.blaze.client.BlazeClientBuilder
 
 
 object ChooseWinnerScenario {
-  def flow[F[_] : TelegramClient : Async : CpsTryMonad](using token: Token, finder: PersonFindWinners[F]): Scenario[F, Unit] = async[[X] =>> Scenario[F, X]] {
+  def flow[F[_] : TelegramClient : Async : CpsTryMonad](using token: Token, finder: FindWinners[F, Person]): Scenario[F, Unit] = async[[X] =>> Scenario[F, X]] {
     injectfull {
-      implicit val chat: Chat = await(Scenario.expect(command("document").chat))
-      implicit val repository: StringRepository[F] = new StringRepository[F](await(specifyDocument))
+      given chat: Chat = await(Scenario.expect(command("document").chat))
+      given repository: StringRepository[F] = new StringRepository[F](await(specifyDocument))
       val number = await(specifyNumber(await(Scenario.eval(repository.count))))
-      val persons = await(Scenario.eval(inject[PersonFindWinners[F]](number)))
+      val persons = await(Scenario.eval(inject[FindWinners[F, Person]](number)))
       await(Scenario.eval(chat.send(
         s"""Winners:
            |${persons.map(_.underlying).mkString("\n")}""".stripMargin)))
