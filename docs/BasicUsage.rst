@@ -33,7 +33,7 @@ for sbt:
 
 for mill:
 
-    .. code-block:: scala
+ .. code-block:: scala
 
   def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.21")
 
