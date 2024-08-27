@@ -1,5 +1,7 @@
 val dottyVersion = "3.3.3"
 
+import scala.scalanative.build._
+
 
 ThisBuild/version := "0.9.22-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
@@ -61,7 +63,13 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         mimaFailOnNoPrevious := false
     ).nativeSettings(
         libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
-        addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full)
+        addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full),
+        //nativeConfig ~= {
+        //    .withSourceLevelDebuggingConfig(_.enableAll) // enable generation of debug informations
+        //    .withOptimize(false)  // disable Scala Native optimizer
+        //    .withMode(scalanative.build.Mode.debug) // compile using LLVM without optimizations
+        // }
+
     )
 
 
