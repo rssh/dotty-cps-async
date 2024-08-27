@@ -33,7 +33,7 @@ for sbt:
 
 for mill:
 
-    .. code-block:: scala
+ .. code-block:: scala
 
   def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.21")
 
@@ -97,6 +97,7 @@ The minimal complete snippet looks as follows:
 
     package com.example.myModule
 
+    import scala.concurrent.duration.DurationInt
     import scala.concurrent.{Await, Future}
     import scala.concurrent.ExecutionContext.Implicits.global
     import scala.concurrent.duration.Duration
@@ -115,7 +116,7 @@ The minimal complete snippet looks as follows:
       }
 
       def main(args: Array[String]): Unit =
-        val f = Await.ready(greet(), Duration(1.seconds))
+        val f = Await.ready(greet(), 1.seconds)
         f.failed.map { ex => println(ex.getMessage) }
   
 
