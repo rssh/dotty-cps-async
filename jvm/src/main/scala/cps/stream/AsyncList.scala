@@ -257,7 +257,7 @@ object AsyncList {
             var endLoop = false
             var nRest = n
             while(nRest != 0 && !endLoop) {
-               buffer.synchronized {
+               buffer.synchronized{
                  buffer.addOne(current.head)
                }
                next = current.tailFun()   
