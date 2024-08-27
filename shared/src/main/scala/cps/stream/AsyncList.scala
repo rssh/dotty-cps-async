@@ -257,7 +257,9 @@ object AsyncList {
             var endLoop = false
             var nRest = n
             while(nRest != 0 && !endLoop) {
-               buffer.addOne(current.head)
+               buffer.synchronized {
+                 buffer.addOne(current.head)
+               }
                next = current.tailFun()   
                next match
                     case c: Cons[_,_] =>
