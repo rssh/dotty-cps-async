@@ -1,4 +1,4 @@
-val dottyVersion = "3.3.3"
+val dottyVersion = "3.5.0"
 
 import scala.scalanative.build._
 
@@ -64,11 +64,11 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     ).nativeSettings(
         libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
         addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full),
-        //nativeConfig ~= {
-        //    .withSourceLevelDebuggingConfig(_.enableAll) // enable generation of debug informations
-        //    .withOptimize(false)  // disable Scala Native optimizer
-        //    .withMode(scalanative.build.Mode.debug) // compile using LLVM without optimizations
-        // }
+        nativeConfig ~= {
+            _.withSourceLevelDebuggingConfig(_.enableAll) // enable generation of debug informations
+            .withOptimize(false)  // disable Scala Native optimizer
+            .withMode(scalanative.build.Mode.debug) // compile using LLVM without optimizations
+        }
 
     )
 
