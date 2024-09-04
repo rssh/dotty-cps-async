@@ -3,7 +3,7 @@ val dottyVersion = "3.3.3"
 import scala.scalanative.build._
 
 
-ThisBuild/version := "0.9.22-SNAPSHOT"
+ThisBuild/version := "0.9.22"
 ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 
@@ -12,7 +12,7 @@ ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 val sharedSettings = Seq(
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
-    name := "dotty-cps-async-for34"
+    name := "dotty-cps-async-lts"
 )
 
 
