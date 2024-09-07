@@ -144,7 +144,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.22"
 
-From '0.9.22' on scala '3.5.0' or later,  we can use `await` as extension method:
+From '0.9.22' we can use `await` as extension method:
 
  .. code-block:: scala
 
