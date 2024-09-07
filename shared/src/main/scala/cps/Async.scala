@@ -12,11 +12,14 @@ import scala.compiletime._
 import cps.plugin.annotation.CpsNotChange
 
 
-/**
- * Pseudofunction, which can be used inside async block, to 'await' (i.e. receive value of `t:T` from `ft:F[T]`).
- **/
-@compileTimeOnly("await should be inside async block")
-def await[F[_],T,G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMonadConversion[F,G]): T = ???
+
+extension [F[_], T, G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMonadConversion[F,G])
+   /**
+    * Pseudofunction, which can be used inside async block, to 'await' (i.e. receive value of `t:T` from `ft:F[T]`).
+    **/
+   @compileTimeOnly("await should be inside async block")
+   def await: T = ???
+
 
 /**
  * Pseudofunction, which can be used inside async block or in function with CpsDirect[F] context parameter, to 'asynchronize computation' (i.e. receive value of `F[T]` from `t:FT`).
@@ -54,11 +57,12 @@ transparent inline def async[F[_]](using am: CpsMonad[F]) =
 transparent inline def reify[F[_]](using am: CpsMonad[F]) =
    macros.Async.InferAsyncArg(using am)
 
-/**
- * Synonym for `await` 
- **/
-transparent inline def reflect[F[_],T,G[_]](f: F[T])(using inline ctx: CpsMonadContext[G], inline conv: CpsMonadConversion[F,G]): T =
-   await[F,T,G](f)
+
+extension [F[_], T, G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMonadConversion[F, G])
+   /**
+    * Synonym for `await`
+    * */
+   transparent inline def reflect: T = await(f)
 
 
 @experimental
