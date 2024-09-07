@@ -74,8 +74,7 @@ sealed trait AsyncList[F[_]:CpsConcurrentMonad, +T]:
   def takeAll[CC[_]](n:Int)(using Factory[T,CC[T]@uncheckedVariance]):F[CC[T]@uncheckedVariance] =
      take[CC](-1)
 
-  //@infix
-  def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S]
+  infix def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S]
 
   /**
    * alias for merge
@@ -146,7 +145,7 @@ object AsyncList {
           else
                summon[CpsMonad[F]].flatMap(fs)(_.takeTo(buffer,n))      
          
-     def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S] =
+     infix def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S] =
           other match
                case Wait(fs1) =>
                     val fs1cast = fs1.asInstanceOf[F[AsyncList[F,S]]]
@@ -268,7 +267,7 @@ object AsyncList {
             }
             next.takeTo(buffer, nRest)
      
-     def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S] =
+     infix def merge[S >: T](other: AsyncList[F,S]): AsyncList[F,S] =
           Cons(head, ()=>other.merge(tailFun()))
 
      def skip(n:Int): AsyncList[F,T] = 
@@ -315,7 +314,7 @@ object AsyncList {
      def takeTo[B <: Growable[Nothing]](buffer: B, n: Int):F[B] =
           summon[CpsMonad[F]].pure(buffer)
        
-     def merge[S](other: AsyncList[F,S]): AsyncList[F,S] =
+     infix def merge[S](other: AsyncList[F,S]): AsyncList[F,S] =
           other
 
      def skip(n:Int): AsyncList[F,Nothing] = this

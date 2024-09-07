@@ -26,7 +26,7 @@ sealed trait UniWrapperCP1[F[_]:CpsTryMonad,A] {
    */
   def applyFlatMapTry[B](f: Try[A] => UniWrapperCP1[F, B]): UniWrapperCP1[F, B]
 
-  def mplus(other: =>UniWrapperCP1[F,A]): UniWrapperCP1[F,A]
+  infix def mplus(other: =>UniWrapperCP1[F,A]): UniWrapperCP1[F,A]
 
   def fsplit: F[Option[(Try[A], UniWrapperCP1[F,A])]]
 

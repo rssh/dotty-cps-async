@@ -35,7 +35,9 @@ class TestCBS2Dynamic:
     def all: Vector[String] = lines
 
 
-
+  /*
+   * Temporary disabled because of bug in dotty-3.5
+   * (see branch minimize-stackoverflow-in-compiler for reproduction)
   @Test def testApplyDynamic(): Unit = 
      val log = new Log()
      val myDynamic = new MyDynamic(log,Map("f"->1, "runAsync"->3))
@@ -62,6 +64,7 @@ class TestCBS2Dynamic:
         assert(lines(0).startsWith("MyDynamic:applyDynamic, methodName: f"))
         assert(lines(1).startsWith("MyDynamic:applyDynamic, methodName: f")) 
      }
+  */   
 
 
 

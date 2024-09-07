@@ -111,12 +111,12 @@ object ComputationBound {
              externalAsyncNotifier.notify()
           }
         } )
-        Wait(ref, fromTry[A] _ )
+        Wait(ref, fromTry[A] )
    }
 
    def spawn[A](op: =>ComputationBound[A]):ComputationBound[A] = {
         val ref = new AtomicReference[Option[Try[A]]](None)
-        val waiter = Wait[A,A](ref, fromTry[A] _ )
+        val waiter = Wait[A,A](ref, fromTry[A] )
         deferredQueue.add(Deferred(ref, Some(Thunk( () => op )) ))
         waiter
    }
@@ -442,10 +442,10 @@ case class Wait[R,T](ref: AtomicReference[Option[Try[R]]], op: Try[R] => Computa
 
       
   override def flatMap[S](f: T => ComputationBound[S]): ComputationBound[S] =
-        Wait(ref, x => op(x) flatMap f)
+        Wait(ref, x => op(x) `flatMap` f)
 
   override def flatMapTry[S](f: Try[T] => ComputationBound[S]): ComputationBound[S] =
-          Wait(ref, x => ComputationBound.tryOp(op(x)) flatMapTry f)
+          Wait(ref, x => ComputationBound.tryOp(op(x)) `flatMapTry` f)
   
 
   override def map[S](f: T=>S): ComputationBound[S] =

@@ -54,10 +54,10 @@ trait PartialFunctionCallChainSubst[F[+_],A,B](m:CpsMonad[F]) extends
      }
      r
 
-   def andThen[C](g: B=>C): PartialFunctionCallChainSubst[F,A,C] =
+   infix def andThen[C](g: B=>C): PartialFunctionCallChainSubst[F,A,C] =
          fThis.andThen(totalPlain(m,g))
 
-   def andThen[C](g: PartialFunction[B,C]): PartialFunctionCallChainSubst[F,A,C] =
+   infix def andThen[C](g: PartialFunction[B,C]): PartialFunctionCallChainSubst[F,A,C] =
          fThis.andThen(partialPlain(m,g))
 
    def andThen_async[C](g: B => F[C]): PartialFunctionCallChainSubst[F,A,C] =
@@ -182,7 +182,7 @@ trait PartialFunctionAsyncShiftBase[T,R, C <: PartialFunction[T,R]] extends Asyn
                                         
    import PartialFunctionCallChainSubst._
 
-   def andThen[F[+_],A](f: PartialFunction[T,R], m: CpsMonad[F])(g: (R) => F[A]): PartialFunctionCallChainSubst[F,T,A] =
+   infix def andThen[F[+_],A](f: PartialFunction[T,R], m: CpsMonad[F])(g: (R) => F[A]): PartialFunctionCallChainSubst[F,T,A] =
         g match
           case gp: PartialFunction[R,F[A]] =>
             partialPlain(m,f).andThen(partialMapped(m,gp))
@@ -195,7 +195,7 @@ trait PartialFunctionAsyncShiftBase[T,R, C <: PartialFunction[T,R]] extends Asyn
    //     partialPlain(m,f).andThen(partialMapped(m,g))
 
    def compose[F[+_],A](f: PartialFunction[T,R], m: CpsMonad[F])(g: A => F[T]): PartialFunctionCallChainSubst[F,A,R] =
-        totalMapped(m,g) andThen partialPlain(m,f)
+        totalMapped(m,g) `andThen` partialPlain(m,f)
 
    def applyOrElse[F[_], A1<:T, B1>:R](f: PartialFunction[T,R], m: CpsMonad[F])(x1: A1, default: (A1)=>F[B1]): F[B1] =
          f.lift.apply(x1) match

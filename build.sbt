@@ -1,4 +1,4 @@
-val dottyVersion = "3.3.3"
+val dottyVersion = "3.5.0"
 
 import scala.scalanative.build._
 
@@ -12,7 +12,7 @@ ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 val sharedSettings = Seq(
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
-    name := "dotty-cps-async-for34"
+    name := "dotty-cps-async"
 )
 
 
@@ -44,7 +44,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         scalacOptions ++= Seq( //"-Yexplicit-nulls",
                             "-unchecked", "-Ydebug-trace", "-Ydebug-names", "-Xprint-types",
                             "-Ydebug", "-uniqid", "-Xcheck-macros", "-Ycheck:macro", "-Yprint-syms",
-                            "-Ysafe-init",
+                            "-Wsafe-init",
                              ),
                              // -explain
                              // -Ydebug-error

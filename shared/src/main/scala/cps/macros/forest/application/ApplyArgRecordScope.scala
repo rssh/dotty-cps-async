@@ -468,6 +468,8 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
                   applyRuntimeAwait(runtimeAwait, transformedBody, mt.resType)
                 case None =>
                   throw MacroError("Internal error: optRuntimeAwait should be defined", posExprs(term))
+            case ApplicationShiftType.CPS_DEFERR_TO_PLUGIN =>
+              throw MacroError("Internal error: with CPS_DEFERR_TO_PLUGIN we should not call createAsyncLambda ",term.asExpr)
          Lambda(owner, mt, (owner,args) => changeArgs(params,args,nBody,owner).changeOwner(owner))
 
        private def rebindCaseDef(caseDef:CaseDef,

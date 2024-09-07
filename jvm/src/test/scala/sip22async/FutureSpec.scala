@@ -73,19 +73,19 @@ class FutureSpec {
 
     latch.open()
 
-    Await.result(f2, defaultTimeout) mustBe ("success")
+    Await.result(f2, defaultTimeout) `mustBe` ("success")
 
     f2 foreach { _ => throw new ThrowableTest("current thread foreach") }
     f2 onComplete { case Success(_) => throw new ThrowableTest("current thread receive"); case _ => }
 
-    Await.result(f3, defaultTimeout) mustBe ("SUCCESS")
+    Await.result(f3, defaultTimeout) `mustBe` ("SUCCESS")
 
     val waiting = Future {
       Thread.sleep(1000)
     }
     Await.ready(waiting, 2000 millis)
 
-    ms.size mustBe (4)
+    ms.size `mustBe` (4)
   }
 
   import ExecutionContext.Implicits._
@@ -111,7 +111,7 @@ class FutureSpec {
       b + "-" + c
     }
 
-    Await.result(future1, defaultTimeout) mustBe ("10-14")
+    Await.result(future1, defaultTimeout) `mustBe` ("10-14")
     //assert(checkType(future1, manifest[String]))
     intercept[ClassCastException] { Await.result(future2, defaultTimeout) }
   }
@@ -137,7 +137,7 @@ class FutureSpec {
       case Res(c: Int) <- asyncReq(Req(7))
     } yield b + "-" + c )
 
-    Await.result(future1, defaultTimeout) mustBe ("10-14")
+    Await.result(future1, defaultTimeout) `mustBe` ("10-14")
     intercept[NoSuchElementException] { Await.result(future2, defaultTimeout) }
   }
 
@@ -183,17 +183,17 @@ class FutureSpec {
       case _ => "Oops!"
     }
 
-    Await.result(future1, defaultTimeout) mustBe (5)
+    Await.result(future1, defaultTimeout) `mustBe` (5)
     intercept[ArithmeticException] { Await.result(future2, defaultTimeout) }
     intercept[ArithmeticException] { Await.result(future3, defaultTimeout) }
-    Await.result(future4, defaultTimeout) mustBe ("5")
-    Await.result(future5, defaultTimeout) mustBe ("0")
+    Await.result(future4, defaultTimeout) `mustBe` ("5")
+    Await.result(future5, defaultTimeout) `mustBe` ("0")
     intercept[ArithmeticException] { Await.result(future6, defaultTimeout) }
-    Await.result(future7, defaultTimeout) mustBe ("You got ERROR")
+    Await.result(future7, defaultTimeout) `mustBe` ("You got ERROR")
     intercept[RuntimeException] { Await.result(future8, defaultTimeout) }
-    Await.result(future9, defaultTimeout) mustBe ("FAIL!")
-    Await.result(future10, defaultTimeout) mustBe ("World")
-    Await.result(future11, defaultTimeout) mustBe ("Oops!")
+    Await.result(future9, defaultTimeout) `mustBe` ("FAIL!")
+    Await.result(future10, defaultTimeout) `mustBe` ("World")
+    Await.result(future11, defaultTimeout) `mustBe` ("Oops!")
   }
 
   @Test def `recoverWith from exceptions`(): Unit = {
@@ -205,19 +205,19 @@ class FutureSpec {
         case _ if false == true => Future.successful("yay!")
       }
       Await.result(failed, defaultTimeout)
-    } mustBe (o)
+    } `mustBe` (o)
 
     val recovered = Future.failed[String](o) recoverWith {
       case _ => Future.successful("yay!")
     }
-    Await.result(recovered, defaultTimeout) mustBe ("yay!")
+    Await.result(recovered, defaultTimeout) `mustBe` ("yay!")
 
     intercept[IllegalStateException] {
       val refailed = Future.failed[String](o) recoverWith {
         case _ => Future.failed[String](r)
       }
       Await.result(refailed, defaultTimeout)
-    } mustBe (r)
+    } `mustBe` (r)
   }
 
   @Test def `andThen like a boss`(): Unit = {
@@ -232,10 +232,10 @@ class FutureSpec {
       } andThen {
         case _ => q.add(3);
       }
-      Await.result(chained, defaultTimeout) mustBe (3)
-      q.poll() mustBe (1)
-      q.poll() mustBe (2)
-      q.poll() mustBe (3)
+      Await.result(chained, defaultTimeout) `mustBe` (3)
+      q.poll() `mustBe` (1)
+      q.poll() `mustBe` (2)
+      q.poll() `mustBe` (3)
       q.clear()
     }
   }
@@ -245,8 +245,8 @@ class FutureSpec {
       Promise[Int]().future
     } :+ Future.successful[Int](5)
 
-    Await.result(Future.firstCompletedOf(futures), defaultTimeout) mustBe (5)
-    Await.result(Future.firstCompletedOf(futures.iterator), defaultTimeout) mustBe (5)
+    Await.result(Future.firstCompletedOf(futures), defaultTimeout) `mustBe` (5)
+    Await.result(Future.firstCompletedOf(futures.iterator), defaultTimeout) `mustBe` (5)
   }
 
   @Test def `find`(): Unit = {
@@ -255,10 +255,10 @@ class FutureSpec {
     }
 
     val result = Future.find[Int](futures)(_ == 3)
-    Await.result(result, defaultTimeout) mustBe (Some(3))
+    Await.result(result, defaultTimeout) `mustBe` (Some(3))
 
     val notFound = Future.find[Int](futures)(_ == 11)
-    Await.result(notFound, defaultTimeout) mustBe (None)
+    Await.result(notFound, defaultTimeout) `mustBe` (None)
   }
 
   @Test def `zip`(): Unit = {
@@ -267,20 +267,20 @@ class FutureSpec {
     intercept[IllegalStateException] {
       val failed = Future.failed[String](f) zip Future.successful("foo")
       Await.result(failed, timeout)
-    } mustBe (f)
+    } `mustBe` (f)
 
     intercept[IllegalStateException] {
       val failed = Future.successful("foo") zip Future.failed[String](f)
       Await.result(failed, timeout)
-    } mustBe (f)
+    } `mustBe` (f)
 
     intercept[IllegalStateException] {
       val failed = Future.failed[String](f) zip Future.failed[String](f)
       Await.result(failed, timeout)
-    } mustBe (f)
+    } `mustBe` (f)
 
     val successful = Future.successful("foo") zip Future.successful("foo")
-    Await.result(successful, timeout) mustBe (("foo", "foo"))
+    Await.result(successful, timeout) `mustBe` (("foo", "foo"))
   }
 
   @Test def `fold`(): Unit = {
@@ -294,13 +294,13 @@ class FutureSpec {
       idx => async(idx, idx * 20)
     }
     val folded = Future.foldLeft(futures)(0)(_ + _)
-    Await.result(folded, timeout) mustBe (45)
+    Await.result(folded, timeout) `mustBe` (45)
 
     val futuresit = (0 to 9) map {
       idx => async(idx, idx * 20)
     }
     val foldedit = Future.foldLeft(futures)(0)(_ + _)
-    Await.result(foldedit, timeout) mustBe (45)
+    Await.result(foldedit, timeout) `mustBe` (45)
   }
 
   @Test def `fold by composing`(): Unit = {
@@ -315,7 +315,7 @@ class FutureSpec {
     val folded = futures.foldLeft(Future(0)) {
       case (fr, fa) => for (r <- fr; a <- fa) yield (r + a)
     }
-    Await.result(folded, timeout) mustBe (45)
+    Await.result(folded, timeout) `mustBe` (45)
   }
 
   @Test def `fold with an exception`(): Unit = {
@@ -331,7 +331,7 @@ class FutureSpec {
     val folded = Future.foldLeft(futures)(0)(_ + _)
     intercept[IllegalArgumentException] {
       Await.result(folded, timeout)
-    }.getMessage mustBe ("shouldFoldResultsWithException: expected")
+    }.getMessage `mustBe` ("shouldFoldResultsWithException: expected")
   }
 
   @Test def `fold mutable zeroes safely`(): Unit = {
@@ -352,7 +352,7 @@ class FutureSpec {
 
   @Test def `return zero value if folding empty list`(): Unit = {
     val zero = Future.foldLeft(List[Future[Int]]())(0)(_ + _)
-    Await.result(zero, defaultTimeout) mustBe (0)
+    Await.result(zero, defaultTimeout) `mustBe` (0)
   }
 
   @Test def `shouldReduceResults`(): Unit = {
@@ -364,11 +364,11 @@ class FutureSpec {
 
     val futures = (0 to 9) map { async }
     val reduced = Future.reduceLeft(futures)(_ + _)
-    Await.result(reduced, timeout) mustBe (45)
+    Await.result(reduced, timeout) `mustBe` (45)
 
     val futuresit = (0 to 9) map { async }
     val reducedit = Future.reduceLeft(futuresit)(_ + _)
-    Await.result(reducedit, timeout) mustBe (45)
+    Await.result(reducedit, timeout) `mustBe` (45)
   }
 
   @Test def `shouldReduceResultsWithException`(): Unit = {
@@ -384,7 +384,7 @@ class FutureSpec {
     val failed = Future.reduceLeft(futures)(_ + _)
     intercept[IllegalArgumentException] {
       Await.result(failed, timeout)
-    }.getMessage mustBe ("shouldFoldResultsWithException: expected")
+    }.getMessage `mustBe` ("shouldFoldResultsWithException: expected")
   }
 
   @Test def `shouldReduceThrowNSEEOnEmptyInput`(): Unit = {
@@ -405,15 +405,15 @@ class FutureSpec {
 
     val oddFutures = List.fill(100)(Future { counter.incAndGet() }).iterator
     val traversed = Future.sequence(oddFutures)
-    Await.result(traversed, defaultTimeout).sum mustBe (10000)
+    Await.result(traversed, defaultTimeout).sum `mustBe` (10000)
 
     val list = (1 to 100).toList
     val traversedList = Future.traverse(list)(x => Future(x * 2 - 1))
-    Await.result(traversedList, defaultTimeout).sum mustBe (10000)
+    Await.result(traversedList, defaultTimeout).sum `mustBe` (10000)
 
     val iterator = (1 to 100).toList.iterator
     val traversedIterator = Future.traverse(iterator)(x => Future(x * 2 - 1))
-    Await.result(traversedIterator, defaultTimeout).sum mustBe (10000)
+    Await.result(traversedIterator, defaultTimeout).sum `mustBe` (10000)
   }
 
   @Test def `shouldBlockUntilResult`(): Unit = {
@@ -434,7 +434,7 @@ class FutureSpec {
 
     latch.open()
 
-    Await.result(f2, defaultTimeout) mustBe (14)
+    Await.result(f2, defaultTimeout) `mustBe` (14)
 
     val f3 = Future {
       Thread.sleep(100)
@@ -464,14 +464,14 @@ class FutureSpec {
 
     Await.ready(latch(0), TestLatch.DefaultTimeout)
 
-    f1.isCompleted mustBe (false)
-    f2.isCompleted mustBe (false)
+    f1.isCompleted `mustBe` (false)
+    f2.isCompleted `mustBe` (false)
 
     latch(1).open()
     Await.ready(latch(2), TestLatch.DefaultTimeout)
 
-    f1.isCompleted mustBe (true)
-    f2.isCompleted mustBe (false)
+    f1.isCompleted `mustBe` (true)
+    f2.isCompleted `mustBe` (false)
 
     val f3 = async {
       val s = await(f1)
@@ -483,13 +483,13 @@ class FutureSpec {
 
     Await.ready(latch(5), TestLatch.DefaultTimeout)
 
-    f3.isCompleted mustBe (false)
+    f3.isCompleted `mustBe` (false)
 
     latch(6).open()
     Await.ready(latch(4), TestLatch.DefaultTimeout)
 
-    f2.isCompleted mustBe (true)
-    f3.isCompleted mustBe (true)
+    f2.isCompleted `mustBe` (true)
+    f3.isCompleted `mustBe` (true)
 
     val p1 = Promise[String]()
     val f4 = async {
@@ -500,20 +500,20 @@ class FutureSpec {
     }
     for (_ <- f4) latch(9).open()
 
-    p1.future.isCompleted mustBe (false)
-    f4.isCompleted mustBe (false)
+    p1.future.isCompleted `mustBe` (false)
+    f4.isCompleted `mustBe` (false)
 
     p1 complete Success("Hello")
 
     Await.ready(latch(7), TestLatch.DefaultTimeout)
 
-    p1.future.isCompleted mustBe (true)
-    f4.isCompleted mustBe (false)
+    p1.future.isCompleted `mustBe` (true)
+    f4.isCompleted `mustBe` (false)
 
     latch(8).open()
     Await.ready(latch(9), TestLatch.DefaultTimeout)
 
-    Await.ready(f4, defaultTimeout).isCompleted mustBe (true)
+    Await.ready(f4, defaultTimeout).isCompleted `mustBe` (true)
   }
 
   @Test def `should not deadlock with nested await (ticket 1313)`(): Unit = {
@@ -523,7 +523,7 @@ class FutureSpec {
       val umap = unit map { _ => () }
       Await.result(umap, Inf)
     }
-    Await.ready(simple, Inf).isCompleted mustBe (true)
+    Await.ready(simple, Inf).isCompleted `mustBe` (true)
 
     val l1, l2 = new TestLatch
     val complex = async {
@@ -536,12 +536,12 @@ class FutureSpec {
         Await.ready(l2, TestLatch.DefaultTimeout)
       }
     }
-    Await.ready(complex, defaultTimeout).isCompleted mustBe (true)
+    Await.ready(complex, defaultTimeout).isCompleted `mustBe` (true)
   }
 
   @Test def `should not throw when Await.ready`(): Unit = {
     val expected = try Success(5 / 0) catch { case a: ArithmeticException => Failure(a) }
     val f = async { await(Future(5)) / 0 }
-    Await.ready(f, defaultTimeout).value.get.toString mustBe expected.toString
+    Await.ready(f, defaultTimeout).value.get.toString `mustBe` expected.toString
   }
 }

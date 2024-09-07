@@ -682,7 +682,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
         val partialHead = shiftedApplyTerm(origin, argRecords, argsSummaryProperties)
         applyPartialShift(partialHead)
       case None =>
-        (funCpsTree: @nowarn("Unreachable case.*")) match
+        (funCpsTree: @nowarn("msg=Unreachable case .*")) match
            case _ : PureCpsTree  |  EmptyCpsTree =>
               // impossible
               val originTerm = funCpsTree.syncOrigin.get
@@ -731,7 +731,7 @@ trait ApplyTreeTransform[F[_],CT, CC<:CpsMonadContext[F]]:
                   val head = shiftedApplyTerm(Select.unique(shifted,"apply"), argRecords, argsSummaryProperties)
                   applyPartialShift(head)
                   //shiftedResultCpsTree(applyTerm, head.withTailArgs(argTails, withAsync), argsSummaryProperties.cpsDirectArg)(owner)
-           case _ => // impossible, but let's check
+           case null => // impossible, but let's check
                  throw MacroError(s"Unsupported fun: CpsTree:  $funCpsTree", applyTerm.asExpr)
 
 
