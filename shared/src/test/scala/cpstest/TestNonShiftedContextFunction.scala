@@ -27,6 +27,9 @@ class TestNonShiftedContextFunction {
 
   }
 
+  /*
+   * will not work in scala-3.3.3
+   * (disabled until 3.5.x based lts)
   @Test
   def testApplyContextFunctionP1(): Unit = {
       var x = 0
@@ -60,6 +63,7 @@ class TestNonShiftedContextFunction {
     }
     assert(c.run() == Success(6))
   }
+  */
 
 
 }

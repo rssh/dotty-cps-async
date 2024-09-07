@@ -283,12 +283,10 @@ trait ApplyArgRecordScope[F[_], CT, CC<:CpsMonadContext[F]]:
             cpsBody.syncOrigin match
               case Some(syncBody) =>
                  if (cpsBody.isChanged) then
-                    val methodKind = if (term.tpe.isContextFunctionType && !allowUncontext) MethodTypeKind.Contextual else MethodTypeKind.Plain
-                    //if (term.tpe.isContextFunctionType && !allowUncontext) then
-                    //  val mt = MethodType(MethodTypeKind.Contextual)(paramNames)(_ => paramTypes, _ => syncBody.tpe.widen)
-                    //  println(s"context cpsBody = ${cpsBody}, ")
-                    //  throw MacroError("Can't transform context function: TastyAPI don;t support this yet",posExpr(term))
-                    val mt = MethodType(methodKind)(paramNames)(_ => paramTypes, _ => syncBody.tpe.widen)
+                    if (term.tpe.isContextFunctionType && !allowUncontext) then
+                       println(s"context cpsBody = ${cpsBody}, ")
+                       throw MacroError("Can't transform context function: TastyAPI don;t support this yet",posExpr(term))
+                    val mt = MethodType(paramNames)(_ => paramTypes, _ => syncBody.tpe.widen)
                     Lambda(owner, mt,
                        (owner,args) => changeArgs(params,args,syncBody,owner).changeOwner(owner))
                  else
