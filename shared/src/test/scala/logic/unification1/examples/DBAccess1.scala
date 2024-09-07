@@ -51,7 +51,7 @@ object DBAccess1 {
           case lv:LogicalVariable =>
             // retrieva all the users from the database.
             val users:List[User] = connection.collection[User]("users").find(Map.empty)
-            disjunction(users.map(u=>bindings.bind(lv,u)(using userFact)):_*)
+            disjunction(users.map(u=>bindings.bind(lv,u)(using userFact)) *)
           case lc@LogicalConstant(value) =>
             connection.collection[User]("users").findOne(Map{ "id" -> value }) match
               case Some(userInDb) => userFact.unify[R](userInDb, lc, bindings)

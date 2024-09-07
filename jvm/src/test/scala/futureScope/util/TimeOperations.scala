@@ -39,7 +39,7 @@ object TimeOperations {
                         })
   }
  
-  private[this] lazy val se = {
+  private lazy val se = {
     // TODO: resolver set scheduler or get parameters from config
     Executors.newScheduledThreadPool(1).nn 
   }

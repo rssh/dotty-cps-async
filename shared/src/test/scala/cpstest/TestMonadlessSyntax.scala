@@ -33,6 +33,20 @@ class TestMonadlessSyntax {
   }
 
   @Test
+  def testUnliftExtension() = {
+    val c = lift[ComputationBound] {
+      val x = T1.cbi(1).unlift + T1.cbi(2).unlift
+      x
+    }
+    val r = c.run()
+    assert(r.isSuccess)
+    r match
+      case Success(v) => assert(v == 3)
+      case Failure(ex) => throw ex
+  }
+
+
+  @Test
   def testInferenceForFutureMonad() = {
 
     import cps.monads.FutureAsyncMonad 

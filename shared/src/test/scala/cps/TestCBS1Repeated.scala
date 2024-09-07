@@ -29,7 +29,7 @@ class TestCBS1Repeated:
   @Test def repeated_0a(): Unit = 
      val c = async[ComputationBound]{
        val s = Seq(12,13,14)
-       f("x",s :_* )
+       f("x",s * )
      }
      assert(c.run() == Success("x121314"))
 
@@ -51,7 +51,7 @@ class TestCBS1Repeated:
        )
        val fc2 = FC("bbb", ()=>true) 
        val esx = Seq(fc1,fc2)
-       f2(esx :_* )
+       f2(esx * )
      }
      assert(c.run() == Success("aaa:false,bbb:true"))
 

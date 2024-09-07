@@ -14,7 +14,7 @@ case class TransformationContext[F[_]:Type,T,C <: CpsMonadContext[F]](
    runtimeAwaitProvider: Option[Expr[CpsRuntimeAwaitProvider[F]]],
    flags: AsyncMacroFlags,
    nesting: Int,
-   parent: Option[TransformationContext[_,_,_]],
+   parent: Option[TransformationContext[?,?,?]],
 )  {
 
   //def monad(using Quotes): Expr[CpsMonad[F]] =

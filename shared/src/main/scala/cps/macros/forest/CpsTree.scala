@@ -1027,11 +1027,11 @@ trait CpsTreeScope[F[_], CT, CC<:CpsMonadContext[F]] {
            case ValCpsTree(owner, valDef, rightPart, nested, canBeLambda) =>
              ValCpsTree(owner, valDef, rightPart, SelectTypeApplyCpsTree.create(None, nested, targs, selects, otpe)).transformed
            case AsyncLambdaCpsTree(owner, orig, params, body, nOtpe) =>
-             throw MacroError(s"AsyncLambda can't be transformed", posExprs(Seq()++optOrigin++Some(orig):_*) )
+             throw MacroError(s"AsyncLambda can't be transformed", posExprs(Seq()++optOrigin++Some(orig) *) )
            case CallChainSubstCpsTree(owner, nestOrigin, shifted, nOtpe) =>
              if (!targs.isEmpty) then
                 // targs is already should be here
-                throw MacroError("CallChainSubstCpsTree already contains applied targs", posExprs(optOrigin.toSeq: _*))
+                throw MacroError("CallChainSubstCpsTree already contains applied targs", posExprs(optOrigin.toSeq *))
              val revSelects = selects.reverse
              revSelects.headOption match
                case Some(head) =>

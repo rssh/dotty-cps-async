@@ -4,19 +4,33 @@ Dependency
 Sbt Example
 -----------
 
-The current prerelease is |0.9.21| for using with Scala |3.3.3|_.
+The current prerelease is |0.9.22| for using with Scala |3.5.0|_.
+
+Sbt dependency:
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.21"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.22"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.21"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.22"
+
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
+
+
+If you use lts version of scala (i.e. scala-3.3.3) then you can use lts build of dotty-cps-async with name `dotty-cps-async-lts`:
+
+ .. code-block:: scala
+
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.22"
+
+
+
+
 
 
 Compiler Plugin
@@ -29,13 +43,13 @@ for sbt:
  .. code-block:: scala
 
   autoCompilerPlugins := true
-  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.21")
+  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.22")
 
 for mill:
 
  .. code-block:: scala
 
-  def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.21")
+  def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.22")
 
 Loom support on JVM
 -------------------
@@ -45,7 +59,7 @@ To enable one, add `dotty-cps-async-loom` module to the dependencies:
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.21"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.22"
 
 
 
@@ -125,7 +139,16 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.19"
+  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.22"
+
+From '0.9.22' on scala '3.5.0' or later,  we can use `await` as extension method:
+
+ .. code-block:: scala
+
+      def greet() = async[Future] {
+        val greeting = fetchGreeting().await
+        println(greeting)
+      }
 
 
 **Note**: The :ref:`Integrations` section lists further library dependencies needed for integration with well-known monadic frameworks such as |Cats Effect|_, |Monix|_, |ScalaZ IO|_ or |ZIO|_ and streaming frameworks like |Akka Streams|_ and |fs2|_. 

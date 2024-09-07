@@ -28,7 +28,7 @@ object Tracer {
       case Varargs(ess) =>
         //val trees: Seq[Expr[AssertEntry[Boolean]]] = ess.map(e => makeAssertEntry( e, codeOf(e)))
         //Expr.betaReduce('{ $func($trees)})
-        '{  UtestLikeMacro.assertImpl(${Expr.ofSeq(ess.map(e=>makeAssertEntry(e, codeOf(e))))}: _*) }
+        '{  UtestLikeMacro.assertImpl(${Expr.ofSeq(ess.map(e=>makeAssertEntry(e, codeOf(e))))} *) }
 
       case _ => throw new RuntimeException(s"Only varargs are supported. Got: ${exprs.asTerm}")
     }

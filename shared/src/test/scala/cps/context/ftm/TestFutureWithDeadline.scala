@@ -49,9 +49,9 @@ given cpsMonadConversion(using DeadlineContext): CpsMonadConversion[Future,Futur
 
 class DeadlineContext(m: CpsAsyncMonad[FutureWithDeadline], initDeadline: Long) extends CpsTryMonadContext[FutureWithDeadline] {
 
-    private[this] var deadline: Long = initDeadline;
-    private[this] val timeoutPromise: Promise[Nothing] = Promise()
-    private[this] var lastTimerTask: TestTimer.CancelToken | Null = null
+    private var deadline: Long = initDeadline;
+    private val timeoutPromise: Promise[Nothing] = Promise()
+    private var lastTimerTask: TestTimer.CancelToken | Null = null
 
     def timeoutFuture: Future[Nothing] = timeoutPromise.future
 

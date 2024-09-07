@@ -224,6 +224,8 @@ trait InlinedTreeTransform[F[_], CT, CC<:CpsMonadContext[F]]:
                                case binding: InlinedValBindingRecord =>
                                  usedAwaitVals = usedAwaitVals + binding.newSym
                                  Ref(binding.newSym)
+                               case binding: InlineCpsDirectBindingRecord =>
+                                 Ref(binding.newSym)
                            case None =>
                               super.transformTerm(term)(owner)
                  case _ =>

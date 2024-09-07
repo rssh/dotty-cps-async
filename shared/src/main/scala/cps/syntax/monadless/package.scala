@@ -14,9 +14,9 @@ transparent inline def lift[F[_]](using am: CpsMonad[F]) =
   macros.Async.InferAsyncArg(using am)
 
 
-/**
- * Synomym for `await`
- **/
-transparent inline def unlift[F[_],T,G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMonadConversion[F,G]): T =
-  cps.await[F,T,G](f)(using ctx, conversion)
 
+extension [F[_], T, G[_]](f: F[T])(using ctx: CpsMonadContext[G], conversion: CpsMonadConversion[F, G])
+  /**
+   * Synonym for `await`
+   * */
+  transparent inline def unlift: T = await(f)
