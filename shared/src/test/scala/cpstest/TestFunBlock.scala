@@ -9,6 +9,8 @@ import org.junit.{Test,Ignore}
 
 class TestFunBlock {
 
+  
+  
   @Test
   def testApplyWithFunBlock(): Unit = {
       var x = 0
