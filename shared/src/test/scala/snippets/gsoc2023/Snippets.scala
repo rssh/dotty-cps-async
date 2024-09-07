@@ -1,6 +1,9 @@
 package snippets.gsoc2024
 
 
+def makeCompilerHappy(): Unit = {
+  ???
+}
 
 /*
 def myFun: IO[HttpReply] = {
