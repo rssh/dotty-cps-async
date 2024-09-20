@@ -1,4 +1,4 @@
-val dottyVersion = "3.5.0"
+val dottyVersion = "3.5.1"
 
 import scala.scalanative.build._
 
