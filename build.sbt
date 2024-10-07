@@ -132,7 +132,7 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
                               libraryDependencies ++= Seq(
                                   "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
                                   "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
-                                  ("org.scala-js" %% "scalajs-linker" % "1.16.0").cross(CrossVersion.for3Use2_13) % "test",
+                                  ("org.scala-js" %% "scalajs-linker" % "1.17.0").cross(CrossVersion.for3Use2_13) % "test",
                                   //("org.scala-js" %% "scalajs-ir" % "1.16.0").cross(CrossVersion.for3Use2_13) % "test",
                                   //("org.scala-js" %% "scalajs-library" % "1.16.0").cross(CrossVersion.for3Use2_13) % "test",
                                   ("org.scala-js" %% "scalajs-env-nodejs" % "1.4.0").cross(CrossVersion.for3Use2_13) % "test",
