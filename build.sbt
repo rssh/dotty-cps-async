@@ -1,4 +1,4 @@
-val dottyVersion = "3.5.2"
+val dottyVersion = "3.6.2"
 
 import scala.scalanative.build._
 
@@ -53,7 +53,7 @@ lazy val cps = crossProject(JSPlatform, JVMPlatform, NativePlatform)
                 "-source-links:shared=github://rssh/dotty-cps-async/master#shared",
                 "-source-links:jvm=github://rssh/dotty-cps-async/master#jvm"),
         libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
-        mimaPreviousArtifacts := Set("com.github.rssh" %% "dotty-cps-async" % "0.9.21")
+        mimaPreviousArtifacts := Set("com.github.rssh" %% "dotty-cps-async" % "0.9.22")
     ).jsSettings(
         scalaJSUseMainModuleInitializer := true,
         Compile / doc / scalacOptions := Seq("-groups",  

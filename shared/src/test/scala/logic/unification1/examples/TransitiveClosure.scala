@@ -24,6 +24,8 @@ object FindPathes {
 
   val facts2 = Prolog.asFacts(Path(1,2), Path(2,3), Path(3,4))
 
-  val results = Prolog.defaultEngine(rules ++ facts).query(x => Path(1, x))
+  val Logic = Prolog
+
+  val results = Logic.defaultEngine(rules ++ facts).query(x => Path(1, x))
 
 }
