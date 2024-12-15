@@ -22,15 +22,11 @@ JavaScript and Native targets are also supported.
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
 
-If you use lts version of scala (i.e. scala-3.3.3) then you can use lts build of dotty-cps-async with name `dotty-cps-async-lts`:
+If you use lts version of scala (i.e. `scala-3.3.3`) then you can use lts build of dotty-cps-async with name `dotty-cps-async-lts`:
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.22"
-
-
-
-
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-lts" % "0.9.22"
 
 
 Compiler Plugin
@@ -59,8 +55,15 @@ To enable one, add `dotty-cps-async-loom` module to the dependencies:
 
  .. code-block:: scala
 
+   // for 3.5.0 or later
    libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.22"
 
+ or
+
+ .. code-block:: scala
+
+   // for 3.3.3
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom-lts" % "0.9.22"
 
 
 Basic Usage
@@ -141,7 +144,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.22"
 
-From '0.9.22' on scala '3.5.0' or later,  we can use `await` as extension method:
+From '0.9.22' we can use `await` as extension method:
 
  .. code-block:: scala
 
