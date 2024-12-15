@@ -12,7 +12,7 @@ ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 val sharedSettings = Seq(
     organization := "com.github.rssh",
     scalaVersion := dottyVersion,
-    name := "dotty-cps-async"
+    name := "dotty-cps-async-next"
 )
 
 
@@ -84,7 +84,7 @@ lazy val cpsLoomAddOn = project.in(file("jvm-loom-addon"))
   .disablePlugins(SitePreviewPlugin)
   .settings(sharedSettings)
   .settings(
-    name := "dotty-cps-async-loom",
+    name := "dotty-cps-async-loom-next",
     scalacOptions ++= Seq("-Xtarget:21",  "-explain" /*, "-color:never"*/ ),
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
   )
@@ -94,7 +94,7 @@ lazy val cpsLoomTest = project.in(file("jvm-loom-tests"))
                       .dependsOn(cps.jvm, cpsLoomAddOn)
                       .disablePlugins(SitePreviewPlugin)
                       .settings(sharedSettings)
-                      .settings(name := "dotty-cps-async-loom-test")
+                      .settings(name := "dotty-cps-async-loom-test-next")
                       .settings(
                         // TODO: remove sources, add dependency from java
                         //Compile / unmanagedSourceDirectories ++= Seq(
@@ -128,7 +128,7 @@ lazy val compilerPlugin = project.in(file("compiler-plugin"))
                            .settings(sharedSettings)
                            .disablePlugins(SitePreviewPlugin)
                            .settings(
-                              name := "dotty-cps-async-compiler-plugin",
+                              name := "dotty-cps-async-compiler-plugin-next",
                               libraryDependencies ++= Seq(
                                   "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
                                   "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
@@ -157,7 +157,7 @@ lazy val compilerPluginTests = crossProject(JSPlatform, JVMPlatform, NativePlatf
                            .disablePlugins(SitePreviewPlugin)
                            .settings(sharedSettings)
                            .settings(
-                              name := "dotty-cps-compiler-plugin-tests",
+                              name := "dotty-cps-compiler-plugin-tests-next",
                               libraryDependencies ++= Seq(
                                   "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
                                   "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
@@ -202,7 +202,7 @@ lazy val logic = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(sharedSettings)
   .disablePlugins(SitePreviewPlugin)
   .settings(
-    name := "dotty-cps-async-logic",
+    name := "dotty-cps-async-logic-next",
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test",
   ).jsSettings(
     scalaJSUseMainModuleInitializer := true,
