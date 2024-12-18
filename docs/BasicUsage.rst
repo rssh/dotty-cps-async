@@ -42,13 +42,13 @@ for sbt:
  .. code-block:: scala
 
   autoCompilerPlugins := true
-  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.22")
+  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.23")
 
 for mill:
 
  .. code-block:: scala
 
-  def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.22")
+  def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.23")
 
 Loom support on JVM
 -------------------
@@ -58,15 +58,14 @@ To enable one, add `dotty-cps-async-loom` module to the dependencies:
 
  .. code-block:: scala
 
-   // for 3.5.0 or later
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.22"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.23"
 
  or
 
  .. code-block:: scala
 
-   // for 3.3.3
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom-lts" % "0.9.22"
+   // for next line
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom-next" % "0.9.23"
 
 
 Basic Usage
