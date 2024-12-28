@@ -4,29 +4,32 @@ Dependency
 Sbt Example
 -----------
 
-The current prerelease is |0.9.22| for using with Scala |3.5.0|_.
+The current prerelease is |0.9.23|.
 
 Sbt dependency:
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.22"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.23"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.22"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.23"
 
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
 
+According to the Scala versioning policy, the library can be used in projects with any Scala-3 version.
 
-If you use lts version of scala (i.e. `scala-3.3.3`) then you can use lts build of dotty-cps-async with name `dotty-cps-async-lts`:
+A version of dotty-cps-async with extended capacities also exists, which relies on the latest version of the Scala compiler.  For this version, use the `dotty-cps-async-next` artifcat name.
+
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-lts" % "0.9.22"
+   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async-next" % "0.9.23"
+
 
 
 Compiler Plugin
@@ -39,13 +42,13 @@ for sbt:
  .. code-block:: scala
 
   autoCompilerPlugins := true
-  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.22")
+  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.23")
 
 for mill:
 
  .. code-block:: scala
 
-  def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.22")
+  def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.23")
 
 Loom support on JVM
 -------------------
@@ -55,15 +58,14 @@ To enable one, add `dotty-cps-async-loom` module to the dependencies:
 
  .. code-block:: scala
 
-   // for 3.5.0 or later
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.22"
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.23"
 
  or
 
  .. code-block:: scala
 
-   // for 3.3.3
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom-lts" % "0.9.22"
+   // for next line
+   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom-next" % "0.9.23"
 
 
 Basic Usage

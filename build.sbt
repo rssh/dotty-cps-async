@@ -3,7 +3,7 @@ val dottyVersion = "3.3.4"
 import scala.scalanative.build._
 
 
-ThisBuild/version := "0.9.23"
+ThisBuild/version := "0.9.24-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
 ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 
