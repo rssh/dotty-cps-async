@@ -31,7 +31,8 @@ object MacroSeqExprInSelect {
 
 
   def initAsArrayExprImpl(exprs: Seq[Expr[Any]])(using Quotes): Expr[RefCollection] = {
-    '{ new RefCollection( ${Expr.ofSeq(exprs.map(e => '{Ref($e)})) }.toArray) }
+    val refs = exprs.map(e => '{Ref($e)})
+    '{ new RefCollection( ${Expr.ofSeq(refs) }.toArray) }
   }
 
 
