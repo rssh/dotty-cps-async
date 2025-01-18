@@ -1,16 +1,19 @@
 val dottyVersion = "3.5.1"
 
+import xerial.sbt.Sonatype.sonatypeCentralHost
 import scala.scalanative.build._
 
 
-ThisBuild/version := "0.9.23-SNAPSHOT"
+ThisBuild/version := "0.9.23"
 ThisBuild/versionScheme := Some("semver-spec")
-ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
+//ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
+ThisBuild/sonatypeCredentialHost := sonatypeCentralHost
+ThisBuild/publishTo := sonatypePublishToBundle.value
 
 
 
 val sharedSettings = Seq(
-    organization := "com.github.rssh",
+    organization := "io.github.dotty-cps-async",
     scalaVersion := dottyVersion,
     name := "dotty-cps-async"
 )

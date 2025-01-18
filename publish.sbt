@@ -1,13 +1,13 @@
 credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 
-ThisBuild / organization := "com.github.rssh"
-ThisBuild / organizationName := "rssh"
-ThisBuild / organizationHomepage := Some(url("https://github.com/rssh"))
+ThisBuild / organization := "io.github.dotty-cps-async"
+ThisBuild / organizationName := "dotty-cps-async"
+ThisBuild / organizationHomepage := Some(url("https://github.com/dotty-cps-async"))
 
 ThisBuild / scmInfo := Some(
        ScmInfo(
-          url("https://github.com/rssh/dotty-cps-async"),
-          "scm:git@github.com:rssh/dotty-cps-async.git"
+          url("https://io.github.dotty-cps-async/dotty-cps-async"),
+          "scm:git@github.com:dotty-cps-async/dotty-cps-async.git"
        )
 )
 
@@ -27,11 +27,11 @@ ThisBuild / licenses := List("Apache 2" -> new URL("http://www.apache.org/licens
 ThisBuild / homepage := Some(url("https://github.com/rssh/dotty-cps-async"))
 
 ThisBuild / pomIncludeRepository := { _ => false }
-ThisBuild / publishTo := {
-       val nexus = "https://oss.sonatype.org/"
-       if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-       else Some("releases" at nexus + "service/local/staging/deploy/maven2")
-}
+//ThisBuild / publishTo := {
+//       val nexus = "https://central.sonatype.com/"
+//       if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
+//       else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+//}
 ThisBuild / publishMavenStyle := true
 
 
