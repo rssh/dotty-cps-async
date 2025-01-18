@@ -278,6 +278,9 @@ object Async {
                    ReturnTransform(cpsCtx).run(returnTerm, from)
                 case constTerm@Literal(_)=>  
                    ConstTransform.run(cpsCtx, constTerm)
+                //case Repeated(elems, tp) =>
+                //   // note, that this repeater is outside varargs
+                //   // (it's hard to reproduce test)
                 case _ =>
                    println("f:"+f.show)
                    println("fTree:"+fTree)
