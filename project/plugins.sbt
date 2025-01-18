@@ -1,4 +1,5 @@
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.2.1")
+addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.11.3")
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.1")
 addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.3")
 addSbtPlugin("org.portable-scala" % "sbt-scala-native-crossproject" % "1.3.1")

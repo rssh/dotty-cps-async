@@ -1,11 +1,14 @@
 val dottyVersion = "3.3.4"
 
+import xerial.sbt.Sonatype.sonatypeCentralHost
 import scala.scalanative.build._
 
 
 ThisBuild/version := "1.0.0-M1"
 ThisBuild/versionScheme := Some("semver-spec")
-ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
+//ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
+ThisBuild/sonatypeCredentialHost := sonatypeCentralHost
+ThisBuild/publishTo := sonatypePublishToBundle.value
 
 
 
