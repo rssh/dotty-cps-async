@@ -48,6 +48,7 @@ trait ComputationBound[+T] {
         case w@Wait(ref, op) =>
           val timeRest = deadline - System.currentTimeMillis
           if (timeRest > 0) then
+            Thread.`yield`()
             ComputationBound.advanceDeferredQueueTicks(timeRest, ref.get().isDefined).flatMap{ r =>
               ref.get match
                 case Some(v) => op(v).runTicksDeadline(deadline)
