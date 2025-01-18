@@ -10,13 +10,13 @@ Sbt dependency:
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.23"
+   libraryDependencies += "io.github.dotty-cps-async" %% "dotty-cps-async" % "1.0.0"
 
 JavaScript and Native targets are also supported.
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async" % "0.9.23"
+   libraryDependencies += "io.github.dotty-cps-async" %%% "dotty-cps-async" % "1.0.0"
 
 
 **Note**: :red:`%%%` automatically determines whether we are in a Scala/JVM or a Scala.js or a Scala.Native project (see |Scala.js Cross-Building|_).
@@ -28,7 +28,7 @@ A version of dotty-cps-async with extended capacities also exists, which relies 
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %%% "dotty-cps-async-next" % "0.9.23"
+   libraryDependencies += "io.github.dotty-cps-async" %%% "dotty-cps-async-next" % "1.0.0"
 
 
 
@@ -42,13 +42,13 @@ for sbt:
  .. code-block:: scala
 
   autoCompilerPlugins := true
-  addCompilerPlugin("com.github.rssh" %% "dotty-cps-async-compiler-plugin" % "0.9.23")
+  addCompilerPlugin("io.github.dotty-cps-async" %% "dotty-cps-async-compiler-plugin" % "1.0.0")
 
 for mill:
 
  .. code-block:: scala
 
-  def scalacPluginIvyDeps = Agg(ivy"com.github.rssh::dotty-cps-async-compiler-plugin:0.9.23")
+  def scalacPluginIvyDeps = Agg(ivy"io.github.dotty-cps-async::dotty-cps-async-compiler-plugin:1.0.0")
 
 Loom support on JVM
 -------------------
@@ -58,14 +58,14 @@ To enable one, add `dotty-cps-async-loom` module to the dependencies:
 
  .. code-block:: scala
 
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom" % "0.9.23"
+   libraryDependencies += "io.github.dotty-cps-async" %% "dotty-cps-async-loom" % "1.0.0"
 
  or
 
  .. code-block:: scala
 
    // for next line
-   libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom-next" % "0.9.23"
+   libraryDependencies += "io.github.dotty-cps-async" %% "dotty-cps-async-loom-next" % "1.0.0"
 
 
 Basic Usage
@@ -144,7 +144,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.22"
+  libraryDependencies += "io.github.dotty-cps-async" %% "dotty-cps-async" % "0.9.22"
 
 From '0.9.22' we can use `await` as extension method:
 
@@ -363,9 +363,6 @@ Yet one pair of names 'lift/unlift', used for example in the |monadless|_ librar
 
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
-
-.. |0.9.19| replace:: ``0.9.19``
-.. _0.9.19: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.19/
 
 .. /*to update*/ 
 
