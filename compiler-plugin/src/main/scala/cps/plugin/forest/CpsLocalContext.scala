@@ -12,4 +12,3 @@ import ast.tpd.*
 import cps.plugin.*
 
 case class CpsLocalContext(nesting: Int, muted: Boolean)
-

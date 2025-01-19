@@ -10,23 +10,17 @@ import cps.macros.misc._
 
 object ImportTransform:
 
-
-
-  def fromBlock[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](using Quotes)(cpsCtx: TransformationContext[F,T,C],
-                           importTree: quotes.reflect.Import): CpsExpr[F,Unit] = {
-     import quotes.reflect._
-     import cpsCtx._
-     if (cpsCtx.flags.debugLevel >= 10) {
-       cpsCtx.log(s"Import:fromBlock, importTree=$importTree")
-     }
-     val posExpr = Block(List(importTree),Literal(UnitConstant())).asExpr
-     // Import is not statement - so, it is impossible to create block with import in macros.
-     //  from other side - all symbols on this stage are already resolved, so we can
-     //  just erase import for our purpose.
-     CpsExpr.unit(monad)
+  def fromBlock[F[_]: Type, T: Type, C <: CpsMonadContext[F]: Type](using
+      Quotes
+  )(cpsCtx: TransformationContext[F, T, C], importTree: quotes.reflect.Import): CpsExpr[F, Unit] = {
+    import quotes.reflect._
+    import cpsCtx._
+    if (cpsCtx.flags.debugLevel >= 10) {
+      cpsCtx.log(s"Import:fromBlock, importTree=$importTree")
+    }
+    val posExpr = Block(List(importTree), Literal(UnitConstant())).asExpr
+    // Import is not statement - so, it is impossible to create block with import in macros.
+    //  from other side - all symbols on this stage are already resolved, so we can
+    //  just erase import for our purpose.
+    CpsExpr.unit(monad)
   }
-
-
-
-
-

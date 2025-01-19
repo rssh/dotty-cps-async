@@ -12,12 +12,10 @@ import cps.plugin.*
 
 object SelectTransform {
 
-
-  def apply(selectTerm: Select, owner: Symbol, nesting:Int)(using Context, CpsTopLevelContext): CpsTree = {
-      val cpsQualifier = RootTransform(selectTerm.qualifier, owner, nesting+1)
-      val retval = cpsQualifier.select(selectTerm)
-      retval
+  def apply(selectTerm: Select, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
+    val cpsQualifier = RootTransform(selectTerm.qualifier, owner, nesting + 1)
+    val retval = cpsQualifier.select(selectTerm)
+    retval
   }
-
 
 }

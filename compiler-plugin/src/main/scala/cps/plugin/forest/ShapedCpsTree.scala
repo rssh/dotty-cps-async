@@ -8,9 +8,7 @@ import core.Decorators.*
 import core.Symbols.*
 import ast.tpd.*
 
-
 import cps.plugin.*
-
 
 sealed trait ShapedCpsTree {
   def cpsTree: CpsTree
@@ -55,4 +53,3 @@ case object ShapedCpsTree {
   }
 
 }
-

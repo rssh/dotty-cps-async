@@ -5,16 +5,13 @@ import scala.concurrent.*
 import scala.util.control.NonFatal
 import cps.*
 
-
 object CompletableFutureRuntimeAwait extends LoomRuntimeAwait[CompletableFuture] {
-
 
   override def await[A](fa: CompletableFuture[A])(ctx: CpsTryMonadContext[CompletableFuture]): A = {
     blocking {
-      try
-        fa.get()
+      try fa.get()
       catch
-        case  ex: ExecutionException =>
+        case ex: ExecutionException =>
           throw ex.getCause()
     }
   }

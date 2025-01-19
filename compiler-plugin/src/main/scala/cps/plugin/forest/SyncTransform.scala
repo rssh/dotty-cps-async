@@ -10,7 +10,6 @@ import ast.tpd.*
 
 import cps.plugin.*
 
-
 object SyncTransform {
 
   def apply(term: Tree, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {

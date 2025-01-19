@@ -45,35 +45,36 @@ object AssignTransform {
         val sym = newSymbol(owner, "xAssign".toTermName, Flags.EmptyFlags, term.rhs.tpe.widen, Symbols.NoSymbol)
         val valDef = ValDef(sym.asTerm, EmptyTree)
         val nAssign = Assign(term.lhs, ref(sym)).withSpan(term.span)
-        MapCpsTree(term, owner, cpsRhs,
-          MapCpsTreeArgument(Some(valDef), CpsTree.unchangedPure(nAssign, owner)))
+        MapCpsTree(term, owner, cpsRhs, MapCpsTreeArgument(Some(valDef), CpsTree.unchangedPure(nAssign, owner)))
       case AsyncKind.AsyncLambda(body) =>
         throw CpsTransformException(s"Can't assign async lambda", term.srcPos)
   }
 
-  def lhsSelectAsyncAssign(term: Assign, lhsSelect: Select, lhsQual: CpsTree, owner: Symbol, nesting: Int)(using Context, CpsTopLevelContext): CpsTree = {
+  def lhsSelectAsyncAssign(term: Assign, lhsSelect: Select, lhsQual: CpsTree, owner: Symbol, nesting: Int)(using
+      Context,
+      CpsTopLevelContext
+  ): CpsTree = {
     val qualSym = newSymbol(owner, "xQualAssign".toTermName, Flags.EmptyFlags, lhsQual.originType, NoSymbol)
     val qualValDef = ValDef(qualSym.asTerm, EmptyTree)
     val cpsRhs = RootTransform(term.rhs, owner, nesting)
     cpsRhs.asyncKind match
       case AsyncKind.Sync =>
         val nAssign = Assign(
-                         ref(qualSym).select(lhsSelect.symbol).withSpan(term.lhs.span),
-                         cpsRhs.unpure.get
-                      ).withSpan(term.span)
-        MapCpsTree(term, owner, lhsQual,
-          MapCpsTreeArgument(Some(qualValDef), CpsTree.pure(term, owner, nAssign)))
+          ref(qualSym).select(lhsSelect.symbol).withSpan(term.lhs.span),
+          cpsRhs.unpure.get
+        ).withSpan(term.span)
+        MapCpsTree(term, owner, lhsQual, MapCpsTreeArgument(Some(qualValDef), CpsTree.pure(term, owner, nAssign)))
       case AsyncKind.Async(internalKind) =>
         val rhsSym = newSymbol(owner, "xAssign".toTermName, Flags.EmptyFlags, cpsRhs.originType.widen, NoSymbol)
         val rhsValDef = ValDef(rhsSym, EmptyTree)
-        val nAssign = Assign(ref(qualSym).select(lhsSelect.symbol).withSpan(term.lhs.span),
-                             ref(rhsSym)
-                      ).withSpan(term.span)
-        FlatMapCpsTree(term, owner, lhsQual,
-          FlatMapCpsTreeArgument(Some(qualValDef),
-             MapCpsTree(term, owner, cpsRhs,
-               MapCpsTreeArgument(Some(rhsValDef), CpsTree.unchangedPure(nAssign, owner))
-             )
+        val nAssign = Assign(ref(qualSym).select(lhsSelect.symbol).withSpan(term.lhs.span), ref(rhsSym)).withSpan(term.span)
+        FlatMapCpsTree(
+          term,
+          owner,
+          lhsQual,
+          FlatMapCpsTreeArgument(
+            Some(qualValDef),
+            MapCpsTree(term, owner, cpsRhs, MapCpsTreeArgument(Some(rhsValDef), CpsTree.unchangedPure(nAssign, owner)))
           )
         )
       case AsyncKind.AsyncLambda(bodyKind) =>

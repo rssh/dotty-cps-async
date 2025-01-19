@@ -12,14 +12,12 @@ trait CpsSyncLogicMonad[M[_]] extends CpsLogicMonad[M] {
   override val observerCpsMonad: CpsTryMonad[Observer] = CpsIdentityMonad
 
   override def flattenObserver[A](fma: M[A]): M[A] = fma
-  
-  def toLazyList[T](m:M[T]): LazyList[T]
-  
-  
+
+  def toLazyList[T](m: M[T]): LazyList[T]
+
 }
 
-
-extension [M[_]:CpsSyncLogicMonad,A](ma:M[A]) 
+extension [M[_]: CpsSyncLogicMonad, A](ma: M[A])
 
   def toLazyList: LazyList[A] =
     summon[CpsSyncLogicMonad[M]].toLazyList(ma)

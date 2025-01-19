@@ -7,13 +7,11 @@ import scala.quoted._
 import cps._
 import cps.macros._
 
-
-class TypeApplyTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: TransformationContext[F,T,C]):
+class TypeApplyTransform[F[_]: Type, T: Type, C <: CpsMonadContext[F]: Type](cpsCtx: TransformationContext[F, T, C]):
 
   import cpsCtx._
 
   // case TypeApply(fun,targs)
-  def run(using Quotes)(fun: quotes.reflect.Term, targs: List[quotes.reflect.TypeTree]): CpsExpr[F,T] =
-     import quotes.reflect._
-     TypeApplyTreeTransform.run(cpsCtx,patternCode.asTerm, fun, targs)
-
+  def run(using Quotes)(fun: quotes.reflect.Term, targs: List[quotes.reflect.TypeTree]): CpsExpr[F, T] =
+    import quotes.reflect._
+    TypeApplyTreeTransform.run(cpsCtx, patternCode.asTerm, fun, targs)

@@ -4,15 +4,15 @@ import scala.collection.LazyZip2
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
-object LazyListCpsLogicMonad extends CpsSyncLogicMonad[LazyList]  with CpsLogicMonadInstanceContext[LazyList] {
+object LazyListCpsLogicMonad extends CpsSyncLogicMonad[LazyList] with CpsLogicMonadInstanceContext[LazyList] {
 
-  def pure[T](t:T): LazyList[T] =
+  def pure[T](t: T): LazyList[T] =
     LazyList(t)
 
-  def map[A,B](fa: LazyList[A])(f: A=>B): LazyList[B] =
+  def map[A, B](fa: LazyList[A])(f: A => B): LazyList[B] =
     fa.map(f)
 
-  def flatMap[A,B](fa: LazyList[A])(f: A=>LazyList[B]): LazyList[B] =
+  def flatMap[A, B](fa: LazyList[A])(f: A => LazyList[B]): LazyList[B] =
     fa.flatMap(f)
 
   override def error[A](e: Throwable): LazyList[A] = {
@@ -38,17 +38,17 @@ object LazyListCpsLogicMonad extends CpsSyncLogicMonad[LazyList]  with CpsLogicM
         case Success(prefix) =>
           prefix #::: flatMapTry(fa.tail)(f)
         case Failure(ex) =>
-          LazyList.cons( throw ex, flatMapTry(fa.tail)(f) )
+          LazyList.cons(throw ex, flatMapTry(fa.tail)(f))
     }
   }
 
   override def mzero[A]: LazyList[A] = LazyList.empty
 
-  override def mplus[A](x: LazyList[A], y: =>LazyList[A]): LazyList[A] =
+  override def mplus[A](x: LazyList[A], y: => LazyList[A]): LazyList[A] =
     if (x.isEmpty)
-        y // actually, better be lazy here, but appropriate method in LazyList is private
+      y // actually, better be lazy here, but appropriate method in LazyList is private
     else
-        LazyList.cons(x.head, mplus(x.tail, y))
+      LazyList.cons(x.head, mplus(x.tail, y))
 
   override def fsplit[A](c: LazyList[A]): Option[(Try[A], LazyList[A])] = {
     if (c.isEmpty)

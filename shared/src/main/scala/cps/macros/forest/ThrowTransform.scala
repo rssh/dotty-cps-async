@@ -10,27 +10,26 @@ import cps.macros.misc._
 
 object ThrowTransform:
 
-  /**
-   *'''
-   * '{ throw $ex }
-   *'''
-   **/
-  def run[F[_]:Type,T:Type, C<:CpsMonadContext[F]:Type, S<:Throwable:Type](cpsCtx: TransformationContext[F,T,C],
-                               ex: Expr[S]
-                               )(using Quotes): CpsExpr[F,T] =
-     import quotes.reflect._
-     import util._
-     import cpsCtx._
-     val cpsEx = Async.nestTransform(ex, cpsCtx)
+  /** ''' '{ throw $ex } '''
+    */
+  def run[F[_]: Type, T: Type, C <: CpsMonadContext[F]: Type, S <: Throwable: Type](
+      cpsCtx: TransformationContext[F, T, C],
+      ex: Expr[S]
+  )(using Quotes): CpsExpr[F, T] =
+    import quotes.reflect._
+    import util._
+    import cpsCtx._
+    val cpsEx = Async.nestTransform(ex, cpsCtx)
 
-     if (cpsCtx.monad.asTerm.tpe <:< TypeRepr.of[CpsThrowMonad[F]])
-       val errorMonad = monad.asExprOf[CpsThrowMonad[F]]
-       if (!cpsEx.isAsync)
-            // TODO: think, mb leave as is...
-            CpsExpr.async[F,T](monad,  '{  ${errorMonad}.error(${ex}) })
-       else
-            CpsExpr.async[F,T](monad,
-                cpsEx.flatMap[T]( '{ (ex:S) => ${errorMonad}.error(ex) } ).transformed )
-     else
-       throw MacroError(s"monad ${monad.show} of type ${monad.asTerm.tpe.widen.show} in context ${TypeRepr.of[C].show} not support try/catch",patternCode)
-
+    if (cpsCtx.monad.asTerm.tpe <:< TypeRepr.of[CpsThrowMonad[F]])
+      val errorMonad = monad.asExprOf[CpsThrowMonad[F]]
+      if (!cpsEx.isAsync)
+        // TODO: think, mb leave as is...
+        CpsExpr.async[F, T](monad, '{ ${ errorMonad }.error(${ ex }) })
+      else
+        CpsExpr.async[F, T](monad, cpsEx.flatMap[T]('{ (ex: S) => ${ errorMonad }.error(ex) }).transformed)
+    else
+      throw MacroError(
+        s"monad ${monad.show} of type ${monad.asTerm.tpe.widen.show} in context ${TypeRepr.of[C].show} not support try/catch",
+        patternCode
+      )
