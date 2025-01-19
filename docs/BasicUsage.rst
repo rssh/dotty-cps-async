@@ -68,6 +68,16 @@ To enable one, add `dotty-cps-async-loom` module to the dependencies:
    libraryDependencies += "com.github.rssh" %% "dotty-cps-async-loom-next" % "0.9.23"
 
 
+Licensing and commercial support
+================================
+
+  The library is distributed under the Apache 2.0 license.
+
+  Commercial support is available. The primary audience is organizations that support their products, which use or include dotty-cps-async,
+  and want to ensure that it will be possible to track support requests to all components of their products.
+  For more information, please write a request to ruslan@shevchenko.kiev.ua.
+
+
 Basic Usage
 ===========
 
@@ -144,7 +154,7 @@ This minimal example is for |Future|_ monad and depends on library |dotty-cps-as
  .. code-block:: scala
 
   // https://mvnrepository.com/artifact/com.github.rssh/dotty-cps-async
-  libraryDependencies += "com.github.rssh" %% "dotty-cps-async" % "0.9.22"
+  libraryDependencies += "io.github.dotty-cps-async" %% "dotty-cps-async" % "1.0.0"
 
 From '0.9.22' we can use `await` as extension method:
 
@@ -364,8 +374,6 @@ Yet one pair of names 'lift/unlift', used for example in the |monadless|_ librar
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
 
-.. |0.9.19| replace:: ``0.9.19``
-.. _0.9.19: https://repo1.maven.org/maven2/com/github/rssh/dotty-cps-async_3/0.9.19/
 
 .. /*to update*/ 
 
