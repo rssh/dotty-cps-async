@@ -48,13 +48,18 @@ trait ComputationBound[+T] {
         case w@Wait(ref, op) =>
           val timeRest = deadline - System.currentTimeMillis
           if (timeRest > 0) then
+            Thread::`yield`()
             ComputationBound.advanceDeferredQueueTicks(timeRest, ref.get().isDefined).flatMap{ r =>
               ref.get match
-                case Some(v) => op(v).runTicksDeadline(deadline)
+                case Some(v) =>
+                  if !r then
+                    Thread::`yield`()
+                  op(v).runTicksDeadline(deadline)
                 case None =>
                   if (deadline >= System.currentTimeMillis) then
                     Future failed (new TimeoutException(s"ref is empty in $w up to timeout (not completed)"))
                   else
+                    Thread::`yield`()
                     ComputationBound.advanceDeferredQueueTicks(timeRest, ref.get().isDefined).flatMap{ r =>
                       ref.get match
                         case Some(v) => op(v).runTicksDeadline(deadline)
@@ -164,7 +169,7 @@ object ComputationBound {
    }
 
    def  advanceDeferredQueueTicks(deadlineMillis: Long, stopCond: =>Boolean): Future[Boolean] = {
-      while(advanceDeferredQueueNoWait(deadlineMillis) && System.currentTimeMillis < deadlineMillis) {}
+      while(advanceDeferredQueueNoWait(deadlineMillis) && System.currentTimeMillis < deadlineMillis) { }
       val millisLeft = deadlineMillis - System.currentTimeMillis 
       if (millisLeft > 0) {
          externalAsyncNotifier.timedFiniteWait(millisLeft.millis).flatMap{ _ =>
