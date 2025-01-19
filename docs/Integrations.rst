@@ -7,7 +7,7 @@ Integrations
 Third-party effect stacks are provided in external modules.
  
 
-rssh/cps-async-connect
+io.github.dotty-cps-async/cps-async-connect
 ----------------------
 
 GitHub project: https://github.com/rssh/cps-async-connect
@@ -21,13 +21,13 @@ Add dependency |cps-async-connect-cats-effect|_ to your ``build.sbt`` to integra
  .. code-block:: scala
 
   libraryDependencies += "org.typelevel" %% "cats-effect" % catsEffectVersion
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect" % cpsAsyncConnectVersion
+  libraryDependencies += "io.github.dotty-cps-async" %%% "cps-async-connect-cats-effect" % cpsAsyncConnectVersion
 
 For loom-based invocation of HO arguments on JDK-21+ also add `cps-async-connect-cats-effect-loom` artifact.
 
  .. code-block:: scala
 
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-cats-effect-loom" % cpsAsyncConnectVersion
+  libraryDependencies += "io.github.dotty-cps-async" %%% "cps-async-connect-cats-effect-loom" % cpsAsyncConnectVersion
 
 
 
@@ -44,7 +44,7 @@ Add dependency |cps-async-connect-monix|_ to your ``build.sbt`` to integrate |Mo
  .. code-block:: scala
 
   libraryDependencies += "io.monix" %% "monix" % "3.4.1"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-monix" % cpsAsyncConnectVersion
+  libraryDependencies += "io.github.dotty-cps-async" %%% "cps-async-connect-monix" % cpsAsyncConnectVersion
 
 |Monix|_ GitHub : |monix/monix|_, Maven : |io.monix|_.
 
@@ -57,7 +57,7 @@ Add dependency |cps-async-connect-scalaz|_ to your ``build.sbt`` to integrate |S
 
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.4.0-M12"
   libraryDependencies += "org.scalaz" %% "scalaz-effect" % "7.4.0-M12"
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-scalaz" % cpsAsyncConnectVersion
+  libraryDependencies += "io.github.dotty-cps-async" %%% "cps-async-connect-scalaz" % cpsAsyncConnectVersion
 
 |Scalaz IO|_ GitHub : |scalaz/scalaz|_, Maven : |org.scalaz|_.
 
@@ -71,14 +71,14 @@ For 1.0.x series:
  .. code-block:: scala
 
   libraryDependencies += "dev.zio" %% "zio" % zio1Version
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-zio" % cpsAsyncConnectVersion
+  libraryDependencies += "io.github.dotty-cps-async" %%% "cps-async-connect-zio" % cpsAsyncConnectVersion
 
 For 2.0.x series:
 
  .. code-block:: scala
 
   libraryDependencies += "dev.zio" %% "zio" % zio2Version
-  libraryDependencies += "com.github.rssh" %% "cps-async-connect-zio2" % cpsAsyncConnectVersion
+  libraryDependencies += "io.github.dotty-cps-async" %% "cps-async-connect-zio2" % cpsAsyncConnectVersion
 
 
 |ZIO|_ GitHub: |zio/zio|_, Maven : |dev.zio|_.
@@ -92,7 +92,7 @@ Add dependency |cps-async-connect-akka-stream|_ to your ``build.sbt`` to integra
  .. code-block:: scala
 
   libraryDependencies += "com.typesafe.akka" %% "akka-stream" % akkaVersion
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-akka-stream" % cpsAsyncConnectVersion
+  libraryDependencies += "io.github.dotty-cps-async" %%% "cps-async-connect-akka-stream" % cpsAsyncConnectVersion
 
 |Akka Stream|_ GitHub : |akka/akka|_, Maven : |com.typesafe.akka»akka-stream|_.
 
@@ -105,7 +105,7 @@ Add dependency |cps-async-connect-fs2|_ to your ``build.sbt`` to integrate Typel
 
   libraryDependencies += "co.fs2" %% "fs2-core" % fs2Version
   libraryDependencies += "co.fs2" %% "fs2-io" % fs2Version
-  libraryDependencies += "com.github.rssh" %%% "cps-async-connect-fs2" % cpsAsyncConnectVersion
+  libraryDependencies += "io.github.dotty-cps-async" %%% "cps-async-connect-fs2" % cpsAsyncConnectVersion
 
 |FS2|_ GitHub : |typelevel/fs2|_, Maven : |co.fs2|_.
 
