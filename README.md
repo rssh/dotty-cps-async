@@ -19,7 +19,7 @@ This is the implementation of async/await transformation for [Scala 3][scala3] (
  * Optional features, which enhance ergonomics in some cases, such as automatic coloring and handling discarded values
  * Optional [SIP-22 compatible API][sip_22].
 
-For more details, please, read the documentation at https://rssh.github.io/dotty-cps-async/.
+For more details, please, read the documentation at https://dotty-cps-async.github.io/dotty-cps-async/.
 
 
 ## <span id="presentations">Presentations</span>
