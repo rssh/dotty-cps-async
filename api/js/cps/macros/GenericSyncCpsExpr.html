@@ -7,7 +7,7 @@
 </div>
 <div class="main-signature mono-small-block">
  <div class="signature">
-  <span class="signature-short"><span class="modifiers"><span t="k">case </span></span><span class="kind"><span t="k">class </span></span><a href="GenericSyncCpsExpr.html" t="n" class="documentableName ">GenericSyncCpsExpr</a>[<span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">T</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">dm</span>: <span data-unresolved-link="" t="t">Expr</span>[<a href="../CpsMonad.html" t="t">CpsMonad</a>[<span data-unresolved-link="" t="t">F</span>]], <span t="k"></span><span data-unresolved-link="" t="n">prev</span>: <span data-unresolved-link="" t="t">Seq</span>[<a href="ExprTreeGen.html" t="t">ExprTreeGen</a>], <span t="k"></span><span data-unresolved-link="" t="n">lastExpr</span>: <span data-unresolved-link="" t="t">Expr</span>[<span data-unresolved-link="" t="t">T</span>], <span t="k"></span><span data-unresolved-link="" t="n">changed</span>: <span data-unresolved-link="" t="t">Boolean</span>)(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">F</span>], <span t="k"></span><span data-unresolved-link="" t="n">evidence$2</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">T</span>])<span t="k"> extends </span><a href="SyncCpsExpr.html" t="t">SyncCpsExpr</a>[<span t="t">F</span>, <span t="t">T</span>]</span><span class="signature-long"></span>
+  <span class="signature-short"><span class="modifiers"><span t="k">case </span></span><span class="kind"><span t="k">class </span></span><a href="GenericSyncCpsExpr.html" t="n" class="documentableName ">GenericSyncCpsExpr</a>[<span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">T</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">dm</span>: <span data-unresolved-link="" t="t">Expr</span>[<a href="../CpsMonad.html" t="t">CpsMonad</a>[<span data-unresolved-link="" t="t">F</span>]], <span t="k"></span><span data-unresolved-link="" t="n">prev</span>: <span data-unresolved-link="" t="t">Seq</span>[<a href="ExprTreeGen.html" t="t">ExprTreeGen</a>], <span t="k"></span><span data-unresolved-link="" t="n">lastExpr</span>: <span data-unresolved-link="" t="t">Expr</span>[<span data-unresolved-link="" t="t">T</span>], <span t="k"></span><span data-unresolved-link="" t="n">changed</span>: <span data-unresolved-link="" t="t">Boolean</span>)(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">F</span>], <span t="k"></span><span data-unresolved-link="" t="n">evidence$2</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">T</span>])<span t="k"> extends </span><a href="SyncCpsExpr.html" t="t">SyncCpsExpr</a>[<span t="t">F</span>, <span t="t">T</span>]</span><span class="signature-long"></span>
  </div>
 </div>
 <div class="cover">
@@ -19,7 +19,7 @@
     Source
    </dt>
    <dd class="body-medium">
-    <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L128" target="_blank">CpsExpr.scala</a>
+    <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L120" target="_blank">CpsExpr.scala</a>
    </dd>
    <dt class="body-small">
     Graph
@@ -116,7 +116,83 @@ node8 -> node3;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"><span t="k">override </span></span><span class="kind"><span t="k">def </span></span><a href="GenericSyncCpsExpr.html#append-fffffee6" t="n" class="documentableName ">append</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">e</span>: <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span t="t">A</span>])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
+            <span class="modifiers"><span t="k">override </span></span><span class="kind"><span t="k">def </span></span><a href="GenericSyncCpsExpr.html#append-fffffee6" t="n" class="documentableName ">append</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">e</span>: <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span t="t">A</span>])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Definition Classes
+              </dt>
+              <dd class="body-medium">
+               <div>
+                <a href="CpsExpr.html">CpsExpr</a>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Source
+              </dt>
+              <dd class="body-medium">
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L134" target="_blank">CpsExpr.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="flatMap-c3b" data-f-keywords="override">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">override </span></span><span class="kind"><span t="k">def </span></span><a href="GenericSyncCpsExpr.html#flatMap-c3b" t="n" class="documentableName ">flatMap</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">T</span><span t="k"> =&gt; </span><span t="t">F</span>[<span t="t">A</span>]])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Definition Classes
+              </dt>
+              <dd class="body-medium">
+               <div>
+                <a href="CpsExpr.html">CpsExpr</a>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Source
+              </dt>
+              <dd class="body-medium">
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L140" target="_blank">CpsExpr.scala</a>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="flatMapIgnore-c3b" data-f-keywords="override">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">override </span></span><span class="kind"><span t="k">def </span></span><a href="GenericSyncCpsExpr.html#flatMapIgnore-c3b" t="n" class="documentableName ">flatMapIgnore</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">t</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">F</span>[<span t="t">A</span>]])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
            </div>
           </div>
          </div>
@@ -142,82 +218,6 @@ node8 -> node3;
               </dt>
               <dd class="body-medium">
                <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L143" target="_blank">CpsExpr.scala</a>
-              </dd>
-             </dl>
-            </div>
-           </div>
-          </div>
-         </div>
-        </div>
-        <div class="documentableElement" id="flatMap-c3b" data-f-keywords="override">
-         <div class="documentableElement-expander">
-          <button class="icon-button ar show-content"></button>
-          <div class="header monospace mono-medium">
-           <div class="signature">
-            <span class="modifiers"><span t="k">override </span></span><span class="kind"><span t="k">def </span></span><a href="GenericSyncCpsExpr.html#flatMap-c3b" t="n" class="documentableName ">flatMap</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">T</span><span t="k"> =&gt; </span><span t="t">F</span>[<span t="t">A</span>]])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
-           </div>
-          </div>
-         </div>
-         <div class="docs">
-          <span class="modifiers"></span>
-          <div>
-           <div class="originInfo"></div>
-           <div class="memberDocumentation">
-            <div class="cover">
-             <div class="doc"></div>
-             <h2 class="h200">Attributes</h2>
-             <dl class="attributes attributes-small">
-              <dt class="body-small">
-               Definition Classes
-              </dt>
-              <dd class="body-medium">
-               <div>
-                <a href="CpsExpr.html">CpsExpr</a>
-               </div>
-              </dd>
-              <dt class="body-small">
-               Source
-              </dt>
-              <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L149" target="_blank">CpsExpr.scala</a>
-              </dd>
-             </dl>
-            </div>
-           </div>
-          </div>
-         </div>
-        </div>
-        <div class="documentableElement" id="flatMapIgnore-c3b" data-f-keywords="override">
-         <div class="documentableElement-expander">
-          <button class="icon-button ar show-content"></button>
-          <div class="header monospace mono-medium">
-           <div class="signature">
-            <span class="modifiers"><span t="k">override </span></span><span class="kind"><span t="k">def </span></span><a href="GenericSyncCpsExpr.html#flatMapIgnore-c3b" t="n" class="documentableName ">flatMapIgnore</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">t</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">F</span>[<span t="t">A</span>]])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
-           </div>
-          </div>
-         </div>
-         <div class="docs">
-          <span class="modifiers"></span>
-          <div>
-           <div class="originInfo"></div>
-           <div class="memberDocumentation">
-            <div class="cover">
-             <div class="doc"></div>
-             <h2 class="h200">Attributes</h2>
-             <dl class="attributes attributes-small">
-              <dt class="body-small">
-               Definition Classes
-              </dt>
-              <dd class="body-medium">
-               <div>
-                <a href="CpsExpr.html">CpsExpr</a>
-               </div>
-              </dd>
-              <dt class="body-small">
-               Source
-              </dt>
-              <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L153" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -255,7 +255,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L135" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L127" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -285,7 +285,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L137" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L129" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -298,7 +298,7 @@ node8 -> node3;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"><span t="k">override </span></span><span class="kind"><span t="k">def </span></span><a href="GenericSyncCpsExpr.html#map-c3b" t="n" class="documentableName ">map</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">T</span><span t="k"> =&gt; </span><span t="t">A</span>])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
+            <span class="modifiers"><span t="k">override </span></span><span class="kind"><span t="k">def </span></span><a href="GenericSyncCpsExpr.html#map-c3b" t="n" class="documentableName ">map</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">T</span><span t="k"> =&gt; </span><span t="t">A</span>])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
            </div>
           </div>
          </div>
@@ -323,7 +323,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L146" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L137" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -361,7 +361,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L139" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L131" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -399,7 +399,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L156" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L146" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -451,7 +451,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L108" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L103" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -495,7 +495,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L104" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L99" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -599,7 +599,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L111" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L106" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -635,7 +635,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L86" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L83" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -671,7 +671,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L39" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L38" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>
@@ -691,7 +691,7 @@ node8 -> node3;
          <div class="documentableElement-expander">
           <button class="icon-button ar show-content"></button>
           <div>
-           <span class="annotations monospace"><span data-unresolved-link="" t="t">@Deprecated</span> </span>
+           <span class="annotations monospace"><span data-unresolved-link="" t="t">@Deprecated</span>(since = _, forRemoval = _) </span>
           </div>
           <div class="header monospace mono-medium">
            <div class="signature">
@@ -724,7 +724,7 @@ node8 -> node3;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L84" target="_blank">CpsExpr.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/macros/CpsExpr.scala#L81" target="_blank">CpsExpr.scala</a>
               </dd>
              </dl>
             </div>

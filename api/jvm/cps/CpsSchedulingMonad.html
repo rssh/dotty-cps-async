@@ -18,11 +18,11 @@
   <p>Monad, where we can spawn some event and be sure that one be evaluated, event if we drop result.</p>
   <p>Interoperability with Future: allows</p>
   <div class="snippet mono-small-block">
-   <pre><code class="language-"><span line-number="1" class=""><span class="tooltip-container"></span><span class="hideable">  </span>async[Future]{
-</span><span line-number="2" class=""><span class="tooltip-container"></span><span class="hideable">  </span>   ...
-</span><span line-number="3" class=""><span class="tooltip-container"></span><span class="hideable">  </span>   await[F](..)
-</span><span line-number="4" class=""><span class="tooltip-container"></span><span class="hideable">  </span>   ...
-</span><span line-number="5" class=""><span class="tooltip-container"></span><span class="hideable">  </span>}
+   <pre><code class="language-"><span line-number="1" class=""><span class="tooltip-container"></span><span class="hideable">   </span>async[Future]{
+</span><span line-number="2" class=""><span class="tooltip-container"></span><span class="hideable">   </span>   ...
+</span><span line-number="3" class=""><span class="tooltip-container"></span><span class="hideable">   </span>   await[F](..)
+</span><span line-number="4" class=""><span class="tooltip-container"></span><span class="hideable">   </span>   ...
+</span><span line-number="5" class=""><span class="tooltip-container"></span><span class="hideable">   </span>}
 </span></code></pre>
    <div class="buttons"></div>
   </div>
@@ -40,7 +40,7 @@
     Source
    </dt>
    <dd class="body-medium">
-    <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L484" target="_blank">CpsMonad.scala</a>
+    <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L399" target="_blank">CpsMonad.scala</a>
    </dd>
    <dt class="body-small">
     Graph
@@ -177,15 +177,11 @@ node12 -> node0;
           <div>
            <div class="originInfo"></div>
            <div class="memberDocumentation">
-            <div class="documentableBrief doc">
-             <p>In eager monad, spawned process can be represented by F[_]</p>
-            </div>
             <div class="cover">
              <div class="doc">
               <ul>
-               <li></li>
+               <li>In eager monad, spawned process can be represented by F[_]</li>
               </ul>
-              <p>In eager monad, spawned process can be represented by F[_]</p>
              </div>
              <h2 class="h200">Attributes</h2>
              <dl class="attributes attributes-small">
@@ -193,7 +189,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L504" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L413" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -237,7 +233,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L22" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L19" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -281,7 +277,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L169" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L141" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -331,7 +327,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L498" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L409" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -382,7 +378,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L524" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L429" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -417,7 +413,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L515" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L422" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -452,7 +448,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L509" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L417" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -487,7 +483,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L491" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L404" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -530,7 +526,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L521" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L426" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -579,7 +575,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L431" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L356" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -615,7 +611,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L67" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L55" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -656,7 +652,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L296" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L251" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -697,7 +693,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L184" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L153" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -738,7 +734,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L191" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L158" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -779,7 +775,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L198" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L163" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -820,7 +816,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L286" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L242" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -861,7 +857,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L264" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L223" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -902,7 +898,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L275" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L233" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -943,7 +939,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L213" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L177" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -985,7 +981,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L232" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L194" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1026,7 +1022,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L238" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L199" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1062,7 +1058,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L147" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L122" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1098,7 +1094,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L118" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L93" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1147,7 +1143,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L327" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L277" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1188,7 +1184,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L46" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L39" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1229,7 +1225,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L174" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L145" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1270,7 +1266,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L41" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L35" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1311,7 +1307,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L179" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L149" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1352,7 +1348,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L36" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L31" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1394,7 +1390,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L31" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L27" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
@@ -1435,7 +1431,7 @@ node12 -> node0;
                Source
               </dt>
               <dd class="body-medium">
-               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L426" target="_blank">CpsMonad.scala</a>
+               <a href="https://github.com/rssh/dotty-cps-async/blob/master/shared/src/main/scala/cps/CpsMonad.scala#L352" target="_blank">CpsMonad.scala</a>
               </dd>
              </dl>
             </div>
