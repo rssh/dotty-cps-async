@@ -528,7 +528,7 @@ node6 -> node4;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">type </span></span><a href="AsyncListEmitAbsorber.html#ConsumerCallback-0" t="n" class="documentableName ">ConsumerCallback</a> = <span data-unresolved-link="" t="t">Try</span>[<a href="BaseUnfoldCpsAsyncEmitAbsorber$SupplyEventRecord.html" t="t">SupplyEventRecord</a>]<span t="k"> =&gt; </span><span data-unresolved-link="" t="t">Unit</span>
+            <span class="modifiers"></span><span class="kind"><span t="k">type </span></span><a href="AsyncListEmitAbsorber.html#ConsumerCallback-0" t="n" class="documentableName ">ConsumerCallback</a> = (<span data-unresolved-link="" t="t">Try</span>[<a href="BaseUnfoldCpsAsyncEmitAbsorber$SupplyEventRecord.html" t="t">SupplyEventRecord</a>])<span t="k"> =&gt; </span><span data-unresolved-link="" t="t">Unit</span>
            </div>
           </div>
          </div>
@@ -755,7 +755,7 @@ node6 -> node4;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AsyncListEmitAbsorber.html#eval-c24" t="n" class="documentableName ">eval</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span t="t">C</span><span t="k"> =&gt; </span><a href="CpsAsyncEmitter.html" t="t">CpsAsyncEmitter</a>[<a href="CpsAsyncEmitAbsorber4.html#Monad-0" t="t">Monad</a>, <a href="AsyncListEmitAbsorber.html#Element-0" t="t">Element</a>]<span t="k"> =&gt; </span><span t="t">F</span>[<span data-unresolved-link="" t="t">Unit</span>]): <a href="AsyncList.html" t="t">AsyncList</a>[<span t="t">F</span>, <span t="t">T</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AsyncListEmitAbsorber.html#eval-c24" t="n" class="documentableName ">eval</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span t="t">C</span><span t="k"> =&gt; </span>(<a href="CpsAsyncEmitter.html" t="t">CpsAsyncEmitter</a>[<a href="CpsAsyncEmitAbsorber4.html#Monad-0" t="t">Monad</a>, <a href="AsyncListEmitAbsorber.html#Element-0" t="t">Element</a>])<span t="k"> =&gt; </span><span t="t">F</span>[<span data-unresolved-link="" t="t">Unit</span>]): <a href="AsyncList.html" t="t">AsyncList</a>[<span t="t">F</span>, <span t="t">T</span>]
            </div>
           </div>
          </div>
@@ -791,7 +791,7 @@ node6 -> node4;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AsyncListEmitAbsorber.html#evalAsync-c24" t="n" class="documentableName ">evalAsync</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span t="t">C</span><span t="k"> =&gt; </span><a href="CpsAsyncEmitter.html" t="t">CpsAsyncEmitter</a>[<span t="t">F</span>, <span t="t">T</span>]<span t="k"> =&gt; </span><span t="t">F</span>[<span data-unresolved-link="" t="t">Unit</span>]): <span t="t">F</span>[<a href="AsyncList.html" t="t">AsyncList</a>[<span t="t">F</span>, <span t="t">T</span>]]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AsyncListEmitAbsorber.html#evalAsync-c24" t="n" class="documentableName ">evalAsync</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span t="t">C</span><span t="k"> =&gt; </span>(<a href="CpsAsyncEmitter.html" t="t">CpsAsyncEmitter</a>[<span t="t">F</span>, <span t="t">T</span>])<span t="k"> =&gt; </span><span t="t">F</span>[<span data-unresolved-link="" t="t">Unit</span>]): <span t="t">F</span>[<a href="AsyncList.html" t="t">AsyncList</a>[<span t="t">F</span>, <span t="t">T</span>]]
            </div>
           </div>
          </div>
@@ -827,7 +827,7 @@ node6 -> node4;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AsyncListEmitAbsorber.html#evalAsyncInternal-c24" t="n" class="documentableName ">evalAsyncInternal</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <a href="CpsAsyncEmitter.html" t="t">CpsAsyncEmitter</a>[<span t="t">F</span>, <span t="t">T</span>]<span t="k"> =&gt; </span><span t="t">F</span>[<span data-unresolved-link="" t="t">Unit</span>]): <a href="AsyncList.html" t="t">AsyncList</a>[<span t="t">F</span>, <span t="t">T</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="AsyncListEmitAbsorber.html#evalAsyncInternal-c24" t="n" class="documentableName ">evalAsyncInternal</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: (<a href="CpsAsyncEmitter.html" t="t">CpsAsyncEmitter</a>[<span t="t">F</span>, <span t="t">T</span>])<span t="k"> =&gt; </span><span t="t">F</span>[<span data-unresolved-link="" t="t">Unit</span>]): <a href="AsyncList.html" t="t">AsyncList</a>[<span t="t">F</span>, <span t="t">T</span>]
            </div>
           </div>
          </div>

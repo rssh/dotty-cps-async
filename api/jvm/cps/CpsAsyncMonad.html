@@ -302,7 +302,7 @@ node20 -> node18;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsAsyncMonad.html#adoptCallbackStyle-5d3" t="n" class="documentableName ">adoptCallbackStyle</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">source</span>: (<span data-unresolved-link="" t="t">Try</span>[<span t="t">A</span>]<span t="k"> =&gt; </span><span data-unresolved-link="" t="t">Unit</span>)<span t="k"> =&gt; </span><span data-unresolved-link="" t="t">Unit</span>): <span t="t">F</span>[<span data-unresolved-link="" t="t">A</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsAsyncMonad.html#adoptCallbackStyle-5d3" t="n" class="documentableName ">adoptCallbackStyle</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">source</span>: ((<span data-unresolved-link="" t="t">Try</span>[<span t="t">A</span>])<span t="k"> =&gt; </span><span data-unresolved-link="" t="t">Unit</span>)<span t="k"> =&gt; </span><span data-unresolved-link="" t="t">Unit</span>): <span t="t">F</span>[<span data-unresolved-link="" t="t">A</span>]
            </div>
           </div>
          </div>
@@ -463,7 +463,7 @@ node20 -> node18;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsAsyncMonad.html#mapTry-fffffdbf" t="n" class="documentableName ">mapTry</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>, <span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">fa</span>: <span t="t">F</span>[<span t="t">A</span>])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Try</span>[<span t="t">A</span>]<span t="k"> =&gt; </span><span t="t">B</span>): <span t="t">F</span>[<span data-unresolved-link="" t="t">B</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsAsyncMonad.html#mapTry-fffffdbf" t="n" class="documentableName ">mapTry</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>, <span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">fa</span>: <span t="t">F</span>[<span t="t">A</span>])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: (<span data-unresolved-link="" t="t">Try</span>[<span t="t">A</span>])<span t="k"> =&gt; </span><span t="t">B</span>): <span t="t">F</span>[<span data-unresolved-link="" t="t">B</span>]
            </div>
           </div>
          </div>
@@ -504,7 +504,7 @@ node20 -> node18;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsAsyncMonad.html#mapTryAsync-fffffdbf" t="n" class="documentableName ">mapTryAsync</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>, <span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">fa</span>: <span t="t">F</span>[<span t="t">A</span>])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Try</span>[<span t="t">A</span>]<span t="k"> =&gt; </span><span t="t">F</span>[<span t="t">B</span>]): <span t="t">F</span>[<span data-unresolved-link="" t="t">B</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsAsyncMonad.html#mapTryAsync-fffffdbf" t="n" class="documentableName ">mapTryAsync</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>, <span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">fa</span>: <span t="t">F</span>[<span t="t">A</span>])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: (<span data-unresolved-link="" t="t">Try</span>[<span t="t">A</span>])<span t="k"> =&gt; </span><span t="t">F</span>[<span t="t">B</span>]): <span t="t">F</span>[<span data-unresolved-link="" t="t">B</span>]
            </div>
           </div>
          </div>
@@ -1077,7 +1077,7 @@ node20 -> node18;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsAsyncMonad.html#flatMapTry-fffffdbf" t="n" class="documentableName ">flatMapTry</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>, <span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">fa</span>: <span t="t">F</span>[<span t="t">A</span>])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Try</span>[<span t="t">A</span>]<span t="k"> =&gt; </span><span t="t">F</span>[<span t="t">B</span>]): <span t="t">F</span>[<span data-unresolved-link="" t="t">B</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsAsyncMonad.html#flatMapTry-fffffdbf" t="n" class="documentableName ">flatMapTry</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>, <span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">fa</span>: <span t="t">F</span>[<span t="t">A</span>])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: (<span data-unresolved-link="" t="t">Try</span>[<span t="t">A</span>])<span t="k"> =&gt; </span><span t="t">F</span>[<span t="t">B</span>]): <span t="t">F</span>[<span data-unresolved-link="" t="t">B</span>]
            </div>
           </div>
          </div>

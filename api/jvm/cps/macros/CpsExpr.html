@@ -10,7 +10,7 @@
 </div>
 <div class="main-signature mono-small-block">
  <div class="signature">
-  <span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="CpsExpr.html" t="n" class="documentableName ">CpsExpr</a>[<span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">T</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">monad</span>: <span data-unresolved-link="" t="t">Expr</span>[<a href="../CpsMonad.html" t="t">CpsMonad</a>[<span data-unresolved-link="" t="t">F</span>]], <span t="k"></span><span data-unresolved-link="" t="n">prev</span>: <span data-unresolved-link="" t="t">Seq</span>[<a href="ExprTreeGen.html" t="t">ExprTreeGen</a>])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">F</span>], <span t="k"></span><span data-unresolved-link="" t="n">evidence$2</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">T</span>])
+  <span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="CpsExpr.html" t="n" class="documentableName ">CpsExpr</a>[<span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>], <span t="k"></span><span data-unresolved-link="" t="t">T</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">monad</span>: <span data-unresolved-link="" t="t">Expr</span>[<a href="../CpsMonad.html" t="t">CpsMonad</a>[<span data-unresolved-link="" t="t">F</span>]], <span t="k"></span><span data-unresolved-link="" t="n">prev</span>: <span data-unresolved-link="" t="t">Seq</span>[<a href="ExprTreeGen.html" t="t">ExprTreeGen</a>])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">F</span>], <span t="k"></span><span data-unresolved-link="" t="n">evidence$2</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">T</span>])
  </div>
 </div>
 <div class="cover">
@@ -153,7 +153,7 @@ node13 -> node10;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsExpr.html#append-fffffee6" t="n" class="documentableName ">append</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">chunk</span>: <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span t="t">A</span>])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsExpr.html#append-fffffee6" t="n" class="documentableName ">append</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">chunk</span>: <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span t="t">A</span>])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
            </div>
           </div>
          </div>
@@ -341,7 +341,7 @@ node13 -> node10;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsExpr.html#flatMap-c3b" t="n" class="documentableName ">flatMap</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">T</span><span t="k"> =&gt; </span><span t="t">F</span>[<span t="t">A</span>]])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsExpr.html#flatMap-c3b" t="n" class="documentableName ">flatMap</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">T</span><span t="k"> =&gt; </span><span t="t">F</span>[<span t="t">A</span>]])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
            </div>
           </div>
          </div>
@@ -371,7 +371,7 @@ node13 -> node10;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsExpr.html#flatMapIgnore-c3b" t="n" class="documentableName ">flatMapIgnore</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">t</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">F</span>[<span t="t">A</span>]])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsExpr.html#flatMapIgnore-c3b" t="n" class="documentableName ">flatMapIgnore</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">t</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">F</span>[<span t="t">A</span>]])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
            </div>
           </div>
          </div>
@@ -401,7 +401,7 @@ node13 -> node10;
           <button class="icon-button ar show-content"></button>
           <div class="header monospace mono-medium">
            <div class="signature">
-            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsExpr.html#map-c3b" t="n" class="documentableName ">map</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">T</span><span t="k"> =&gt; </span><span t="t">A</span>])(<span t="k">using </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="CpsExpr.html#map-c3b" t="n" class="documentableName ">map</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span> : <span data-unresolved-link="" t="t">Type</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">f</span>: <span data-unresolved-link="" t="t">Expr</span>[<span t="t">T</span><span t="k"> =&gt; </span><span t="t">A</span>])(<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">evidence$1</span>: <span data-unresolved-link="" t="t">Type</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="t">Quotes</span>): <a href="CpsExpr.html" t="t">CpsExpr</a>[<span t="t">F</span>, <span data-unresolved-link="" t="t">A</span>]
            </div>
           </div>
          </div>
@@ -528,7 +528,7 @@ node13 -> node10;
          <div class="documentableElement-expander">
           <button class="icon-button ar show-content"></button>
           <div>
-           <span class="annotations monospace"><span data-unresolved-link="" t="t">@Deprecated</span>(since = _, forRemoval = _) </span>
+           <span class="annotations monospace"><span data-unresolved-link="" t="t">@Deprecated</span> </span>
           </div>
           <div class="header monospace mono-medium">
            <div class="signature">
