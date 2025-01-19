@@ -111,7 +111,9 @@ class PhaseCps(settings: CpsPluginSettings,
 
   override def prepareForApply(tree: tpd.Apply)(using Context): Context = {
     if (summon[Context].phase != this) {
-      println(s"PhaseCps::prepareForApply, invalid phase = ${summon[Context].phase}")
+      if (debug || settings.debugLevel > 0) {
+        println(s"PhaseCps::prepareForApply, invalid phase = ${summon[Context].phase}")
+      }
       summon[Context].withPhase(this)
     } else {
       summon[Context]
