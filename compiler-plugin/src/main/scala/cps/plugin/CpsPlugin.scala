@@ -1,6 +1,5 @@
-/**
- * Cps compiler plugin.
- **/
+/** Cps compiler plugin.
+  */
 package cps.plugin
 
 import dotty.tools.dotc.*
@@ -8,7 +7,7 @@ import dotty.tools.dotc.plugins.*
 
 class CpsPlugin extends StandardPlugin {
 
-  override val name        = "rssh.cps"
+  override val name = "rssh.cps"
   override val description = "cps-transform plugin"
 
   //
@@ -17,19 +16,18 @@ class CpsPlugin extends StandardPlugin {
   //     def c() { .. }
   //  }
   //
-  
 
   override def init(options: List[String]): List[PluginPhase] = {
-     val settings = parseOptions(options)
-     val selectedNodes = new SelectedNodes()
-     List(
-       new PhaseSelectAndGenerateShiftedMethods(selectedNodes),
-       new PhaseCps(settings,selectedNodes),
-       new PhaseChangeSymbolsAndRemoveScaffolding(selectedNodes)
-     )
+    val settings = parseOptions(options)
+    val selectedNodes = new SelectedNodes()
+    List(
+      new PhaseSelectAndGenerateShiftedMethods(selectedNodes),
+      new PhaseCps(settings, selectedNodes),
+      new PhaseChangeSymbolsAndRemoveScaffolding(selectedNodes)
+    )
   }
 
-  private def parseOptions(options:List[String]): CpsPluginSettings = {
+  private def parseOptions(options: List[String]): CpsPluginSettings = {
     val settings = new CpsPluginSettings()
     for (option <- options) {
       if (option.startsWith("debugLevel=")) {
@@ -38,7 +36,7 @@ class CpsPlugin extends StandardPlugin {
       } else if (option == "printTree") {
         settings.printTree = true
       } else if (option == "printCode") {
-        settings.printCode = true  
+        settings.printCode = true
       } else if (option == "useLoom") {
         settings.useLoom = true
       } else {

@@ -17,16 +17,14 @@ import cps.{CpsMonadContext, CpsMonadConversion}
 import inlines.Inlines
 import transform.Inlining
 
-
 object CpsDirectHelper {
 
-  /**
-   * generate new CpsDirect[tf](fctx)  (positioned at posTerm)
-   * @param tf - type of wrapper monad 
-   * @param fctx - current monnad context
-   * @param posTerm - position of new term
-   * @return CpsDirect[tf](fctx)
-   */
+  /** generate new CpsDirect[tf](fctx)  (positioned at posTerm)
+    * @param tf - type of wrapper monad
+    * @param fctx - current monnad context
+    * @param posTerm - position of new term
+    * @return CpsDirect[tf](fctx)
+    */
   def genCpsDirectDefaultConstructor(tf: TypeTree, fctx: Tree, posSpan: Span)(using Context): Tree =
     val cpsDirectMethod = Symbols.requiredMethodRef("cps.CpsDirect.apply")
     Apply(
@@ -34,16 +32,14 @@ object CpsDirectHelper {
       List(fctx)
     ).withSpan(posSpan)
 
-
-  /**
-   * generate fgincl.apply(fctx)(lambda)
-   */
-  def genConventionCall(fctx:Tree, fgincl: Tree, originType:Type, lambda: Tree, span: Span)(using Context): Tree = {
-    //trait CpsMonadContextInclusion[F[_],G[_]] {
+  /** generate fgincl.apply(fctx)(lambda)
+    */
+  def genConventionCall(fctx: Tree, fgincl: Tree, originType: Type, lambda: Tree, span: Span)(using Context): Tree = {
+    // trait CpsMonadContextInclusion[F[_],G[_]] {
     //
     //  def apply[T](fctx: CpsTryMonadContext[F])(fun: CpsTryMonadContext[G] => G[T]):F[T]
     //
-    //}
+    // }
     Apply(
       Apply(
         TypeApply(Select(fgincl, "apply".toTermName), List(TypeTree(originType.widen))),
@@ -54,57 +50,58 @@ object CpsDirectHelper {
 
   }
 
-  
-  def substituteCpsDirectArgInCall(applyOrTypeApply: Tree, originCPsDirectArg: ByInclusionCallArgs, nCpsDirectArg: Tree)(using Context): Option[Tree] = {
+  def substituteCpsDirectArgInCall(applyOrTypeApply: Tree, originCPsDirectArg: ByInclusionCallArgs, nCpsDirectArg: Tree)(using
+      Context
+  ): Option[Tree] = {
     applyOrTypeApply match
       case app: Apply =>
         CpsDirectHelper.substituteCpsDirectArgInApply(app, originCPsDirectArg, nCpsDirectArg)
-      case ta@TypeApply(fn, targs) =>
+      case ta @ TypeApply(fn, targs) =>
         substituteCpsDirectArgInCall(fn, originCPsDirectArg, nCpsDirectArg).map(x => TypeApply(x, targs).withSpan(ta.span))
       case other =>
         None
   }
 
-  def substituteCpsDirectArgInApply(applyTerm: Apply, originCPsDirectArg: ByInclusionCallArgs, nCpsDirectArg: Tree)(using Context): Option[Apply] = {
+  def substituteCpsDirectArgInApply(applyTerm: Apply, originCPsDirectArg: ByInclusionCallArgs, nCpsDirectArg: Tree)(using
+      Context
+  ): Option[Apply] = {
     var changed = false
     val newArgs = applyTerm.args.map {
-        case ByInclusionCall(tf,tg,fctx,fginc) =>
-            if (!changed) then
-              changed = true
-              nCpsDirectArg
-            else
-              throw CpsTransformException("More than one CpsDirect argument in call", applyTerm.srcPos)
-        case arg =>
-          arg
+      case ByInclusionCall(tf, tg, fctx, fginc) =>
+        if (!changed) then
+          changed = true
+          nCpsDirectArg
+        else throw CpsTransformException("More than one CpsDirect argument in call", applyTerm.srcPos)
+      case arg =>
+        arg
     }
-    if (changed) then
-      Some(Apply(applyTerm.fun, newArgs).withSpan(applyTerm.span))
+    if (changed) then Some(Apply(applyTerm.fun, newArgs).withSpan(applyTerm.span))
     else
-      substituteCpsDirectArgInCall(applyTerm.fun, originCPsDirectArg, nCpsDirectArg).map{
-        newFun => Apply(newFun, newArgs).withSpan(applyTerm.span)
+      substituteCpsDirectArgInCall(applyTerm.fun, originCPsDirectArg, nCpsDirectArg).map { newFun =>
+        Apply(newFun, newArgs).withSpan(applyTerm.span)
       }
   }
-  
+
   case class ByInclusionCallArgs(tf: Tree, tg: Tree, fctx: Tree, fginc: Tree)
 
   object ByInclusionCall {
     def unapply(tree: Tree)(using Context): Option[(Tree, Tree, Tree, Tree)] =
       tree match
         case Apply(TypeApply(fn, List(tf, tg)), List(fctx, fgincl))
-          if (fn.symbol == Symbols.requiredMethod("cps.CpsDirect.byInclusion")) =>
-            Some((tf, tg, fctx, fgincl))
+            if (fn.symbol == Symbols.requiredMethod("cps.CpsDirect.byInclusion")) =>
+          Some((tf, tg, fctx, fgincl))
         case _ =>
-            None
+          None
   }
 
   object NewCall {
     def unapply(tree: Tree)(using Context): Option[(Tree)] =
       tree match
         case Apply(Select(New(cnt), cnInit), List(fctx))
-          if (CpsTransformHelper.isCpsDirectType(cnt.tpe)) && cnInit == "<init>".toTermName =>
-            Some((fctx))
+            if (CpsTransformHelper.isCpsDirectType(cnt.tpe)) && cnInit == "<init>".toTermName =>
+          Some((fctx))
         case _ =>
-            None
+          None
   }
 
 }

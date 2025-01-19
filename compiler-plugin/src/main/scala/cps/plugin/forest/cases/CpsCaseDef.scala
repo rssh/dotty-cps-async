@@ -11,14 +11,16 @@ import core.Symbols.*
 import cps.plugin.*
 import cps.plugin.forest.*
 
-
 case class CpsCaseDef(origin: CaseDef, cpsBody: CpsTree) {
 
   def transform(targetKind: AsyncKind, targetType: Type, nesting: Int)(using Context, CpsTopLevelContext): CaseDef =
     CaseDef(origin.pat, origin.guard, transformBody(targetKind, targetType, nesting))
 
   def transformBody(targetKind: AsyncKind, originTargetType: Type, nesting: Int)(using Context, CpsTopLevelContext): Tree = {
-    Log.trace(s"CpsCaseDef:transformBody, targetKind=${targetKind} cpsBody=${cpsBody.show}, cpsBody.kind=${cpsBody.asyncKind}", nesting)
+    Log.trace(
+      s"CpsCaseDef:transformBody, targetKind=${targetKind} cpsBody=${cpsBody.show}, cpsBody.kind=${cpsBody.asyncKind}",
+      nesting
+    )
     val retval = targetKind match
       case AsyncKind.Sync =>
         cpsBody.castOriginType(originTargetType).unpure.get
@@ -27,10 +29,8 @@ case class CpsCaseDef(origin: CaseDef, cpsBody: CpsTree) {
           case AsyncKind.Sync =>
             cpsBody.castOriginType(originTargetType).transformed
           case AsyncKind.Async(internalKind2) =>
-            if (internalKind == AsyncKind.Sync) then
-              cpsBody.castOriginType(originTargetType).transformed
-            else
-              throw CpsTransformException(s"complex shape is not supported.", origin.srcPos)
+            if (internalKind == AsyncKind.Sync) then cpsBody.castOriginType(originTargetType).transformed
+            else throw CpsTransformException(s"complex shape is not supported.", origin.srcPos)
           case AsyncKind.AsyncLambda(_) =>
             throw CpsTransformException("can't convert AsyncLambda to plain async case", origin.srcPos)
       case AsyncKind.AsyncLambda(internalKind1) =>
@@ -41,14 +41,14 @@ case class CpsCaseDef(origin: CaseDef, cpsBody: CpsTree) {
           case AsyncKind.Async(internalKind2) =>
             throw CpsTransformException(s"can't convert asysync case to asyncLambda", origin.srcPos)
           case AsyncKind.AsyncLambda(internalKind2) =>
-            if (internalKind1 == internalKind2) then
-              cpsBody.castOriginType(originTargetType).transformed
+            if (internalKind1 == internalKind2) then cpsBody.castOriginType(originTargetType).transformed
             else
-              throw CpsTransformException(s"can't convert asyncLambda case to asyncLambda with different internal kind", origin.srcPos)
+              throw CpsTransformException(
+                s"can't convert asyncLambda case to asyncLambda with different internal kind",
+                origin.srcPos
+              )
     Log.trace(s"CpsCaseDef:transformBody, retval=${retval.show}", nesting)
     retval
   }
 
-
 }
-

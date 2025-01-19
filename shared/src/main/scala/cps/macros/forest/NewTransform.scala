@@ -7,15 +7,10 @@ import scala.quoted._
 import cps._
 import cps.macros._
 
-
-class NewTransform[F[_]:Type,T:Type,C<:CpsMonadContext[F]:Type](cpsCtx: TransformationContext[F,T,C]):
+class NewTransform[F[_]: Type, T: Type, C <: CpsMonadContext[F]: Type](cpsCtx: TransformationContext[F, T, C]):
 
   import cpsCtx._
 
-  // case New(tp) 
-  def run(using Quotes)(tp: quotes.reflect.TypeTree): CpsExpr[F,T] =
-     CpsExpr.sync(monad, patternCode, false)
-
-  
-
-
+  // case New(tp)
+  def run(using Quotes)(tp: quotes.reflect.TypeTree): CpsExpr[F, T] =
+    CpsExpr.sync(monad, patternCode, false)

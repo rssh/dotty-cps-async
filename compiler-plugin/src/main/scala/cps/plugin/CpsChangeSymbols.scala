@@ -18,19 +18,16 @@ import dotty.tools.dotc.transform.{Erasure, PureStats, VCElideAllocations}
 //import dotty.tools.dotc.transform.TypeUtils.*
 import dotty.tools.dotc.plugins.PluginPhase
 
-
-
 trait CpsChangeSymbols {
 
   this: PhaseChangeSymbolsAndRemoveScaffolding =>
 
-  /**
-   * Change symbols of direct context functions.
-   *
-   *  F: (args, include given CpsDirect[F]):T
-   *  =>
-   *  F: (args, include given CpsDirect[F]): F[T]
-   */
+  /** Change symbols of direct context functions.
+    *
+    *  F: (args, include given CpsDirect[F]):T
+    *  =>
+    *  F: (args, include given CpsDirect[F]): F[T]
+    */
   override def transformSym(sym: SymDenotations.SymDenotation)(using Context): SymDenotations.SymDenotation = {
     selectedNodes.getDefDefRecord(sym.symbol) match
       case Some(selectRecord) =>
@@ -47,36 +44,40 @@ trait CpsChangeSymbols {
           val retval = sym.copySymDenotation(info = ntp)
           retval
         catch
-          case ex:CpsTransformException =>
+          case ex: CpsTransformException =>
             ex.printStackTrace()
             report.error(ex.message, ex.pos)
             throw ex
-            //sym
+            // sym
       case None =>
-            sym.info match
-              case mt0: MethodOrPoly if (!sym.isAnonymousFunction && !sym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) =>
-                val timeTravelContext = summon[Context].fresh.setPhase(firstTransformPhase)
-                val cpsDirectSym = CpsTransformHelper.cpsDirectAliasSymbol(using timeTravelContext)
-                val oldSym = sym.current(using timeTravelContext)
-                oldSym.info match
-                  case mtf: MethodOrPoly =>
-                    findCpsDirectContextInParamss(oldSym.symbol, mtf, timeTravelContext) match
-                      case Some(contextParamType) =>
-                        val monadType = CpsTransformHelper.extractMonadType(contextParamType, cpsDirectSym, oldSym.symbol.srcPos)(using timeTravelContext)
-                        val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType, sym.symbol.srcPos)
-                        sym.copySymDenotation(info = ntp)
-                      case None =>
-                        sym
-                  case _ =>
+        sym.info match
+          case mt0: MethodOrPoly
+              if (!sym.isAnonymousFunction && !sym.hasAnnotation(Symbols.requiredClass("cps.plugin.annotation.CpsNotChange"))) =>
+            val timeTravelContext = summon[Context].fresh.setPhase(firstTransformPhase)
+            val cpsDirectSym = CpsTransformHelper.cpsDirectAliasSymbol(using timeTravelContext)
+            val oldSym = sym.current(using timeTravelContext)
+            oldSym.info match
+              case mtf: MethodOrPoly =>
+                findCpsDirectContextInParamss(oldSym.symbol, mtf, timeTravelContext) match
+                  case Some(contextParamType) =>
+                    val monadType = CpsTransformHelper.extractMonadType(contextParamType, cpsDirectSym, oldSym.symbol.srcPos)(using
+                      timeTravelContext
+                    )
+                    val ntp = CpsTransformHelper.cpsTransformedErasedType(sym.info, monadType, sym.symbol.srcPos)
+                    sym.copySymDenotation(info = ntp)
+                  case None =>
                     sym
               case _ =>
                 sym
+          case _ =>
+            sym
   }
 
-
-
-
-  def findCpsDirectContextInParamss(sym: Symbol, mtf: MethodOrPoly, timeTravelContext: Context)(using ctx:Context): Option[Type] = {
+  def findCpsDirectContextInParamss(
+      sym: Symbol,
+      mtf: MethodOrPoly,
+      timeTravelContext: Context
+  )(using ctx: Context): Option[Type] = {
     mtf match
       case pt: PolyType =>
         pt.resType match
@@ -85,11 +86,9 @@ trait CpsChangeSymbols {
           case _ =>
             None
       case mt: MethodType =>
-        val firstFound:Option[Type] =
-          if (!mt.isContextualMethod && !mt.isImplicitMethod) then
-            None
-          else
-            mt.paramInfos.find(t => CpsTransformHelper.isCpsDirectType(t, debug = true)(using timeTravelContext))
+        val firstFound: Option[Type] =
+          if (!mt.isContextualMethod && !mt.isImplicitMethod) then None
+          else mt.paramInfos.find(t => CpsTransformHelper.isCpsDirectType(t, debug = true)(using timeTravelContext))
         val paramFound = firstFound.orElse {
           mtf.resType match
             case mt: MethodOrPoly =>
@@ -97,9 +96,6 @@ trait CpsChangeSymbols {
             case _ => None
         }
         paramFound
-   }
-
+  }
 
 }
-
-

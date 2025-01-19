@@ -7,15 +7,12 @@ package cps
 
 import cps.stream.*
 
-
-/**
- * Generator syntax.
- * usage:
- * ```
- * val s = asyncStream[fs.Stream[IO,Int]] { out =>
- *    for(i <- 1 to N) out.emit(i)
- * }
- * ```
- **/   
+/** Generator syntax. usage:
+  * ```
+  * val s = asyncStream[fs.Stream[IO,Int]] { out =>
+  *    for(i <- 1 to N) out.emit(i)
+  * }
+  * ```
+  */
 transparent inline def asyncStream[R](using a: CpsAsyncEmitAbsorber[R]) =
-   AsyncStreamHelper(a)
+  AsyncStreamHelper(a)

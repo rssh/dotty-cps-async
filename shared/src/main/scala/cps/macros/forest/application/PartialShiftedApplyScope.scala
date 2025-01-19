@@ -20,28 +20,22 @@ enum ApplicationShiftType:
   case CPS_AWAIT
   case CPS_DEFERR_TO_PLUGIN
 
-trait  PartialShiftedApplyScope[F[_], CT, CC<:CpsMonadContext[F]]:
+trait PartialShiftedApplyScope[F[_], CT, CC <: CpsMonadContext[F]]:
 
-  thisTreeTransform: TreeTransformScope[F,CT, CC] =>
+  thisTreeTransform: TreeTransformScope[F, CT, CC] =>
 
   import qctx.reflect._
 
-
-  /**
-  * Application with one list of params.
-  * 
-  */
+  /** Application with one list of params.
+    */
   case class PartialShiftedApply(
-    shiftType: ApplicationShiftType,
+      shiftType: ApplicationShiftType,
 
-    /**
-     * function, which will be applied
-     * argument is runtimeAwait, which is needed when type of shift is CPS_AWAIT.
-     * when type of shift is CPS_ONLY or SPS_DEFERR_TO_PLUGIN, runtimeAwait is not used (and can be emoty term)
-     */
-    shiftedDelayed: Term => Term,
-
-    ):
+      /** function, which will be applied argument is runtimeAwait, which is needed when type of shift is CPS_AWAIT. when type of
+        * shift is CPS_ONLY or SPS_DEFERR_TO_PLUGIN, runtimeAwait is not used (and can be emoty term)
+        */
+      shiftedDelayed: Term => Term
+  ):
 
     def withTailArgs(argTails: List[Seq[ApplyArgRecord]], withAsync: Boolean): Term => Term =
       runtimeAwait => {
@@ -52,6 +46,5 @@ trait  PartialShiftedApplyScope[F[_], CT, CC<:CpsMonadContext[F]]:
             argTails.map(_.map(_.withRuntimeAwait(runtimeAwait).identArg(withAsync)).toList)
           case ApplicationShiftType.CPS_DEFERR_TO_PLUGIN =>
             argTails.map(_.map(_.term).toList).toList
-          shiftedDelayed(runtimeAwait).appliedToArgss(shiftedTails)
+        shiftedDelayed(runtimeAwait).appliedToArgss(shiftedTails)
       }
-

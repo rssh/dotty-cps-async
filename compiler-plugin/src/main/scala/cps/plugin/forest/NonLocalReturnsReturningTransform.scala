@@ -9,28 +9,26 @@ import dotty.tools.dotc.core.Decorators.*
 import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.core.Symbols.*
 
-
 object NonLocalReturnsReturningTransform {
 
-
-  /**
-   * @param term Applhy contains NonLocalReturns.returning(...) call.
-   * @param owner -  owner of call.
-   * @param nesting - nesting level of cps processing
-   * @param targ - type of returning value
-   * @param arg - returning value
-   * @param Context
-   * @param CpsTopLevelContext
-
-   * @return
-   */
-  def apply(term: Apply, owner:Symbol, nesting: Int, targ: Tree, arg: Tree)(using Context, CpsTopLevelContext): CpsTree = {
+  /** @param term Applhy contains NonLocalReturns.returning(...) call.
+    * @param owner -  owner of call.
+    * @param nesting - nesting level of cps processing
+    * @param targ - type of returning value
+    * @param arg - returning value
+    * @param Context
+    * @param CpsTopLevelContext
+    *
+    * @return
+    */
+  def apply(term: Apply, owner: Symbol, nesting: Int, targ: Tree, arg: Tree)(using Context, CpsTopLevelContext): CpsTree = {
 
     val nonFatalUnapplySym = Symbols.requiredClass("scala.util.control.NonFatal$").requiredMethod("unapply")
-    val nonFatalAndNotControlThrowableAsyncWrapperObj = ref(Symbols.requiredModule("cps.runtime.util.control.NonFatalAndNotControlThrowableAsyncWrapper"))
+    val nonFatalAndNotControlThrowableAsyncWrapperObj = ref(
+      Symbols.requiredModule("cps.runtime.util.control.NonFatalAndNotControlThrowableAsyncWrapper")
+    )
     val nonLocalReturnsAsyncShift = Symbols.requiredModule("cps.runtime.util.control.NonLocalReturnsAsyncShift")
     val nonLocalReturns = Symbols.requiredModule("scala.util.control.NonLocalReturns")
-
 
     val substituteNonFatal = new TreeMap {
       override def transform(tree: Tree)(using Context): Tree = {
@@ -38,8 +36,8 @@ object NonLocalReturnsReturningTransform {
           case u: UnApply if u.fun.symbol == nonFatalUnapplySym =>
             val nFun = Select(nonFatalAndNotControlThrowableAsyncWrapperObj, "unapply".toTermName)
             cpy.UnApply(u)(nFun, u.implicits, u.patterns)
-          //for scala-3.3.2 - add QuotePAtter  => ???
-          //case Apply()
+          // for scala-3.3.2 - add QuotePAtter  => ???
+          // case Apply()
           case _ =>
             super.transform(tree)
       }
@@ -47,9 +45,9 @@ object NonLocalReturnsReturningTransform {
     val nArg = substituteNonFatal.transform(arg)
 
     nArg match
-      //case Inlined(call, bindings, expansion) =>
-      case Block((ddef:DefDef)::Nil, closure:Closure) if (closure.meth.symbol == ddef.symbol) =>
-        val cpsRhs = RootTransform(ddef.rhs, ddef.symbol, nesting+1)
+      // case Inlined(call, bindings, expansion) =>
+      case Block((ddef: DefDef) :: Nil, closure: Closure) if (closure.meth.symbol == ddef.symbol) =>
+        val cpsRhs = RootTransform(ddef.rhs, ddef.symbol, nesting + 1)
         cpsRhs.unpure match
           case Some(syncRhs) =>
             val lambdaParams = ddef.paramss.head.asInstanceOf[List[ValDef]]
@@ -63,7 +61,8 @@ object NonLocalReturnsReturningTransform {
           case None =>
             val lambdaParams = ddef.paramss.head.asInstanceOf[List[ValDef]]
             val nBody = cpsRhs.transformed
-            val nLambda = TransformUtil.makeLambda(lambdaParams, cpsRhs.transformedType.widen, owner, nBody, ddef.symbol).withSpan(arg.span)
+            val nLambda =
+              TransformUtil.makeLambda(lambdaParams, cpsRhs.transformedType.widen, owner, nBody, ddef.symbol).withSpan(arg.span)
             val nTerm = Apply(
               Apply(
                 TypeApply(
@@ -76,8 +75,10 @@ object NonLocalReturnsReturningTransform {
             ).withSpan(term.span)
             CpsTree.impure(term, owner, nTerm, AsyncKind.Sync)
       case _ =>
-        throw CpsTransformException(s"Unexpected tree as argument of NonLocalReturns.returning, should be lambda, we have ${arg}",arg.srcPos)
+        throw CpsTransformException(
+          s"Unexpected tree as argument of NonLocalReturns.returning, should be lambda, we have ${arg}",
+          arg.srcPos
+        )
   }
-
 
 }

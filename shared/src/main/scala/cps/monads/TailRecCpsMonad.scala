@@ -7,20 +7,18 @@ import scala.concurrent._
 
 import cps._
 
-
 given CpsThrowMonad[TailRec] with CpsThrowMonadInstanceContext[TailRec] with {
 
-  def pure[A](a:A): TailRec[A] =
+  def pure[A](a: A): TailRec[A] =
     done(a)
 
-  def map[A,B](fa: TailRec[A])(f: A=>B): TailRec[B] =
+  def map[A, B](fa: TailRec[A])(f: A => B): TailRec[B] =
     fa.map(f)
 
-  def flatMap[A,B](fa: TailRec[A])(f: A=>TailRec[B]): TailRec[B] =
+  def flatMap[A, B](fa: TailRec[A])(f: A => TailRec[B]): TailRec[B] =
     fa.flatMap(f)
 
   def error[A](e: Throwable): TailRec[A] =
     done(throw e)
-
 
 }

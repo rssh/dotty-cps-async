@@ -7,16 +7,12 @@ package cps.syntax
 
 import cps._
 
-/**
- * allows to use for syntax on generic monad-wrapped values.
- **/
-extension [F[_],T,S](x:F[T])(using m:CpsMonad[F])
+/** allows to use for syntax on generic monad-wrapped values.
+  */
+extension [F[_], T, S](x: F[T])(using m: CpsMonad[F])
 
-   def flatMap(f: T=>F[S]): F[S] =
-      m.flatMap(x)(f)
+  def flatMap(f: T => F[S]): F[S] =
+    m.flatMap(x)(f)
 
-   def map(f: T=>S): F[S] =
-      m.map(x)(f)
-
-
-
+  def map(f: T => S): F[S] =
+    m.map(x)(f)

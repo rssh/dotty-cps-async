@@ -14,9 +14,7 @@ import dotty.tools.dotc.core.Annotations.ConcreteAnnotation
 import dotty.tools.dotc.core.DenotTransformers.{DenotTransformer, IdentityDenotTransformer, InfoTransformer}
 import dotty.tools.dotc.transform.{Pickler, SetRootTree}
 
-
-
-class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends PluginPhase with IdentityDenotTransformer  {
+class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends PluginPhase with IdentityDenotTransformer {
 
   val phaseName = PhaseSelectAndGenerateShiftedMethods.phaseName
 
@@ -26,55 +24,53 @@ class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends
   override def changesMembers: Boolean = true
   override def changesParents: Boolean = true
 
-
-
   override def transformValDef(tree: tpd.ValDef)(using Context): tpd.Tree = {
     tree.rhs match
       case EmptyTree =>
         tree
       case other =>
-        if (!tree.symbol.flags.isOneOf(Flags.InlineOrProxy|Flags.Synthetic) &&
-            CpsTransformHelper.isCpsDirectType(tree.rhs.tpe)) then
-              report.error("CpsDirect can't be a value", tree.srcPos)
-              tree
-        else
-          super.transformValDef(tree)
+        if (
+            !tree.symbol.flags.isOneOf(Flags.InlineOrProxy | Flags.Synthetic) &&
+            CpsTransformHelper.isCpsDirectType(tree.rhs.tpe)
+          )
+        then
+          report.error("CpsDirect can't be a value", tree.srcPos)
+          tree
+        else super.transformValDef(tree)
   }
 
   override def transformAssign(tree: tpd.Assign)(using Context): tpd.Tree = {
     if (CpsTransformHelper.isCpsDirectType(tree.tpe)) then
       report.error("CpsDirect can't be a assigned", tree.srcPos)
       tree
-    else
-      super.transformAssign(tree)
+    else super.transformAssign(tree)
   }
-
 
   override def transformTemplate(tree: tpd.Template)(using Context): tpd.Tree = {
 
     // annotated selected methds with CpsTransform
-    for(m <- tree.body) {
+    for (m <- tree.body) {
       val changed = annotateTopMethodWithSelectKind(m)
     }
 
     // add shifted methods for @makeCPS annotated high-order members
     val makeCpsAnnot = Symbols.requiredClass("cps.plugin.annotation.makeCPS")
-    val shiftedMethods = tree.body.filter(_.symbol.annotations.exists(_.symbol == makeCpsAnnot))
+    val shiftedMethods = tree.body
+      .filter(_.symbol.annotations.exists(_.symbol == makeCpsAnnot))
       .flatMap { m =>
         m match
           case dd: DefDef => ShiftedMethodGenerator.generateShiftedMethod(dd)
-          case other => 
+          case other =>
             report.error("Only DefDef can be annotated by @makeCPS", other.srcPos)
             None
       }
-    if (shiftedMethods.isEmpty) then
-      tree
+    if (shiftedMethods.isEmpty) then tree
     else
-      //despite this is not change signature,
-      //tree.symbol.enteredAfter(this)
-      //tree.symbol.asClass.enteredAfter(this)
-      //tree
-      for(m <- shiftedMethods) {
+      // despite this is not change signature,
+      // tree.symbol.enteredAfter(this)
+      // tree.symbol.asClass.enteredAfter(this)
+      // tree
+      for (m <- shiftedMethods) {
         m.symbol.enteredAfter(this)
       }
       cpy.Template(tree)(body = tree.body ++ shiftedMethods)
@@ -87,11 +83,12 @@ class PhaseSelectAndGenerateShiftedMethods(selectedNodes: SelectedNodes) extends
         val optKind = SelectedNodes.detectDefDefSelectKind(dd)
         optKind match
           case Some(kind) =>
-            val monadType = CpsTransformHelper.extractMonadType(kind.getCpsDirectContext.tpe, CpsTransformHelper.cpsDirectAliasSymbol, dd.srcPos)
+            val monadType =
+              CpsTransformHelper.extractMonadType(kind.getCpsDirectContext.tpe, CpsTransformHelper.cpsDirectAliasSymbol, dd.srcPos)
             val annotExpr = New(cpsTransformedAnnot.typeRef.appliedTo(monadType), Nil)
-            val initAnnotExpr = Apply(TypeApply(Select(annotExpr, "<init>".toTermName),List(TypeTree(monadType))),Nil)
+            val initAnnotExpr = Apply(TypeApply(Select(annotExpr, "<init>".toTermName), List(TypeTree(monadType))), Nil)
             dd.symbol.addAnnotation(ConcreteAnnotation(initAnnotExpr))
-            selectedNodes.addDefDef(dd.symbol,kind)
+            selectedNodes.addDefDef(dd.symbol, kind)
             true
           case None => false
       case _ =>
