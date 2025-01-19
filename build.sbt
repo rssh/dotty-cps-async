@@ -4,7 +4,7 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 import scala.scalanative.build._
 
 
-ThisBuild/version := "1.0.0-M1"
+ThisBuild/version := "1.0.1-SNAPSHOT"
 ThisBuild/versionScheme := Some("semver-spec")
 //ThisBuild/resolvers ++= Opts.resolver.sonatypeOssSnapshots
 ThisBuild/sonatypeCredentialHost := sonatypeCentralHost
