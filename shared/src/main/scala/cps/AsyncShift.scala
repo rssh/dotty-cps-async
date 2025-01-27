@@ -65,10 +65,6 @@ trait AsyncShiftLowPriority1 extends AsyncShiftLowPriority0 {
 
   transparent inline given shiftedIterableOps[A, C[X] <: Iterable[X] & IterableOps[X, C, C[X]]]: IterableOpsAsyncShift[A, C, C[A]] =
     cps.runtime.IterableOpsAsyncShift[A, C, C[A]]()
-
-  transparent inline given shiftedSeqOps[A, C[X] <: Seq[X] & SeqOps[X, C, C[X]]]: SeqAsyncShift[A, C, C[A]] =
-    cps.runtime.SeqAsyncShift[A, C, C[A]]()
-
 }
 
 trait AsyncShiftLowPriority2 extends AsyncShiftLowPriority1 {
@@ -79,10 +75,17 @@ trait AsyncShiftLowPriority2 extends AsyncShiftLowPriority1 {
       : MapOpsAsyncShift[K, V, CC, Iterable, CC[K, V]] =
     MapOpsAsyncShift[K, V, CC, Iterable, CC[K, V]]()
 
+  transparent inline given shiftedSeqOps[A, C[X] <: Seq[X] & SeqOps[X, C, C[X]]]: SeqAsyncShift[A, C, C[A]] =
+    SeqAsyncShift[A, C, C[A]]()
+}
+
+trait AsyncShiftLowPriority3 extends AsyncShiftLowPriority2 {
+
+  import cps.runtime.*
+
   transparent inline given shiftedIndexedSeqOps[A, C[X] <: IndexedSeq[X] & IndexedSeqOps[X, C, C[X]]]
       : IndexedSeqAsyncShift[A, C, C[A]] =
     new IndexedSeqAsyncShift[A, C, C[A]]()
-
 }
 
 /** Companion object where defined given AsyncShift instances for Scala standard library objects.
@@ -90,7 +93,7 @@ trait AsyncShiftLowPriority2 extends AsyncShiftLowPriority1 {
   * @see
   *   [cps.AsyncShift]
   */
-object AsyncShift extends AsyncShiftLowPriority2 {
+object AsyncShift extends AsyncShiftLowPriority3 {
 
   import cps.runtime.*
   import cps.runtime.concurrent.*
