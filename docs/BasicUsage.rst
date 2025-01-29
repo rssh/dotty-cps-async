@@ -374,10 +374,7 @@ Yet one pair of names 'lift/unlift', used for example in the |monadless|_ librar
 .. ###########################################################################
 .. ## Hyperlink definitions with text formating (e.g. verbatim, bold)
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 0d98940d6e3492d77eccdda3a39864776c6b5611
 .. /*to update*/ 
 
 .. |3.1.0| replace:: ``3.1.0``
