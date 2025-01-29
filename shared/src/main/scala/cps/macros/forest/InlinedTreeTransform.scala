@@ -2,13 +2,14 @@
 // (C) Ruslan Shevchenko <ruslan@shevchenko.kiev.ua>, 2019, 2020, 2021, 2022, 2023
 package cps.macros.forest
 
-import scala.quoted._
+import scala.quoted.*
+import cps.*
+import cps.macros.*
+import cps.macros.common.*
+import cps.macros.misc.*
 
-import cps._
-import cps.macros._
-import cps.macros.common._
-import cps.macros.misc._
 import scala.collection.immutable.HashMap
+import scala.util.control.NonFatal
 
 trait InlinedTreeTransform[F[_], CT, CC <: CpsMonadContext[F]]:
 
@@ -239,7 +240,13 @@ trait InlinedTreeTransform[F[_], CT, CC <: CpsMonadContext[F]]:
         bodyWithoutAwaits
 
     if (cpsCtx.flags.debugLevel >= 15) then
-      cpsCtx.log(s"runInline, body=${body.show}")
+      try
+        cpsCtx.log(s"runInline, body=${body.show}")
+      catch
+        case NonFatal(ex) =>
+          cpsCtx.log(s"runInline, body=<<exception during show>>")
+          ex.printStackTrace()
+          cpsCtx.log(s"runInline, body tree = ${body}")
       cpsCtx.log(s"runInline, newBindings=${funValDefs.newBindings.map(TransformUtil.safeShow(_)).mkString("\n")}")
       funValDefs.changes.foreach { b =>
         cpsCtx.log(s"fubValDef changes binding: ${b}")

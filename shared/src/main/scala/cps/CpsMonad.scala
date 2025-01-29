@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference
   */
 trait CpsMonad[F[_]] {
 
-  type WF[X] = F[X]
+  type WF[X] <: F[X]
 
   type Context <: CpsMonadContext[F]
 
